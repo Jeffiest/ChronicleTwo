@@ -14,6 +14,7 @@
 #include "menucommon.hpp"
 #include "menusys.hpp"
 #include "mg_memory.hpp"
+#include "title.hpp"
 
 /**
  *
@@ -139,12 +140,12 @@ static u16 MCBrowserName_Offset[3][4] = {
 static short DngTreeSaveFlag;
 
 void CopyMCBrowserName(int index, char *name, u16 *offset) {
-    int region = 0;
+    int region = MC_BROWSER_REGION_JAPAN;
 
     if (CheckNowEurope() != 0) {
-        region = 2;
-    } else if (LanguageCode == 1) {
-        region = 1;
+        region = MC_BROWSER_REGION_EUROPE;
+    } else if (LanguageCode == LANG_ENGLISH) {
+        region = MC_BROWSER_REGION_US;
     }
 
     strcpy(name, MCBrowsetName[region][index]);
@@ -243,14 +244,14 @@ void CMemoryCardManager::Initialize(mgCMemory *memory) {
 void CMemoryCardManager::InitSaveFileInfoTable() {
     int entry_no;
 
-    for (entry_no = 0; entry_no < 17; entry_no++) {
+    for (entry_no = 0; entry_no < MC_DIR_TABLE_NUM; entry_no++) {
         memset(&dir_table[entry_no], 0, sizeof(sceMcTblGetDir));
         dir_table[entry_no].entry_name[0] = 0;
     }
 }
 
 int CMemoryCardManager::GetOpenAttribute(char *name) {
-    for (int i = 0; i < 17; i++) {
+    for (int i = 0; i < MC_DIR_TABLE_NUM; i++) {
         if (strcmp(name, dir_table[i].entry_name) == 0) {
             return 1;
         }
@@ -401,7 +402,7 @@ int CMemoryCardManager::GetFuncNo() { return this->func_no; }
 u_long CMemoryCardManager::CheckMaxUniqueCounter() {
     u64 max = 0;
 
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
         if (max < file_info[i].unique_counter) {
             max = file_info[i].unique_counter;
         }
@@ -414,7 +415,7 @@ int CMemoryCardManager::GetUpdateFile() {
     u64 max = CheckMaxUniqueCounter();
     int found = -1;
 
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
         if (max == file_info[i].unique_counter) {
             found = i;
             break;
@@ -427,7 +428,7 @@ int CMemoryCardManager::GetUpdateFile() {
 int CMemoryCardManager::CheckDataFileNum() {
     int count = 0;
 
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
         if (file_info[i].state != 0) {
             count++;
         }
@@ -440,7 +441,7 @@ u32 CMemoryCardManager::CheckOmake(unsigned long *out_mask) {
     int flags = 0;
     u64 mask = 0;
 
-    for (s64 i = 0; i < 13; i++) {
+    for (s64 i = 0; i < MC_SAVE_FILE_NUM; i++) {
         if (file_info[(int) i].state == 0) {
             continue;
         }
@@ -459,7 +460,7 @@ u32 CMemoryCardManager::CheckOmake(unsigned long *out_mask) {
 int CMemoryCardManager::CheckDebugCode() {
     int code = 0;
 
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
         if (file_info[i].state == 0) {
             continue;
         }
@@ -473,7 +474,7 @@ int CMemoryCardManager::CheckDebugCode() {
 }
 
 void CMemoryCardManager::InitPlayDataInfo() {
-    for (int i = 0; i < 13; i++) {
+    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
         file_info[i].state = 0;
     }
 }
@@ -498,7 +499,7 @@ void CMemoryCardManager::UpDateViewInfo(SAVEDATA_INFO *view, SAVEDATA_FORMAT *fo
 
 int CMemoryCardManager::Step() {
     int          status = 0;
-    int          changed = 0;
+    int          changed = false;
     unsigned int job = func_no;
 
     switch (job) {
@@ -515,7 +516,7 @@ int CMemoryCardManager::Step() {
 
             break;
         case MC_FUNC_NONE:
-            status = 1;
+            status = MC_STEP_DONE;
             break;
         case MC_FUNC_MAKE_DIR:
             status = MakeDir(file_no);
@@ -558,7 +559,7 @@ int CMemoryCardManager::Step() {
         case MC_FUNC_DELETE:
             int delete_index;
 
-            if (error.code == 0) {
+            if (error.code == MC_ERROR_NONE) {
                 delete_index = file_no;
             } else {
                 delete_index = error.file_no;
@@ -583,15 +584,15 @@ int CMemoryCardManager::Step() {
             break;
     }
 
-    if (status == 1) {
+    if (status == MC_STEP_DONE) {
         step = 0;
         SetFuncNo(MC_FUNC_IDLE);
-    } else if (status != 0) {
+    } else if (status != MC_STEP_BUSY) {
         McError(status);
     }
 
     if (job != func_no) {
-        changed = 1;
+        changed = true;
     }
 
     return changed;
@@ -613,7 +614,7 @@ int CMemoryCardManager::SearchMcType() {
     }
 
     if (card == NULL) {
-        return 0;
+        return MC_STEP_BUSY;
     }
 
     if (step == 0) {
@@ -629,7 +630,7 @@ int CMemoryCardManager::SearchMcType() {
 
                 if (status == 0) {
                     step++;
-                } else if (status != -0xC8) {
+                } else if (status != MC_COMMAND_BUSY) {
                     step += 2;
                 }
             }
@@ -672,7 +673,7 @@ int CMemoryCardManager::SearchMcType() {
                                 }
                             }
 
-                            return 1;
+                            return MC_STEP_DONE;
                         }
                     }
                 }
@@ -696,14 +697,14 @@ int CMemoryCardManager::SearchMcType() {
                         }
                     }
 
-                    return 1;
+                    return MC_STEP_DONE;
                 }
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::Write() {
@@ -735,11 +736,11 @@ int CMemoryCardManager::Write() {
     sceMcSync(MC_WAIT, &command, &result);
     sceMcClose(fd);
     sceMcSync(MC_WAIT, &command, &result);
-    return 1;
+    return MC_STEP_DONE;
 }
 
 int CMemoryCardManager::Convert() {
-    return 1;
+    return MC_STEP_DONE;
 }
 
 int CMemoryCardManager::MakeDir(int file_no) {
@@ -784,9 +785,9 @@ int CMemoryCardManager::MakeDir(int file_no) {
 
                 if (made == 0) {
                     step++;
-                } else if (made != -200) {
+                } else if (made != MC_COMMAND_BUSY) {
                     errors->code = MC_ERROR_COMMAND;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -795,7 +796,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0 && command == sceMcFuncNoMkdir) {
                 if (result < 0 && result != sceMcResNoEntry) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 strcat(path, "/icon.sys");
@@ -806,7 +807,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -822,7 +823,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     }
 
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -831,7 +832,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                 if (album_buffer_set == 0 && file_no != -2) {
                     nl_offset = 0;
                     SetMenuBigNum2(number, file_no + 1);
-                    CopyMCBrowserName(3, browser_name, &nl_offset);
+                    CopyMCBrowserName(MC_BROWSER_NAME_SAVE_NUM, browser_name, &nl_offset);
                     sprintf((char *) icon_sys.title_name, browser_name, number);
                     icon_sys.nl_offset = nl_offset;
                 }
@@ -845,7 +846,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -860,7 +861,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     }
 
                     McError(transfer_result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 transferred += transfer_result;
@@ -876,7 +877,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                         break;
                     }
 
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 int left = total - done;
@@ -897,12 +898,12 @@ int CMemoryCardManager::MakeDir(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (command != sceMcFuncNoFlush) {
                     errors->code = MC_ERROR_COMMAND;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 command = sceMcClose(fd);
@@ -913,7 +914,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                 }
 
                 errors->code = MC_ERROR_COMMAND;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -924,12 +925,12 @@ int CMemoryCardManager::MakeDir(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (command != sceMcFuncNoClose) {
                     errors->code = MC_ERROR_COMMAND;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 iconNo++;
@@ -944,10 +945,10 @@ int CMemoryCardManager::MakeDir(int file_no) {
                         break;
                     }
 
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -961,7 +962,7 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     }
 
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -975,13 +976,13 @@ int CMemoryCardManager::MakeDir(int file_no) {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int GetCostumeList(unsigned long mask, int type, short *list) {
@@ -1029,7 +1030,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
         case 0:
             if (sceMcSync(MC_NOWAIT, NULL, NULL) != 0) {
                 if (card->present == 0 || card->type != sceMcTypePS2) {
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 CSaveData *save = GetSaveData();
@@ -1048,12 +1049,12 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                 save_buffer->omake_flag = 0;
 
                 if (save->GetBitFlag(SAVE_FLAG_FINNY_FRENZY_UNLOCKED)) {
-                    save_buffer->omake_flag |= 1;
+                    save_buffer->omake_flag |= OMAKE_ENABLE_GYORACE;
                 }
 
                 if (save->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK)) {
-                    save_buffer->omake_flag |= 0x80;
-                    save_buffer->omake_flag |= 2;
+                    save_buffer->omake_flag |= OMAKE_ENABLE_COSTUME;
+                    save_buffer->omake_flag |= OMAKE_ENABLE_DUNGEON;
                 }
 
                 save_buffer->debug_code = 0;
@@ -1085,7 +1086,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                 transfer_result = 0;
                 write_buffer = (char *) save_buffer;
 
-                if (sceMcOpen(port, 1, path, SCE_CREAT | SCE_WRONLY) == -200) {
+                if (sceMcOpen(port, 1, path, SCE_CREAT | SCE_WRONLY) == MC_COMMAND_BUSY) {
                     sceMcSync(MC_NOWAIT, NULL, NULL);
                 } else {
                     step = 0x64;
@@ -1097,7 +1098,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1108,7 +1109,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -1120,7 +1121,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
 
             if (transfer_result < 0) {
                 McError(transfer_result);
-                return 1;
+                return MC_STEP_DONE;
             }
 
             transferred += transfer_result;
@@ -1135,7 +1136,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                         break;
                     }
 
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 int left = total - done;
@@ -1152,7 +1153,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcSeek(fd, 0x45, SCE_SEEK_SET);
@@ -1167,7 +1168,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcClose(fd);
@@ -1179,7 +1180,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 step++;
@@ -1195,11 +1196,11 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                 UpDateViewInfo(info, save_buffer);
             }
 
-            return 1;
+            return MC_STEP_DONE;
         }
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::LoadFromMc(int file_no) {
@@ -1218,7 +1219,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
         case 0:
             if (sceMcSync(MC_NOWAIT, NULL, NULL) != 0) {
                 if (card->present == 0 || card->type != sceMcTypePS2) {
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 InitError();
@@ -1232,9 +1233,9 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
                 int opened = sceMcOpen(port, 1, path, SCE_RDONLY);
                 step++;
 
-                if (opened != 0 && opened != -200) {
+                if (opened != 0 && opened != MC_COMMAND_BUSY) {
                     error.code = MC_ERROR_COMMAND;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -1243,7 +1244,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1254,7 +1255,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
                 }
 
                 error.code = MC_ERROR_LOAD;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -1263,7 +1264,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
                 if (transfer_result < 0) {
                     McError(transfer_result);
                     error.code = MC_ERROR_LOAD;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 transferred += transfer_result;
@@ -1276,7 +1277,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
                     }
 
                     error.code = MC_ERROR_LOAD;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcRead(fd, read_buffer + transferred, 0x1000);
@@ -1287,7 +1288,7 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 int bad = 0;
@@ -1351,16 +1352,16 @@ int CMemoryCardManager::LoadFromMc(int file_no) {
                 } else {
                     error.code = MC_ERROR_LOAD;
                     printf("BREAK or DIF VERSION!!\n");
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::SaveAlbum() {
@@ -1395,7 +1396,7 @@ int CMemoryCardManager::SaveAlbum() {
                 step++;
 
                 if (opened != 0) {
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
             }
 
@@ -1410,7 +1411,7 @@ int CMemoryCardManager::SaveAlbum() {
                     }
 
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1420,8 +1421,8 @@ int CMemoryCardManager::SaveAlbum() {
                     break;
                 }
 
-                errors->code = 0xB;
-                return 1;
+                errors->code = MC_ERROR_COMMAND;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -1439,7 +1440,7 @@ int CMemoryCardManager::SaveAlbum() {
                     }
 
                     McError(transfer_result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 transferred += written;
@@ -1455,7 +1456,7 @@ int CMemoryCardManager::SaveAlbum() {
                         break;
                     }
 
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 left = total - done;
@@ -1473,7 +1474,7 @@ int CMemoryCardManager::SaveAlbum() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 step = 4;
@@ -1481,12 +1482,12 @@ int CMemoryCardManager::SaveAlbum() {
 
             break;
         case 4:
-            return 1;
+            return MC_STEP_DONE;
         case 100:
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::LoadAlbum() {
@@ -1510,7 +1511,7 @@ int CMemoryCardManager::LoadAlbum() {
                 step++;
 
                 if (opened != 0) {
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
             }
 
@@ -1519,7 +1520,7 @@ int CMemoryCardManager::LoadAlbum() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1529,7 +1530,7 @@ int CMemoryCardManager::LoadAlbum() {
                     break;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -1541,11 +1542,11 @@ int CMemoryCardManager::LoadAlbum() {
                     McError(transferred);
 
                     if (this->transferred < transfer_size) {
-                        errors->code = 3;
-                        return 1;
+                        errors->code = MC_ERROR_BROKEN;
+                        return MC_STEP_DONE;
                     }
 
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 this->transferred += transferred;
@@ -1561,8 +1562,8 @@ int CMemoryCardManager::LoadAlbum() {
                         break;
                     }
 
-                    errors->code = 3;
-                    return 1;
+                    errors->code = MC_ERROR_BROKEN;
+                    return MC_STEP_DONE;
                 }
 
                 left = total - done;
@@ -1580,11 +1581,11 @@ int CMemoryCardManager::LoadAlbum() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 if (this->transferred < transfer_size) {
-                    errors->code = 3;
+                    errors->code = MC_ERROR_BROKEN;
                 }
 
                 AlbumFile *album = (AlbumFile *) album_buffer;
@@ -1592,17 +1593,17 @@ int CMemoryCardManager::LoadAlbum() {
 
                 if (stored_digit != 0 || album->trailer != 0) {
                     if (stored_digit != MakeCheckDigit(0, album->digit_data, sizeof(album->digit_data))) {
-                        errors->code = 3;
+                        errors->code = MC_ERROR_BROKEN;
                     }
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::CheckAlbum() {
@@ -1617,14 +1618,14 @@ int CMemoryCardManager::CheckAlbum() {
             if (sceMcSync(MC_NOWAIT, NULL, NULL) != 0) {
                 InitSaveFileInfoTable();
                 MakeMemoryCardAlbumName(album_name, 1);
-                int status = sceMcGetDir(port, 1, album_name, 0, 0x11, dir_table);
+                int status = sceMcGetDir(port, 1, album_name, 0, MC_DIR_TABLE_NUM, dir_table);
                 *album_found = 0;
 
                 if (status == 0) {
                     step = 1;
                 } else {
-                    error_record->code = 0;
-                    return 1;
+                    error_record->code = MC_ERROR_NONE;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -1635,7 +1636,7 @@ int CMemoryCardManager::CheckAlbum() {
                 *album_found = 0;
 
                 if (result >= 0) {
-                    error_record->code = 0;
+                    error_record->code = MC_ERROR_NONE;
 
                     if (result > 0) {
                         *album_found = 1;
@@ -1645,34 +1646,34 @@ int CMemoryCardManager::CheckAlbum() {
                     unsigned int file_size = dir_table[0].file_size_byte;
 
                     if (file_size < GetSaveDataSize(MC_SIZE_ALBUM_FILE)) {
-                        error_record->code = 3;
+                        error_record->code = MC_ERROR_BROKEN;
                         *album_found = 0;
                     }
 
                     strlen(dir_table[0].entry_name);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 McError(result);
 
                 if (result == sceMcResNoFormat) {
-                    error_record->code = 7;
+                    error_record->code = MC_ERROR_UNFORMATTED;
                 } else if (result == sceMcResNoEntry) {
-                    error_record->code = 0;
+                    error_record->code = MC_ERROR_NONE;
                     *album_found = 0;
                     dir_entries = result;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 error_record->func_no = GetFuncNo();
                 error_record->step = step;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::SaveOamkeFile() {
@@ -1696,7 +1697,7 @@ int CMemoryCardManager::SaveOamkeFile() {
             int synced = sceMcSync(MC_NOWAIT, NULL, NULL);
 
             if (McCheckMCPs2(card) == 0) {
-                return 1;
+                return MC_STEP_DONE;
             }
 
             if (synced != 0) {
@@ -1709,7 +1710,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                     break;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -1723,7 +1724,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                         errors->code = MC_ERROR_FILE;
                     }
 
-                    return 1;
+                    return MC_STEP_DONE;
                 } else {
                     read_buffer = SubGameOmakeTempBuffer;
                     transfer_result = 0;
@@ -1738,19 +1739,19 @@ int CMemoryCardManager::SaveOamkeFile() {
             break;
         case 2:
             if (McCheckMCPs2(card) == 0) {
-                return 1;
+                return MC_STEP_DONE;
             }
 
             if (sceMcSync(MC_NOWAIT, &command, &transfer_result) != 0) {
                 if (transfer_result < 0) {
                     McError(transfer_result);
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 if (transfer_result != icon[2].size) {
                     errors->code = MC_ERROR_FILE;
                     McError(result);
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 if (sceMcClose(fd) == 0) {
@@ -1758,7 +1759,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -1767,7 +1768,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                 CSubGameData *sub_game = GetSubGameSaveData();
 
                 if (sub_game == NULL) {
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 transferred = 0;
@@ -1787,7 +1788,7 @@ int CMemoryCardManager::SaveOamkeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1797,7 +1798,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                     break;
                 }
 
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -1805,7 +1806,7 @@ int CMemoryCardManager::SaveOamkeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &transfer_result) != 0) {
                 if (transfer_result < 0) {
                     McError(transfer_result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 transferred += transfer_result;
@@ -1819,7 +1820,7 @@ int CMemoryCardManager::SaveOamkeFile() {
                         break;
                     }
 
-                    return -1;
+                    return MC_STEP_FAILED;
                 }
 
                 int left = total - done;
@@ -1837,7 +1838,7 @@ int CMemoryCardManager::SaveOamkeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcSeek(fd, 0, SCE_SEEK_SET);
@@ -1853,7 +1854,7 @@ int CMemoryCardManager::SaveOamkeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcClose(fd);
@@ -1867,13 +1868,13 @@ int CMemoryCardManager::SaveOamkeFile() {
                     McError(result);
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::LoadOmakeFile() {
@@ -1889,14 +1890,14 @@ int CMemoryCardManager::LoadOmakeFile() {
         case 0:
             if (sceMcSync(MC_NOWAIT, NULL, NULL) != 0) {
                 if (McCheckMCPs2(card) == 0) {
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 InitError();
                 CSubGameData *sub_game = GetSubGameSaveData();
 
                 if (sub_game == NULL) {
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 sub_game->Initialize();
@@ -1909,9 +1910,9 @@ int CMemoryCardManager::LoadOmakeFile() {
                 int opened = sceMcOpen(port, 1, at_1954, SCE_RDONLY);
                 step++;
 
-                if (opened != 0 && opened != -0xC8) {
-                    error.code = 0xB;
-                    return 1;
+                if (opened != 0 && opened != MC_COMMAND_BUSY) {
+                    error.code = MC_ERROR_COMMAND;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -1920,7 +1921,7 @@ int CMemoryCardManager::LoadOmakeFile() {
             if (sceMcSync(MC_WAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -1930,8 +1931,8 @@ int CMemoryCardManager::LoadOmakeFile() {
                     break;
                 }
 
-                error.code = 2;
-                return 1;
+                error.code = MC_ERROR_LOAD;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -1941,8 +1942,8 @@ int CMemoryCardManager::LoadOmakeFile() {
 
                 if (transferred < 0) {
                     McError(transferred);
-                    error.code = 2;
-                    return 1;
+                    error.code = MC_ERROR_LOAD;
+                    return MC_STEP_DONE;
                 }
 
                 this->transferred += transferred;
@@ -1955,8 +1956,8 @@ int CMemoryCardManager::LoadOmakeFile() {
                         break;
                     }
 
-                    error.code = 2;
-                    return 1;
+                    error.code = MC_ERROR_LOAD;
+                    return MC_STEP_DONE;
                 }
 
                 sceMcRead(fd, read_buffer + done, 0x1000);
@@ -1967,7 +1968,7 @@ int CMemoryCardManager::LoadOmakeFile() {
             if (sceMcSync(MC_WAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 int incomplete = 0;
@@ -1977,17 +1978,17 @@ int CMemoryCardManager::LoadOmakeFile() {
                 }
 
                 if (incomplete != 0) {
-                    error.code = 2;
-                    return 1;
+                    error.code = MC_ERROR_LOAD;
+                    return MC_STEP_DONE;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::CheckOmakeFile() {
@@ -2005,8 +2006,8 @@ int CMemoryCardManager::CheckOmakeFile() {
                 if (sceMcGetDir(port, 1, "/BESCES-51190dc2omake/*", 0, 0xD, dir_table) == 0) {
                     step = 1;
                 } else {
-                    error_record->code = 0;
-                    return 1;
+                    error_record->code = MC_ERROR_NONE;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -2016,14 +2017,14 @@ int CMemoryCardManager::CheckOmakeFile() {
                 dir_entries = 0;
 
                 if (result >= 7) {
-                    error_record->code = 0;
+                    error_record->code = MC_ERROR_NONE;
                     *album_found = 1;
                     album_found[1] = 0;
                     dir_entries = result;
                     unsigned int file_size = dir_table[6].file_size_byte;
 
                     if (file_size < GetSaveDataSize(MC_SIZE_OMAKE_FILE)) {
-                        error_record->code = 3;
+                        error_record->code = MC_ERROR_BROKEN;
                         *album_found = 0;
                     }
 
@@ -2040,21 +2041,21 @@ int CMemoryCardManager::CheckOmakeFile() {
                     McError(result);
 
                     if (result == sceMcResNoFormat) {
-                        error_record->code = 7;
+                        error_record->code = MC_ERROR_UNFORMATTED;
                     } else if (result == sceMcResNoEntry) {
-                        error_record->code = 0;
+                        error_record->code = MC_ERROR_NONE;
                         dir_entries = result;
-                        return 1;
+                        return MC_STEP_DONE;
                     }
 
                     error_record->func_no = GetFuncNo();
                     error_record->step = step;
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
-                error_record->code = 6;
+                error_record->code = MC_ERROR_FILE;
                 *album_found = 2;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -2062,7 +2063,7 @@ int CMemoryCardManager::CheckOmakeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (0 > result) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 fd = result;
@@ -2071,7 +2072,7 @@ int CMemoryCardManager::CheckOmakeFile() {
                 if (sceMcSync(MC_WAIT, &command, &result) != 0) {
                     if (0 > result) {
                         McError(result);
-                        return 1;
+                        return MC_STEP_DONE;
                     }
 
                     sceMcClose(fd);
@@ -2084,7 +2085,7 @@ int CMemoryCardManager::CheckOmakeFile() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (0 > result) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 CSubGameData sub_game;
@@ -2094,13 +2095,13 @@ int CMemoryCardManager::CheckOmakeFile() {
                     album_found[1] = sub_game.play_enable;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::Format() {
@@ -2122,8 +2123,8 @@ int CMemoryCardManager::Format() {
                 if (sceMcFormat(port, 1) == 0) {
                     step += 1;
                 } else {
-                    error_record->code = 11;
-                    return 1;
+                    error_record->code = MC_ERROR_COMMAND;
+                    return MC_STEP_DONE;
                 }
             }
 
@@ -2132,7 +2133,7 @@ int CMemoryCardManager::Format() {
             if (sceMcSync(MC_NOWAIT, &command, &result) != 0) {
                 if (result < 0) {
                     McError(result);
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 step += 1;
@@ -2144,8 +2145,8 @@ int CMemoryCardManager::Format() {
                 0) {
                 step += 1;
             } else {
-                error_record->code = 11;
-                return 1;
+                error_record->code = MC_ERROR_COMMAND;
+                return MC_STEP_DONE;
             }
 
             break;
@@ -2158,17 +2159,17 @@ int CMemoryCardManager::Format() {
                         record->present = 0;
                     }
 
-                    return 1;
+                    return MC_STEP_DONE;
                 }
 
                 record->present = 1;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::DeleteFile(int index) {
@@ -2195,19 +2196,19 @@ int CMemoryCardManager::DeleteFile(int index) {
                     error.retry_count += 1;
 
                     if (error.retry_count > 0x78) {
-                        return 1;
+                        return MC_STEP_DONE;
                     }
 
                     break;
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::McError(int code) {
@@ -2221,11 +2222,11 @@ int CMemoryCardManager::McError(int code) {
     switch (code) {
         case sceMcResNoFormat:
         case sceMcResFailDetect:
-            error_record->code = 7;
+            error_record->code = MC_ERROR_UNFORMATTED;
             record->formatted = 0;
             break;
         case sceMcResFullDevice:
-            error_record->code = 4;
+            error_record->code = MC_ERROR_FULL;
             break;
         case sceMcResNoEntry:
         case sceMcResDeniedPermit:
@@ -2235,11 +2236,11 @@ int CMemoryCardManager::McError(int code) {
     }
 
     if (code < -10) {
-        error_record->code = 8;
+        error_record->code = MC_ERROR_NO_CARD;
         record->present = 0;
 
         if (func_no == MC_FUNC_SAVE) {
-            error_record->code = 6;
+            error_record->code = MC_ERROR_FILE;
         }
     }
 
@@ -2273,13 +2274,13 @@ int CMemoryCardManager::UnFormat() {
 
             if (status != 0 && command == sceMcFuncNoUnformat && result >= 0) {
                 card[port].formatted = 0;
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int CMemoryCardManager::GetSaveFileInfoFromMc(int index, int *step) {
@@ -2386,7 +2387,7 @@ int CMemoryCardManager::GetSaveFileInfoFromMc(int index, int *step) {
 
                 if (this->transferred < transfer_size) {
                     slot->state = 0;
-                    error_record->code = 3;
+                    error_record->code = MC_ERROR_BROKEN;
                     error_record->file_no = file_no;
                     *step += 1;
                     return -1;
@@ -2442,7 +2443,7 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
                 total_transferred = 0;
                 char pattern[0x80] = "/BESCES-51190dkcl??";
 
-                if (sceMcGetDir(port, 1, pattern, 0, 0x11, dir_table) == 0) {
+                if (sceMcGetDir(port, 1, pattern, 0, MC_DIR_TABLE_NUM, dir_table) == 0) {
                     step++;
                 }
             }
@@ -2455,7 +2456,7 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
                         break;
                     default:
                         McError(result);
-                        return 1;
+                        return MC_STEP_DONE;
                 }
 
                 ReadFileNo = 0;
@@ -2464,7 +2465,7 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
                 if (result >= 0) {
                     dir_entries = result;
 
-                    for (int i = 0; i < 13; i++) {
+                    for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
                         strlen(dir_table[i].entry_name);
                     }
 
@@ -2480,7 +2481,7 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
 
                 errors->func_no = GetFuncNo();
                 errors->step = step;
-                return -1;
+                return MC_STEP_FAILED;
             }
 
             break;
@@ -2493,17 +2494,17 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
                 ReadFileNo++;
             }
 
-            if (ReadFileNo >= 13) {
-                for (int i = 0; i < 13; i++) {
+            if (ReadFileNo >= MC_SAVE_FILE_NUM) {
+                for (int i = 0; i < MC_SAVE_FILE_NUM; i++) {
                 }
 
-                return 1;
+                return MC_STEP_DONE;
             }
 
             break;
     }
 
-    return 0;
+    return MC_STEP_BUSY;
 }
 
 int McCheckMCPs2(MC_CARD_INFO *info) {
