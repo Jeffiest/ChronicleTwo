@@ -1,3 +1,4 @@
+#include "common.h"
 #include "menucommon.hpp"
 #include "mw_runtime.h"
 
@@ -38,16 +39,27 @@
  * Number of item categories used by the menu sorting order.
  *
  */
-static const int sort_type_count = 0x24;
+static const int sort_type_count = 36;
 
 /**
  *
  * Default number of miscellaneous-information entries in a menu layout.
  *
  */
-static const int default_etc_count = 0x60;
+static const int default_etc_count = 96;
 
-static inline unsigned int align16_blocks(unsigned int n);
+/**
+ *
+ * Rounds a byte count up to the number of 16-byte allocation blocks.
+ *
+ */
+static inline unsigned int align16_blocks(unsigned int n) {
+    if (n & 0xF) {
+        return (n >> 4) + 1;
+    }
+
+    return n >> 4;
+}
 
 int menu_dtype_init(CMenuPosDataForm *form, SPI_STACK *stack, int argc);
 
@@ -223,11 +235,6 @@ int _MENU_EXE_RESET_TEXINFO(SPI_STACK *stack, int argc);
 
 int _MENU_DEBUG_PRINTF(SPI_STACK *stack, int argc);
 
-/**
- *
- * Rounds a byte count up to the number of 16-byte allocation blocks.
- *
- */
 int _MENU_FORM_RGBA_BIT(SPI_STACK *stack, int argc);
 
 int _MENU_FILLBOX(SPI_STACK *stack, int argc);
@@ -241,7 +248,7 @@ int _MENU_EXE_MSGSETBUFF(SPI_STACK *stack, int argc);
  * Sort rank of each item category, with an empty slot ordered last.
  *
  */
-static signed char sort_table[0x24] = {
+static signed char sort_table[sort_type_count] = {
     sort_type_count, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
     23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0};
@@ -499,16 +506,6 @@ static u8 SpiMenuExeCommandFlag;
 static char MenuSpiTextureName[0x20];
 
 MENU_COMMAND_ANALYZE_INFO MenuCommandAnalyzeInfo;
-
-static inline unsigned int align16_blocks(unsigned int n) {
-    if (n & 0xF) {
-        return (n >> 4) + 1;
-    }
-
-    return n >> 4;
-}
-
-#include "common.h"
 
 int GetRandI(int range) {
     return rand() % range;
@@ -908,7 +905,11 @@ int LoadFileMenu(char *name, u_long128 *buffer, int mode) {
 }
 
 void ConvertFontCode(char *source, char *destination) {
-    // Hexadecimal digits and their nibble values for bracketed font codes.
+    /**
+     *
+     * Hexadecimal digits and their nibble values for bracketed font codes.
+     *
+     */
     static s8 mes_cord_conv[16][2] = {
         {'0', 0 },
         {'1', 1 },
@@ -1751,7 +1752,11 @@ int menu_dtype_init(CMenuPosDataForm *form, SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FORM_DTYPE(SPI_STACK *stack, int argc) {
-    // Drawing-type keywords accepted by the menu form script.
+    /**
+     *
+     * Drawing-type keywords accepted by the menu form script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"normal",    MENUFORM_DTYPE_NORMAL   },
         {"itembrd",   MENUFORM_DTYPE_ITEMBRD  },
@@ -1805,7 +1810,11 @@ int _MENU_FORM_DTYPE(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FORM_MTYPE(SPI_STACK *stack, int argc) {
-    // Movement keywords ordered by their MENUFORM_MTYPE value plus one.
+    /**
+     *
+     * Movement keywords ordered by their MENUFORM_MTYPE value plus one.
+     *
+     */
     static char *tbl[6] = {"n", "d", "l", "i", "ir", NULL};
 
     char *name = spiGetStackString(stack);
@@ -2252,7 +2261,11 @@ void MakePartsName(SPI_STACK *stack, MENUFORMPARTS_TYPE *part) {
  *
  */
 int _MENU_PART_DTYPE(SPI_STACK *stack, int argc) {
-    // Additional drawing-type keywords accepted by the menu part script.
+    /**
+     *
+     * Additional drawing-type keywords accepted by the menu part script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"clut_reload",                      MENUFORMPARTS_DTYPE_CLUT_RELOAD},
         {"\x94\xAD\x96\xBE\x83l\x83^",       MENUFORMPARTS_DTYPE_IDEA_BOARD },
@@ -2547,7 +2560,11 @@ int _MENU_ITEM_CHECKMARK(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FILLBOX(SPI_STACK *stack, int argc) {
-    // Filled-box drawing keywords accepted by the menu script.
+    /**
+     *
+     * Filled-box drawing keywords accepted by the menu script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"sq_beta", MENUFORMPARTS_DTYPE_SQ_BETA},
         {NULL,      -1                         },
@@ -2661,7 +2678,11 @@ int _MENU_PARTS_EFF_NUM(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_PARTS_EFFECT(SPI_STACK *stack, int argc) {
-    // Animation-effect keywords accepted by the menu part script.
+    /**
+     *
+     * Animation-effect keywords accepted by the menu part script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"blink",       MENU_PARTS_EFFECT_BLINK      },
         {"rot",         MENU_PARTS_EFFECT_ROT        },
@@ -3033,7 +3054,11 @@ int _MENU_EXE_FORM_GROUP_SWAP(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_EXE_MSGENV(SPI_STACK *stack, int argc) {
-    // Message preset keywords accepted by menu command scripts.
+    /**
+     *
+     * Message preset keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"default",              MENU_SCRIPT_MES_DEFAULT             },
         {"default_black",        MENU_SCRIPT_MES_DEFAULT_BLACK       },
@@ -3161,7 +3186,11 @@ int _MENU_EXE_MSGSETBUFF(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_EXE_MSGSETFUCHI(SPI_STACK *stack, int argc) {
-    // Font-outline keywords accepted by menu command scripts.
+    /**
+     *
+     * Font-outline keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"default", FUCHI_SHADOW_BLACK_WIDE},
         {"none",    FUCHI_NONE             },
@@ -3364,7 +3393,11 @@ int _MENU_SCENE_FADE(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_SE_PLAY(SPI_STACK *stack, int argc) {
-    // System sound keywords accepted by menu command scripts.
+    /**
+     *
+     * System sound keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"OK",     SYSTEM_SE_DECIDE},
         {"CANCEL", SYSTEM_SE_CANCEL},
