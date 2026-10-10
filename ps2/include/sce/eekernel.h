@@ -9,6 +9,8 @@
 extern "C" {
 #endif
 
+#define WRITEBACK_DCACHE 0
+
 /**
  * Describes an EE semaphore and its initial and maximum counts.
  */

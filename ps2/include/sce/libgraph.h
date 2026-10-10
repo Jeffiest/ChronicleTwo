@@ -11,6 +11,7 @@
 #define SCE_GS_NTSC 2
 #define SCE_GS_PAL 3
 #define SCE_GS_FIELD 1
+#define SCE_GS_FRAME 0
 
 #define SCE_GS_PSMCT32 0
 #define SCE_GS_PSMCT24 1

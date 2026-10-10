@@ -14,8 +14,7 @@ mode table etc.); this game's `main` holds only start-up/shut-down, the game mod
   Other units have their own local `vcount` (0x37CEC0). `at_846`..`at_857` are string literals.
 
 ## Functions
-- `static int VSyncCallBack(int)`: handwritten in retail (contains `ei`, a `sync` +
-  `ei` epilogue; needs an asm block or stays INCLUDE_ASM). `vcount++`; reloads `vcount` after the
+- `static int VSyncCallBack(int)`: ends with retail's `sync.l` + `ei` epilogue (the SDK `ExitHandler()` macro). `vcount++`; reloads `vcount` after the
   store before testing `< 0` -> `vcount` is probably `volatile int`; clamps negative to 0;
   returns 0. Type matches `sceGsSyncVCallback(int (*)(int))`.
 - `static void ClearScreen(int r, int g, int b)`: local `sceGsDBuff`;
@@ -39,21 +38,12 @@ mode table etc.); this game's `main` holds only start-up/shut-down, the game mod
 - `MainThreadPriority` and `MainLoop` should come from `mainloop.hpp`; `InitCDFile` from
   `dataread.hpp`; `mwInit` is the MW runtime init (no SDK header declares it yet).
 
-## Current source status
+## Source notes
 
-`ClearScreen`, `init`, and `main` are native C++ definitions. `vcount__2` is a
-file-local volatile counter so the callback and startup code reload it as
-retail does. `VSyncCallBack` retains one assembly gap: retail ends with `sync`
-and `ei`, which the plain C++ callback draft did not emit. The current source
-has no guarded callback draft. Previous promotion trials and their data-section
-binding issue are historical; matching of the current object is checked with
-the integrated build.
+`VSyncCallBack`, `ClearScreen`, `init` and `main` are C++ definitions. `VSyncCallBack` ends with the
+SDK `ExitHandler()` macro, which emits retail's `sync.l` / `ei` epilogue. `vcount` is a file-local
+`volatile int`, so the callback and the start-up `printf` reload it as retail does.
 
-The source now declares and calls the callback by its native static C++ name.
-`postprocess_object.py` binds that local name to this unit's assembled
-`VSyncCallBack__Fi__2` body, which keeps the retail callback address and
-removes the source-level C-linkage alias. The linked game compiles with this
-binding; `init` remains a 100% object match.
-
-The ten IOP module paths and the shared counter format are inline literals.
-No assembly data markers remain in this unit.
+The ten IOP module paths and the shared counter format are inline literals. The SDK constants
+`SCECdINIT`, `SCECdEXIT`, `SCECdDVD`, `SCE_GS_FRAME` and `WRITEBACK_DCACHE` name the literal
+arguments of `sceCdInit`, `sceCdMmode`, `sceGsResetGraph` and `FlushCache`.

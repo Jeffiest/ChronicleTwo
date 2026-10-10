@@ -9,9 +9,7 @@
 
 /**
  *
- * Raises the main thread's priority, initialises the graphics, CD and IOP
- * modules, runs the main loop, then shuts the hardware down and returns 0.
- *
+ * Raises the main thread's priority, starts the hardware, the IOP modules and the CD file system, runs the main loop, then shuts the hardware down.
  *
  * @mangled main
  * @address 0x15D7B0

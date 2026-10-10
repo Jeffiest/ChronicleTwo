@@ -115,6 +115,57 @@ enum DebugMenuRow {
 
 /**
  *
+ * Rows of the debug event selection screen, as EventSelect's select holds them.
+ *
+ */
+// clang-format off
+enum DebugEventRow {
+    DEBUG_EVENT_ROW_BEGINNING     = 0,  /**< Starts a new game from the title screen. */
+    DEBUG_EVENT_ROW_CHAPTER       = 1,  /**< Starts a chapter set up by its capN.cfg file. */
+    DEBUG_EVENT_ROW_CHAPTER_DEBUG = 2,  /**< Starts a chapter set up by its db_capN.cfg file. */
+    DEBUG_EVENT_ROW_SUB_GAME      = 3,  /**< Starts a mini-game set up by its sgN.cfg file. */
+    DEBUG_EVENT_ROW_PALM_BRINKS   = 4,  /**< Enters Palm Brinks set up by pb.cfg. */
+    DEBUG_EVENT_ROW_EVENT         = 5,  /**< Opens the event list. */
+    DEBUG_EVENT_ROW_BOSS_BATTLE   = 6,  /**< Opens the event list to start a boss battle. */
+    DEBUG_EVENT_ROW_FUTURE_MAP    = 7,  /**< Opens the future map selection. */
+    DEBUG_EVENT_ROW_DIORAMA_MAP   = 8,  /**< Enters a georama map set up by geo.cfg. */
+    DEBUG_EVENT_ROW_HDD           = 9,  /**< Opens the hard disk menu. */
+    DEBUG_EVENT_ROW_EXTRA         = 10, /**< Starts an extra (omake) mode. */
+    DEBUG_EVENT_ROW_NUM           = 11, /**< Number of rows. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Mini-games the debug event selection screen can start, as its sub game row holds them.
+ *
+ */
+// clang-format off
+enum DebugSubGame {
+    DEBUG_SUB_GAME_SPHEDA   = 0, /**< Spheda. */
+    DEBUG_SUB_GAME_GYORACE  = 1, /**< Fish racing (Gyorace). */
+    DEBUG_SUB_GAME_FISHING  = 2, /**< Fishing. */
+    DEBUG_SUB_GAME_NUM      = 3, /**< Number of mini-games. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Choices of the pause menu, as PauseSel holds them.
+ *
+ */
+// clang-format off
+enum PauseMenuChoice {
+    PAUSE_CHOICE_QUIT     = 0, /**< Leave the current mode. */
+    PAUSE_CHOICE_CONTINUE = 1, /**< Close the pause menu and carry on playing. */
+};
+
+// clang-format on
+
+/**
+ *
  * Steps of the pause menu, as PauseMenuMode holds them.
  *
  */
@@ -194,8 +245,8 @@ STATIC_ASSERT(sizeof(DEBUG_INFO) == 0x14);
  *
  */
 struct PAD_TABLE_ENTRY {
-    int no;      /**< Logical button number, or -1 to end the table. */
-    int trigger; /**< 0 to report while held, 0x10000 when pressed, 0x20000 when released. */
+    int no;      /**< Logical button number, a PadCtrlButton, or -1 to end the table. */
+    int trigger; /**< When the button reports, a PadCtrlTrigger. */
     int button;  /**< Controller buttons the logical button reads. @see PadButton */
 };
 
@@ -207,8 +258,8 @@ STATIC_ASSERT(sizeof(PAD_TABLE_ENTRY) == 0xC);
  *
  */
 struct ANALOG_TABLE_ENTRY {
-    int no;   /**< Logical axis number, or -1 to end the table. */
-    int axis; /**< Stick axis read: 1 left X, 2 left Y, 3 right X, 4 right Y. */
+    int no;   /**< Logical axis number, a PadCtrlAnalog, or -1 to end the table. */
+    int axis; /**< Stick axis read, a PadCtrlAxis. */
 };
 
 STATIC_ASSERT(sizeof(ANALOG_TABLE_ENTRY) == 0x8);
@@ -325,7 +376,11 @@ extern int MasterDebugCode;
  */
 extern CGamePad GamePad;
 
-/** Controller instance used by the game's main loop and pause screen. */
+/**
+ *
+ * Controller the main loop, the debug menus and the pause menu read.
+ *
+ */
 extern CGamePad GamePad__2;
 
 /**
@@ -558,7 +613,7 @@ void SetTextureTable(int table_size, int table_count, mgCMemory *memory);
  * @address 0x192190
  * @size 0x10
  */
-void PlayTimeCount(int value);
+void PlayTimeCount(int enable);
 
 /**
  *
@@ -684,13 +739,13 @@ int TimeLimitCheck();
 
 /**
  *
- * Resets the pause menu's message window and state so that it opens afresh.
+ * Resets the pause menu's message window, drawn from a texture block, and state so that it opens afresh.
  *
  * @mangled InitPauseMenu__Fi
  * @address 0x194520
  * @size 0x400
  */
-void InitPauseMenu(int value);
+void InitPauseMenu(int texture_block);
 
 /**
  *

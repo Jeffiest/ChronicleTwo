@@ -20,7 +20,6 @@
  *
  */
 static volatile int vcount;
-static int          VSyncCallBack(int event);
 
 /**
  *
@@ -61,9 +60,9 @@ static void ClearScreen(int r, int g, int b) {
     db.clear0.rgbaq.B = b;
     db.clear1.rgbaq.B = b;
 
-    FlushCache(0);
+    FlushCache(WRITEBACK_DCACHE);
     sceGsSyncV(0);
-    FlushCache(0);
+    FlushCache(WRITEBACK_DCACHE);
     sceGsSyncV(0);
     sceGsSwapDBuff(&db, 0);
     sceGsSyncPath(0, 0);
@@ -80,14 +79,14 @@ static void ClearScreen(int r, int g, int b) {
 static void init() {
     sceDmaReset(1);
     sceGsResetPath();
-    sceGsResetGraph(0, SCE_GS_INTERLACE, SCE_GS_PAL, 0);
+    sceGsResetGraph(0, SCE_GS_INTERLACE, SCE_GS_PAL, SCE_GS_FRAME);
     sceGsSyncVCallback(VSyncCallBack);
     ClearScreen(0, 0, 0);
     mwInit();
 
     sceSifInitRpc(0);
-    sceCdInit(0);
-    sceCdMmode(2);
+    sceCdInit(SCECdINIT);
+    sceCdMmode(SCECdDVD);
 
     while (!sceSifRebootIop("cdrom0:\\MODULES\\IOPRP243.IMG;1")) {
     }
@@ -96,8 +95,8 @@ static void init() {
     }
 
     sceSifInitRpc(0);
-    sceCdInit(0);
-    sceCdMmode(2);
+    sceCdInit(SCECdINIT);
+    sceCdMmode(SCECdDVD);
     sceFsReset();
     printf("######################%d\n", vcount);
 
@@ -146,7 +145,7 @@ int main() {
     sceGsSyncPath(0, 0);
     sceGsSyncVCallback(NULL);
     sceGsSyncV(0);
-    sceCdInit(5);
+    sceCdInit(SCECdEXIT);
     sceSifExitCmd();
     return 0;
 }

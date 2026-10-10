@@ -7,6 +7,12 @@
 
 #include "types.h"
 
+#define SCECdINIT 0x00
+#define SCECdEXIT 0x05
+
+#define SCECdCD  1
+#define SCECdDVD 2
+
 /**
  * Describes a file located through the CD/DVD library.
  */

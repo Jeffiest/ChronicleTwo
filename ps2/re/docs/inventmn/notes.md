@@ -6,13 +6,10 @@ the memory-card album, invention recipes and the menu page class. No first-game 
 
 ## Function status
 
-Every function of the unit is native C++ and exact. There is no guarded draft
-or assembly-only function. `MenuInventKey`,
-`CMenuInvent::CalcTex`, `LoadCharaCheck`,
-`IsCreateObject`, `UpdataNetaMemoStr`, `GradationStep`, `CalcCursorPosition`,
-`CInventUserData::ResetAddress`, `MenuInventInit` and `IsAccessAlbum` are native
-and exact; their required source forms are in "Carried-photo pixel storage" and "Matching-dependent source forms"
-below.
+Every function of the unit is native C++ and exact. The source forms that `MenuInventKey`,
+`CMenuInvent::CalcTex`, `LoadCharaCheck`, `IsCreateObject`, `UpdataNetaMemoStr`, `GradationStep`,
+`CalcCursorPosition`, `CInventUserData::ResetAddress`, `MenuInventInit` and `IsAccessAlbum` depend on are
+in "Carried-photo pixel storage" and "Matching-dependent source forms" below.
 
 `decompile.sh` cannot recover the jump tables in `MenuInventKey` and
 `IsCreateObject` (assembly lines 176 and 861); analysis of those switches uses
@@ -44,26 +41,20 @@ effect allocations retain the guarded `Initialize` calls. The inline menu
 constructor owns the three icon-name literals; entry owns its configuration,
 image-form and initial script literals.
 
-### Remaining data markers
+### Data
 
-- `at_3138`: retail's jump table for the load-stage switch in `IsCreateObject`
-  (nine `IsCreateObject` targets and a trailing zero word).
-- `INCLUDE_BSS` `at_3739` and `at_3765`: the zero templates of the two
-  `ItemNameList2` locals (`names`, `delete_names`) of `IsAskExtend`. Giving each
-  its own case scope changes the function prologue, and value initialization
-  does not reproduce the template copies.
-
-All other data of the unit is native: the thirty-four LOCAL objects, sixteen
-local aggregates with ordinary initializers (recipe flags, message types, grade
-rows and steps, cursor and gift coordinates, item board positions and names,
-blank name, card colour, grid codes and creation/exit arguments), twenty-eight
-initialized tables, the switch tables and the `CMenuInvent` vtable. The cursor
-seed is `{10, 10, 0, 0}`. Shift-JIS text uses explicit byte escapes. `Tb_2819`
-holds seven pointers (entries one and six share one literal) and is followed by
-three alignment bytes before `jp_conv_lentbl_2835`. The 53 `scoop_table` rows
-keep retail's order and ID/index gaps, with scoop 1015 last. The gift
-coordinates in `CalcTex` are `int gift_pos[2] = {0, 0}`, which emits its own
-eight-byte zero template; `GetPosMenuItemOnItemBrd` writes both elements.
+All data of the unit is native: the thirty-four LOCAL objects, sixteen local aggregates with ordinary
+initializers (recipe flags, message types, grade rows and steps, cursor and gift coordinates, item board
+positions and names, blank name, card colour, grid codes and creation/exit arguments), twenty-eight
+initialized tables, the switch tables and the `CMenuInvent` vtable. `at_3739` and `at_3765` are the zero
+templates of the two `ItemNameList2` locals (`names`, `delete_names`) of `IsAskExtend`, kept as file statics:
+giving each its own case scope changes the function prologue, and value initialization does not reproduce
+the template copies. The cursor seed is `{10, 10, 0, 0}`. Shift-JIS text uses explicit byte escapes.
+`Tb_2819` holds seven pointers (entries one and six share one literal) and is followed by three alignment
+bytes before `jp_conv_lentbl_2835`. The 53 (`INVENT_SCOOP_TABLE_NUM`) `scoop_table` rows keep retail's
+order and ID/index gaps, with scoop 1015 last. The gift coordinates in `CalcTex` are
+`int gift_pos[2] = {0, 0}`, which emits its own eight-byte zero template; `GetPosMenuItemOnItemBrd`
+writes both elements.
 
 Header `@size` values are the retail symbol sizes from
 `ps2/config/pal/main.symbols.txt`, excluding padding before the next function
@@ -88,22 +79,13 @@ have a 0x18-byte stride, and hold their byte-oriented image pointer at +0x14.
 The album's existing byte-storage representation and image-pointer ABI remain
 applicable to their transfer and memory-card interfaces.
 
-`ResetAddress` reconnects all thirty metadata records to their corresponding
-pixel rows after initialization, menu entry or sorting. Its explicit
-`char (*)[0x2000]` view converts the 16-bit storage to byte rows before indexing.
-MWCC preserves the retail base calculation after the three zeroed loop
-inductions and repeats it
-before the scalar tail. The eight-way unrolled loop assigns rows 0..23; the
-scalar tail assigns rows 24..29. The routine reads no metadata or pixels and
-writes only the image pointers.
-
-Casting each selected 16-bit row to `char *` instead of converting the array
-before indexing changes register allocation and loses the match. A named
-byte-row pointer keeps the unrolled body but hoists the base calculation across
-the tail. Array and pointer reference forms also fail to recover that repeated
-calculation. The native byte-row view matches all 48 words of the 0xC0-byte
-routine under the committed profile; the complete unit matches 0xFF08 bytes
-and 2,878 resolved relocations. No compiler-profile change is required.
+`ResetAddress` reconnects all thirty metadata records to their corresponding pixel rows after
+initialization, menu entry or sorting. A `char (*)[0x2000]` view converts the 16-bit storage to byte
+rows before indexing; MWCC repeats the base calculation before the scalar tail as retail does. The
+eight-way unrolled loop assigns rows 0..23 and the scalar tail rows 24..29. The photo index is a signed
+`int`: an unsigned index changes the compare opcodes and a short index enlarges the function. Casting
+each selected 16-bit row to `char *` instead of converting the array before indexing changes register
+allocation.
 
 ## Header dependencies
 `inventmn.hpp` includes, for by-value types:
@@ -128,8 +110,8 @@ Every data symbol of the unit is LOCAL in retail (`local_symbols.tsv`), so the h
 - `InventUserDataPtr` CInventUserData*, `InventAlbumPtr` CDC2AlbumData*, `InventManagePt`
   CInventDataManage* (points at `InventManageMan`, a CInventDataManage, 8 bytes),
   `MCManagerPtr` CMemoryCardManager*, `CMenuInventPt` CMenuInvent*.
-- `pict_seiton_case` s8: sort key PictureSeiton uses next (0 neta_id, 1 map_no, 2 npc_no,
-  3 monster_no), cycles 0..3.
+- `pict_seiton_case` s8: sort key PictureSeiton uses next (INVENT_PHOTO_SORT: neta_id, map_no, npc_no,
+  monster_no), cycling through the four.
 - `scoop_table` SCOOP_DATA[53] (.data 0x424). `menu_scoop_str_tag` SPI_TAG_PARAM[2] ("STR"),
   `pic_tag` SPI_TAG_PARAM[3] (PIC_INFO, PIC_NAME), `invent_teigi_func` SPI_TAG_PARAM[3]
   (DATATABLESET, DATASET); each list ends with a null entry.
@@ -164,7 +146,8 @@ MenuInventPushKey. Not in the header. Signatures: SPI tags `int f(SPI_STACK *, i
 `int CheckPhotoFlag()`; `int neta_sort(int,int,int,int*)`;
 `void MakeMsgNetaName(CDC2Mes*, CMenuPosDataForm*, USER_PICTURE_INFO*, int*, int)`;
 `void PictureMemoOne(float,float,int)`; `int MenuInventDebugKey()`; `void MenuInventDebugDraw()`;
-`int MenuInventPushKey(int,int)`.
+`int MenuInventPushKey(int,int)`. They are `static` in the source (MenuInventDebugKey and
+MenuInventDebugDraw through their prototypes).
 
 ## USER_PICTURE_INFO (0x18; stride in every photo array)
 0 s8 used; 1 u8 is_new (PhotoCheckEnd clears; DrawTakePhoto sets 0/1 both to 1);
@@ -213,7 +196,7 @@ records to their pixel rows.
 0 short num; 4 INVENT_DATA_INFO* table. Constructed by hand on the stack in CheckInventItem
 and CheckItemTable (no constructor).
 INVENT_DATA_INFO (0x24, stride in GetInventDataInfoByItemID): 0 item_id (-1 unset), 2 neta[3],
-8 INVENT_MATERIAL*, C material_num ((argc-9)/2), 10 short read from DATASET, 14/18/1C model
+8 INVENT_MATERIAL_LIST materials (material pointer, then num = (argc-9)/2), 10 short read from DATASET (never read), 14/18/1C model
 position (passed to the created model's vfunc 0x14), 20 scale (CMenuInvent 0x5E8).
 DATASET float order: arg -> 0x20, then 0x14, 0x18, 0x1C.
 INVENT_MATERIAL (4): short item_id, u8 num.
@@ -251,9 +234,9 @@ Offsets:
 - 0x53C mgCMemory chara memory (0x558/0x560 written as mgCMemory fields in LoadCharaCheck).
 - 0x574 CActionChara* model of built item, 0x57C = &recipe->material, 0x580 build stage,
   0x582 built item id, 0x5E4..0x5F0 floats of the bob animation (0x5E8 scale).
-- 0x60C neta_select_num, 0x610 int[3] index, 0x61C s8[3] `neta_select_type` (0 photo,
-  1 notebook), 0x61F s8[3] `neta_select_state` (-1/0/1), 0x622 s8[3] `unk_622` (only CalcTex
-  reads it, non-zero flashes the idea in the selection circle; nothing stores non-zero);
+- 0x60C neta_select_num, 0x610 int[3] index, 0x61C s8[3] `neta_select_type` (INVENT_NETA_SOURCE), 0x61F s8[3] `neta_select_state`
+  (INVENT_NETA_SLOT_STATE), 0x622 s8[3] `neta_flash` (only CalcTex reads it: non-zero flashes the idea in
+  the selection circle; nothing stores non-zero);
   0x628 = 40.0.
 - 0x630 MENU_BGREAD_INFO-like pointer (GetReadBGInfo), 0x634 load stage (0,1,2,-1),
   0x638 CActionChara* (built in LoadCharaCheck), 0x63C CActionChara*, 0x648 = -0.628.
@@ -427,7 +410,7 @@ MWCC register-web facts (see docs/MWCC.md "Register allocation"):
   both loops. Its two list tops are `int tops[2] = {card_top, card_top - 1}`, which emits
   the eight-byte zero template before the runtime stores; the form names `msgbrd`, `msgpos`,
   `msg`, `msg3q`, `msg3p` are inline literals and the switch emits its own jump table.
-  Name-line positions use the `SetMovePosGyou` inline.
+  Name-line positions use the `SetMovePosGyou` inline. Its list-row index and card counter are signed `int`s; unsigned or narrower widths enlarge the function.
 - `CalcTex`: the background position and clip range are two-element arrays with
   non-constant initialisers (`int bg_pos[2] = {(int) left_top[0], (int) (left_top[1] -
   480.0f)}`, `float clip[2] = {neta_board_form->y, neta_board_form->y + 6.0f + 270.0f}`);
@@ -458,10 +441,6 @@ MWCC register-web facts (see docs/MWCC.md "Register allocation"):
 ## Unresolved
 - Meaning of most unk_ fields of CMenuInvent.
 - Exact sizes of CInventUserData and CScoopDataManager.
-- LevelCheck / CheckMakeItem / LoadAnalyzeInventFile / GetPhotoNameStr look bool-returning in
-  Ghidra; declared int.
-- `neta_select_type` 0/1 and `neta_select_state` -1/0/1 appear in nine other functions; an
-  enum for them belongs in one change across all of them.
 
 ## Layout modes held in key_arg_no
 
@@ -483,7 +462,7 @@ idea or photo board on left navigation. The remaining values:
   leads to 10.
 - 9 `INVENT_MODE_MEMO_LIST`: the notebook's word list (`memo_cursor`,
   `GetNetaMemoCursorPosition`); moving above the first word leads to 11, and
-  `K_COMMAND_SET_CIRCLE` takes the circled idea from the notebook here.
+  `INVENT_KEY_COMMAND_SET_IDEA` takes the circled idea from the notebook here.
 - 10 `INVENT_MODE_MEMO_ARROW`: the arrow between board and notebook
   (ネタ帳矢印), reached by moving up from the board's top row; up leads to 8,
   down back to the board.
@@ -492,3 +471,20 @@ idea or photo board on left navigation. The remaining values:
 
 Every matched function uses these enumerators in its `key_arg_no` switches,
 comparisons and `NextDifferentMode`/`PrepareNextMode` targets.
+
+## Enums
+
+- `INVENT_TABLE_SIZE`: carried photos (30), album photos (50), scoop table rows (53).
+- `INVENT_NETA_ID`: scoop numbers start at 1000 and end before 10000; 30000 marks the dummy picture name entry.
+- `INVENT_PICTURE_NO`: picture numbers drawn by `PictureDraw`: 0..29 carried photos, 50..99 album photos, 1000 the notebook icon.
+- `INVENT_PHOTO_SORT`: the four PictureSeiton keys.
+- `INVENT_NETA_SOURCE` / `INVENT_NETA_SLOT_STATE`: `neta_select_type` / `neta_select_state` of the idea board slots.
+- `INVENT_CHARA_LOAD_STEP`: `chara_load_step` (-1 off, 0 start, 1 wait, 2 ready).
+- `INVENT_GRADATION`: `gradation_mode` of the invention flash (off, grow, on, colour fade).
+- `INVENT_CREATE_STEP`, `INVENT_CREATE_LOAD`, `INVENT_CREATE_MSG`: `step`, `create_load_state` and the result messages of
+  `IsCreateObject`. `create_success` (0 failure, 1 success) indexes the result model, sound and colour tables.
+- `INVENT_MAKE_STEP`: `step` of `IsMakeObject`.
+- `INVENT_NETA_ENTER_STEP`: `step` of `PhotoNetaEnter` (10 = no new idea, set by MenuInventPushKey).
+- `INVENT_ALBUM_SAVE_MODE`, `INVENT_ALBUM_STEP`, `INVENT_ALBUM_ACCESS`, `INVENT_ALBUM_LOAD_RESULT`: album memory card access
+  (`album_save_mode`, `step` and the `access` / `loaded` locals of `IsAccessAlbum`). State 250 is never entered.
+- `INVENT_KEY_COMMAND`: commands `MenuInventPushKey` derives from the buttons of each page.

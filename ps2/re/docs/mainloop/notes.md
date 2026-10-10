@@ -36,13 +36,7 @@ OmakeFlag, MasterDebugCode, GamePad (`GamePad__2` in main.symbols.txt; the other
 - FontTex: `mgCTexture *FontTex[1]` (GetFontTexture range-checks 0 <= i < 1; ReLoadFontTexture
   stores EnterTexture's result). FontDataAdr: one-element array of pointers to font_buff
   (passed to EnterTexture as `TM2_head *`). font_buff 0xD000 bytes.
-  The typed array declarations and indexed access in `GetFontTexture` and
-  `LoadFontTexture` preserve their PAL objects. `ReLoadFontTexture` still needs
-  its byte-offset induction variable to preserve saved-register allocation;
-  typed indexing changes only that allocation and remains unmatched.
-  Retaining `offset` and indexing both arrays through `offset / 4` scores
-  93.76% at the same 0x108-byte size; changing only either one of the two
-  accesses to `[page]` scores 92.95%. The exact offset form remains in source.
+  `GetFontTexture`, `LoadFontTexture` and `ReLoadFontTexture` index both arrays by page.
 - SelectArg: `int[32]` (0x80); debug-menu row values, row index = loop number for rows 1..8;
   [9] language, [10] item set (index into {0,1,2,6}), [12] cfg number; gcMAP_NO writes [1].
 - `EventSelect::menu_sel` (retail `menu_sel_1452`): `int[11]` row values. at_1529: 64-byte char initializer (cfg name
@@ -124,3 +118,8 @@ analog_table: ANALOG_TABLE_ENTRY {no, axis} rows {0,1},{1,2},{2,3},{3,4},{4,2},{
 - Save data offsets seen: +0x1A00 s64 play time, +0x1A08 progress (2 = forces time 22.0),
   +0x1A10 float time of day, +0x1A14 copied to CScene+0x2F68, +0x1C578 vibration off,
   +0x1C59C.. option values (MonsterName/Map/EnemyHP/AngerCounter).
+
+## Enums
+- `DebugEventRow`: rows of `EventSelect` (0 new game .. 10 extra, 11 rows).
+- `DebugSubGame`: the mini-games of the sub game row (Spheda, Gyorace, fishing).
+- `PauseMenuChoice`: `PauseSel` values (0 quit, 1 continue).
