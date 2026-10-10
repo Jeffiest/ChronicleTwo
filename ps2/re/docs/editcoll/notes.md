@@ -87,3 +87,8 @@ functions themselves.
 - `PickupVerticalPoly`: the plane search reads `this->poly` at a byte offset; `this->poly[j]`
   (in a `for` or a `do`/`while`) exchanges the offset and `cur` registers.
 - Whole `CCPoly` record copies are quadword row copies (`CollisionRow`).
+
+## Source notes
+The 0x50-byte polygon copies in `Copy`, `DeleteVerticalPoly` and `PickupVerticalPoly` go through the
+file-local `CollisionRow` quadword type: retail copies each polygon as five float[4] rows with `lwc1`/`swc1`,
+which a plain `CCPoly` assignment does not produce.

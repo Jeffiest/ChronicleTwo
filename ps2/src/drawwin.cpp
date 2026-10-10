@@ -6,9 +6,6 @@
 #include "mg_drawprim.hpp"
 #include "nd_meswin.hpp"
 
-/**
- * Texture rectangles for each versatile-window frame part.
- */
 s32 data[VWIN_PART_MAX][4] = {
     {208, 25, 23, 25},
     {231, 25, 2,  25},
@@ -51,15 +48,6 @@ s32 data[VWIN_PART_MAX][4] = {
         set2DSprite(prim, screen, texture, color);                                            \
     } while (0)
 
-#define DrawWindowRow(prim, part, win, y, height, color)                                  \
-    do {                                                                                  \
-        DrawWindowPart(prim, part, win.x, y, 0x17, height, color);                        \
-        DrawWindowPart(prim, part + 1, win.x + 0x17, y, win.width - 0x2E, height, color); \
-        DrawWindowPart(prim, part + 2, win.x + win.width - 0x17, y, 0x17, height, color); \
-    } while (0)
-
-#define WindowFillAlpha(alpha, opaque) ((opaque) ? 0x80 : (alpha) * 0x36 / 128)
-
 void CalcSelectCursorPos(RECT rect, int *out) {
     int left = rect.x + 0x17;
     int inner = rect.width - 0x2E;
@@ -77,7 +65,7 @@ void OffsetYesNoWin(RECT *win, RECT *shadow) {
 }
 
 void DrawVersatileWin_yesno(mgCDrawPrim *prim, RECT win, RGBAQ_TYPE *color, int alpha, int opaque) {
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     int inside_width = win.width - 0x2E;
     int inside_x = win.x + 0x17;
     int right_x = win.x + win.width - 0x17;
@@ -88,12 +76,12 @@ void DrawVersatileWin_yesno(mgCDrawPrim *prim, RECT win, RGBAQ_TYPE *color, int 
     int lower_y = win.y + win.height - 0x29;
     int bottom_y = win.y + win.height - 0x19;
     DrawWindowPart(prim, VWIN_TOP_L, win.x, top_y, 0x17, 0x19, color);
-    DrawWindowPart(prim, VWIN_TOP_L + 1, inside_x, top_y, inside_width, 0x19, color);
-    DrawWindowPart(prim, VWIN_TOP_L + 2, right_x, top_y, 0x17, 0x19, color);
+    DrawWindowPart(prim, VWIN_TOP_C, inside_x, top_y, inside_width, 0x19, color);
+    DrawWindowPart(prim, VWIN_TOP_R, right_x, top_y, 0x17, 0x19, color);
     DrawWindowPart(prim, VWIN_SIDE_L, win.x, side_y, 0x17, side_height, color);
     int fill_alpha = 0x80;
 
-    if (opaque == 0) {
+    if (!opaque) {
         fill_alpha = alpha * 0x36 / 128;
     }
 
@@ -101,14 +89,14 @@ void DrawVersatileWin_yesno(mgCDrawPrim *prim, RECT win, RGBAQ_TYPE *color, int 
              0, 0, 0, fill_alpha);
     DrawWindowPart(prim, VWIN_SIDE_R, right_x, side_y, 0x17, side_height, color);
     DrawWindowPart(prim, VWIN_BAND_L, win.x, band_y, 0x17, 0xE, color);
-    DrawWindowPart(prim, VWIN_BAND_L + 1, inside_x, band_y, inside_width, 0xE, color);
-    DrawWindowPart(prim, VWIN_BAND_L + 2, right_x, band_y, 0x17, 0xE, color);
+    DrawWindowPart(prim, VWIN_BAND_C, inside_x, band_y, inside_width, 0xE, color);
+    DrawWindowPart(prim, VWIN_BAND_R, right_x, band_y, 0x17, 0xE, color);
     DrawWindowPart(prim, VWIN_LOWER_SIDE_L, win.x, lower_y, 0x17, 0x10, color);
-    DrawWindowPart(prim, VWIN_LOWER_SIDE_L + 1, inside_x, lower_y, inside_width, 0x10, color);
-    DrawWindowPart(prim, VWIN_LOWER_SIDE_L + 2, right_x, lower_y, 0x17, 0x10, color);
+    DrawWindowPart(prim, VWIN_LOWER_SIDE_C, inside_x, lower_y, inside_width, 0x10, color);
+    DrawWindowPart(prim, VWIN_LOWER_SIDE_R, right_x, lower_y, 0x17, 0x10, color);
     DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L, win.x, bottom_y, 0x17, 0x19, color);
-    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L + 1, inside_x, bottom_y, inside_width, 0x19, color);
-    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L + 2, right_x, bottom_y, 0x17, 0x19, color);
+    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_C, inside_x, bottom_y, inside_width, 0x19, color);
+    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_R, right_x, bottom_y, 0x17, 0x19, color);
 }
 
 void MyMenuHelpWinDraw(mgCDrawPrim *prim, RECT rect, int alpha) {
@@ -190,7 +178,7 @@ void MyMenuFloatingWinDraw(mgCDrawPrim *prim, RECT win, int point_x, int point_y
     right_x = right_edge - 7;
     bottom_y = bottom_edge - 9;
     side_y = win.y + 9;
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     DrawWindowTile(prim, win.x, top_y, 7, 9, 0xa0, 0x0, 0x7, 0x9, fill_color);
     DrawWindowTile(prim, inside_x, top_y, inside_width, 9, 0xa7, 0x0, 0x22, 0x9, fill_color);
     DrawWindowTile(prim, right_x, top_y, 7, 9, 0xc9, 0x0, 0x7, 0x9, fill_color);
@@ -208,7 +196,7 @@ void MyMenuFloatingWinDraw(mgCDrawPrim *prim, RECT win, int point_x, int point_y
     DrawWindowTile(prim, win.x, bottom_y, 7, 9, 0x70, 0x27, 0x7, 0x9, frame_color);
     DrawWindowTile(prim, inside_x, bottom_y, inside_width, 9, 0x77, 0x27, 0x22, 0x9, frame_color);
     DrawWindowTile(prim, right_x, bottom_y, 7, 9, 0x99, 0x27, 0x7, 0x9, frame_color);
-    MySetPrim(prim, 4, 0);
+    MySetPrim(prim, MES_PRIM_SHADED_2, 0);
 
     if (point_x < win.x) {
         DrawWindowTile(prim, win.x - 13, point_y - 10, 0x15, 0x15, 0xA6, 0x45, 0x15, 0x15, fill_color);
@@ -242,43 +230,43 @@ void DrawVersatileWin_1(mgCDrawPrim *prim, RECT rect, RGBAQ_TYPE *color, int alp
     mgRect<int> texture6;
     mgRect<int> screen7;
     mgRect<int> texture7;
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     int left = rect.x + 0x17;
     int right = rect.x + rect.width - 0x17;
     int inner_width = rect.width - 0x2E;
     int top = rect.y + 0x19;
     int inner_height = rect.height - 0x32;
     int bottom = rect.y + rect.height - 0x19;
-    texture0.Set(data[0][0], data[0][1], data[0][2], data[0][3]);
+    texture0.Set(data[VWIN_TOP_L][0], data[VWIN_TOP_L][1], data[VWIN_TOP_L][2], data[VWIN_TOP_L][3]);
     screen0.Set(rect.x, rect.y, 0x17, 0x19);
     set2DSprite(prim, screen0, texture0, color);
-    texture1.Set(data[1][0], data[1][1], data[1][2], data[1][3]);
+    texture1.Set(data[VWIN_TOP_C][0], data[VWIN_TOP_C][1], data[VWIN_TOP_C][2], data[VWIN_TOP_C][3]);
     screen1.Set(left, rect.y, inner_width, 0x19);
     set2DSprite(prim, screen1, texture1, color);
-    texture2.Set(data[2][0], data[2][1], data[2][2], data[2][3]);
+    texture2.Set(data[VWIN_TOP_R][0], data[VWIN_TOP_R][1], data[VWIN_TOP_R][2], data[VWIN_TOP_R][3]);
     screen2.Set(right, rect.y, 0x17, 0x19);
     set2DSprite(prim, screen2, texture2, color);
-    texture3.Set(data[3][0], data[3][1], data[3][2], data[3][3]);
+    texture3.Set(data[VWIN_SIDE_L][0], data[VWIN_SIDE_L][1], data[VWIN_SIDE_L][2], data[VWIN_SIDE_L][3]);
     screen3.Set(rect.x, top, 0x17, inner_height);
     set2DSprite(prim, screen3, texture3, color);
     int fill_alpha = 0x80;
 
-    if (opaque == 0) {
+    if (!opaque) {
         fill_alpha = alpha * 0x36 / 128;
     }
 
     FillRect(left - 10, top - 9, inner_width + 0x16, inner_height + 0x18, 0, 0, 0,
              fill_alpha);
-    texture4.Set(data[5][0], data[5][1], data[5][2], data[5][3]);
+    texture4.Set(data[VWIN_SIDE_R][0], data[VWIN_SIDE_R][1], data[VWIN_SIDE_R][2], data[VWIN_SIDE_R][3]);
     screen4.Set(right, top, 0x17, inner_height);
     set2DSprite(prim, screen4, texture4, color);
-    texture5.Set(data[15][0], data[15][1], data[15][2], data[15][3]);
+    texture5.Set(data[VWIN_BOTTOM_L][0], data[VWIN_BOTTOM_L][1], data[VWIN_BOTTOM_L][2], data[VWIN_BOTTOM_L][3]);
     screen5.Set(rect.x, bottom, 0x17, 0x19);
     set2DSprite(prim, screen5, texture5, color);
-    texture6.Set(data[16][0], data[16][1], data[16][2], data[16][3]);
+    texture6.Set(data[VWIN_BOTTOM_C][0], data[VWIN_BOTTOM_C][1], data[VWIN_BOTTOM_C][2], data[VWIN_BOTTOM_C][3]);
     screen6.Set(left, bottom, inner_width, 0x19);
     set2DSprite(prim, screen6, texture6, color);
-    texture7.Set(data[17][0], data[17][1], data[17][2], data[17][3]);
+    texture7.Set(data[VWIN_BOTTOM_R][0], data[VWIN_BOTTOM_R][1], data[VWIN_BOTTOM_R][2], data[VWIN_BOTTOM_R][3]);
     screen7.Set(right, bottom, 0x17, 0x19);
     set2DSprite(prim, screen7, texture7, color);
 }
@@ -288,7 +276,7 @@ void DrawVersatileWin_1(mgCDrawPrim *prim, RECT win, RGBAQ_TYPE *color, int alph
 }
 
 void DrawVersatileWin_3(mgCDrawPrim *prim, RECT win, int select_y, RGBAQ_TYPE *color, int alpha, int opaque) {
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     int band_top = select_y - 7;
     int band_bottom = select_y + 7;
     int inside_x = win.x + 0x17;
@@ -300,12 +288,12 @@ void DrawVersatileWin_3(mgCDrawPrim *prim, RECT win, int select_y, RGBAQ_TYPE *c
     int side_height = band_top - (win.height + 0x19);
     int lower_height = bottom_y - band_bottom;
     DrawWindowPart(prim, VWIN_TOP_L, win.x, top_y, 0x17, 0x19, color);
-    DrawWindowPart(prim, VWIN_TOP_L + 1, inside_x, top_y, inside_width, 0x19, color);
-    DrawWindowPart(prim, VWIN_TOP_L + 2, right_x, top_y, 0x17, 0x19, color);
+    DrawWindowPart(prim, VWIN_TOP_C, inside_x, top_y, inside_width, 0x19, color);
+    DrawWindowPart(prim, VWIN_TOP_R, right_x, top_y, 0x17, 0x19, color);
     DrawWindowPart(prim, VWIN_SIDE_L, win.x, side_y, 0x17, side_height, color);
     int fill_alpha = 0x80;
 
-    if (opaque == 0) {
+    if (!opaque) {
         fill_alpha = alpha * 0x36 / 128;
     }
 
@@ -313,14 +301,14 @@ void DrawVersatileWin_3(mgCDrawPrim *prim, RECT win, int select_y, RGBAQ_TYPE *c
              0, 0, 0, fill_alpha);
     DrawWindowPart(prim, VWIN_SIDE_R, right_x, side_y, 0x17, side_height, color);
     DrawWindowPart(prim, VWIN_BAND_L, win.x, band_top, 0x17, 0xE, color);
-    DrawWindowPart(prim, VWIN_BAND_L + 1, inside_x, band_top, inside_width, 0xE, color);
-    DrawWindowPart(prim, VWIN_BAND_L + 2, right_x, band_top, 0x17, 0xE, color);
+    DrawWindowPart(prim, VWIN_BAND_C, inside_x, band_top, inside_width, 0xE, color);
+    DrawWindowPart(prim, VWIN_BAND_R, right_x, band_top, 0x17, 0xE, color);
     DrawWindowPart(prim, VWIN_LOWER_SIDE_L, win.x, band_bottom, 0x17, lower_height, color);
-    DrawWindowPart(prim, VWIN_LOWER_SIDE_L + 1, inside_x, band_bottom, inside_width, lower_height, color);
-    DrawWindowPart(prim, VWIN_LOWER_SIDE_L + 2, right_x, band_bottom, 0x17, lower_height, color);
+    DrawWindowPart(prim, VWIN_LOWER_SIDE_C, inside_x, band_bottom, inside_width, lower_height, color);
+    DrawWindowPart(prim, VWIN_LOWER_SIDE_R, right_x, band_bottom, 0x17, lower_height, color);
     DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L, win.x, bottom_y, 0x17, 0x19, color);
-    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L + 1, inside_x, bottom_y, inside_width, 0x19, color);
-    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_L + 2, right_x, bottom_y, 0x17, 0x19, color);
+    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_C, inside_x, bottom_y, inside_width, 0x19, color);
+    DrawWindowPart(prim, VWIN_LOWER_BOTTOM_R, right_x, bottom_y, 0x17, 0x19, color);
 }
 
 void DrawVersatileWin_4(mgCDrawPrim *prim, RECT rect, RGBAQ_TYPE *color, int alpha, int opaque) {
@@ -340,43 +328,43 @@ void DrawVersatileWin_4(mgCDrawPrim *prim, RECT rect, RGBAQ_TYPE *color, int alp
     mgRect<int> texture6;
     mgRect<int> screen7;
     mgRect<int> texture7;
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     int left = rect.x + 0x17;
     int right = rect.x + rect.width - 0x17;
     int inner_width = rect.width - 0x2E;
     int top = rect.y + 0x19;
     int inner_height = rect.height - 0x32;
     int bottom = rect.y + rect.height - 0x19;
-    texture0.Set(data[0x12][0], data[0x12][1], data[0x12][2], data[0x12][3]);
+    texture0.Set(data[VWIN_TOP4_L][0], data[VWIN_TOP4_L][1], data[VWIN_TOP4_L][2], data[VWIN_TOP4_L][3]);
     screen0.Set(rect.x, rect.y, 0x17, 0x19);
     set2DSprite(prim, screen0, texture0, color);
-    texture1.Set(data[0x13][0], data[0x13][1], data[0x13][2], data[0x13][3]);
+    texture1.Set(data[VWIN_TOP4_C][0], data[VWIN_TOP4_C][1], data[VWIN_TOP4_C][2], data[VWIN_TOP4_C][3]);
     screen1.Set(left, rect.y, inner_width, 0x19);
     set2DSprite(prim, screen1, texture1, color);
-    texture2.Set(data[0x14][0], data[0x14][1], data[0x14][2], data[0x14][3]);
+    texture2.Set(data[VWIN_TOP4_R][0], data[VWIN_TOP4_R][1], data[VWIN_TOP4_R][2], data[VWIN_TOP4_R][3]);
     screen2.Set(right, rect.y, 0x17, 0x19);
     set2DSprite(prim, screen2, texture2, color);
-    texture3.Set(data[3][0], data[3][1], data[3][2], data[3][3]);
+    texture3.Set(data[VWIN_SIDE_L][0], data[VWIN_SIDE_L][1], data[VWIN_SIDE_L][2], data[VWIN_SIDE_L][3]);
     screen3.Set(rect.x, top, 0x17, inner_height);
     set2DSprite(prim, screen3, texture3, color);
     int fill_alpha = 0x80;
 
-    if (opaque == 0) {
+    if (!opaque) {
         fill_alpha = alpha * 0x36 / 128;
     }
 
     FillRect(left - 10, top - 0xD, inner_width + 0x16, inner_height + 0x1C, 0, 0, 0,
              fill_alpha);
-    texture4.Set(data[5][0], data[5][1], data[5][2], data[5][3]);
+    texture4.Set(data[VWIN_SIDE_R][0], data[VWIN_SIDE_R][1], data[VWIN_SIDE_R][2], data[VWIN_SIDE_R][3]);
     screen4.Set(right, top, 0x17, inner_height);
     set2DSprite(prim, screen4, texture4, color);
-    texture5.Set(data[15][0], data[15][1], data[15][2], data[15][3]);
+    texture5.Set(data[VWIN_BOTTOM_L][0], data[VWIN_BOTTOM_L][1], data[VWIN_BOTTOM_L][2], data[VWIN_BOTTOM_L][3]);
     screen5.Set(rect.x, bottom, 0x17, 0x19);
     set2DSprite(prim, screen5, texture5, color);
-    texture6.Set(data[16][0], data[16][1], data[16][2], data[16][3]);
+    texture6.Set(data[VWIN_BOTTOM_C][0], data[VWIN_BOTTOM_C][1], data[VWIN_BOTTOM_C][2], data[VWIN_BOTTOM_C][3]);
     screen6.Set(left, bottom, inner_width, 0x19);
     set2DSprite(prim, screen6, texture6, color);
-    texture7.Set(data[17][0], data[17][1], data[17][2], data[17][3]);
+    texture7.Set(data[VWIN_BOTTOM_R][0], data[VWIN_BOTTOM_R][1], data[VWIN_BOTTOM_R][2], data[VWIN_BOTTOM_R][3]);
     screen7.Set(right, bottom, 0x17, 0x19);
     set2DSprite(prim, screen7, texture7, color);
 }
@@ -393,7 +381,7 @@ void DrawDQFukidashi(mgCDrawPrim *prim, RECT win, int tail_x, int tail_y,
     int side_y = win.y + 0x10;
     int bottom_y = win.y + win.height - 0x10;
     int side_height = win.height - 0x20;
-    MySetPrim(prim, 1, 0);
+    MySetPrim(prim, MES_PRIM_SPRITE, 0);
     DrawWindowTile(prim, win.x, win.y, 0x10, 0x10, 0, 0xD0, 0x10, 0x10, color);
 
     if (tail_on) {
