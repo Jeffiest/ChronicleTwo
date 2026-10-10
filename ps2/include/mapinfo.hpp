@@ -17,6 +17,22 @@
 
 /**
  *
+ * Capacities of a map's configuration tables.
+ *
+ */
+// clang-format off
+enum {
+    CAMERA_INFO_POS_MAX   = 8,  /**< Positions one fixed-camera area holds. */
+    CAMERA_INFO_RECT_MAX  = 4,  /**< Collision shapes one fixed-camera area holds. */
+    CAMERA_INFO_DRAW_MAX  = 4,  /**< Part groups one fixed-camera area switches. */
+    MAP_INFO_PACK_MAX     = 16, /**< Texture packs, and model packs, one map names. */
+    MAP_INFO_LIGHTING_MAX = 16, /**< Lighting sets one map holds. */
+};
+
+// clang-format on
+
+/**
+ *
  * Describes one fixed-camera area of a map: the camera positions it
  * offers, the collision shapes that mark where it applies, and the
  * map part groups shown while it is in use.
@@ -25,11 +41,11 @@
 class CCameraInfo {
 public:
     int             pos_num;       /**< Number of entries of pos in use. */
-    sceVu0FVECTOR   pos[8];        /**< World positions of the fixed camera. */
-    int             rect_num;      /**< Number of entries of rect. */
-    CColFrame      *rect[4];       /**< Collision shapes marking the area where the camera applies. */
-    int             draw_info_num; /**< Number of entries of draw_info. */
-    CCameraDrawInfo draw_info[4];  /**< Map part groups switched on while the camera is in use. */
+    sceVu0FVECTOR   pos[CAMERA_INFO_POS_MAX];   /**< World positions of the fixed camera. */
+    int             rect_num;                   /**< Number of entries of rect. */
+    CColFrame      *rect[CAMERA_INFO_RECT_MAX]; /**< Collision shapes marking the area where the camera applies. */
+    int             draw_info_num;              /**< Number of entries of draw_info. */
+    CCameraDrawInfo draw_info[CAMERA_INFO_DRAW_MAX]; /**< Map part groups switched on while the camera is in use. */
 
     /**
      *
@@ -74,9 +90,9 @@ STATIC_ASSERT(sizeof(CCameraInfo) == 0xD0);
 class CMapInfo {
 public:
     int               img_num;           /**< Capacity of img_name. */
-    char             *img_name[16];      /**< Names of the texture packs of the map, null after the last. */
-    int               pcp_num;           /**< Capacity of pcp_name. */
-    char             *pcp_name[16];      /**< Names of the model packs of the map, null after the last. */
+    char             *img_name[MAP_INFO_PACK_MAX]; /**< Names of the texture packs of the map, null after the last. */
+    int               pcp_num;                    /**< Capacity of pcp_name. */
+    char             *pcp_name[MAP_INFO_PACK_MAX]; /**< Names of the model packs of the map, null after the last. */
     char             *map_file;          /**< Copy of the map's configuration script. */
     int               map_file_size;     /**< Size of map_file, in bytes. */
     char             *add_map_file;      /**< Copy of the map's additional configuration script. */
@@ -103,6 +119,11 @@ public:
     float             chara_light_adjust_value[3]; /**< Remaining values of the CHARA_LIGHT_ADJUST tag. */
     int               unk_fc;
 
+    /**
+     *
+     * Makes map settings with the script defaults.
+     *
+     */
     CMapInfo() { Initialize(); }
 
     /**

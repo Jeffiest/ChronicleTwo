@@ -37,6 +37,7 @@ enum {
     MAP_PARTS_GROUP_MAX = 32, /**< Parts groups a map holds. */
     MAP_DRAW_RECT_MAX = 16,   /**< Draw-off areas a map holds. */
     MAP_OCCLUSION_MAX = 8,    /**< Occlusion planes a map holds. */
+    MAP_WATER_PARTS_MAX = 16, /**< Placed parts one water surface can be drawn at. */
 };
 
 /**
