@@ -66,9 +66,9 @@ static inline u_int align16_blocks(u_int size) {
 }
 
 inline CMenuChrCngMenu::CMenuChrCngMenu() {
-    change_phase = (int) CHR_CNG_PHASE_NONE;
+    change_phase = CHR_CNG_PHASE_NONE;
     change_chara = -1;
-    change_ready = 0;
+    change_ready = false;
     MenuCharaChangePosDataCfgBuffer = NULL;
     unk_118 = 0;
     select = 0;
@@ -79,8 +79,8 @@ inline CMenuChrCngMenu::CMenuChrCngMenu() {
     item_brd_select = 0;
     item_brd_pos = 0;
     open_wait = -1;
-    set_cursor = 1;
-    cursor_wave = 0;
+    set_cursor = true;
+    cursor_wave = 0.0f;
     form = NULL;
     npc_sub_form2 = NULL;
     npc_chara_form = NULL;
@@ -101,35 +101,35 @@ inline CMenuChrCngMenu::CMenuChrCngMenu() {
     cmd_part[2] = NULL;
     cmd_part[3] = NULL;
     point_gauge_part = NULL;
-    set_cursor = 0;
+    set_cursor = false;
     gauge_part[0] = NULL;
     gauge_part[1] = NULL;
     gauge_part[2] = NULL;
     gauge[0] = NULL;
     gauge[1] = NULL;
     gauge[2] = NULL;
-    item_brd_arrived = 0;
-    party_info = 0;
-    npc_data = 0;
-    mes_data = 0;
+    item_brd_arrived = false;
+    party_info = NULL;
+    npc_data = NULL;
+    mes_data = NULL;
     sys_mes = NULL;
     npc_no = 0;
-    sub_menu = -1;
-    sub_menu_next = -1;
+    sub_menu = CHR_CNG_SUB_MENU_NONE;
+    sub_menu_next = CHR_CNG_SUB_MENU_NONE;
     face_state = -1;
     face_chara = -1;
     face_loaded = 0;
     face_img = NULL;
     npc_chara = NULL;
-    npc_loading = 0;
-    npc_loaded = 0;
+    npc_loading = false;
+    npc_loaded = false;
     npc_wait = 0;
-    npc_show = 0;
-    npc_y = 0;
+    npc_show = false;
+    npc_y = 0.0f;
     InitStarInfo();
-    key_arg_no = 0;
-    close_on_end = 0;
-    got_item = 0;
+    key_arg_no = CHR_CNG_PAGE_SELECT;
+    close_on_end = false;
+    got_item = false;
     gift_item = 0;
     gift_num = 0;
     memset(clut_storage, 0, sizeof(clut_storage));
@@ -752,18 +752,18 @@ static const u16 menu_chr_memorytbl[MENU_CHARA_LOAD_MAX] = {
     0x1B80, 0x9AC0, 0x1C84, 0x11C0, 0x0BC0, 0x26C0, 0x0708};
 
 void InitMenuBGReadInfo2(MENU_BGREAD_INFO2 *info) {
-    info->reading = 0;
+    info->reading = false;
     info->chara = NULL;
     info->name[0] = 0;
     info->path[0] = 0;
 }
 
 int MenuLoadFileCheck(MENU_BGREAD_INFO2 **slots) {
-    int found = 0;
+    int found = false;
 
-    for (int i = 0; i < 7; i++) {
-        if (slots[i] != NULL && slots[i]->reading != 0) {
-            found = 1;
+    for (int i = 0; i < MENU_CHARA_LOAD_MAX; i++) {
+        if (slots[i] != NULL && slots[i]->reading) {
+            found = true;
         }
     }
 
@@ -771,7 +771,7 @@ int MenuLoadFileCheck(MENU_BGREAD_INFO2 **slots) {
 }
 
 void MenuBGReadInfo2Malloc(mgCMemory *memory, int *wanted) {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < MENU_CHARA_LOAD_MAX; i++) {
         if (wanted[i] != 0) {
             MenuCharaBuild2[i] = (MENU_BGREAD_INFO2 *) memory->Alloc(8);
             InitMenuBGReadInfo2(MenuCharaBuild2[i]);
@@ -794,16 +794,17 @@ short ConvertCharaLoadDataPhase(int a0, int a1) {
 
 int CheckBattleLoop() {
     if (MenuCommonInfo == NULL) {
-        return 1;
+        return true;
     }
 
     short menu_type = MenuCommonInfo->open_type;
 
-    if (menu_type == 1 || menu_type == 17 || menu_type == 14 || menu_type == 21) {
-        return 1;
+    if (menu_type == MENU_OPEN_MAIN_DUNGEON || menu_type == MENU_OPEN_MAIN_DUNGEON_ITEM_OVER ||
+        menu_type == MENU_OPEN_CHARA_CHANGE_DUNGEON || menu_type == MENU_OPEN_MAIN_CHARA_BG_DUNGEON) {
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 void SetMenuLoadItemNo(int who) {
@@ -815,8 +816,8 @@ void SetMenuLoadItemNo(int who) {
     }
 
     switch (who) {
-        case 0:
-        case 1: {
+        case USER_CHARA_MAX:
+        case USER_CHARA_MONICA: {
             CHARA_DATA *chara = user_data->GetCharaDataPtr(who);
 
             do {
@@ -826,7 +827,7 @@ void SetMenuLoadItemNo(int who) {
 
             break;
         }
-        case 2: {
+        case USER_CHARA_ROBO: {
             ROBO_DATA &robo = user_data->robo_data;
             MenuLoadItemNo[0] = robo.parts[3].item_no;
             MenuLoadItemNo[1] = robo.parts[0].item_no;
@@ -838,7 +839,7 @@ void SetMenuLoadItemNo(int who) {
         }
     }
 
-    while (count < 12) {
+    while (count < MENU_LOAD_ITEM_MAX) {
         MenuLoadItemNo[count] = 0;
         count++;
     }
@@ -894,21 +895,19 @@ static int MenuMemoryDivide(mgCMemory *memory, mgCMemory **list, int chara) {
 
 void MenuMemoryAdjust(mgCMemory *pool, mgCMemory *rest, mgCMemory *buffers, int chara) {
     int        free_blocks = pool->stack_size - pool->stack_used;
-    mgCMemory *list[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-    list[0] = buffers;
-    list[1] = buffers + 1;
-    list[2] = buffers + 2;
-    list[3] = buffers + 3;
-    list[4] = buffers + 4;
-    list[5] = buffers + 5;
-    list[6] = buffers + 6;
+    mgCMemory *list[MENU_CHARA_LOAD_MAX] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    list[0] = &buffers[0];
+    list[1] = &buffers[1];
+    list[2] = &buffers[2];
+    list[3] = &buffers[3];
+    list[4] = &buffers[4];
+    list[5] = &buffers[5];
+    list[6] = &buffers[6];
     int used = MenuMemoryDivide(pool, list, chara);
     rest->stSetBuffer(buffers->stack + buffers->stack_used + used,
                       free_blocks - used);
 
-    if (strlen("LOAD STACK") < 16) {
-        strcpy(rest->name, "LOAD STACK");
-    }
+    SetMemoryName(rest, "LOAD STACK");
 
     rest->stack_used = 0;
     rest->lock = 0;
@@ -921,7 +920,7 @@ void DeleteMonsterEffect() {
         FxScriptMan->ClearBaseFromLevel(2, NULL, -1);
     }
 
-    mgTexManager.DeleteBlock(0xAA);
+    mgTexManager.DeleteBlock(MONSTER_EFFECT_TEX_BLOCK);
 }
 
 void SetMessagePositionNPCForm(CMenuPosDataForm *form, CDC2Mes *mes) {
@@ -945,19 +944,17 @@ void SetMessagePositionNPCForm(CMenuPosDataForm *form, CDC2Mes *mes) {
 }
 
 void AdjustNPCTalk(CDC2Mes *mes, CCharacter2 *npc) {
-    ClsMes *bubble = (ClsMes *) mes;
-
-    if (bubble == NULL || npc == NULL) {
+    if (mes == NULL || npc == NULL) {
         return;
     }
 
     int screen_pos[4];
-    bubble->fukidashi_pos = 5;
-    bubble->tail_on = 1;
+    mes->fukidashi_pos = 5;
+    mes->tail_on = 1;
     GetScrPosFromChar(npc, screen_pos);
     screen_pos[2] = 0;
     screen_pos[3] = 0xBE;
-    bubble->AutoSet(screen_pos);
+    mes->AutoSet(screen_pos);
 }
 
 void CMenuChrCngMenu::AttachForm() {
@@ -965,7 +962,7 @@ void CMenuChrCngMenu::AttachForm() {
     int  i;
     int  j;
 
-    form = (CMenuPosDataForm *) MenuPosData->GetFormInfo("chr_bg");
+    form = MenuPosData->GetFormInfo("chr_bg");
 
     if (form != NULL) {
         gauge_part[0] = form->GetPartInfo("hpfill0");
@@ -973,20 +970,20 @@ void CMenuChrCngMenu::AttachForm() {
         gauge_part[2] = form->GetPartInfo("hpfill2");
     }
 
-    (&npc_mes_form)[0] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin");
-    (&npc_mes_form)[1] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin_bg");
-    (&npc_mes_form)[2] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polychr");
-    (&npc_mes_form)[3] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin_chrhide");
-    (&npc_mes_form)[2]->SetActionCharaPtr(NULL, 0, -1);
+    npc_mes_form = MenuPosData->GetFormInfo("polywin");
+    npc_sub_form = MenuPosData->GetFormInfo("polywin_bg");
+    npc_chara_form = MenuPosData->GetFormInfo("polychr");
+    npc_sub_form2 = MenuPosData->GetFormInfo("polywin_chrhide");
+    npc_chara_form->SetActionCharaPtr(NULL, 0, -1);
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < CHR_CNG_SELECT_NPC + 1; i++) {
         sprintf(name, "namep%d", i);
         chara_pos[i] = MenuPosData->GetEtcTbl(name);
     }
 
     point_gauge_part = form->GetPartInfo("stbar");
 
-    for (j = 0; j < 4; j++) {
+    for (j = 0; j < CHR_CNG_NPC_COMMAND_NUM; j++) {
         sprintf(name, "cmd%d", j);
         cmd_part[j] = form->GetPartInfo(name);
     }
@@ -1095,7 +1092,7 @@ void CMenuChrCngMenu::EnterDataMenu(u_char *pack) {
     MenuCommandAnalyzeInfo.mes_buff[0] = sys_mes;
     MenuCommandAnalyzeInfo.mes_buff[1] = mes_data;
 
-    if (key_arg_no == 2) {
+    if (key_arg_no == CHR_CNG_PAGE_NPC_JOIN) {
         MenuDCMsg[0]->SetBuff(mes_data);
     }
 
@@ -1154,32 +1151,32 @@ void CMenuChrCngMenu::LoadNPCFaceData(mgCMemory *memory, int mode) {
     face_chara = MenuUserDataManPtr->NowPartyCharaID();
 
     if (face_chara < 0) {
-        face_loaded = 1;
+        face_loaded = MENU_FILE_LOAD_DIRECT;
         face_state = -1;
     } else {
         face_state = 0;
 
         if (face_chara <= 0) {
-            face_chara = 1;
+            face_chara = PARTY_NPC_CEDRIC;
         }
 
-        if (face_chara > 26) {
-            face_chara = 26;
+        if (face_chara > PARTY_NPC_LIN) {
+            face_chara = PARTY_NPC_LIN;
         }
 
         sprintf(path, "npcface/%d.img", face_chara);
         memory->Align64();
         face_img = reinterpret_cast<u8 *>(memory->stGetTop());
         size = LoadFileMenu(path, (u_long128 *) face_img, mode);
-        memory->Alloc((size & 0xF) ? (size >> 4) + 1 : size >> 4);
+        memory->Alloc(blocks_for(size));
     }
 }
 
 void CMenuChrCngMenu::EnterNPCFaceData() {
     signed char load_state;
 
-    if ((face_state == 0) && ((load_state = face_loaded, (load_state == 1)) ||
-                              ((load_state == 0) && (ReadBGSync() == 0)))) {
+    if ((face_state == 0) && ((load_state = face_loaded, (load_state == MENU_FILE_LOAD_DIRECT)) ||
+                              ((load_state == MENU_FILE_LOAD_BG) && (ReadBGSync() == 0)))) {
         mgTexManager.EnterIMGFile(face_img, tex_block[0], NULL, NULL);
         face_state = 1;
         ExeScript("NPCFACEEND");
@@ -1196,10 +1193,10 @@ int CMenuChrCngMenu::LoadBGNPCModel(int restart_read) {
     stack->Alloc(0xCD00);
     int rest = stack->stGetRest();
     npc_model_stack.stSetBuffer(stack->stGetTop(), rest);
-    npc_loading = 0;
-    npc_loaded = 0;
+    npc_loading = false;
+    npc_loaded = false;
     npc_wait = 0;
-    npc_show = 0;
+    npc_show = false;
 
     if (restart_read) {
         BreakReadBG();
@@ -1210,7 +1207,7 @@ int CMenuChrCngMenu::LoadBGNPCModel(int restart_read) {
     npc_y = 0.0f;
 
     if (size > 0) {
-        npc_loading = 1;
+        npc_loading = true;
     } else {
         npc_chara = NULL;
     }
@@ -1232,7 +1229,7 @@ int CMenuChrCngMenu::CheckBGNPCModel() {
         return 0;
     }
 
-    if (key_arg_no == 3) {
+    if (key_arg_no == CHR_CNG_PAGE_NPC) {
         npc_y = npc_y + ((-2.8f - npc_y) / 6.0f);
     } else {
         npc_y = npc_y + ((-16.6f - npc_y) / 6.0f);
@@ -1242,55 +1239,55 @@ int CMenuChrCngMenu::CheckBGNPCModel() {
     position[1] = npc_y;
 
     if (load_result == 1) {
-        npc_loaded = 1;
+        npc_loaded = true;
         npc_wait = 0;
-        ((CCharacter2 *) npc_chara)->SetRotation(0.0f, -0.07853982f, 0.0f);
-        (&npc_mes_form)[2]->counter = 0;
+        npc_chara->SetRotation(0.0f, -0.07853982f, 0.0f);
+        npc_chara_form->counter = 0;
     }
 
-    if (npc_loaded != 0) {
-        ((CCharacter2 *) npc_chara)->SetScale(1.0f, 1.0f, 1.0f);
+    if (npc_loaded) {
+        npc_chara->SetScale(1.0f, 1.0f, 1.0f);
 
-        if (npc_no == 9) {
-            MenuAdjustPolygonScale((CCharacter2 *) npc_chara, 5.655f);
+        if (npc_no == PARTY_NPC_PAU) {
+            MenuAdjustPolygonScale(npc_chara, 5.655f);
         } else {
-            MenuAdjustPolygonScale((CCharacter2 *) npc_chara, 6.96f);
+            MenuAdjustPolygonScale(npc_chara, 6.96f);
         }
 
-        ((CCharacter2 *) npc_chara)->SetPosition(position);
-        ((CCharacter2 *) npc_chara)->Step();
+        npc_chara->SetPosition(position);
+        npc_chara->Step();
 
-        if ((&npc_mes_form)[2]->counter >= 0xF && (&npc_mes_form)[1]->y < 60.0f) {
+        if (npc_chara_form->counter >= 0xF && npc_sub_form->y < 60.0f) {
             ExeScript("CHRFADEIN");
         }
 
         if (npc_wait < 0x15) {
             npc_wait = npc_wait + 1;
         } else {
-            npc_show = 1;
+            npc_show = true;
         }
 
-        if (npc_show != 0) {
-            (&npc_mes_form)[2]->SetActionCharaPtr(npc_chara, tex_block[1], -1);
+        if (npc_show) {
+            npc_chara_form->SetActionCharaPtr(npc_chara, tex_block[1], -1);
         }
 
-        if (key_arg_no != 3) {
-            npc_show = 0;
+        if (key_arg_no != CHR_CNG_PAGE_NPC) {
+            npc_show = false;
         }
 
         if (-166.0f < form->y) {
-            npc_show = 0;
+            npc_show = false;
         }
 
-        if (select != 4) {
-            npc_show = 0;
+        if (select != CHR_CNG_SELECT_NPC) {
+            npc_show = false;
         }
 
-        if (36.0f < (&npc_mes_form)[2]->y) {
-            npc_show = 0;
+        if (36.0f < npc_chara_form->y) {
+            npc_show = false;
         }
 
-        (&npc_mes_form)[2]->draw_flag = npc_show != 0;
+        npc_chara_form->draw_flag = npc_show != 0;
     }
 
     return load_result;
