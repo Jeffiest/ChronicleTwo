@@ -2,13 +2,18 @@
 
 #include "common.h"
 
-#define PAD_ANALOG_CENTER 0x80
-
 /**
  * @file
  * Declares the game controller manager, which reads both controller ports,
  * derives pressed, released and repeated buttons, and drives vibration.
  */
+
+/**
+ *
+ * Stick position at rest.
+ *
+ */
+#define PAD_ANALOG_CENTER 0x80
 
 /**
  *
@@ -634,7 +639,7 @@ public:
      * @address 0x14BAE0
      * @size 0x64
      */
-    void Capture(PAD_STATUS *pad);
+    void Capture(PAD_STATUS *status);
 
     /**
      *
