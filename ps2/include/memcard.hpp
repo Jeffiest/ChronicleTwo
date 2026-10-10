@@ -131,20 +131,6 @@ STATIC_ASSERT(sizeof(MC_CARD_INFO) == 0x20);
 
 /**
  *
- * One entry that sceMcGetDir writes into CMemoryCardManager::dir_table.
- *
- */
-struct MC_DIR_ENTRY {
-    u8   unk_00[0x10];
-    u32  file_size; /**< Size of the file in bytes. */
-    u8   unk_14[0xC];
-    char name[0x20]; /**< Name of the file or directory. */
-};
-
-STATIC_ASSERT(sizeof(MC_DIR_ENTRY) == 0x40);
-
-/**
- *
  * Records what stopped the last memory card operation.
  *
  */
@@ -246,7 +232,7 @@ public:
     s32              step; /**< Step that the current operation has reached. */
     s32              fd;   /**< File that the last sceMcOpen returned, -1 until one does. */
     u8               unk_60[0x20];
-    MC_DIR_ENTRY     dir_table[17];        /**< Table that sceMcGetDir fills with directory entries. */
+    sceMcTblGetDir   dir_table[17];        /**< Table that sceMcGetDir fills with directory entries. */
     s32              dir_entries;          /**< Entries the last sceMcGetDir found, or the error it reported. */
     s32              album_buffer_set;     /**< One once SetBuff_Album has been given an album buffer. */
     s32              port;                 /**< Port that every command of the manager names. */

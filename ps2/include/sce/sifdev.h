@@ -7,6 +7,7 @@
 
 #define SCE_RDONLY 0x0001
 #define SCE_WRONLY 0x0002
+#define SCE_RDWR 0x0003
 #define SCE_CREAT 0x0200
 #define SCE_TRUNC 0x0400
 #define SCE_NOWAIT 0x8000
