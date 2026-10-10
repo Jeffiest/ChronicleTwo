@@ -44,7 +44,7 @@ char *GetHatena() {
      */
     static char *MenuHatena_1byte = "???";
 
-    if (LanguageCode >= 2 && LanguageCode < 6) {
+    if (LanguageCode >= LANG_FRENCH && LanguageCode < LANG_CHINESE) {
         return MenuHatena_1byte;
     }
 
@@ -274,7 +274,7 @@ void MenuMesInit(ClsMes *mes) {
         mes->font_w = 15;
         mes->font_h = 24;
 
-        if (LanguageCode > 0) {
+        if (LanguageCode > LANG_JAPANESE) {
             mes->font_w = 15;
             mes->font_h = 24;
         }
@@ -316,17 +316,17 @@ void CDC2Mes::MsgPreset(int preset) {
     scissor.Set(0, 0, mgScreenWidth - 1, mgScreenHeight - 1);
 
     switch (preset) {
-        case 0:
+        case MENU_SCRIPT_MES_DEFAULT:
             SetWindowMode(MES_WIN_HELP);
             break;
-        case 1:
+        case MENU_SCRIPT_MES_DEFAULT_BLACK:
             SetWindowMode(MES_WIN_HELP);
             fuchi = FUCHI_OUTLINE_WIDE;
             break;
-        case 2:
+        case MENU_SCRIPT_MES_NO_WIN:
             SetWindowMode(MES_WIN_NONE);
             break;
-        case 3:
+        case MENU_SCRIPT_MES_SYSTEM:
             SetWindowMode(MES_WIN_VERSATILE_4);
             abs_win.width = 272;
             abs_win.height = 102;
@@ -335,63 +335,63 @@ void CDC2Mes::MsgPreset(int preset) {
             value_sign = 1;
             centering = 0;
             break;
-        case 4:
-        case 5:
+        case MENU_SCRIPT_MES_NAME:
+        case MENU_SCRIPT_MES_NAME_BLACK:
             SetWindowMode(MES_WIN_NONE);
             rows = 1;
             value_sign = 1;
 
-            if (preset == 5) {
+            if (preset == MENU_SCRIPT_MES_NAME_BLACK) {
                 fuchi = FUCHI_SHADOW_BLACK_WIDE;
             }
 
             break;
-        case 7:
+        case MENU_SCRIPT_MES_INVENT:
             SetWindowMode(MES_WIN_NONE);
             rows = 1;
             value_zero = 1;
             fuchi = FUCHI_NONE;
             SetDefColor(0x80141414);
             break;
-        case 9:
+        case MENU_SCRIPT_MES_MSGDIC:
             SetWindowMode(MES_WIN_NONE);
             fuchi = FUCHI_NONE;
             SetFontColor(6, 6, 6, 128);
             rows = 1;
             value_zero = 1;
             break;
-        case 6:
+        case MENU_SCRIPT_MES_ITEMCMD:
             point_x = 40;
             point_y = -60;
             SetWindowMode(MES_WIN_FLOATING);
             select_shade = MES_SELECT_SHADE_BRIGHT;
             break;
-        case 10:
-        case 18:
+        case MENU_SCRIPT_MES_GENERAL:
+        case MENU_SCRIPT_MES_GENERAL_2:
             SetWindowMode(MES_WIN_VERSATILE_1);
             fuchi = FUCHI_NONE;
             push_button = 1;
             fade_speed = 0.1f;
 
-            if (preset == 18) {
+            if (preset == MENU_SCRIPT_MES_GENERAL_2) {
                 push_button = 0;
             }
 
             break;
-        case 11:
+        case MENU_SCRIPT_MES_YESNO:
             SetWindowMode(MES_WIN_YESNO);
             fuchi = FUCHI_NONE;
             fade_speed = 0.1f;
             break;
-        case 12:
+        case MENU_SCRIPT_MES_BRD3:
             SetWindowMode(MES_WIN_VERSATILE_3);
             fade_speed = 0.1f;
             break;
-        case 8:
-        case 13:
+        case MENU_SCRIPT_MES_GEO:
+        case MENU_SCRIPT_MES_HELPWIN:
             SetWindowMode(MES_WIN_VERSATILE_4);
 
-            if (preset == 8) {
+            if (preset == MENU_SCRIPT_MES_GEO) {
                 text_off_x = 16;
                 text_off_y = 16;
                 abs_win.width = 236;
@@ -399,24 +399,24 @@ void CDC2Mes::MsgPreset(int preset) {
             }
 
             break;
-        case 14:
+        case MENU_SCRIPT_MES_MAKEBRD:
             SetWindowMode(MES_WIN_NONE);
             break;
-        case 15:
-        case 16:
+        case MENU_SCRIPT_MES_ITEMMSG:
+        case MENU_SCRIPT_MES_ITEMMSG_DEFAULTFUCHI:
             SetWindowMode(MES_WIN_NONE);
 
-            if (preset == 16) {
+            if (preset == MENU_SCRIPT_MES_ITEMMSG_DEFAULTFUCHI) {
                 fuchi = FUCHI_SHADOW_BLACK_WIDE;
             }
 
             break;
-        case 17:
+        case MENU_SCRIPT_MES_VOLMSG:
             SetWindowMode(MES_WIN_NONE);
             value_zero = 1;
             font_h -= 2;
             break;
-        case 19:
+        case MENU_SCRIPT_MES_TALK:
             Preset(0);
             fade_speed = 0.1f;
             break;
@@ -430,7 +430,7 @@ void CDC2Mes::MsgPreset(int preset) {
 void CDC2Mes::MsgPreset(int preset, int unused) {
     MsgPreset(preset);
 
-    if (LanguageCode == 1) {
+    if (LanguageCode == LANG_ENGLISH) {
         value_half = 1;
     }
 }
@@ -451,7 +451,7 @@ int CDC2Mes::AddMsgCursor2(int min, int max, int loop) {
     }
 
     if (AddMsgCursor(step, min, max, loop)) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     return cursor;
@@ -504,7 +504,7 @@ int CDC2Mes::CommandMsgCursor() {
     }
 
     if (AddMsgCursor(step, 0, choices - 1, 1)) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     return cursor;
@@ -522,7 +522,7 @@ int CDC2Mes::YesNoCursor() {
     }
 
     if (AddMsgCursor(step, 0, 1, 0)) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     return cursor;
@@ -540,24 +540,24 @@ int CDC2Mes::YesNoCursor2(int alt_button) {
     }
 
     if (AddMsgCursor(step, 0, 1, 0)) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     int buttons = MenuCheckPushButton();
 
-    if (buttons & 1) {
-        return cursor == 0 ? 1 : 2;
+    if (buttons & MENU_PUSH_BUTTON_DECIDE) {
+        return cursor == 0 ? MES_YESNO_YES : MES_YESNO_NO;
     }
 
-    if (alt_button == 1 && (buttons & 4)) {
-        return cursor == 0 ? 1 : 2;
+    if (alt_button == 1 && (buttons & MENU_PUSH_BUTTON_TRIANGLE)) {
+        return cursor == 0 ? MES_YESNO_YES : MES_YESNO_NO;
     }
 
-    if (buttons & 2) {
-        return 2;
+    if (buttons & MENU_PUSH_BUTTON_CANCEL) {
+        return MES_YESNO_NO;
     }
 
-    return 0;
+    return MES_YESNO_NONE;
 }
 
 int CDC2Mes::GetMsgCursor() {
@@ -805,7 +805,7 @@ void CDC2Mes::MakeMsg(CGameDataUsed *attachment, CGameDataUsed *weapon) {
 
     if (weapon->used_type != USED_ITEM_TYPE_WEAPON || weapon->IsFishingRod()) {
         char *names[1] = {NULL};
-        names[0] = weapon->GetName(1);
+        names[0] = weapon->GetName(ITEM_NAME_TYPE_LEVEL);
         SetMsgItemNo(names, 1);
         MakeMsg(0xBD);
     } else {
@@ -930,9 +930,9 @@ int CMenuMoveItem::CheckMove() {
 
             if (entry->active != 0) {
                 if (form[index]->CheckMoveEnd()) {
-                    if (entry->mode == 0 || entry->mode == 2) {
+                    if (entry->mode == MENU_MOVE_ITEM_COPY || entry->mode == MENU_MOVE_ITEM_ONE) {
                         entry->dest->CopyGameData(&entry->item);
-                    } else if (entry->mode == 1) {
+                    } else if (entry->mode == MENU_MOVE_ITEM_STACK) {
                         entry->dest->CopyDataItem(&entry->item);
                     }
 
@@ -980,7 +980,7 @@ void CMenuMoveItem::SetMoveItemInfo(MENU_ITEM_MOVE_INFO *request, int *start, in
                 moving_form->draw_flag = 0;
             }
 
-            if (entry->mode == 2) {
+            if (entry->mode == MENU_MOVE_ITEM_ONE) {
                 entry->item.DeleteNum(entry->item.GetNum() - 1);
             }
 
@@ -1101,7 +1101,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
             int weapon_type = chara->equip[0].item_type;
 
-            if (!(chara->status_attr & 0x40) || !(effect.status_flags & 0x10)) {
+            if (!(chara->status_attr & CHARA_STATUS_UNK_40) || !(effect.status_flags & 0x10)) {
                 if (((MenuUsedItemNo == 0x184 && weapon_type == (int) ITEM_DATA_MAX_MELEE) ||
                      (MenuUsedItemNo == 0x185 && weapon_type == (int) ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
@@ -1154,7 +1154,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if ((chara->status_attr & 0x40) && (effect.status_flags & 0x10) && item->item_no != 0x110) {
+            if ((chara->status_attr & CHARA_STATUS_UNK_40) && (effect.status_flags & 0x10) && item->item_no != 0x110) {
                 MenuUsedNotErrorCode = 1;
                 break;
             }
@@ -1227,19 +1227,19 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                                     chara->status_attr |= add;
                                     changed = 1;
 
-                                    if (st_bittable[i] & 0x10) {
+                                    if (st_bittable[i] & CHARA_STATUS_POWER) {
                                         chara->status_time[0] = 750;
                                     }
 
-                                    if (st_bittable[i] & 2) {
+                                    if (st_bittable[i] & CHARA_STATUS_SLOW) {
                                         chara->status_time[1] = 750;
                                     }
 
-                                    if (st_bittable[i] & 8) {
+                                    if (st_bittable[i] & CHARA_STATUS_UNK_8) {
                                         chara->status_time[2] = 750;
                                     }
 
-                                    if (st_bittable[i] & 0x20) {
+                                    if (st_bittable[i] & CHARA_STATUS_UNK_20) {
                                         chara->status_time[2] = 750;
                                     }
                                 }
