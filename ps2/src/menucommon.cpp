@@ -618,21 +618,21 @@ void MenuSePlay(int sound_no, unsigned int *bank, mgCMemory *memory) {
 
     memory->stack_used = 0;
     memory->lock = 0;
-    sndInitPort(8);
-    sndSePlay(sndLoadSound((int) SND_PORT_MENU, bank, memory), sound_no, 0);
+    sndInitPort(SND_PORT_MENU);
+    sndSePlay(sndLoadSound(SND_PORT_MENU, bank, memory), sound_no, 0);
     MenuSePlayUsedFlag = 1;
 }
 
 void StopEnvSoundMenu(int event_port) {
-    SndPortVol_Ob = sndGetPortVol((int) SND_PORT_OB);
-    SndPortVol_Base = sndGetPortVol((int) SND_PORT_BASE);
-    sndSetPortVol((int) SND_PORT_OB, 0.0f);
-    sndSetPortVol((int) SND_PORT_BASE, 0.0f);
+    SndPortVol_Ob = sndGetPortVol(SND_PORT_OB);
+    SndPortVol_Base = sndGetPortVol(SND_PORT_BASE);
+    sndSetPortVol(SND_PORT_OB, 0.0f);
+    sndSetPortVol(SND_PORT_BASE, 0.0f);
     SndPortCheck_EventPort = event_port;
 
     if (event_port != 0) {
-        SndPortVol_Event = sndGetPortVol((int) SND_PORT_EVENT);
-        sndSetPortVol((int) SND_PORT_EVENT, 0.0f);
+        SndPortVol_Event = sndGetPortVol(SND_PORT_EVENT);
+        sndSetPortVol(SND_PORT_EVENT, 0.0f);
     }
 
     SndPortCheck_EventPort = event_port;
@@ -641,11 +641,11 @@ void StopEnvSoundMenu(int event_port) {
 }
 
 void ReStartEnvSoundMenu() {
-    sndSetPortVol((int) SND_PORT_OB, SndPortVol_Ob);
-    sndSetPortVol((int) SND_PORT_BASE, SndPortVol_Base);
+    sndSetPortVol(SND_PORT_OB, SndPortVol_Ob);
+    sndSetPortVol(SND_PORT_BASE, SndPortVol_Base);
 
     if (SndPortCheck_EventPort != 0) {
-        sndSetPortVol((int) SND_PORT_EVENT, SndPortVol_Event);
+        sndSetPortVol(SND_PORT_EVENT, SndPortVol_Event);
     }
 
     GetMainScene()->SetEnvBGMVol(SndPortVol_Env);
@@ -806,7 +806,7 @@ int GetSameAdrressUserData(CGameDataUsed *item, int kind) {
 
     if (kind == 0) {
         entry = MenuUserParam.used_data;
-        bag_max = GetNowBagMax(1);
+        bag_max = GetNowBagMax(ITEM_BOARD_ALL);
 
         for (i = 0; i < bag_max; i++, entry++) {
             if (entry == item) {
@@ -893,12 +893,12 @@ int LoadFileMenu(char *name, u_long128 *buffer, int mode) {
     strcat(path, langdirpathTable[LanguageCode]);
     strcat(path, name);
 
-    if (mode == 0) {
+    if (mode == MENU_FILE_LOAD_BG) {
         LoadFileBG(path, buffer, &size);
     }
 
-    if (mode == 1) {
-        LoadFile2(path, buffer, &size, 0);
+    if (mode == MENU_FILE_LOAD_DIRECT) {
+        LoadFile2(path, buffer, &size, LOAD_FILE_READ);
     }
 
     return size;
@@ -1001,11 +1001,11 @@ void ConvertFontCode(char *source, char *destination) {
 }
 
 int CheckNowEurope() {
-    if (LanguageCode > 0 && LanguageCode < 6) {
-        return 1;
+    if (LanguageCode > LANG_JAPANESE && LanguageCode < LANG_CHINESE) {
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 int MenuCommonReadData(mgCMemory *memory, char **names, int mode) {
@@ -1990,19 +1990,19 @@ int _MENU_FORM_RGBA_BIT(SPI_STACK *stack, int argc) {
         u8 bit = 0;
 
         if (channel == 'r') {
-            bit = 1;
+            bit = MENUFORM_RGBA_BIT_RED;
         }
 
         if (channel == 'g') {
-            bit = 2;
+            bit = MENUFORM_RGBA_BIT_GREEN;
         }
 
         if (channel == 'b') {
-            bit = 4;
+            bit = MENUFORM_RGBA_BIT_BLUE;
         }
 
         if (channel == 'a') {
-            bit = 8;
+            bit = MENUFORM_RGBA_BIT_ALPHA;
         }
 
         if (mask != 0) {
@@ -2290,11 +2290,11 @@ int _MENU_PART_DTYPE(SPI_STACK *stack, int argc) {
     part->dtype = menu_spi_analyze_func_strcut1(tbl, spiGetStackString(stack++));
     MakePartsName(stack++, part);
 
-    if (part->dtype == 'O') {
+    if (part->dtype == MENUFORMPARTS_DTYPE_CLUT_RELOAD) {
         for (i = 0; i < argc - 2; i++) {
             (&part->etc_info[0])[i] = spiGetStackInt(stack++);
         }
-    } else if (part->dtype == 'L') {
+    } else if (part->dtype == MENUFORMPARTS_DTYPE_RANDOM_LINE) {
         part->x = spiGetStackInt(stack++);
         part->y = spiGetStackInt(stack++);
         part->w = spiGetStackInt(stack++);
@@ -2332,7 +2332,7 @@ int _MENU_NORMAL(SPI_STACK *stack, int argc) {
         menu_texdata_to_formpart_copy(part);
     }
 
-    part->dtype = 0;
+    part->dtype = MENUFORMPARTS_DTYPE_NORMAL;
     part->active = 1;
     return 1;
 }
@@ -2357,7 +2357,7 @@ int _MENU_NORMAL2(SPI_STACK *stack, int argc) {
         menu_texdata_to_formpart_copy(part);
     }
 
-    part->dtype = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_NORMAL2;
     part->active = 1;
     return 1;
 }
@@ -2373,7 +2373,7 @@ int _MENU_CURSOR(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 2;
+    part->dtype = MENUFORMPARTS_DTYPE_CURSOR;
     part->active = 1;
     part->draw_flag = 1;
     return 1;
@@ -2390,7 +2390,7 @@ int _MENU_FUNCINFO(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 3;
+    part->dtype = MENUFORMPARTS_DTYPE_FUNCINFO;
     part->active = 1;
     part->draw_flag = 0;
     return 1;
@@ -2415,7 +2415,7 @@ int _MENU_NUMBER1(SPI_STACK *stack, int argc) {
         part->h = spiGetStackInt(stack);
     }
 
-    part->dtype = 5;
+    part->dtype = MENUFORMPARTS_DTYPE_NUMBER1;
     part->active = 1;
     return 1;
 }
@@ -2440,7 +2440,7 @@ int _MENU_NUMBER2(SPI_STACK *stack, int argc) {
     }
 
     part->etc_info[1] = 0;
-    part->dtype = 6;
+    part->dtype = MENUFORMPARTS_DTYPE_NUMBER2;
     part->active = 1;
     return 1;
 }
@@ -2490,7 +2490,7 @@ int _MENU_FORM(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 0x19;
+    part->dtype = MENUFORMPARTS_DTYPE_FORM;
     part->active = 1;
     return 1;
 }
@@ -2536,7 +2536,7 @@ int _MENU_ITEM(SPI_STACK *stack, int argc) {
 int _MENU_ITEM_CHECKMARK(SPI_STACK *stack, int argc) {
     MENUFORMPARTS_TYPE *part = menu_formPt->GetEnableEnterPart();
     menu_form_part = part;
-    part->dtype = 0x39;
+    part->dtype = MENUFORMPARTS_DTYPE_CHECKMARK;
     part->tex_info_no = (s8) MenuCommonInfo->tex_block[0];
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
@@ -2594,7 +2594,7 @@ int _MENU_FILLBOX(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FILLBOXINFO(SPI_STACK *stack, int argc) {
-    menu_parts_effect_ptr->type = 1;
+    menu_parts_effect_ptr->type = MENU_PARTS_EFFECT_FILLBOX;
 
     for (int i = 0; i < 4; i++) {
         menu_parts_effect_ptr->param[i] = spiGetStackInt(stack++);
@@ -2614,7 +2614,7 @@ int _MENU_WAKU_RECT(SPI_STACK *stack, int argc) {
     menu_form_part = part;
     part->tex_info_no = MenuPosData->GetTexGetInfoTblNo(spiGetStackString(stack++));
     MakePartsName(stack++, part);
-    part->dtype = 0xD;
+    part->dtype = MENUFORMPARTS_DTYPE_WAKU_RECT;
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack++);
     part->w = spiGetStackInt(stack++);
@@ -2634,7 +2634,7 @@ int _MENU_WAKU_CIRCLE(SPI_STACK *stack, int argc) {
     menu_form_part = part;
     part->tex_info_no = MenuPosData->GetTexGetInfoTblNo(spiGetStackString(stack++));
     MakePartsName(stack++, part);
-    part->dtype = 0xE;
+    part->dtype = MENUFORMPARTS_DTYPE_WAKU_CIRCLE;
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack++);
     part->w = spiGetStackInt(stack++);
