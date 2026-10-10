@@ -2641,7 +2641,7 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             dead = (CDeadEffect *) __construct_new_array(
                 operator new[](num *(int) sizeof(CDeadEffect) + 16, memory->Alloc(align16_blocks(dead_bytes) + 2)), NULL, NULL,
                 sizeof(CDeadEffect), num);
-            memset(dead_prim, 0x37, prim_bytes);
+            memset(dead_prim, 0x37, num * 0xF00);
             memset(dead, 0x37, dead_bytes);
             dead_num = 0;
 
