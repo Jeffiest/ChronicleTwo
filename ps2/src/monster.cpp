@@ -939,7 +939,7 @@ CActiveMonster *CMonsterMan::CheckThrowTarget(mgCFrame *frame) {
             if (mgDistVector(monster_pos, frame_pos) <= 30.0f) {
                 monster = active[i];
 
-                if (monster->tbl->unk_98 & 1) {
+                if (monster->tbl->lift_flags & 1) {
                     MsgTaskMan.Print(dung_progtxt_notlift_mons[LanguageCode], 0x2D, 8, 0);
                     return NULL;
                 }
@@ -1157,7 +1157,7 @@ CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0F
     monster = active[slot];
     tbl = GetReferPtr2(refer[refer_no].id);
 
-    if (tbl->unk_b4 == 0) {
+    if (tbl->share_model == 0) {
         refer[refer_no].chara.SetPosition(0.0f, 0.0f, 0.0f);
         refer[refer_no].chara.SetRotation(0.0f, 0.0f, 0.0f);
         refer[refer_no].chara.Copy(*monster, &memory[slot]);

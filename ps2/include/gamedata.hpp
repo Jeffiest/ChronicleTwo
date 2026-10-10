@@ -20,59 +20,156 @@ enum USED_ITEM_TYPE {
     USED_ITEM_TYPE_ITEM = 1,   /**< A usable or key item with an entry in the item table. */
     USED_ITEM_TYPE_ATTACH = 2, /**< An attachment with an entry in the attachment table. */
     USED_ITEM_TYPE_WEAPON = 3, /**< A weapon with an entry in the weapon table. */
-    USED_ITEM_TYPE_COSTUME = 4,
+    USED_ITEM_TYPE_COSTUME = 4, /**< A piece of clothing, headwear, footwear or accessory with only common data. */
     USED_ITEM_TYPE_ROBO_PART = 5, /**< A ridepod part with an entry in the ridepod part table. */
     USED_ITEM_TYPE_FISH = 6,      /**< A fish with an entry in the fish table. */
     USED_ITEM_TYPE_GIFT_BOX = 7,  /**< A gift box with an entry in the item table. */
     USED_ITEM_TYPE_BOILED = 8,    /**< A boiled item with an entry in the item table. */
 };
 
+/**
+ *
+ * Indices of the first two parameters of a weapon, attachment or ridepod part.
+ *
+ */
 enum WEAPON_STAT {
-    WEAPON_STAT_ATTACK = 0,
-    WEAPON_STAT_DURABILITY = 1,
+    WEAPON_STAT_ATTACK = 0,     /**< Attack. */
+    WEAPON_STAT_DURABILITY = 1, /**< Durable, the second parameter. */
 };
 
+/**
+ *
+ * Special ability bits of weapons and attachments, which collision primitives also carry as hit
+ * attributes of attacks.
+ *
+ */
 enum WEAPON_SPECIAL_FLAG {
-    WEAPON_SPECIAL_POISON = 0x4,
-    WEAPON_SPECIAL_STEAL = 0x10,
-    WEAPON_SPECIAL_INCREASE_WEAR = 0x20,
-    WEAPON_SPECIAL_REDUCE_WEAR = 0x40,
-    WEAPON_SPECIAL_DRAIN_HP = 0x80,
-    WEAPON_SPECIAL_REGENERATE_HP = 0x100,
-    WEAPON_SPECIAL_HP_COST_BOOST = 0x200,
-    WEAPON_SPECIAL_CRITICAL = 0x400,
+    WEAPON_SPECIAL_WEALTH = 0x1,          /**< More money from defeated monsters (Wealth Coin). */
+    WEAPON_SPECIAL_POISON = 0x4,          /**< The hit can poison. */
+    WEAPON_SPECIAL_STOP = 0x8,            /**< The hit can stop the target (Time Coin). */
+    WEAPON_SPECIAL_STEAL = 0x10,          /**< The hit can steal an item. */
+    WEAPON_SPECIAL_INCREASE_WEAR = 0x20,  /**< The weapon wears out faster. */
+    WEAPON_SPECIAL_REDUCE_WEAR = 0x40,    /**< The weapon wears out slower (Indestructible Coin). */
+    WEAPON_SPECIAL_DRAIN_HP = 0x80,       /**< The hit drains health (Absorption Coin). */
+    WEAPON_SPECIAL_REGENERATE_HP = 0x100, /**< Health regenerates (Healing Coin). */
+    WEAPON_SPECIAL_HP_COST_BOOST = 0x200, /**< Stronger hits that cost health (Dark Coin). */
+    WEAPON_SPECIAL_CRITICAL = 0x400,      /**< Critical hits are more likely (Bull's-Eye Coin). */
+    WEAPON_SPECIAL_ABS_UP = 0x800,        /**< More absorption from defeated monsters (Experience Coin). */
+    WEAPON_SPECIAL_RATIO_DAMAGE = 0x1000, /**< The hit takes a percentage of the target's maximum health. */
+    WEAPON_SPECIAL_HALF_HP = 0x2000,      /**< The hit takes half of the target's current health. */
+    WEAPON_SPECIAL_STONE = 0x8000,        /**< The hit can petrify. */
+    WEAPON_SPECIAL_SLOW = 0x10000,        /**< The hit can cover the target in goo and slow it. */
+    WEAPON_SPECIAL_CURSE = 0x20000,       /**< The hit can curse. */
+    WEAPON_SPECIAL_HOLY_WATER = 0x40000,  /**< The hit is holy water. */
+    WEAPON_SPECIAL_DRY = 0x100000,        /**< The hit can make the target thirsty. */
 };
 
+/**
+ *
+ * Item numbers the code treats specially, named after the items' English names.
+ *
+ */
 enum ITEM_ID {
-    ITEM_ID_SPECTOL = 0xB9,
-    ITEM_ID_MELEE_REPAIR = 0x126,
-    ITEM_ID_GUN_REPAIR = 0x12A,
-    ITEM_ID_FISHING_ROD = 0x12E,
-    ITEM_ID_LURE_ROD = 0x12F,
-    ITEM_ID_MAGIC_REPAIR = 0x160,
-    ITEM_ID_RIDEPOD_FUEL = 0x17D,
+    ITEM_ID_LAMBS_SWORD = 0x38,            /**< Lamb's Sword, Monica's sword whose strength follows the time of day. */
+    ITEM_ID_ISLAND_KING = 0x58,            /**< Island King, Monica's sword whose model changes with the time of day. */
+    ITEM_ID_DRUM_CAN_BODY = 0x87,          /**< Drum Can Body, the first ridepod body. */
+    ITEM_ID_CANNONBALL_ARM = 0x91,         /**< Cannonball Arm, the first ridepod arm. */
+    ITEM_ID_IRON_LEG = 0x9B,               /**< Iron Leg, the first ridepod leg. */
+    ITEM_ID_ENERGY_PACK = 0xA5,            /**< Energy Pack, the first ridepod energy pack. */
+    ITEM_ID_MONSTER_NOTES = 0xAC,          /**< Monster Notes. */
+    ITEM_ID_SEAL_BREAKING_SCROLL = 0xAE,   /**< Seal-Breaking Scroll. */
+    ITEM_ID_SPECTOL = 0xB9,                /**< Attachment made by spectrumising an item. */
+    ITEM_ID_CORE = 0xF6,                   /**< Core, the first ridepod core. */
+    ITEM_ID_IMPROVED_CORE = 0xF7,          /**< Improved Core. */
+    ITEM_ID_CORE_II = 0xF8,                /**< Core II. */
+    ITEM_ID_CORE_III = 0xF9,               /**< Core III. */
+    ITEM_ID_SUPER_CORE = 0xFA,             /**< Super Core. */
+    ITEM_ID_HYPER_CORE = 0xFB,             /**< Hyper Core. */
+    ITEM_ID_MASTER_GRADE_CORE = 0xFC,      /**< Master Grade Core, the last ridepod core. */
+    ITEM_ID_ANTI_PETRIFY_AMULET = 0xFD,    /**< Anti-Petrify Amulet, which wards off petrification. */
+    ITEM_ID_NON_STOP_AMULET = 0xFE,        /**< Non-Stop Amulet, which wards off being stopped. */
+    ITEM_ID_ANTI_CURSE_AMULET = 0xFF,      /**< Anti-Curse Amulet, which wards off curses. */
+    ITEM_ID_ANTI_GOO_AMULET = 0x100,       /**< Anti-Goo Amulet, which wards off goo. */
+    ITEM_ID_ANTIDOTE_AMULET = 0x101,       /**< Antidote Amulet, which wards off poison. */
+    ITEM_ID_DOUBLE_PUDDING = 0x10F,        /**< Double Pudding. */
+    ITEM_ID_PLUM_RICE_BALL = 0x110,        /**< Plum Rice Ball, the food that can be eaten while thirsty. */
+    ITEM_ID_RESURRECTION_POWDER = 0x111,   /**< Resurrection Powder, which revives a fallen character. */
+    ITEM_ID_STAMINA_DRINK = 0x112,         /**< Stamina Drink. */
+    ITEM_ID_HEART_THROB_CHERRY = 0x11F,    /**< Heart-Throb Cherry. */
+    ITEM_ID_MELLOW_BANANA = 0x124,         /**< Mellow Banana. */
+    ITEM_ID_ESCAPE_POWDER = 0x125,         /**< Escape Powder. */
+    ITEM_ID_MELEE_REPAIR = 0x126,          /**< Repair Powder, which repairs melee weapons. */
+    ITEM_ID_LEVEL_UP_POWDER = 0x127,       /**< Level Up Powder, which levels a weapon up. */
+    ITEM_ID_FRUIT_OF_EDEN = 0x128,         /**< Fruit of Eden, which raises a character's maximum health. */
+    ITEM_ID_GUN_REPAIR = 0x12A,            /**< Gun Repair Powder, which repairs Max's guns. */
+    ITEM_ID_FISHING_ROD = 0x12E,           /**< Fishing Rod. */
+    ITEM_ID_LURE_ROD = 0x12F,              /**< Lure Rod. */
+    ITEM_ID_GIFT_CAPSULE = 0x130,          /**< Gift Capsule, which is thrown with the items it holds. */
+    ITEM_ID_MAP = 0x131,                   /**< Map, which reveals the rooms of a dungeon floor. */
+    ITEM_ID_MAGIC_CRYSTAL = 0x132,         /**< Magic Crystal, which reveals the symbols of a dungeon floor. */
+    ITEM_ID_BADGE_BOX = 0x134,             /**< Badge Box, which enables the monster transformation. */
+    ITEM_ID_AQUARIUM = 0x135,              /**< Aquarium. */
+    ITEM_ID_MEDAL_HOLDER = 0x137,          /**< Medal Holder, whose count is the number of medals. */
+    ITEM_ID_ROPE = 0x159,                  /**< Rope, a gate key of the fourth dungeon. */
+    ITEM_ID_WHITE_WIND_VASE = 0x15B,       /**< White Wind Vase, a door key of the fourth dungeon. */
+    ITEM_ID_MAGIC_REPAIR = 0x160,          /**< Armband Repair Powder, which repairs Monica's armbands. */
+    ITEM_ID_INSIDE_SCOOP_MEMO = 0x163,     /**< Inside Scoop Memo. */
+    ITEM_ID_PHOTO_ALBUM = 0x165,           /**< Photo Album, which enables the album page. */
+    ITEM_ID_COOKING_STOVE = 0x166,         /**< Cooking Stove, which enables boiling fish. */
+    ITEM_ID_HELP_RECEIVER = 0x167,         /**< Help Receiver, which enables the manual menu. */
+    ITEM_ID_ELECTRIC_WORM = 0x168,         /**< Electric Worm, the food of electric fish. */
+    ITEM_ID_CAMERA = 0x171,                /**< Camera, which takes photos and enables the invention menu. */
+    ITEM_ID_RIDEPOD_FUEL = 0x17D,          /**< Ridepod Fuel. */
+    ITEM_ID_MONSTER_DROP = 0x17F,          /**< Monster Drop. */
+    ITEM_ID_NAME_CHANGE_TICKET = 0x180,    /**< Name-Change Ticket, which enables renaming weapons and ridepod parts. */
+    ITEM_ID_NOTEBOOK = 0x182,              /**< Notebook. */
+    ITEM_ID_POTATO_PIE = 0x184,            /**< Potato Pie, which raises Max's defence. */
+    ITEM_ID_WITCH_PARFAIT = 0x185,         /**< Witch Parfait, which raises Monica's defence. */
+    ITEM_ID_SHIELD_KIT = 0x1A7,            /**< Shield Kit, which gives the ridepod a shield. */
+    ITEM_ID_BOILED_FISH = 0x1AA,           /**< Fish cooked on the Cooking Stove. */
 };
 
+/**
+ *
+ * Item types, as CDataCommon::type holds them; ConvertUsedItemType gives the family of each.
+ *
+ */
 enum ITEM_DATA_TYPE {
-    ITEM_DATA_NONE = 0,
-    ITEM_DATA_MAX_MELEE = 1,
-    ITEM_DATA_MAX_GUN = 2,
-    ITEM_DATA_MONICA_MELEE = 3,
-    ITEM_DATA_MONICA_MAGIC = 4,
-    ITEM_DATA_ROBO_CORE = 11,
-    ITEM_DATA_ROBO_BODY = 12,
-    ITEM_DATA_ROBO_ARM = 13,
-    ITEM_DATA_ROBO_LEG = 14,
-    ITEM_DATA_ROBO_ENERGY_PACK = 15,
-    ITEM_DATA_GIFT_BOX = 28,
-    ITEM_DATA_AQUARIUM = 29,
-    ITEM_DATA_FISH = 30,
-    ITEM_DATA_BOILED = 35,
-    ITEM_DATA_UNK_11 = 0x11,
-    ITEM_DATA_UNK_15 = 0x15,
-    ITEM_DATA_DUNGEON_KEY = 0x1A,
-    ITEM_DATA_UNK_1B = 0x1B,
-    ITEM_DATA_UNK_22 = 0x22,
+    ITEM_DATA_NONE = 0,                /**< No item. */
+    ITEM_DATA_MAX_MELEE = 1,           /**< Max's wrenches and hammers. */
+    ITEM_DATA_MAX_GUN = 2,             /**< Max's guns. */
+    ITEM_DATA_MONICA_MELEE = 3,        /**< Monica's swords. */
+    ITEM_DATA_MONICA_MAGIC = 4,        /**< Monica's armbands. */
+    ITEM_DATA_MAX_CLOTHES = 5,         /**< Max's outfits. */
+    ITEM_DATA_MAX_HAT = 6,             /**< Max's hats. */
+    ITEM_DATA_MAX_SHOES = 7,           /**< Max's shoes. */
+    ITEM_DATA_MONICA_CLOTHES = 8,      /**< Monica's outfits. */
+    ITEM_DATA_MONICA_ACCESSORY = 9,    /**< Monica's ribbons and hair accessories. */
+    ITEM_DATA_MONICA_BOOTS = 10,       /**< Monica's boots. */
+    ITEM_DATA_ROBO_CORE = 11,          /**< Ridepod cores. */
+    ITEM_DATA_ROBO_BODY = 12,          /**< Ridepod bodies. */
+    ITEM_DATA_ROBO_ARM = 13,           /**< Ridepod arms. */
+    ITEM_DATA_ROBO_LEG = 14,           /**< Ridepod legs. */
+    ITEM_DATA_ROBO_ENERGY_PACK = 15,   /**< Ridepod energy packs. */
+    ITEM_DATA_CRYSTAL = 16,            /**< Crystal attachments. */
+    ITEM_DATA_SPECTOL = 17,            /**< Attachments made by spectrumising an item. */
+    ITEM_DATA_GEM = 18,                /**< Gem attachments. */
+    ITEM_DATA_COIN = 19,               /**< Coin attachments, which give special abilities. */
+    ITEM_DATA_GEORAMA_MATERIAL = 20,   /**< Georama materials. */
+    ITEM_DATA_BADGE_BOX = 21,          /**< The Badge Box. */
+    ITEM_DATA_RECOVERY = 22,           /**< Food, drinks and remedies. */
+    ITEM_DATA_THROWING = 23,           /**< Bombs, stones and fruit that are thrown. */
+    ITEM_DATA_POWDER = 24,             /**< Powders and the ridepod fuel. */
+    ITEM_DATA_AMULET = 25,             /**< Amulets that ward off status conditions. */
+    ITEM_DATA_DUNGEON_KEY = 26,        /**< Gate and door keys of the dungeons. */
+    ITEM_DATA_KEY_ITEM = 27,           /**< Story items. */
+    ITEM_DATA_GIFT_BOX = 28,           /**< The Gift Capsule. */
+    ITEM_DATA_AQUARIUM = 29,           /**< The Aquarium. */
+    ITEM_DATA_FISH = 30,               /**< Fish. */
+    ITEM_DATA_LURE = 32,               /**< Lures, which fit only the Lure Rod. */
+    ITEM_DATA_ETC = 33,                /**< Other items, such as maps, baits and tickets. */
+    ITEM_DATA_MONSTER_DROP = 34,       /**< The Monster Drop attachment. */
+    ITEM_DATA_BOILED = 35,             /**< Boiled fish. */
 };
 
 /**
@@ -83,7 +180,65 @@ enum ITEM_DATA_TYPE {
 enum ITEM_ATTRIBUTE {
     ITEM_ATTRIBUTE_TRUSH = 0x1,            /**< The item counts as rubbish. */
     ITEM_ATTRIBUTE_SPECTOL_TRANS = 0x2,    /**< The item can be turned into an attachment by spectrumising. */
+    ITEM_ATTRIBUTE_BAIT = 0x4,             /**< The item fits the bait slot of a fishing rod. */
     ITEM_ATTRIBUTE_GEORAMA_MATERIA = 0x10, /**< The item is listed among a dungeon floor's georama materials. */
+    ITEM_ATTRIBUTE_USABLE = 0x20,          /**< The item has use effects that the menus show. */
+    ITEM_ATTRIBUTE_UNIQUE = 0x40,          /**< Only max_num of the item can be held, counting every place. */
+};
+
+/**
+ *
+ * Bits of CDataItem::action_flags and USEITEM_EFFECT::action_flags: how an item is used.
+ *
+ */
+enum ITEM_ACTION_FLAG {
+    ITEM_ACTION_USE = 0x1,         /**< The item is used on its target. */
+    ITEM_ACTION_THROW = 0x2,       /**< The item is thrown. */
+    ITEM_ACTION_THROW_ALT = 0x4,   /**< The item is thrown; no item in the tables has this bit. */
+    ITEM_ACTION_DRINK_WATER = 0x8, /**< The item is drunk as water, with the eating effect. */
+    ITEM_ACTION_EAT = 0x10,        /**< The item is food, which a fallen or thirsty character cannot eat. */
+};
+
+/**
+ *
+ * Bits of CDataItem::target_flags and USEITEM_EFFECT::target_flags: what an item can be used on.
+ *
+ */
+enum ITEM_TARGET_FLAG {
+    ITEM_TARGET_MAX = 0x2,     /**< Max. */
+    ITEM_TARGET_MONICA = 0x4,  /**< Monica. */
+    ITEM_TARGET_RIDEPOD = 0x8, /**< The ridepod. */
+    ITEM_TARGET_WEAPON = 0x20, /**< An owned weapon. */
+    ITEM_TARGET_ENEMY = 0x40,  /**< Monsters, by throwing the item. */
+};
+
+/**
+ *
+ * Limits of the master item tables.
+ *
+ */
+enum {
+    ITEM_NO_MAX = 0x200,         /**< Item numbers the item number conversion table covers. */
+    ITEM_COMMON_DATA_MAX = 432,  /**< Entries of the common item data. */
+};
+
+/**
+ *
+ * Bits of BASE_MONSTER_TBL::flags.
+ *
+ */
+enum MONSTER_TBL_FLAG {
+    MONSTER_TBL_FLAG_NO_STAGGER = 0x1, /**< Hits never make the monster flinch. */
+    MONSTER_TBL_FLAG_NO_KNOCK = 0x4,   /**< Hits never knock the monster back. */
+};
+
+/**
+ *
+ * Bits of BASE_MONSTER_TBL::lift_flags.
+ *
+ */
+enum MONSTER_LIFT_FLAG {
+    MONSTER_LIFT_FORBIDDEN = 0x1, /**< The monster cannot be lifted. */
 };
 
 /**
@@ -93,23 +248,29 @@ enum ITEM_ATTRIBUTE {
  */
 // clang-format off
 enum ITEM_USE_FLAG {
-    ITEM_USE_FLAG_RESTORE_HP = 0x100,
-    ITEM_USE_FLAG_REPAIR = 0x400,
-    ITEM_USE_FLAG_FILL_ABS = 0x1000,
-    ITEM_USE_FLAG_ADD_STATUS_UNK_8 = 0x4000,       /**< Adds CHARA_STATUS_UNK_8. */
-    ITEM_USE_FLAG_CURE_STATUS_UNK_8 = 0x8000,      /**< Cures CHARA_STATUS_UNK_8. */
+    ITEM_USE_FLAG_ELEMENT_FIRE = 0x1,      /**< A thrown item that does fire damage. */
+    ITEM_USE_FLAG_ELEMENT_ICE = 0x2,       /**< A thrown item that does ice damage. */
+    ITEM_USE_FLAG_ELEMENT_THUNDER = 0x4,   /**< A thrown item that does thunder damage. */
+    ITEM_USE_FLAG_ELEMENT_HOLY = 0x8,      /**< A thrown item that does holy damage. */
+    ITEM_USE_FLAG_ELEMENT_WIND = 0x20,     /**< A thrown item that does wind damage. */
+    ITEM_USE_FLAG_RESTORE_HP = 0x100,      /**< Restores health. */
+    ITEM_USE_FLAG_REPAIR = 0x400,          /**< Restores durability. */
+    ITEM_USE_FLAG_FILL_ABS = 0x1000,       /**< Fills the absorption gauge of a weapon. */
+    ITEM_USE_FLAG_ADD_STOP = 0x4000,       /**< Stops the target (CHARA_STATUS_UNK_8). */
+    ITEM_USE_FLAG_CURE_STOP = 0x8000,      /**< Cures being stopped (CHARA_STATUS_UNK_8). */
     ITEM_USE_FLAG_ADD_POISON = 0x10000,            /**< Adds poison. */
     ITEM_USE_FLAG_CURE_POISON = 0x20000,           /**< Cures poison. */
-    ITEM_USE_FLAG_ADD_STATUS_UNK_4 = 0x40000,      /**< Adds CHARA_STATUS_UNK_4. */
-    ITEM_USE_FLAG_CURE_STATUS_UNK_4 = 0x80000,     /**< Cures CHARA_STATUS_UNK_4. */
+    ITEM_USE_FLAG_ADD_CURSE = 0x40000,      /**< Curses the target (CHARA_STATUS_UNK_4). */
+    ITEM_USE_FLAG_CURE_CURSE = 0x80000,     /**< Cures a curse (CHARA_STATUS_UNK_4). */
     ITEM_USE_FLAG_ADD_SLOW = 0x100000,     /**< Adds CHARA_STATUS_SLOW. */
     ITEM_USE_FLAG_CURE_SLOW = 0x200000,    /**< Cures CHARA_STATUS_SLOW. */
     ITEM_USE_FLAG_ADD_POWER = 0x400000,            /**< Adds the power status. */
     ITEM_USE_FLAG_CURE_ALL = 0x800000,             /**< Expands to the individual status cure effects when loaded. */
-    ITEM_USE_FLAG_ADD_STATUS_UNK_20 = 0x02000000,  /**< Adds CHARA_STATUS_UNK_20. */
-    ITEM_USE_FLAG_CURE_STATUS_UNK_20 = 0x04000000, /**< Cures CHARA_STATUS_UNK_20. */
-    ITEM_USE_FLAG_ADD_STATUS_UNK_40 = 0x08000000,  /**< Adds CHARA_STATUS_UNK_40. */
-    ITEM_USE_FLAG_CURE_STATUS_UNK_40 = 0x10000000, /**< Cures CHARA_STATUS_UNK_40. */
+    ITEM_USE_FLAG_CORE_CAPACITY = 0x01000000, /**< Sets the ridepod's energy capacity, for cores. */
+    ITEM_USE_FLAG_ADD_STONE = 0x02000000,  /**< Petrifies the target (CHARA_STATUS_UNK_20). */
+    ITEM_USE_FLAG_CURE_STONE = 0x04000000, /**< Cures petrification (CHARA_STATUS_UNK_20). */
+    ITEM_USE_FLAG_ADD_DRY = 0x08000000,  /**< Makes the target thirsty (CHARA_STATUS_UNK_40). */
+    ITEM_USE_FLAG_CURE_DRY = 0x10000000, /**< Cures thirst (CHARA_STATUS_UNK_40). */
 };
 
 // clang-format on
@@ -160,9 +321,9 @@ STATIC_ASSERT(sizeof(CDataCommon) == 0x2C);
  */
 class CDataItem {
 public:
-    u32 status_flags; /**< Status conditions the item acts on. */
+    u32 action_flags; /**< ITEM_ACTION_FLAG bits: how the item is used. */
     u32 use_flags;    /**< Effects the item has when used. */
-    u16 target_flags; /**< Kinds of target the item can be used on. */
+    u16 target_flags; /**< ITEM_TARGET_FLAG bits: what the item can be used on. */
     s16 value[3];     /**< Amounts of the item's effects. */
 
     /**
@@ -310,8 +471,8 @@ STATIC_ASSERT(sizeof(CDataBreedFish) == 0x14);
  */
 struct USEITEM_EFFECT {
     u32 use_flags;    /**< Effects the item has when used. */
-    u32 status_flags; /**< Status conditions the item acts on. */
-    u16 target_flags; /**< Kinds of target the item can be used on. */
+    u32 action_flags; /**< ITEM_ACTION_FLAG bits: how the item is used. */
+    u16 target_flags; /**< ITEM_TARGET_FLAG bits: what the item can be used on. */
     u8  unk_a[2];
     int value[4]; /**< Amounts of the item's effects. */
 };
@@ -1173,7 +1334,7 @@ public:
      * @address 0x197B40
      * @size 0x58
      */
-    void SetPtr(int new_kind, void *new_ptr);
+    void SetPtr(int new_type, void *new_ptr);
 };
 
 STATIC_ASSERT(sizeof(CItemUseTarget) == 0x8);
@@ -1209,21 +1370,18 @@ struct BASE_MONSTER_TBL {
     s8    sw_effect_num;     /**< Number of sword after-images that the monster's model carries. */
     s16   element_resist[8]; /**< Percentages that reduce damage from each element. */
     s16   ext_param[12];     /**< Percentages that scale the damage of each kind of attack. */
-    u32   flags;             /**< Bits that suppress normal damage and knockback reactions. */
-    u32   unk_98;
+    u32   flags;             /**< MONSTER_TBL_FLAG bits that suppress damage reactions. */
+    u32   lift_flags;        /**< MONSTER_LIFT_FLAG bits. */
     s32   next_id; /**< Monster kind that is loaded along with this one; -1 for none. */
 
-    union {
-        s16 drop_item[3];  /**< Item numbers in the monster's drop slots. */
-        s16 drop_items[3]; /**< Alternate view of the monster's drop slots. */
-    };
+    s16 drop_item[3]; /**< Item numbers in the monster's drop slots. */
 
     u32 resist_attr;       /**< Hit attribute bits that cannot leave statuses on the monster. */
     s16 status_chance;     /**< Base chance used when applying a hit status. */
     s16 ratio_damage_rate; /**< Percentage used when scaling ratio-based damage. */
     s8  area_no;           /**< Area number assigned to this monster definition. */
     s16 memo_index;        /**< Index of this monster in the encyclopedia. */
-    s16 unk_b4;
+    s16 share_model; /**< Nonzero to share the loaded kind's model between its monsters instead of copying it. */
 };
 
 STATIC_ASSERT(sizeof(BASE_MONSTER_TBL) == 0xB8);
@@ -1605,7 +1763,7 @@ int GetRidePodCore(int index);
 
 /**
  *
- * Copies the effect data of a usable item; gives 0 when it has none.
+ * Copies the effect data of a usable item; gives false when it has none.
  *
  * @mangled GetUsedItemAfterEffect__FiP14USEITEM_EFFECT
  * @address 0x197AC0
@@ -1621,4 +1779,4 @@ int GetUsedItemAfterEffect(int item_no, USEITEM_EFFECT *effect);
  * @address 0x197560
  * @size 0x6C
  */
-int ItemCmdMsgSet(int item_no, int *messages);
+int ItemCmdMsgSet(int group, int *messages);
