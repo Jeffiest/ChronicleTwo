@@ -68,7 +68,7 @@ static float                   at_1936__2[4] = {0.0f, 20.0f, 80.0f, 1.0f};
 static MapJumpMapInfo          MainMapInfo;
 
 void CStartupEpisodeTitle::DrawEpisode(int mes_tex_block, int frame_tex_block) {
-    if (mes == NULL || state == (int) EPISODE_TITLE_OFF) {
+    if (mes == NULL || state == EPISODE_TITLE_OFF) {
         return;
     }
 
@@ -80,7 +80,7 @@ void CStartupEpisodeTitle::DrawEpisode(int mes_tex_block, int frame_tex_block) {
     sprite.Preset2D();
     sprite.Coord(0);
     sprite.TextureMapEnable(1);
-    sprite.Begin(6);
+    sprite.Begin(MG_PRIM_SPRITE);
     sprite.Texture(TEX_SystenFrame2);
     int y = mgScreenHeight - 0x38;
     sprite.Color(0x80, 0x80, 0x80, (int) (128.0f * alpha));
@@ -135,8 +135,8 @@ void CStartupEpisodeTitle::Switch(int on) {
         alpha = 0;
         reveal = 0;
         slide = 0;
-        wait = 0x3C;
-    } else if (state != (int) EPISODE_TITLE_OFF) {
+        wait = 60;
+    } else if (state != EPISODE_TITLE_OFF) {
         current = mes;
         current->draw_speed = current->GetDrawSpeedDef();
         current->mes_no = -1;
@@ -158,7 +158,7 @@ void CStartupEpisodeTitle::Step() {
         return;
     }
 
-    if (state == (int) EPISODE_TITLE_FADE_IN) {
+    if (state == EPISODE_TITLE_FADE_IN) {
         alpha += 0.033333335f;
 
         if (!(alpha < 1.0f)) {
@@ -176,21 +176,21 @@ void CStartupEpisodeTitle::Step() {
 
             if (!(slide < 1.0f)) {
                 slide = 1.0f;
-                wait = 0x3C;
-                state = (int) EPISODE_TITLE_HOLD;
+                wait = 60;
+                state = EPISODE_TITLE_HOLD;
             }
         }
     }
 
-    if (state == (int) EPISODE_TITLE_HOLD) {
+    if (state == EPISODE_TITLE_HOLD) {
         wait -= 1;
 
         if (wait < 0) {
-            state = (int) EPISODE_TITLE_FADE_OUT;
+            state = EPISODE_TITLE_FADE_OUT;
         }
     }
 
-    if (state == (int) EPISODE_TITLE_FADE_OUT) {
+    if (state == EPISODE_TITLE_FADE_OUT) {
         reveal -= 0.05f;
 
         if (reveal <= 0.0f) {
@@ -215,7 +215,7 @@ void CStartupEpisodeTitle::Step() {
                 mes_win->fade = 0.0f;
                 mes_win->fukidashi_centre_x = -1;
                 mes_win->fukidashi_centre_y = -1;
-                state = (int) EPISODE_TITLE_OFF;
+                state = EPISODE_TITLE_OFF;
             }
         }
     }
@@ -233,7 +233,7 @@ void CStartupEpisodeTitle::Step() {
 
 void CStartupEpisodeTitle::Initialize() {
     mes = NULL;
-    state = (int) EPISODE_TITLE_OFF;
+    state = EPISODE_TITLE_OFF;
     wait = 0;
 }
 
@@ -253,7 +253,7 @@ void MessageTaskManager::Step() {
 
     current = this->mes;
 
-    if (current != NULL && !(this->flag & 1)) {
+    if (current != NULL && !(this->flag & MESSAGE_TASK_MANAGER_FLAG_HOLD)) {
         line = this->top;
 
         if (line != NULL) {
@@ -303,7 +303,7 @@ void MessageTaskManager::Print(char *message, int time, int slot, int priority) 
             }
 
             i += 1;
-        } while (i < 6);
+        } while (i < MESSAGE_TASK_MAX);
 
         if (node != NULL) {
             strcpy(node->text, message);
@@ -361,13 +361,13 @@ void MessageTaskManager::Clear() {
                 this->mes->Step();
             }
 
-            this->task[0].message = 0;
-            this->task[0].message = 0;
-            this->task[0].message = 0;
-            this->task[0].message = 0;
-            this->task[0].message = 0;
-            this->task[0].message = 0;
-            this->top = 0;
+            this->task[0].message = NULL;
+            this->task[0].message = NULL;
+            this->task[0].message = NULL;
+            this->task[0].message = NULL;
+            this->task[0].message = NULL;
+            this->task[0].message = NULL;
+            this->top = NULL;
             this->flag = 0;
         }
     }
@@ -420,14 +420,14 @@ void CRedMarkModel::Draw() {
         SetPosition(position);
         CObjectFrame::DrawDirect();
         SetPosition(saved_position);
-        draw_request = 0;
+        draw_request = false;
     }
 }
 
 void CRedMarkModel::Step() {
     float next;
 
-    angle += 0.19634955f;
+    angle += PI / 16.0f;
     next = angle;
 
     if (!(next <= 0.0f)) {
@@ -461,7 +461,7 @@ void CGeoStone::DrawMiniMapSymbol(CMiniMapSymbol *symbol_drawer) {
 
     if (this->flag != 0) {
         GetPosition(position);
-        (symbol_drawer)->DrawSymbol(position, (int) MINIMAP_SYMBOL_GEOSTONE);
+        symbol_drawer->DrawSymbol(position, MINIMAP_SYMBOL_GEOSTONE);
     }
 }
 
@@ -482,7 +482,7 @@ void CGeoStone::GeoStep() {
 
     if (this->flag != 0) {
         CCharacter2::Step();
-        this->angle += 0.05235988f;
+        this->angle += 3.0f * DEG_TO_RAD;
         next = this->angle;
 
         if (!(next <= PI)) {
@@ -495,17 +495,17 @@ int CGeoStone::CheckEvent(float *pos) {
     float position[4];
 
     if (this->flag == 0) {
-        return 0;
+        return false;
     }
 
     GetPosition(position);
     position[1] -= 20.0f;
 
     if (mgDistVector(pos, position) <= 30.0f) {
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 void CGeoStone::Initialize() {
@@ -540,7 +540,7 @@ void CRandomCircle::DrawSymbol(CMiniMapSymbol *mini_map) {
 
     do {
         if (active[id] != 0) {
-            mini_map->DrawSymbol(this->pos[id], (int) MINIMAP_SYMBOL_RANDOM_CIRCLE);
+            mini_map->DrawSymbol(this->pos[id], MINIMAP_SYMBOL_RANDOM_CIRCLE);
         }
 
         id += 1;
@@ -567,19 +567,19 @@ loop:
 int CRandomCircle::GetPosition(float *out_pos, int index) {
     if (index == -1) {
         if (this->hit == -1) {
-            return 0;
+            return false;
         }
 
         sceVu0CopyVector(out_pos, this->pos[this->hit]);
-        return 1;
+        return true;
     }
 
     if (index < 0 || index >= 3) {
-        return 0;
+        return false;
     }
 
     sceVu0CopyVector(out_pos, this->pos[index]);
-    return 1;
+    return true;
 }
 
 int CRandomCircle::CheckEvent(float *pos) {
@@ -622,17 +622,17 @@ loop:
 }
 
 void CRandomCircle::Clear() {
-    active[0] = 0;
-    active[1] = 0;
-    active[2] = 0;
+    active[0] = false;
+    active[1] = false;
+    active[2] = false;
     hit = -1;
 }
 
 void CRandomCircle::Initialize() {
     model.Initialize();
-    this->active[0] = 0;
-    this->active[1] = 0;
-    this->active[2] = 0;
+    this->active[0] = false;
+    this->active[1] = false;
+    this->active[2] = false;
     this->hit = -1;
 }
 
@@ -677,13 +677,13 @@ void CTreasureBox::DrawShadow(float *view_pos, float *light_direction) {
     }
 }
 
-void CTreasureBoxManager::SetLargeModel(CCharacter2 *model, int value) {
+void CTreasureBoxManager::SetLargeModel(CCharacter2 *model, int tex_block) {
     mgCFrame     *frame;
     mgCFrame     *found;
     CTreasureBox *entry;
     int           i;
 
-    this->tex_block = value;
+    this->tex_block = tex_block;
     this->model = model;
     frame = model->CObjectFrame::frame;
 
@@ -693,7 +693,7 @@ void CTreasureBoxManager::SetLargeModel(CCharacter2 *model, int value) {
         if (found != NULL) {
             entry = box;
 
-            for (i = 0; i < 0x18; i++) {
+            for (i = 0; i < TREASURE_BOX_MAX; i++) {
                 entry->lid_frame = found;
                 entry->frame = frame;
                 entry->model = model;
@@ -717,21 +717,21 @@ void CTreasureBoxManager::PutTreasureBox(int index, float *pos, float rot_y, int
         do {
             chest = &this->box[i];
 
-            if (chest->state == (int) TREASURE_BOX_STATE_NONE) {
+            if (chest->state == TREASURE_BOX_STATE_NONE) {
                 index = i;
                 break;
             }
 
             i += 1;
-        } while (i < 0x18);
+        } while (i < TREASURE_BOX_MAX);
     }
 
-    if (index < 0 || index >= 0x18) {
+    if (index < 0 || index >= TREASURE_BOX_MAX) {
         return;
     }
 
     chest = &this->box[index];
-    chest->state = (int) TREASURE_BOX_STATE_UNOPENED;
+    chest->state = TREASURE_BOX_STATE_UNOPENED;
     chest->SetPosition(pos);
     chest->SetRotation(0.0f, rot_y, 0.0f);
     chest->flags = flags;
@@ -777,13 +777,13 @@ void CTreasureBoxManager::DrawMiniMapSymbol(CMiniMapSymbol *symbol_drawer) {
     do {
         slot = &this->box[i];
 
-        if (slot->state == (int) TREASURE_BOX_STATE_UNOPENED) {
+        if (slot->state == TREASURE_BOX_STATE_UNOPENED) {
             slot->GetPosition(chest_pos);
-            (symbol_drawer)->DrawSymbol(chest_pos, (int) MINIMAP_SYMBOL_TREASURE_BOX);
+            symbol_drawer->DrawSymbol(chest_pos, MINIMAP_SYMBOL_TREASURE_BOX);
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 }
 
 void CTreasureBoxManager::Draw(float *view_pos) {
@@ -795,12 +795,12 @@ void CTreasureBoxManager::Draw(float *view_pos) {
     do {
         slot = &this->box[i];
 
-        if (slot->state != (int) TREASURE_BOX_STATE_NONE) {
-            (slot)->Draw(view_pos);
+        if (slot->state != TREASURE_BOX_STATE_NONE) {
+            slot->Draw(view_pos);
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 }
 
 void CTreasureBoxManager::DrawShadow(float *view_pos) {
@@ -822,12 +822,12 @@ void CTreasureBoxManager::DrawShadow(float *view_pos) {
     do {
         slot = &this->box[i];
 
-        if (slot->state != (int) TREASURE_BOX_STATE_NONE) {
+        if (slot->state != TREASURE_BOX_STATE_NONE) {
             slot->DrawShadow(view_pos, shadow_direction);
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 }
 
 int CTreasureBoxManager::PickupCollision(float *pos, CCPoly *polys, mgVu0FBOX box, int flag) {
@@ -843,19 +843,19 @@ int CTreasureBoxManager::PickupCollision(float *pos, CCPoly *polys, mgVu0FBOX bo
     do {
         slot = &this->box[i];
 
-        if (slot->state != (int) TREASURE_BOX_STATE_NONE) {
+        if (slot->state != TREASURE_BOX_STATE_NONE) {
             slot->GetPosition(chest_pos);
 
             if (mgDistVector(chest_pos, pos) <= 40.0f) {
                 this->col_frame->SetPosition(chest_pos);
                 slot->GetRotation(rotation);
                 this->col_frame->SetRotation(rotation);
-                count += this->col_frame->PickUpNearPoly(polys + count, *(&box), flag);
+                count += this->col_frame->PickUpNearPoly(&polys[count], box, flag);
             }
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 
     return count;
 }
@@ -871,12 +871,12 @@ int CTreasureBoxManager::MimicCount() {
     do {
         slot = &this->box[i];
 
-        if (slot->state == (int) TREASURE_BOX_STATE_UNOPENED && (slot->flags & (int) TREASURE_BOX_FLAG_MIMIC)) {
+        if (slot->state == TREASURE_BOX_STATE_UNOPENED && (slot->flags & TREASURE_BOX_FLAG_MIMIC)) {
             count += 1;
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 
     return count;
 }
@@ -895,7 +895,7 @@ int CTreasureBoxManager::CheckEvent(float *pos, float dist) {
     do {
         slot = &this->box[i];
 
-        if (slot->state == (int) TREASURE_BOX_STATE_UNOPENED) {
+        if (slot->state == TREASURE_BOX_STATE_UNOPENED) {
             slot->GetPosition(chest_pos);
             distance = mgDistVector(chest_pos, pos);
 
@@ -906,25 +906,25 @@ int CTreasureBoxManager::CheckEvent(float *pos, float dist) {
         }
 
         i += 1;
-    } while (i < 0x18);
+    } while (i < TREASURE_BOX_MAX);
 
     return this->near_box;
 }
 
-int GetGateKeyIndex(int floor, int level) {
-    if (floor == 4 && level >= 0x11) {
-        return 0x159;
+int GetGateKeyIndex(int dungeon, int floor) {
+    if (dungeon == 4 && floor >= 17) {
+        return 345;
     }
 
-    return gatekey_index[floor];
+    return gatekey_index[dungeon];
 }
 
-int GetKeyDoorIndex(int floor, int level) {
-    if (floor == 4 && level >= 0x11) {
-        return 0x15B;
+int GetKeyDoorIndex(int dungeon, int floor) {
+    if (dungeon == 4 && floor >= 17) {
+        return 347;
     }
 
-    return keydoor_key_index[floor];
+    return keydoor_key_index[dungeon];
 }
 
 int Lamb2WolfManager() {
@@ -938,7 +938,7 @@ int Lamb2WolfManager() {
 
     info = GetBattleCharaInfo();
 
-    if (info->chr_no != 1) {
+    if (info->chr_no != USER_CHARA_MONICA) {
         return -1;
     }
 
@@ -959,7 +959,7 @@ int Lamb2WolfManager() {
 
         if (object != NULL) {
             object->GetRotation(rotation);
-            rotation[1] += 0.27925268f;
+            rotation[1] += 16.0f * DEG_TO_RAD;
             rotation[1] = mgAngleLimit(rotation[1]);
             object->SetRotation(rotation);
         }
@@ -999,7 +999,7 @@ void StatusWarningSnd() {
     float             ratio;
 
     if (!(DngMainScene->battle_area.pause_flag & DNG_PAUSE_PLAYER_STATUS)) {
-        if (counter_1489 < 0x14) {
+        if (counter_1489 < 20) {
             counter_1489 += 1;
         } else {
             counter_1489 = 0;
@@ -1008,7 +1008,7 @@ void StatusWarningSnd() {
             ratio /= (float) info->GetMaxHp_i();
 
             if (ratio > 0.0f && ratio < 0.3f) {
-                sndSePlay(((CScene *) DngMainScene)->se_battle_id, 10, 0);
+                sndSePlay(DngMainScene->se_battle_id, 10, 0);
 
                 if (ratio < 0.15f) {
                     counter_1489 = 10;
@@ -1027,7 +1027,7 @@ void BattleAreaBGMCtrl() {
     float            rate;
     CScene          *scene;
 
-    state = (&DngMainScene->battle_area);
+    state = &DngMainScene->battle_area;
     player = (CActionChara *) DngMainScene->GetCharacter(0);
 
     if (dngGetDebugInfo()->sound_flag == 0) {
@@ -1042,24 +1042,24 @@ void BattleAreaBGMCtrl() {
     }
 
     if (distance <= 340.0f) {
-        player->battle_stance = 1;
+        player->battle_stance = true;
     } else {
-        player->battle_stance = 0;
+        player->battle_stance = false;
     }
 
     if (!(state->pause_flag & DNG_PAUSE_BATTLE_MUSIC) && state->boss_map == 0) {
         phase = state->battle_bgm_state;
         fade = state->battle_bgm_vol;
 
-        if (phase == (int) DNG_BGM_MAP) {
+        if (phase == DNG_BGM_MAP) {
             if (!(340.0f < distance)) {
-                state->battle_bgm_state = (int) DNG_BGM_FADE_OUT_MAP;
+                state->battle_bgm_state = DNG_BGM_FADE_OUT_MAP;
             }
         }
 
-        if (phase == (int) DNG_BGM_BATTLE) {
+        if (phase == DNG_BGM_BATTLE) {
             if (400.0f <= distance) {
-                state->battle_bgm_state = (int) DNG_BGM_FADE_OUT_BATTLE;
+                state->battle_bgm_state = DNG_BGM_FADE_OUT_BATTLE;
             }
         }
 
@@ -1068,7 +1068,7 @@ void BattleAreaBGMCtrl() {
                 fade += 0.05f;
 
                 if (!(fade < 1.0f)) {
-                    state->battle_bgm_state = (int) DNG_BGM_BATTLE;
+                    state->battle_bgm_state = DNG_BGM_BATTLE;
                     fade = 1.0f;
                     sndSePlay(EdEventInfo.snd_id[4], 0, 0);
                     DngMainScene->PauseBGM();
@@ -1083,7 +1083,7 @@ void BattleAreaBGMCtrl() {
                 fade -= 0.016666668f;
 
                 if (fade <= 0.0f) {
-                    state->battle_bgm_state = (int) DNG_BGM_FADE_IN_MAP;
+                    state->battle_bgm_state = DNG_BGM_FADE_IN_MAP;
                     fade = 0.0f;
                     sndSeStop(EdEventInfo.snd_id[4], 0, 0);
                     DngMainScene->RePlayBGM();
@@ -1101,7 +1101,7 @@ void BattleAreaBGMCtrl() {
                 rate += 0.033333335f;
 
                 if (!(rate < 1.0f)) {
-                    state->battle_bgm_state = (int) DNG_BGM_MAP;
+                    state->battle_bgm_state = DNG_BGM_MAP;
                     rate = 1.0f;
                 }
 
@@ -1119,7 +1119,7 @@ void ScriptDebugCommand(int command) {
     info = GetBattleCharaInfo();
 
     switch (command) {
-        case 0:
+        case SCRIPT_DEBUG_COMMAND_RESTORE_HP:
             info->AddHp_Point(512.0f, -1.0f);
             info->ForceSet();
             break;
@@ -1134,7 +1134,7 @@ void XChgMapLighting() {
 
     map = (CMapInfo *) DngMainScene->GetMap(DngMainScene->active_map);
 
-    if ((map != NULL) && (map != NULL) && (map->lighting_info_num >= 0x10)) {
+    if ((map != NULL) && (map != NULL) && (map->lighting_info_num >= 16)) {
         memset(saved, 0, sizeof(saved));
         i = 0;
         byte_offset = 0;
@@ -1158,51 +1158,51 @@ float XChgMapRotation(int index) {
     return xchg_rot_list[index];
 }
 
-int SearchMapEventParts(int kind, CMapParts **parts, float *rotation, int unused) {
-    char       name[0x40];
+int SearchMapEventParts(int kind, CMapParts **parts, float *rotation, int max) {
+    char       name[64];
     int        result;
     CMap      *map;
     CMapParts *found;
     int        i;
 
-    result = 0;
+    result = false;
 
     if ((map = DngMainScene->GetMap(DngMainScene->active_map)) == NULL) {
-        return 0;
+        return false;
     }
 
     switch (kind) {
-        case 0:
+        case MAP_EVENT_PARTS_WAY_32:
             for (i = 0; i < 4; i++) {
-                sprintf(name, "way%d", i + 0x20);
-                found = (CMapParts *) (map)->GetPlaceParts(name);
+                sprintf(name, "way%d", i + 32);
+                found = map->GetPlaceParts(name);
 
                 if (found != NULL) {
                     parts[0] = found;
                     *rotation = XChgMapRotation(i);
-                    result = 1;
+                    result = true;
                     parts[1] = NULL;
                     break;
                 }
             }
 
             break;
-        case 2:
-            for (i = 0; i < 0x10; i++) {
-                sprintf(name, "way%d", i + 0x24);
-                found = (CMapParts *) (map)->GetPlaceParts(name);
+        case MAP_EVENT_PARTS_WAY_36:
+            for (i = 0; i < 16; i++) {
+                sprintf(name, "way%d", i + 36);
+                found = map->GetPlaceParts(name);
 
                 if (found != NULL) {
                     parts[0] = found;
                     *rotation = XChgMapRotation(i);
-                    result = 1;
+                    result = true;
                     parts[1] = NULL;
                     break;
                 }
             }
 
             break;
-        case 1:
+        case MAP_EVENT_PARTS_NONE:
             break;
     }
 
@@ -1231,17 +1231,17 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
     CMap *const scene_map = DngMainScene->GetMap(DngMainScene->active_map);
 
     if ((map = scene_map) == NULL) {
-        return 0;
+        return false;
     }
 
     place_parts = scene_map->GetPlacPartsTable(&place_num);
 
     if (place_parts == NULL) {
-        return 0;
+        return false;
     }
 
     if (place_num <= 0) {
-        return 0;
+        return false;
     }
 
     CMapParts *placed = place_parts;
@@ -1288,7 +1288,7 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
             }
         }
 
-        poly_num = map->GetColPoly(polys, box, 0x80);
+        poly_num = map->GetColPoly(polys, box, 128);
 
         for (attempt = 0; attempt < 16; attempt++) {
             sceVu0CopyVector(from, center);
@@ -1297,7 +1297,7 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
             sceVu0CopyVector(to, from);
             from[1] += 4200.0f;
             to[1] -= 4200.0f;
-            hit_num = CheckHits(polys, poly_num, from, to, 0x20, hit_polys, hit_points, 0, 0);
+            hit_num = CheckHits(polys, poly_num, from, to, 32, hit_polys, hit_points, 0, 0);
 
             for (int i = 0; i < hit_num; i++) {
                 short area_kind = polys[hit_polys[i]].area_kind;
@@ -1315,7 +1315,7 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
                     if (CheckHit(polys, poly_num, from, to, found, 1, 1) >= 0) {
                         sceVu0CopyVector(out_pos, found);
                         out_pos[3] = 1.0f;
-                        return 1;
+                        return true;
                     }
                 }
             }
@@ -1323,7 +1323,7 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
 
         if (tries_left < 0) {
             printf("flat put err\n");
-            return 0;
+            return false;
         }
 
         tries_left--;
@@ -1337,27 +1337,27 @@ int GetDungeonEventPoint(float *out_pos, float *out_rot, int kind) {
         CCharacter2 *player = DngMainScene->GetCharacter(0);
 
         if (player == NULL) {
-            return 0;
+            return false;
         }
 
         player->GetPosition(out_pos);
         out_pos[0] = (int) ((80.0f + out_pos[0]) / 160.0f) * 160;
-        out_pos[1] = 0;
+        out_pos[1] = 0.0f;
         out_pos[2] = (int) ((80.0f + out_pos[2]) / 160.0f) * 160;
-        *out_rot = 0;
+        *out_rot = 0.0f;
     }
 
-    if (kind == DUNGEON_EVENT_POINT_WAY_20) {
+    if (kind == DUNGEON_EVENT_POINT_WAY_32) {
         CMapParts *parts[8];
         float      rotation[8];
         CMap      *map = DngMainScene->GetMap(DngMainScene->active_map);
 
         if (map == NULL) {
-            return 0;
+            return false;
         }
 
-        if (SearchMapEventParts(0, parts, rotation, 8) <= 0) {
-            return 0;
+        if (SearchMapEventParts(MAP_EVENT_PARTS_WAY_32, parts, rotation, 8) <= 0) {
+            return false;
         }
 
         CMapParts *found = parts[0];
@@ -1366,20 +1366,20 @@ int GetDungeonEventPoint(float *out_pos, float *out_rot, int kind) {
         CSceneEventData *event = &DngMainScene->event_data;
         event->map_event.parts_no = map->ConvertParts(found);
         EdEventInfo.dng_event_parts = found;
-        EdEventInfo.dng_event_found = 1;
+        EdEventInfo.dng_event_found = true;
     }
 
-    if (kind == DUNGEON_EVENT_POINT_WAY_24) {
+    if (kind == DUNGEON_EVENT_POINT_WAY_36) {
         CMapParts *parts[16];
         float      rotation[16];
         CMap      *map = DngMainScene->GetMap(DngMainScene->active_map);
 
         if (map == NULL) {
-            return 0;
+            return false;
         }
 
-        if (SearchMapEventParts(2, parts, rotation, 0x10) <= 0) {
-            return 0;
+        if (SearchMapEventParts(MAP_EVENT_PARTS_WAY_36, parts, rotation, 16) <= 0) {
+            return false;
         }
 
         CMapParts *found = parts[0];
@@ -1388,20 +1388,20 @@ int GetDungeonEventPoint(float *out_pos, float *out_rot, int kind) {
         CSceneEventData *event = &DngMainScene->event_data;
         event->map_event.parts_no = map->ConvertParts(found);
         EdEventInfo.dng_event_parts = found;
-        EdEventInfo.dng_event_found = 1;
+        EdEventInfo.dng_event_found = true;
     }
 
     if (kind == DUNGEON_EVENT_POINT_TREASURE_BOX) {
         DNG_BATTLE_AREA *area = &DngMainScene->battle_area;
 
         if (area == NULL) {
-            return 0;
+            return false;
         }
 
         CTreasureBoxManager *boxes = area->treasure_box;
 
         if (boxes == NULL) {
-            return 0;
+            return false;
         }
 
         int           near_box = boxes->near_box;
@@ -1409,7 +1409,7 @@ int GetDungeonEventPoint(float *out_pos, float *out_rot, int kind) {
         CTreasureBox *box = &boxes->box[box_no];
 
         if (box == NULL) {
-            return 0;
+            return false;
         }
 
         box->GetPosition(out_pos);
@@ -1417,7 +1417,7 @@ int GetDungeonEventPoint(float *out_pos, float *out_rot, int kind) {
         *out_rot = euler[1];
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -1437,14 +1437,14 @@ int _GROUP_START(SPI_STACK *stack, int argc) {
  *
  */
 int _GROUP(SPI_STACK *stack, int argc) {
-    int first;
-    int second;
+    int group_id;
+    int item_num;
 
-    first = spiGetStackInt(stack++);
-    second = spiGetStackInt(stack);
+    group_id = spiGetStackInt(stack++);
+    item_num = spiGetStackInt(stack);
     nowTbFloor->group_num += 1;
-    nowTbFloor->group[nowTbFloor->group_num].group_id = first;
-    nowTbFloor->group[nowTbFloor->group_num].item_num = second;
+    nowTbFloor->group[nowTbFloor->group_num].group_id = group_id;
+    nowTbFloor->group[nowTbFloor->group_num].item_num = item_num;
     nowTboxGroup = nowTbFloor->group_num;
     nowTboxItemCnt = 0;
     return 1;
@@ -1457,17 +1457,17 @@ int _GROUP(SPI_STACK *stack, int argc) {
  */
 int _ITEM(SPI_STACK *stack, int argc) {
     int i;
-    int id;
-    int value;
-    int weight;
+    int item_no;
+    int rank;
+    int num;
 
     for (i = 0; i < argc / 3; i++) {
-        id = spiGetStackInt(stack++);
-        value = spiGetStackInt(stack++);
-        weight = spiGetStackInt(stack++);
-        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].item_no = id;
-        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].rank = value;
-        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].num = weight;
+        item_no = spiGetStackInt(stack++);
+        rank = spiGetStackInt(stack++);
+        num = spiGetStackInt(stack++);
+        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].item_no = item_no;
+        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].rank = rank;
+        nowTbFloor->group[nowTboxGroup].item[nowTboxItemCnt].num = num;
         nowTboxItemCnt += 1;
     }
 
@@ -1522,9 +1522,9 @@ void CreatTresuarBoxInfo(TRESURE_BOX_FLOOR_INFO *table, char *script, int length
     nowTbFloor = table;
     CScriptInterpreter interpreter;
 
-    (interpreter).SetTag(tag__5);
-    (interpreter).SetScript(script, length);
-    (interpreter).Run();
+    interpreter.SetTag(tag__5);
+    interpreter.SetScript(script, length);
+    interpreter.Run();
     table->group_num += 1;
 }
 
@@ -1534,7 +1534,7 @@ void PickupRandomItemCheckMax(TRESURE_BOX_FLOOR_INFO *table, int floor_index) {
     int                i;
     int                j;
     int                id;
-    TRESURE_BOX_ITEM  *entry;
+
     table->rank_max = 0;
     table->rank_min = 0;
     count = table->floor[floor_index].group_num;
@@ -1622,11 +1622,11 @@ int CheckObjectPutArea(float *pos) {
     CMapParts *object;
 
     if (!DngMainScene->battle_area.treasure_box->CheckArea(pos, 40.0f)) {
-        return 0;
+        return false;
     }
 
     if (!RandomCircle.CheckArea(pos, 40.0f)) {
-        return 0;
+        return false;
     }
 
     if ((object = AutoMapGen.gio_parts) != NULL) {
@@ -1634,7 +1634,7 @@ int CheckObjectPutArea(float *pos) {
         position[3] = 1.0f;
 
         if (mgDistVector(position, pos) < 40.0f) {
-            return 0;
+            return false;
         }
     }
 
@@ -1644,7 +1644,7 @@ int CheckObjectPutArea(float *pos) {
 float ScanEyePoint(float *eye_pos) {
     float     position[4];
     float     hit[4];
-    CCPoly    polys[0x80];
+    CCPoly    polys[128];
     mgVu0FBOX box;
     float     direction[4];
     float     rotated[4];
@@ -1674,7 +1674,7 @@ float ScanEyePoint(float *eye_pos) {
     box.min[3] = 1.0f;
     box.max[2] = 200.0f + z;
     box.min[2] = z - 200.0f;
-    poly_count = map->GetColPoly(polys, box, 0x80);
+    poly_count = map->GetColPoly(polys, box, 128);
     *(DngEventVector *) direction = *(DngEventVector *) at_1936__2;
     sceVu0UnitMatrix(identity);
     i = 0;
@@ -1690,18 +1690,18 @@ float ScanEyePoint(float *eye_pos) {
         }
 
         printf("-------------------------> hit %.2f,%.2f\n", position[0], position[2]);
-        angle += (PI / 8.0f);
+        angle += PI / 8.0f;
         angle = mgAngleLimit(angle);
         i++;
 
-        if (i >= 0x10) {
+        if (i >= 16) {
             return angle;
         }
     }
 }
 
 void AutoSetTreasureBox(int id, float *position, float power) {
-    (DngMainScene->battle_area.treasure_box)->PutTreasureBox(-1, position, power, 0x41, id, 1, -1, 0);
+    DngMainScene->battle_area.treasure_box->PutTreasureBox(-1, position, power, 0x41, id, 1, -1, 0);
 }
 
 void AutoSetTreasureBox() {
@@ -1715,10 +1715,10 @@ void AutoSetTreasureBox() {
     int                  box;
     int                  i;
 
-    GetDungeonEventPoint(event_pos, &event_rot, 2);
+    GetDungeonEventPoint(event_pos, &event_rot, DUNGEON_EVENT_POINT_WAY_32);
     event_pos[3] = 1.0f;
     mgCMemory stack;
-    char      path[0x40];
+    char      path[64];
     float     pos[4];
     float     mimic_pos[4];
     int       size;
@@ -1730,7 +1730,7 @@ void AutoSetTreasureBox() {
     PickupRandomItemCheckMax(info, floor);
 
     for (box = 0; box < 8; box++) {
-        int searching = 1;
+        int searching = true;
 
         while (searching) {
             if (SearchMapFlatPosition(pos, &AutoMapGen) && !(mgDistVector(event_pos, pos) <= 320.0f) &&
@@ -1744,11 +1744,11 @@ void AutoSetTreasureBox() {
 
                 if (box < 2) {
                     if (box == 0) {
-                        item0 = 0x132;
+                        item0 = 306;
                     }
 
                     if (box == 1) {
-                        item0 = 0x131;
+                        item0 = 305;
                     }
 
                     flags = 0x41;
@@ -1789,7 +1789,7 @@ void AutoSetTreasureBox() {
 
                     flags |= kind;
 
-                    if (flags & (int) TREASURE_BOX_FLAG_TWO_ITEMS) {
+                    if (flags & TREASURE_BOX_FLAG_TWO_ITEMS) {
                         TRESURE_BOX_ITEM *item = PickupRandomItem(info, floor, 60);
                         item0 = item->item_no;
                         num0 = item->num;
@@ -1828,7 +1828,7 @@ void AutoSetTreasureBox() {
                 }
 
                 manager->PutTreasureBox(-1, pos, angle, flags, item0, num0, item1, num1);
-                searching = 0;
+                searching = false;
             }
         }
     }
@@ -1836,8 +1836,8 @@ void AutoSetTreasureBox() {
     for (i = 0; i < ActiveMonster->locate.num; i++) {
         int monster_id = ActiveMonster->locate.monster_id[i];
 
-        if (monster_id >= 0xF5 && monster_id < 0x10D) {
-            int placed = 0;
+        if (monster_id >= 245 && monster_id < 269) {
+            int placed = false;
             int param = ActiveMonster->locate.param[i];
 
             do {
@@ -1845,10 +1845,10 @@ void AutoSetTreasureBox() {
                     CheckObjectPutArea(mimic_pos)) {
                     manager->PutTreasureBox(-1, mimic_pos,
                                             (2.0f * (PI * (float) rand())) / 2.1474836e9f - PI,
-                                            0x101, monster_id, param, -1, 0);
-                    placed = 1;
+                                            TREASURE_BOX_FLAG_MIMIC | 1, monster_id, param, -1, 0);
+                    placed = true;
                 }
-            } while (placed == 0);
+            } while (!placed);
         }
     }
 
@@ -1908,8 +1908,8 @@ void AutoSetTreasureBox() {
             CGeoStone *stone = &GeoStone;
             stone->SetPosition(pos);
             stone->angle = 0.0f;
-            stone->flag = 1;
-            stone->anime = 1;
+            stone->flag = true;
+            stone->anime = true;
 
             if (AutoMapGen.gio_parts != NULL) {
                 AutoMapGen.gio_parts->SetPosition(pos);
@@ -1955,7 +1955,7 @@ int _FLS(SPI_STACK *stack, int argc) {
     int floor = current_floor;
 
     if (FLS_FLOOR_ID == floor) {
-        ((CMonsterMan *) ActiveMonster)->locate.num = 0;
+        ActiveMonster->locate.num = 0;
     }
 
     return 1;
@@ -1973,10 +1973,10 @@ int _FL(SPI_STACK *stack, int argc) {
 
     {
         for (i = 0; i < argc / 2; i++) {
-            entry = ((CMonsterMan *) ActiveMonster)->locate.num;
-            ((CMonsterMan *) ActiveMonster)->locate.monster_id[entry] = spiGetStackInt(stack++);
-            ((CMonsterMan *) ActiveMonster)->locate.param[entry] = spiGetStackInt(stack++);
-            ((CMonsterMan *) ActiveMonster)->locate.num++;
+            entry = ActiveMonster->locate.num;
+            ActiveMonster->locate.monster_id[entry] = spiGetStackInt(stack++);
+            ActiveMonster->locate.param[entry] = spiGetStackInt(stack++);
+            ActiveMonster->locate.num++;
         }
     }
     return 1;
@@ -2003,9 +2003,9 @@ void CreatMonsterFloorInfo(char *script, int length) {
     FLS_FLOOR_ID = -1;
     CScriptInterpreter interpreter;
 
-    (interpreter).SetTag(tag2);
-    (interpreter).SetScript(script, length);
-    (interpreter).Run();
+    interpreter.SetTag(tag2);
+    interpreter.SetScript(script, length);
+    interpreter.Run();
 }
 
 void AutoSetMonster() {
@@ -2016,27 +2016,27 @@ void AutoSetMonster() {
     int             i;
     int             placed;
     CActiveMonster *monster;
-    int             floor_no;
+    int             dungeon;
     int             floor_id;
     int             spawn_count;
     int             base_id;
     int             gate_key;
 
     if (ActiveMonster != NULL) {
-        DngMainScene->battle_area.battle_clear = 0;
-        floor_no = DngSaveDataDungeon->stage_id;
-        spawn_count = ((CMonsterMan *) ActiveMonster)->locate.num;
+        DngMainScene->battle_area.battle_clear = false;
+        dungeon = DngSaveDataDungeon->stage_id;
+        spawn_count = ActiveMonster->locate.num;
         floor_id = DngSaveDataDungeon->floor_id[DngSaveDataDungeon->stage_id];
 
-        if (spawn_count > 0x18) {
-            spawn_count = 0x18;
+        if (spawn_count > MONSTER_ACTIVE_MAX) {
+            spawn_count = MONSTER_ACTIVE_MAX;
         }
 
-        GetDungeonEventPoint(event_point, &event_extra[3], 2);
+        GetDungeonEventPoint(event_point, &event_extra[3], DUNGEON_EVENT_POINT_WAY_32);
         event_point[3] = 1.0f;
 
         for (i = 0; i < spawn_count; i++) {
-            placed = 0;
+            placed = false;
 
             do {
                 if (SearchMapFlatPosition(position, &AutoMapGen) != 0) {
@@ -2048,19 +2048,19 @@ void AutoSetMonster() {
 
                     if (!(mgDistVector(event_point, position) <= 520.0f) &&
                         CheckObjectPutArea(position) != 0) {
-                        base_id = ((CMonsterMan *) ActiveMonster)->locate.monster_id[i];
+                        base_id = ActiveMonster->locate.monster_id[i];
 
-                        if (base_id >= 0xF5 && base_id < 0x10D) {
-                            placed = 1;
+                        if (base_id >= 245 && base_id < 269) {
+                            placed = true;
                         } else {
                             monster = ActiveMonster->SetActiveMonster(ActiveMonster->SearchBaseIndex(base_id), position, direction, -1);
 
                             if (monster != NULL) {
-                                placed = 1;
-                                monster->locate_param = ((CMonsterMan *) ActiveMonster)->locate.param[i];
+                                placed = true;
+                                monster->locate_param = ActiveMonster->locate.param[i];
 
                                 if (i == 0) {
-                                    gate_key = GetGateKeyIndex(floor_no, floor_id);
+                                    gate_key = GetGateKeyIndex(dungeon, floor_id);
 
                                     if (gate_key != -1) {
                                         monster->gate_key = gate_key;
@@ -2070,7 +2070,7 @@ void AutoSetMonster() {
                         }
                     }
                 }
-            } while (placed == 0);
+            } while (!placed);
         }
     }
 }
@@ -2080,11 +2080,11 @@ void AutoSetMonster(int base_index, float *position, float *direction, int optio
     CActiveMonster *monster;
 
     if (ActiveMonster != NULL) {
-        DngMainScene->battle_area.battle_clear = 0;
-        index = (ActiveMonster)->SearchBaseIndex(base_index);
+        DngMainScene->battle_area.battle_clear = false;
+        index = ActiveMonster->SearchBaseIndex(base_index);
 
         if (index != -1) {
-            monster = (ActiveMonster)->SetActiveMonster(index, position, direction, -1);
+            monster = ActiveMonster->SetActiveMonster(index, position, direction, -1);
 
             if (monster != NULL) {
                 monster->locate_param = option;
@@ -2121,9 +2121,9 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     int                  room;
 
     DNG_BATTLE_AREA *area = &DngMainScene->battle_area;
-    DngMainScene->battle_area.battle_clear = 1;
-    area->battle_clear = 1;
-    area->battle_bgm_state = (int) DNG_BGM_MAP;
+    DngMainScene->battle_area.battle_clear = true;
+    area->battle_clear = true;
+    area->battle_bgm_state = DNG_BGM_MAP;
     area->battle_bgm_vol = 0.0f;
     area->camera_mode = 0;
     area->pause_flag = 0;
@@ -2195,10 +2195,10 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     }
 
     if (strcmp(area->map_name, map_name) == 0) {
-        new_map = 0;
+        new_map = false;
     } else {
         strcpy(area->map_name, map_name);
-        new_map = 1;
+        new_map = true;
     }
 
     if (new_map) {
@@ -2234,7 +2234,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
             if (image != NULL) {
                 textures = &mgTexManager;
                 textures->DeleteBlock(0x66);
-                char image_path[0x40];
+                char image_path[64];
                 sprintf(image_path, "dungeon/minimap/%s.img", map_name);
 
                 if (LoadFile2(image_path, image, &image_size, 0)) {
@@ -2282,7 +2282,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
         stage_image = (u_long128 *) stack->stAllocTest(1);
 
         if (stage_image != NULL) {
-            char stage_path[0x30];
+            char stage_path[48];
 
             if (stage != 4) {
                 sprintf(stage_path, "dungeon/articles/d0%detc.img", stage + 1);
@@ -2330,7 +2330,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     AutoMapGen.minimap_enable = 0;
 
     if (cfg_name != NULL) {
-        char room_path[0x80];
+        char room_path[128];
         sprintf(room_path, "dungeon/cfg_file/%s.cfg", cfg_name);
         mgCMemory room_stack;
         LoadFile(room_path, BuffReadData, &room_size);
