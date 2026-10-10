@@ -564,39 +564,26 @@ CMdsInfo *CMdsList::GetList(char *name) {
 }
 
 int CIMGList::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memory) {
-    CIMGList        *slot;
     mgCEnterIMGInfo *copy;
     u_int            length;
     u_int            blocks;
-
-    slot = this;
 
     if (name == NULL) {
         return false;
     }
 
-    slot->name = NULL;
+    this->name = NULL;
     length = strlen(name) + 1;
     blocks = align16_blocks(length);
-    slot->name = (char *) memory->Alloc(blocks);
-    strcpy(slot->name, name);
-    slot->info = NULL;
+    this->name = (char *) memory->Alloc(blocks);
+    strcpy(this->name, name);
+    this->info = NULL;
 
     if (info != NULL) {
-        slot->info = new (memory->Alloc(align16_blocks(sizeof(mgCEnterIMGInfo)) + 2)) mgCEnterIMGInfo;
-        copy = slot->info;
+        this->info = new (memory->Alloc(align16_blocks(sizeof(mgCEnterIMGInfo)) + 2)) mgCEnterIMGInfo;
+        copy = this->info;
 
-        /**
-         *
-         * Copies the texture archive's block index tables.
-         *
-         */
-        struct Blocks {
-            int v[32]; /**< Thirty-two texture archive block entries. */
-        };
-
-        *(Blocks *) copy->block = *(Blocks *) info->block;
-        *(Blocks *) copy->block_num = *(Blocks *) info->block_num;
+        *copy = *info;
     }
 
     return true;
@@ -607,7 +594,7 @@ int CIMGList::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memory) 
  * Starts a model-pack entry and stores a copy of its scripted name.
  *
  */
-int pcpMDS(SPI_STACK *stack, int argc) {
+static int pcpMDS(SPI_STACK *stack, int argc) {
     char *name;
     char *copy;
     u_int length;
@@ -648,7 +635,7 @@ int pcpMDS(SPI_STACK *stack, int argc) {
  * Converts a scripted model-pack type to its stored model category.
  *
  */
-int pcpTYPE(SPI_STACK *stack, int argc) {
+static int pcpTYPE(SPI_STACK *stack, int argc) {
     int type;
 
     if (pcpNowMdsInfo == NULL) {
@@ -683,7 +670,7 @@ int pcpTYPE(SPI_STACK *stack, int argc) {
  * Sets the current model-pack entry's far clipping distance and fade mode.
  *
  */
-int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
+static int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
     if (pcpNowMdsInfo == NULL) {
         return 0;
     }
@@ -698,7 +685,7 @@ int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
  * Loads the current model-pack entry as a model, collision frame, or character.
  *
  */
-int pcpMDS_END(SPI_STACK *stack, int argc) {
+static int pcpMDS_END(SPI_STACK *stack, int argc) {
     int          size;
     u_int       *file;
     mgCFrame    *frame;
