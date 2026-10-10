@@ -66,7 +66,7 @@ STATIC_ASSERT(sizeof(CMenuFont) == 0xB8);
  */
 class CDC2Mes : public ClsMes {
 public:
-    u8          msg_change;    /**< Non-zero when an inserted string or number changed, so the message is laid out again. */
+    s8          msg_change;    /**< Non-zero when an inserted string or number changed, so the message is laid out again. */
     s8          cursor;        /**< Choice the cursor is on; -1 for none. */
     s16         text_off_x;    /**< Distance of the text from the fixed frame's left edge; negative to use the frame's margins. */
     s16         text_off_y;    /**< Distance of the text from the fixed frame's top edge; negative to use the frame's margins. */

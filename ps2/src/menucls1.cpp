@@ -834,7 +834,7 @@ void CDC2Mes::StepMsg() {
     if (buff != NULL) {
         int message_no = mes_no;
 
-        if ((s8) msg_change != 0) {
+        if (msg_change != 0) {
             ClsMes::mes_no = -1;
             msg_change = false;
         }
