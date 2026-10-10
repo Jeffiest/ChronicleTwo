@@ -1,7 +1,7 @@
 #include "common.h"
-#include "mw_runtime.h"
 #define DNG_DEBUG_SOURCE
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -10,6 +10,7 @@
 #include "automap.hpp"
 #include "cameracontrol.hpp"
 #include "character.hpp"
+#include "colprim.hpp"
 #include "dng_debug.hpp"
 #include "dng_effect.hpp"
 #include "dng_event.hpp"
@@ -19,6 +20,7 @@
 #include "event.hpp"
 #include "event_func.hpp"
 #include "font.hpp"
+#include "gamepad.hpp"
 #include "mainloop.hpp"
 #include "maintex.hpp"
 #include "mapload.hpp"
@@ -32,11 +34,19 @@
 #include "monster.hpp"
 #include "prespr.hpp"
 #include "quest.hpp"
+#include "savedata.hpp"
 #include "savedatadungeon.hpp"
 #include "sceneevent.hpp"
+#include "scenesnd.hpp"
 #include "snd_mngr.hpp"
 #include "snd_seseq.hpp"
+#include "userdata.hpp"
 
+/**
+ *
+ * Label of each line of the debug menu, ended by NULL.
+ *
+ */
 static char *command_str[] = {
     "RunEvent      ",
     "EnemyLoader   ",
@@ -53,12 +63,11 @@ static char *command_str[] = {
     NULL,
 };
 
-#include "colprim.hpp"
-#include "gamepad.hpp"
-#include "savedata.hpp"
-#include "scenesnd.hpp"
-#include "userdata.hpp"
-
+/**
+ *
+ * Value and lowest value of each line of the debug menu, in pairs indexed by twice the DNG_DEBUG_COMMAND.
+ *
+ */
 static int command_int[23] = {
     100,
     0,
@@ -87,33 +96,19 @@ static int command_int[23] = {
 
 /**
  *
- * Closes the dungeon debug menu and applies its edited settings.
+ * Font the dungeon debug screens draw their text with.
  *
  */
-static void dngDebugExit();
+static CFont dbFont;
 
-/**
- *
- * Loads a chosen monster kind beside the player, refreshing monster memory on the first load.
- *
- */
-/**
- *
- * Draws the first dungeon system-parameter panel.
- *
- */
-/**
- *
- * Draws the second dungeon system-parameter panel.
- *
- */
+static void dngDebugExit();
 
 DNG_DEBUG_INFO *dngGetDebugInfo() { return &dbinfo; }
 
 void dngDebugInit() {
-    dbinfo.active = 0;
+    dbinfo.active = false;
     dbinfo.cursor = 0;
-    dbinfo.sound_flag = 1;
+    dbinfo.sound_flag = true;
     dbinfo.monster_talk = 0;
     dbinfo.effect_id = 0;
     dbinfo.effect_vol = 0.0f;
@@ -122,9 +117,9 @@ void dngDebugInit() {
 }
 
 void dngDebugStart() {
-    dbinfo.active = 1;
+    dbinfo.active = true;
     dbinfo.command = -1;
-    dbinfo.first_enemy_load = 1;
+    dbinfo.first_enemy_load = true;
     command_int[DNG_DEBUG_CMD_DEBUG_CAMERA * 2] = DebugInfo.debug_camera;
     command_int[DNG_DEBUG_CMD_CHARA_MOVE * 2] = DebugInfo.chara_move;
     command_int[DNG_DEBUG_CMD_LOCK_ON_MODE * 2] = BattleAreaScene->lock_on_mode;
@@ -139,8 +134,8 @@ void dngDebugStart() {
 }
 
 void dngDebugDraw() {
-    if (dbinfo.active != 0) {
-        (mgTexManager).ReloadTexture(0x6C, (sceVif1Packet *) NULL);
+    if (dbinfo.active) {
+        mgTexManager.ReloadTexture(0x6C, (sceVif1Packet *) NULL);
 
         CPreSprite sprite;
         char       text[0x800];
@@ -168,9 +163,9 @@ void dngDebugDraw() {
             cursor += sprintf(cursor, "%d\n", command_int[i * 2]);
         }
 
-        if (dbinfo.cursor == 1) {
+        if (dbinfo.cursor == DNG_DEBUG_CMD_ENEMY_LOADER) {
             cursor += sprintf(cursor, "\n");
-            int selected = command_int[2];
+            int selected = command_int[DNG_DEBUG_CMD_ENEMY_LOADER * 2];
             int k = 0;
             int found = -1;
 
@@ -183,7 +178,7 @@ void dngDebugDraw() {
             }
 
             if (found == -1) {
-                sprintf(cursor, "[%d]--------\n", command_int[2]);
+                sprintf(cursor, "[%d]--------\n", command_int[DNG_DEBUG_CMD_ENEMY_LOADER * 2]);
             } else if (base_monster_define[found].grade > 0) {
                 for (i = 0; base_monster_define[i].id != -1; i++) {
                     if (base_monster_define[i].gift_type == base_monster_define[found].gift_type) {
@@ -204,7 +199,7 @@ void dngDebugDraw() {
  *
  */
 static void dngDebugExit() {
-    dbinfo.active = 0;
+    dbinfo.active = false;
     GamePad__2.AutoRepeatOff();
     BattleAreaScene->pause_flag = dbinfo.saved_pause_flag;
     DebugInfo.debug_camera = command_int[DNG_DEBUG_CMD_DEBUG_CAMERA * 2];
@@ -218,7 +213,7 @@ static void dngDebugExit() {
 
 int dngDebugKey() {
     if (!dbinfo.active) {
-        return 0;
+        return false;
     }
 
     if (GamePad__2.Down(PAD_DOWN) && dbinfo.cursor < DNG_DEBUG_CMD_NUM - 1) {
@@ -266,12 +261,12 @@ int dngDebugKey() {
             dbinfo.command = dbinfo.cursor;
             dbinfo.event_no = command_int[dbinfo.cursor * 2];
             dngDebugExit();
-            return 1;
+            return true;
         }
 
         if (dbinfo.cursor == DNG_DEBUG_CMD_ENEMY_LOADER) {
-            DBGCMD_ReloadEnemy(command_int[2], dbinfo.first_enemy_load);
-            dbinfo.first_enemy_load = 0;
+            DBGCMD_ReloadEnemy(command_int[DNG_DEBUG_CMD_ENEMY_LOADER * 2], dbinfo.first_enemy_load);
+            dbinfo.first_enemy_load = false;
         }
 
         if (dbinfo.cursor == DNG_DEBUG_CMD_ENEMY_RESET) {
@@ -285,13 +280,13 @@ int dngDebugKey() {
                 do {
                     boxes->box[index].Initialize();
                     index++;
-                } while (index < 24);
+                } while (index < TREASURE_BOX_MAX);
             }
 
             ActiveMonster->Initialize(DngMainScene);
-            DngSaveData->SetBitFlag(0x13D, 1);
+            DngSaveData->SetBitFlag(SAVE_FLAG_SPHEDA_UNLOCKED, true);
             dngDebugExit();
-            return 1;
+            return true;
         } else if (dbinfo.cursor == DNG_DEBUG_CMD_SKIP_FLOOR) {
             int floor;
             int dungeon;
@@ -302,7 +297,7 @@ int dngDebugKey() {
             DngUserData->GetItem(0x132, 1);
             DngUserData->GetItem(0x131, 1);
             dngDebugExit();
-            return 1;
+            return true;
         } else if (dbinfo.cursor == DNG_DEBUG_CMD_SOUND_FLAG) {
             if (command_int[dbinfo.cursor * 2] == 0) {
                 DngMainScene->PauseBGM();
@@ -316,12 +311,12 @@ int dngDebugKey() {
         dngDebugExit();
     }
 
-    return 1;
+    return true;
 }
 
 void CTreasureBox::Initialize() {
-    state = 0;
-    lid_open = 0;
+    state = TREASURE_BOX_STATE_NONE;
+    lid_open = 0.0f;
     flags = 1;
 }
 
@@ -330,12 +325,12 @@ void DBGCMD_ReloadEnemy(int monster_id, int reset) {
     float        spawn_direction[4];
     CCharacter2 *player = DngMainScene->GetCharacter(0);
 
-    if (ActiveMonster != 0) {
+    if (ActiveMonster != NULL) {
         mgCMemory *stack;
 
         if (reset != 0) {
             FxScriptMan->AllClearEffSpt();
-            (BuffEffectScriptData).ClearHeapMem();
+            BuffEffectScriptData.ClearHeapMem();
             ActiveMonster->Initialize(DngMainScene);
             DngMainScene->AssignStack(3);
             DngMainScene->ClearStack(3);
@@ -347,16 +342,16 @@ void DBGCMD_ReloadEnemy(int monster_id, int reset) {
             i = 0;
             offset = 0;
 
-            for (; i < 24; i++) {
-                void      *buffer = stack->stAlloc64(0xFA0);
-                mgCMemory *memory = (mgCMemory *) (manager + offset + 4);
-                (memory)->stSetBuffer((u_long128 *) buffer, 0xFA0);
+            for (; i < MONSTER_ACTIVE_MAX; i++) {
+                u_long128 *buffer = stack->stAlloc64(0xFA0);
+                mgCMemory *memory = (mgCMemory *) (manager + offset + offsetof(CMonsterMan, memory));
+                memory->stSetBuffer(buffer, 0xFA0);
                 memory->stack_used = 0;
-                offset += 0x30;
-                memory->lock = 0;
+                offset += sizeof(mgCMemory);
+                memory->lock = false;
             }
 
-            sndInitPort(5);
+            sndInitPort(SND_PORT_ENEMY);
         } else {
             stack = DngMainScene->GetStack(3);
         }
@@ -385,7 +380,7 @@ void DBGCMD_ReloadEnemy(int monster_id, int reset) {
  * Draws player position and memory usage in the dungeon debug panel.
  *
  */
-void DrawSystemParamInfo() {
+static void DrawSystemParamInfo() {
     CPreSprite sprite;
     char       text[0x800];
     float      position[4];
@@ -402,11 +397,11 @@ void DrawSystemParamInfo() {
     cursor = text;
     DngMainScene->GetCharacter(0)->GetPosition(position);
     cursor += sprintf(cursor, "POS %.1f %.1f %.1f\n", position[0], position[1], position[2]);
-    cursor += sprintf(cursor, "PRIM %d/%d\n", ColPrimMan.ActivePrimNum(), 0x40);
-    mgCMemory *map_stack = (mgCMemory *) DngMainScene->GetStack(1);
-    mgCMemory *monster_stack = (mgCMemory *) DngMainScene->GetStack(3);
+    cursor += sprintf(cursor, "PRIM %d/%d\n", ColPrimMan.ActivePrimNum(), COLPRIM_MAX);
+    mgCMemory *map_stack = DngMainScene->GetStack(1);
+    mgCMemory *monster_stack = DngMainScene->GetStack(3);
     DngMainScene->GetStack(4);
-    mgCMemory *event_stack = (mgCMemory *) DngMainScene->GetStack(5);
+    mgCMemory *event_stack = DngMainScene->GetStack(5);
     cursor += sprintf(cursor, "STACK:MAP\t %d\n", (map_stack->stack_used << 4) / 1024);
     cursor += sprintf(cursor, "STACK:MOMS\t %d\n", (monster_stack->stack_used << 4) / 1024);
     sprintf(cursor, "STACK:EVENT  %d/%d\n",
@@ -420,7 +415,7 @@ void DrawSystemParamInfo() {
  * Draws player and target monster details with memory usage in the dungeon debug panel.
  *
  */
-void DrawSystemParamInfo2() {
+static void DrawSystemParamInfo2() {
     CPreSprite sprite;
     char       text[0x800];
     float      position[4];
@@ -439,14 +434,14 @@ void DrawSystemParamInfo2() {
     sprite.End();
     cursor = text;
     CActionChara *chara = (CActionChara *) DngMainScene->GetCharacter(0);
-    ((CCharacter2 *) chara)->GetPosition(position);
+    chara->GetPosition(position);
 
     if (chara->lock_on != 0) {
         int             slot = chara->target_no - 0x18;
         CActiveMonster *monster = ActiveMonster->active[slot];
 
-        if (monster != 0) {
-            ((CCharacter2 *) monster)->GetPosition(monster_position);
+        if (monster != NULL) {
+            monster->GetPosition(monster_position);
             monster_height = monster->height;
             monster_width = monster->mons_move_check.radius;
         }
@@ -460,11 +455,11 @@ void DrawSystemParamInfo2() {
         cursor += sprintf(cursor, "MONS HIGH %.1f   WIDTH %.1f\n", monster_height, monster_width);
     }
 
-    cursor += sprintf(cursor, "PRIM %d/%d\n", ColPrimMan.ActivePrimNum(), 0x40);
-    mgCMemory *map_stack = (mgCMemory *) DngMainScene->GetStack(1);
-    mgCMemory *monster_stack = (mgCMemory *) DngMainScene->GetStack(3);
+    cursor += sprintf(cursor, "PRIM %d/%d\n", ColPrimMan.ActivePrimNum(), COLPRIM_MAX);
+    mgCMemory *map_stack = DngMainScene->GetStack(1);
+    mgCMemory *monster_stack = DngMainScene->GetStack(3);
     DngMainScene->GetStack(4);
-    mgCMemory *event_stack = (mgCMemory *) DngMainScene->GetStack(5);
+    mgCMemory *event_stack = DngMainScene->GetStack(5);
     cursor += sprintf(cursor, "STACK:MAP\t %d\n", (map_stack->stack_used << 4) / 1024);
     cursor += sprintf(cursor, "STACK:MOMS\t %d\n", (monster_stack->stack_used << 4) / 1024);
     sprintf(cursor, "STACK:EVENT  %d/%d\n",
@@ -474,14 +469,13 @@ void DrawSystemParamInfo2() {
 }
 
 void DrawDebugWindow() {
-    if (command_int[DNG_DEBUG_CMD_INFORMATION * 2] == 2) {
+    if (command_int[DNG_DEBUG_CMD_INFORMATION * 2] == DNG_DEBUG_INFORMATION_SYSTEM) {
         DrawSystemParamInfo();
     }
 
-    if (command_int[DNG_DEBUG_CMD_INFORMATION * 2] == 3) {
+    if (command_int[DNG_DEBUG_CMD_INFORMATION * 2] == DNG_DEBUG_INFORMATION_TARGET) {
         DrawSystemParamInfo2();
     }
 }
 
-CFont          dbFont;
 DNG_DEBUG_INFO dbinfo;
