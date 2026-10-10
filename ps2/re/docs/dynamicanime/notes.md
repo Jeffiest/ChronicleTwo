@@ -150,3 +150,8 @@ matches the retail function.
   parameter type.
 - `(sceVu0FVECTOR *) memory->Alloc(...)` converts fresh stack allocations to
   the vertex arrays they hold.
+
+## Source notes
+All non-member functions are `static`, matching their local retail symbols. `DA_FRAME_POSE::type` is typed
+`DA_FRAME_POSE_TYPE`. `DA_FIX_VERTEX::unk_1c` (fourth FIX_VERTEX argument, default 1.0) stays unnamed: nothing in
+the game reads it.
