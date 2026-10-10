@@ -1431,10 +1431,13 @@ int CMenuItemUse::CheckItemUseEnable(CGameDataUsed *item, int kind, void *ptr) {
 }
 
 int CMenuItemUse::UseItem(CGameDataUsed *item, int kind, void *ptr) {
-    u64 target_data;
-    ((CItemUseTarget *) &target_data)->SetPtr(kind, ptr);
+    union {
+        CItemUseTarget target_data;
+    };
+
+    target_data.SetPtr(kind, ptr);
     MenuUsedTarget.SetPtr(kind, ptr);
-    return UseItem(item, (CItemUseTarget *) &target_data);
+    return UseItem(item, &target_data);
 }
 
 int CMenuItemUse::UseItem(CGameDataUsed *item, CItemUseTarget *target) {
