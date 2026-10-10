@@ -56,7 +56,7 @@ char *GetMenuBigNum(int number) {
 }
 
 void SetMenuBigNum2(char *out, int number) {
-    if (out != 0) {
+    if (out != NULL) {
         int rest = number;
         int pos = 0;
         int digits = GetNumberKeta(number);
@@ -91,7 +91,7 @@ void SetMenuBigNum(char *out, int number) {
      */
     static char *sn[10] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
-    if (out != 0) {
+    if (out != NULL) {
         int rest = number;
         int pos = 0;
         int digits = GetNumberKeta(number);
@@ -152,9 +152,9 @@ CMenuFont::CMenuFont() {
 }
 
 void MenuMesInit(ClsMes *mes) {
-    int a, b, c, d, e;
+    int page_no, name_no, item_no, value_no, line_no;
 
-    if (mes != 0) {
+    if (mes != NULL) {
         mes->npc_name_mode = 0;
         mes->char_num = 0;
         mes->text_w = 0;
@@ -162,8 +162,8 @@ void MenuMesInit(ClsMes *mes) {
         mes->page = 0;
         mes->page_num = 0;
 
-        for (a = 0; a < 16; a++) {
-            mes->page_chars[a] = 0;
+        for (page_no = 0; page_no < 16; page_no++) {
+            mes->page_chars[page_no] = 0;
         }
 
         mes->last_x = 0;
@@ -186,17 +186,17 @@ void MenuMesInit(ClsMes *mes) {
         mes->text_ptr = 0;
         mes->alpha = 0x80;
 
-        for (b = 0; b < 16; b++) {
-            memset(mes->name[b], 0, sizeof(mes->name[b]));
+        for (name_no = 0; name_no < 16; name_no++) {
+            memset(mes->name[name_no], 0, sizeof(mes->name[name_no]));
         }
 
-        for (c = 0; c < 16; c++) {
-            mes->item_mes[c] = -1;
+        for (item_no = 0; item_no < 16; item_no++) {
+            mes->item_mes[item_no] = -1;
         }
 
-        for (d = 0; d < 16; d++) {
-            mes->values[d] = 0;
-            mes->value_width[d] = 0;
+        for (value_no = 0; value_no < 16; value_no++) {
+            mes->values[value_no] = 0;
+            mes->value_width[value_no] = 0;
         }
 
         mes->value = 0;
@@ -231,28 +231,28 @@ void MenuMesInit(ClsMes *mes) {
         mes->scissor.y = 0;
         mes->scissor.height = 0;
 
-        for (e = 0; e < 20; e++) {
-            mes->line_indent[e] = 0;
-            mes->line_pos[e][0] = 0;
-            mes->line_pos[e][1] = 0;
-            mes->line_pos_on[e] = 0;
-            mes->line_shade[e] = -1;
-            mes->line_color[e] = 0;
-            mes->equip_on[e] = 0;
-            mes->equip_x[e] = 0;
-            mes->equip_y[e] = 0;
-            mes->line_w[e] = 0;
-            mes->line_alpha[e] = -1;
-            mes->cross_on[e] = 0;
-            mes->cross_x[e] = 0;
-            mes->cross_y[e] = 0;
-            mes->unk_271c[e] = -1;
-            mes->unk_276c[e] = -1;
-            mes->unk_27bc[e] = 0;
-            mes->unk_280c[e] = 0;
-            mes->delta_on[e] = 0;
-            mes->delta_x[e] = 0;
-            mes->delta_y[e] = 0;
+        for (line_no = 0; line_no < 20; line_no++) {
+            mes->line_indent[line_no] = 0;
+            mes->line_pos[line_no][0] = 0;
+            mes->line_pos[line_no][1] = 0;
+            mes->line_pos_on[line_no] = 0;
+            mes->line_shade[line_no] = -1;
+            mes->line_color[line_no] = 0;
+            mes->equip_on[line_no] = 0;
+            mes->equip_x[line_no] = 0;
+            mes->equip_y[line_no] = 0;
+            mes->line_w[line_no] = 0;
+            mes->line_alpha[line_no] = -1;
+            mes->cross_on[line_no] = 0;
+            mes->cross_x[line_no] = 0;
+            mes->cross_y[line_no] = 0;
+            mes->unk_271c[line_no] = -1;
+            mes->unk_276c[line_no] = -1;
+            mes->unk_27bc[line_no] = 0;
+            mes->unk_280c[line_no] = 0;
+            mes->delta_on[line_no] = 0;
+            mes->delta_x[line_no] = 0;
+            mes->delta_y[line_no] = 0;
         }
 
         mes->abs_win.x = -1;
@@ -781,7 +781,7 @@ void CDC2Mes::MakeMsg(CGameDataUsed *item) {
         value_sign = 1;
         value_zero = 0;
 
-        if (item_no == (int) ITEM_ID_SPECTOL) {
+        if (item_no == ITEM_ID_SPECTOL) {
             value_sign = 0;
         } else if (item_no == 0x137) {
             value_zero = 1;
@@ -991,7 +991,7 @@ void CMenuMoveItem::SetMoveItemInfo(MENU_ITEM_MOVE_INFO *request, int *start, in
             part->etc_info[1] = entry->item.item_no;
             part->etc_info[2] = 0;
 
-            if (part->etc_info[1] == (int) ITEM_ID_SPECTOL) {
+            if (part->etc_info[1] == ITEM_ID_SPECTOL) {
                 part->etc_info[2] = entry->item.GetSpectolNo();
             }
 
@@ -1016,7 +1016,7 @@ int CheckRoboShieldKit(CUserDataManager *manager, CGameDataUsed *item, int apply
         int        limit = GetShiledKitLimmit(item->item_no);
         ROBO_DATA *robo = &manager->robo_data;
 
-        if (robo == 0) {
+        if (robo == NULL) {
             return -1;
         }
 
@@ -1102,8 +1102,8 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
             int weapon_type = chara->equip[0].item_type;
 
             if (!(chara->status_attr & CHARA_STATUS_UNK_40) || !(effect.status_flags & 0x10)) {
-                if (((MenuUsedItemNo == 0x184 && weapon_type == (int) ITEM_DATA_MAX_MELEE) ||
-                     (MenuUsedItemNo == 0x185 && weapon_type == (int) ITEM_DATA_MONICA_MELEE)) &&
+                if (((MenuUsedItemNo == 0x184 && weapon_type == ITEM_DATA_MAX_MELEE) ||
+                     (MenuUsedItemNo == 0x185 && weapon_type == ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
                     count++;
 
@@ -1199,7 +1199,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     break;
                 }
 
-                if ((effect.use_flags & (int) ITEM_USE_FLAG_RESTORE_HP) && dead == 0 && chara->hp.now < chara->hp.max) {
+                if ((effect.use_flags & ITEM_USE_FLAG_RESTORE_HP) && dead == 0 && chara->hp.now < chara->hp.max) {
                     count++;
 
                     if (apply != 0) {
@@ -1214,7 +1214,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 int cure;
                 ConvertItemAttrToCharaAttr(effect.use_flags, &add, &cure);
 
-                if ((add != 0 || cure != 0) && GetNowLoopNo() != (int) LOOP_EDIT) {
+                if ((add != 0 || cure != 0) && GetNowLoopNo() != LOOP_EDIT) {
                     int available = false;
                     int changed = false;
 
@@ -1309,7 +1309,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 }
             } else if (MenuUsedItemNo == 0x1A7) {
                 sound = CheckRoboShieldKit(user, weapon, apply, &count, &used);
-            } else if (MenuUsedItemNo == (int) ITEM_ID_RIDEPOD_FUEL) {
+            } else if (MenuUsedItemNo == ITEM_ID_RIDEPOD_FUEL) {
                 if (weapon == &user->robo_data.parts[2] && user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
                     count++;
 
@@ -1320,7 +1320,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     }
                 }
             } else {
-                if ((effect.use_flags & (int) ITEM_USE_FLAG_REPAIR) && weapon->IsRepair() && weapon->IsEnableUseRepair(MenuUsedItemNo)) {
+                if ((effect.use_flags & ITEM_USE_FLAG_REPAIR) && weapon->IsRepair() && weapon->IsEnableUseRepair(MenuUsedItemNo)) {
                     count++;
 
                     if (apply != 0) {
@@ -1336,7 +1336,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     }
                 }
 
-                if ((effect.use_flags & (int) ITEM_USE_FLAG_FILL_ABS) && weapon->data.weapon.abs.now < weapon->data.weapon.abs.max) {
+                if ((effect.use_flags & ITEM_USE_FLAG_FILL_ABS) && weapon->data.weapon.abs.now < weapon->data.weapon.abs.max) {
                     count++;
 
                     if (apply != 0) {
@@ -1356,7 +1356,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
             ROBO_DATA *robo = (ROBO_DATA *) target->target.data;
 
-            if (MenuUsedItemNo == (int) ITEM_ID_RIDEPOD_FUEL) {
+            if (MenuUsedItemNo == ITEM_ID_RIDEPOD_FUEL) {
                 if (user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
                     count++;
 
@@ -1366,7 +1366,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         used++;
                     }
                 }
-            } else if (items_blocked == 0 && (effect.use_flags & (int) ITEM_USE_FLAG_REPAIR) && robo->hp.now < robo->hp.max) {
+            } else if (items_blocked == 0 && (effect.use_flags & ITEM_USE_FLAG_REPAIR) && robo->hp.now < robo->hp.max) {
                 count++;
 
                 if (apply != 0) {
@@ -1383,7 +1383,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 user->GetMonsterBajjiDataPtrMosId(user->monster_id);
                 CHARA_DATA *monica = user->GetCharaDataPtr(USER_CHARA_MONICA);
 
-                if ((effect.use_flags & (int) ITEM_USE_FLAG_RESTORE_HP) && monica != NULL && monica->hp.now < monica->hp.max) {
+                if ((effect.use_flags & ITEM_USE_FLAG_RESTORE_HP) && monica != NULL && monica->hp.now < monica->hp.max) {
                     count++;
 
                     if (apply != 0) {
@@ -1434,7 +1434,7 @@ int CMenuItemUse::UseItem(CGameDataUsed *item, CItemUseTarget *target) {
         return 0;
     }
 
-    item_no = (int) item->item_no;
+    item_no = item->item_no;
     target_type = target->type;
     MenuUsedTarget.type = target->type;
     MenuUsedTarget.target.data = target->target.data;
