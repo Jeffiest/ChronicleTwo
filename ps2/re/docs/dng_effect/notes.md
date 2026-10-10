@@ -20,7 +20,7 @@ checked with temporary `offsetof` asserts against MWCC.
 - `thn_uv` (.data, 0x60, static): 6 rows of `{u, v, du, dv}` floats for CThunder::Draw.
 - `at_1214__2`/`at_1215__2`/`at_1216__3`: 0x10 vector literals in CThunder::Draw.
 - `at_3214` (.data, 0x20): 4 pairs of ints (texture coords) in CWeaponElement::Draw_Thunder.
-- `at_1107__2` "br = %.2f\n" (CTornado::SetPos printf), `at_2882` "effect02" (texture name used by
+- `at_2882` "effect02" (texture name used by
   every CWeaponElement::Draw_*), `at_1981` (0x1C, CDeadEffect::Draw jump table).
 
 ## Global instances (owned by dng_main / dng_event / event_func, NOT declared here)
@@ -161,7 +161,7 @@ whoever decompiles them should give them inline bodies.
 
 ## Native draw constructors
 
-`CChillAfterHit`, `CSparcEffect`, `CSwordLuminous`, `CSWordAfterImage`, `CFlushEffect`, `CPowerLine`, and the cold, wind and fire weapon-element draws construct their sprite or frame-attribute locals through native C++ declarations. The local must be declared at the original constructor execution point, and later temporary arrays must follow it in declaration order to retain their stack slots. For `CSparcEffect`, the `sx` and `sz` values also follow the attribute in the active branch. Direct native placement-array new was tested for `CMapEffectsManeger::Init_LightBoll` but changed code generation; the runtime array helper remains declared in `mw_runtime.h`.
+`CChillAfterHit`, `CSparcEffect`, `CSwordLuminous`, `CSWordAfterImage`, `CFlushEffect`, `CPowerLine`, and the cold, wind and fire weapon-element draws construct their sprite or frame-attribute locals through native C++ declarations. The local must be declared at the original constructor execution point, and later temporary arrays must follow it in declaration order to retain their stack slots. For `CSparcEffect`, the `sx` and `sz` values also follow the attribute in the active branch. Placement-array new (`new (memory->Alloc(...)) T[n]`) matches for the plain-data pools `BattleEffectChara`, `BattleEffectPrim` (hit, power and dead prims). It changes code generation for `CMapEffectsManeger::Init_LightBoll` and for the `CFlushEffect` and `CDeadEffect` pools, which have no user-declared constructor; those keep the runtime array helper declared in `mw_runtime.h`.
 
 ## Division-check pragma
 
