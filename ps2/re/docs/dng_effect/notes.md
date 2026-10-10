@@ -53,6 +53,7 @@ whoever decompiles them should give them inline bodies.
   AllocEffect kind (BATTLE_EFFECT_KIND): 0 hit (prims 0xA0 qwords each = 0x20 prims, spark_max 0x20),
   1 flush, 2 power (0x64 qwords = 0x14 prims), 3 dead (0xF0 qwords = 0x30 prims, memset 0x37, radius/height
   10.0, size 1.0), 4 chara. Returns 1/0. `CommonClassInit` only allocates kinds 0..3 (4,4,8,4).
+  The pool sizes are the defines `HIT_EFFECT_SPARK_MAX` (32), `POWER_LINE_PRIM_MAX` (20) and `DEAD_EFFECT_PRIM_MAX` (48); the sparc pattern and mini-sprite tint values are the enums `SPARC_EFFECT_PATTERN` and `MINI_EFF_PRIM_COLOR`.
   The prim blocks are `new u_long128[]`-style arrays (no ctor); `BattleEffectPrim` and `BattleEffectChara`
   are neutral names -- no retail name known.
 - **BattleEffectPrim (0x50)**: shared by hit/power/dead blocks. 0x0 kind (dead only: 0 cloud, 1 glitter --
