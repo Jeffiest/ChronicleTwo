@@ -17,6 +17,7 @@
 enum DbgFontSerno {
     DBG_FONT_SERNO_SHEET_1    = 0x1000, /**< First serial number on the second full-width sheet. */
     DBG_FONT_SERNO_HALF_WIDTH = 0x2000, /**< First serial number on the half-width sheet. */
+    DBG_FONT_SERNO_ASCII      = 0x204D, /**< Added to an ASCII code to give the serial number of its half-width glyph. */
     DBG_FONT_SERNO_DAKUTEN    = 0x2134, /**< Half-width voiced-sound mark, merged into the preceding kana. */
     DBG_FONT_SERNO_HANDAKUTEN = 0x2135, /**< Half-width semi-voiced-sound mark, merged into the preceding kana. */
     DBG_FONT_SERNO_UNKNOWN    = 0x227E, /**< Glyph drawn for a half-width character with no mapping. */
