@@ -1559,7 +1559,7 @@ int _MENU_TEXDATA(SPI_STACK *stack, int argc) {
     }
 
     slot->tex_name = mgCopyString(MenuSpiTextureName, MenuSpiStack);
-    slot->tex_block = (signed char) menu_analyze_texblock;
+    slot->tex_block = menu_analyze_texblock;
     slot->tbl_no = no;
     slot->name = mgCopyString(name, MenuSpiStack);
     slot->rect.Set(x, y, w, h);
@@ -1922,8 +1922,8 @@ int _MENU_FORM_PUTXY(SPI_STACK *stack, int argc) {
         return 0;
     }
 
-    menu_formPt->x = (float) spiGetStackInt(stack);
-    menu_formPt->y = (float) spiGetStackInt(next_slot);
+    menu_formPt->x = spiGetStackInt(stack);
+    menu_formPt->y = spiGetStackInt(next_slot);
     return 1;
 }
 
@@ -1948,9 +1948,9 @@ int _MENU_FORM_RGBA(SPI_STACK *stack, int argc) {
 
     if (argc == 3) {
         form = menu_formPt;
-        form->rgba[0] = (signed char) values[0];
-        form->rgba[1] = (signed char) values[1];
-        form->rgba[2] = (signed char) values[2];
+        form->rgba[0] = values[0];
+        form->rgba[1] = values[1];
+        form->rgba[2] = values[2];
         form->rgba[3] = 0x80;
 
         for (step = 0; step < 4; step++) {
@@ -1960,10 +1960,10 @@ int _MENU_FORM_RGBA(SPI_STACK *stack, int argc) {
 
     if (argc == 4) {
         form = menu_formPt;
-        form->rgba[0] = (signed char) values[0];
-        form->rgba[1] = (signed char) values[1];
-        form->rgba[2] = (signed char) values[2];
-        form->rgba[3] = (signed char) values[3];
+        form->rgba[0] = values[0];
+        form->rgba[1] = values[1];
+        form->rgba[2] = values[2];
+        form->rgba[3] = values[3];
 
         for (i = 0; i < 4; i++) {
             form->SetRGBACalcParam(i, 0, 0x80);
