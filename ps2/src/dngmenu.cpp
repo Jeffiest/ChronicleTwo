@@ -66,7 +66,7 @@ static CDngFreeMap *MenuDngMap;
 
 /**
  *
- * Enables the selected floor information.
+ * Non-zero while the chosen floor's information panel is shown.
  *
  */
 static u8 dngfloor_infoview;
@@ -108,7 +108,7 @@ static u8 DngInfoSphidaOkFlag;
 
 /**
  *
- * Controls the floor travel confirmation message.
+ * What the tree map shows once a floor has been chosen, a DNG_TREE_MAP_ASK.
  *
  */
 static s8 DngAskMessageDrawFlag;
@@ -254,7 +254,7 @@ static CMenuTreeMap *CMenuTreePt;
 static CDC2Mes *MenuDngMes[DNG_TREE_MAP_MES_MAX];
 
 void CDngFreeMap::Initialize() {
-    active = 1;
+    active = true;
     unk_9 = 0;
     dng_no = 0;
     floor_manager = NULL;
@@ -275,7 +275,7 @@ void CDngFreeMap::Initialize() {
     blink_cnt = 0;
     koma_now = NULL;
     koma_path = NULL;
-    koma_move = 0;
+    koma_move = false;
     fade_mode = DNGMAP_FADE_NONE;
     fade_time = -1;
     fade_step = 0.0f;
@@ -302,7 +302,7 @@ void CDngFreeMap::CalcGlidPutPos(GLID_INFO *glid, float &x, float &y, int board)
         x = static_cast<float>(glid->x * 52 + glid->y * -16);
         y = static_cast<float>(glid->y * 20);
 
-        if (board == 0) {
+        if (!board) {
             x += pos_x;
             y += pos_y;
         }
@@ -412,7 +412,7 @@ void CDngFreeMap::ResetDngMapPos(int room_no, int at_once) {
         next_pos_x = 256.0f - board_pos[0];
         next_pos_y = 208.0f - board_pos[1];
 
-        if (at_once != 0) {
+        if (at_once) {
             pos_x = next_pos_x;
             pos_y = next_pos_y;
         }
@@ -432,7 +432,7 @@ void CDngFreeMap::DrawBackPattern(int opacity) {
             return;
         }
 
-        SetSpriteEnv(prim, 2);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR_AA);
         prim->Bilinear(1);
         prim->AntiAliasing(1);
         prim->Begin(MG_PRIM_SPRITE);
@@ -459,7 +459,7 @@ void CDngFreeMap::DrawDngName(int opacity) {
         mgRect<int> tex_rect;
         tex_rect.Set(0, 0, 256, 96);
         mgCDrawPrim *prim = GetMenuPrim();
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(name_tex);
         prim->Color(10, 10, 10, static_cast<int>(0.25f * static_cast<float>(opacity)));
@@ -476,7 +476,7 @@ void CDngFreeMap::DrawLast() {
     }
 
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 4);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_ADD);
     prim->AlphaBlend(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(last_tex);
@@ -545,7 +545,7 @@ void CDngFreeMap::DrawRoot(mgRect<float> rect, DNGMAP_ROOT_INFO *root, int shado
     mgRect<float> &put = treemap_root_put;
     put = rect;
 
-    if (shadow != 0) {
+    if (shadow) {
         put.left += 8.0f;
         put.top += 8.0f;
     }
@@ -564,11 +564,11 @@ void CDngFreeMap::DrawRoot(mgRect<float> rect, DNGMAP_ROOT_INFO *root, int shado
     }
 
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 2);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR_AA);
     prim->Begin(MG_PRIM_LINE);
     prim->Color((int) red, (int) green, (int) blue, opacity);
 
-    if (shadow != 0) {
+    if (shadow) {
         prim->Color(0, 0, 0, (int) (0.05f * (float) opacity));
     }
 
@@ -593,7 +593,7 @@ void CDngFreeMap::DrawRoot(mgRect<float> rect, DNGMAP_ROOT_INFO *root, int shado
             mark = &zerumaito_offset_1110;
         }
     } else if (root->shape == 1) {
-        if (marks & 0x100) {
+        if (marks & DNGMAP_GLID_MARK_SPECIAL_LEFT) {
             put.left += 14.0f;
         }
 
@@ -712,16 +712,16 @@ void CDngFreeMap::DrawRoot(mgRect<float> rect, DNGMAP_ROOT_INFO *root, int shado
     prim->Begin(MG_PRIM_SPRITE);
     prim->Color((int) red, (int) green, (int) blue, opacity);
 
-    if (shadow != 0) {
+    if (shadow) {
         prim->Color(0, 0, 0, (int) (0.05f * (float) opacity));
     }
 
     prim->Texture(map_tex);
 
-    if (root->type != 0 && (u8) root->opened != 0 && root->show_mark != 0 && mark != NULL) {
+    if (root->type != DNGMAP_ROOT_NORMAL && (u8) root->opened != 0 && root->show_mark && mark != NULL) {
         prim->Color((int) mark_color, (int) mark_color, (int) mark_color, opacity);
 
-        if (shadow != 0) {
+        if (shadow) {
             prim->Color(0, 0, 0, (int) (0.05f * (float) opacity));
         }
 
@@ -752,36 +752,35 @@ unsigned int CDngFreeMap::DrawGlidCheck(GLID_INFO *glid) {
         }
 
         if (direction == GLID_DIR_UP && neighbour->y + 1 == glid->y) {
-            marks |= 2;
+            marks |= DNGMAP_GLID_MARK_ROOM_UP;
         }
 
         if (direction == GLID_DIR_LEFT && neighbour->x + 1 == glid->x) {
-            marks |= 8;
+            marks |= DNGMAP_GLID_MARK_ROOM_LEFT;
         }
 
-        if ((neighbour->room.flag & DNGMAP_ROOM_FLAG_SUB) != 0 ||
-            (neighbour->room.flag & DNGMAP_ROOM_FLAG_BOSS) != 0) {
-            if (neighbour->room.visited == 0) {
+        if ((neighbour->room.flag & DNGMAP_ROOM_FLAG_SUB) || (neighbour->room.flag & DNGMAP_ROOM_FLAG_BOSS)) {
+            if (!neighbour->room.visited) {
                 continue;
             }
 
             if (neighbour->x == glid->x) {
                 if (neighbour->y == glid->y - 1) {
-                    marks |= 0x40;
+                    marks |= DNGMAP_GLID_MARK_SPECIAL_UP;
                 }
 
                 if (neighbour->y == glid->y + 1) {
-                    marks |= 0x80;
+                    marks |= DNGMAP_GLID_MARK_SPECIAL_DOWN;
                 }
             }
 
             if (neighbour->y == glid->y) {
                 if (neighbour->x == glid->x - 1) {
-                    marks |= 0x100;
+                    marks |= DNGMAP_GLID_MARK_SPECIAL_LEFT;
                 }
 
                 if (neighbour->x == glid->x + 1) {
-                    marks |= 0x200;
+                    marks |= DNGMAP_GLID_MARK_SPECIAL_RIGHT;
                 }
             }
         }
@@ -837,7 +836,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
     rect.top += -42.0f;
     mgRect<float> picture = rect;
     mgCDrawPrim  *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     picture.right = 96.0f;
     picture.bottom = 66.0f;
 
@@ -852,7 +851,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
     special.Set(192, 198, 96, 96);
     int tex_no = room->tex_no;
 
-    if (room->visited == 0) {
+    if (!room->visited) {
         tex.left = 0;
         tex.top = 0;
     } else {
@@ -906,7 +905,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
         prim->End();
     }
 
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     room->mark_phase += stepCntTbl_1501[mode];
 
     if (room->mark_phase > PI) {
@@ -915,7 +914,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
 
     int r = 192, g = 192, b = 192;
 
-    if (room->mark != 0) {
+    if (room->mark) {
         float phase = room->mark_phase;
 
         while (phase > PI) {
@@ -940,7 +939,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
     PrimQuad(prim, picture, tex);
     prim->End();
 
-    if (room->visited == 0 && user_glid != NULL && &user_glid->room != room) {
+    if (!room->visited && user_glid != NULL && &user_glid->room != room) {
         float overlay_left = picture.left + 40.0f;
         int   left = fptosi(overlay_left);
         float overlay_top = picture.top + 25.0f;
@@ -956,7 +955,7 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
         prim->End();
     }
 
-    if (room->mark != 0) {
+    if (room->mark) {
         float bob = 0.71875f * (6.0f * sinf(-room->mark_phase));
         mark_rect[mark_num].left = picture.left + 64.0f;
         mark_rect[mark_num].top = picture.top + 4.0f - bob;
@@ -994,9 +993,9 @@ void CDngFreeMap::DrawRoomOne(mgRect<float> rect, DNGMAP_ROOM_INFO *room, unsign
 
 void CDngFreeMap::DrawGlid(mgRect<float> rect) {
     mgCDrawPrim prim;
-    SetSpriteEnv(&prim, 1);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR);
     prim.AntiAliasing(1);
-    prim.Begin(2);
+    prim.Begin(MG_PRIM_LINE_STRIP);
     prim.Color(255, 0, 0, static_cast<int>(alpha));
     float top = rect.top;
     prim.Vertex(rect.left, top, 0.0f);
@@ -1067,32 +1066,43 @@ static int CheckGeoramaMateria(TRESURE_BOX_FLOOR_INFO *info, int floor_no, int *
  * Screen position of the medal-count message for each language, as X/Y pairs.
  *
  */
-static short DngInfoMedalNumMsg[12] = {
-    330, 10, 330, 10, 330, 10, 330, 10, 330, 20, 330, 20};
+static short DngInfoMedalNumMsg[6][2] = {{330, 10}, {330, 10}, {330, 10}, {330, 10}, {330, 20}, {330, 20}};
 
 /**
  *
  * Texture rectangles of the upper and middle floor-information frame.
  *
  */
-static short dngboardbrdtbl[24] = {
-    0, 0, 24, 70, 24, 0, 8, 70, 32, 0, 24, 70, 58, 2, 24, 4, 82, 2, 8, 4, 90, 2, 24, 4};
+static short dngboardbrdtbl[6][4] = {
+    {0,  0,  24, 70},
+    {24, 0,  8,  70},
+    {32, 0,  24, 70},
+    {58, 2,  24, 4 },
+    {82, 2,  8,  4 },
+    {90, 2,  24, 4 },
+};
 
 /**
  *
  * Texture rectangles of the floor-information frame with a geostone row.
  *
  */
-static short dngboardbrdtbl_1[12] = {
-    58, 6, 24, 50, 82, 6, 8, 50, 90, 6, 24, 50};
+static short dngboardbrdtbl_1[3][4] = {
+    {58, 6, 24, 50},
+    {82, 6, 8,  50},
+    {90, 6, 24, 50},
+};
 
 /**
  *
  * Texture rectangles of the floor-information frame without a geostone row.
  *
  */
-static short dngboardbrdtbl_2[12] = {
-    58, 22, 24, 36, 82, 22, 8, 36, 90, 22, 24, 36};
+static short dngboardbrdtbl_2[3][4] = {
+    {58, 22, 24, 36},
+    {82, 22, 8,  36},
+    {90, 22, 24, 36},
+};
 
 void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
     /**
@@ -1116,7 +1126,7 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         if (language > LANG_JAPANESE) {
             width = 0x1D6;
 
-            if (MenuDngMes[5] == NULL || MenuDngMes[5]->ClsMes::mes_no != 0x6C) {
+            if (MenuDngMes[DNG_TREE_MAP_MES_PRACTICE] == NULL || MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->ClsMes::mes_no != 0x6C) {
                 height += 0x16;
             }
         }
@@ -1125,7 +1135,7 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         float top = 92.0f;
         left = (float) ((0x200 - width) >> 1);
         int               center = mgScreenWidth >> 1;
-        short            *bottom_table = dngboardbrdtbl_1;
+        short (*bottom_table)[4] = dngboardbrdtbl_1;
         int               alpha = DngInfoDrawAlpha;
         DNGMAP_ROOM_INFO *shown = DngInfoRoomInfo;
         int               fill_alpha = (alpha * 7) / 10;
@@ -1151,17 +1161,17 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         DrawMenuFillBox(left + 6.0f, top + 6.0f, (float) (width - 8), (float) (height - 8),
                         fill_alpha, 12, 12, 12);
         mgCDrawPrim *prim = GetMenuPrim();
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Floor_InfoTex);
         prim->Color(128, 128, 128, alpha);
         int ix = (int) left;
         int iy;
-        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy = (int) top, width, 0x46), dngboardbrdtbl, 1);
-        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy + 0x46, width, height - 0x46 - dngboardbrdtbl[15]),
-                               &dngboardbrdtbl[12], 1);
-        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy + height - bottom_table[3], width, bottom_table[3]),
-                               bottom_table, 1);
+        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy = (int) top, width, 0x46), dngboardbrdtbl[0], 1);
+        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy + 0x46, width, height - 0x46 - dngboardbrdtbl[3][3]),
+                               dngboardbrdtbl[3], 1);
+        Menu3DivideTextureDraw(prim, mgRect<int>(ix, iy + height - bottom_table[0][3], width, bottom_table[0][3]),
+                               bottom_table[0], 1);
         prim->End();
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Floor_InfoTex);
@@ -1183,8 +1193,8 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         prim->Texture(Floor_InfoTex);
         prim->Color(128, 128, 128, alpha);
 
-        if (MenuDngMes[0] != NULL) {
-            MenuDngMes[0]->SetMovePosCenteringGyou(0, center, iy + 0x26);
+        if (MenuDngMes[DNG_TREE_MAP_MES_TITLE] != NULL) {
+            MenuDngMes[DNG_TREE_MAP_MES_TITLE]->SetMovePosCenteringGyou(0, center, iy + 0x26);
         }
 
         if (DngInfoFloorInfo != NULL && !(DngInfoFloorInfo->flag & DNG_FLOOR_FLAG_SEAL_CLEAR) && 0 < room->seal) {
@@ -1240,14 +1250,14 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
             PrimQuad(prim, (float) icon_x, (float) icon_row_y, highlight);
         }
 
-        MenuDngMes[1]->SetMovePosGyou(0, text_x, iy);
-        int line_right = ix + width - MenuDngMes[1]->line_w[1] - 0xE;
+        MenuDngMes[DNG_TREE_MAP_MES_FAST_DESTROY]->SetMovePosGyou(0, text_x, iy);
+        int line_right = ix + width - MenuDngMes[DNG_TREE_MAP_MES_FAST_DESTROY]->line_w[1] - 0xE;
 
         if (CheckNowEurope()) {
             line_right -= 8;
         }
 
-        MenuDngMes[1]->SetMovePosGyou(1, line_right, iy);
+        MenuDngMes[DNG_TREE_MAP_MES_FAST_DESTROY]->SetMovePosGyou(1, line_right, iy);
         icon_row_y += 0x16;
         iy += 0x16;
         shown = DngInfoRoomInfo;
@@ -1260,11 +1270,11 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
                 PrimQuad(prim, (float) icon_x, (float) icon_row_y, highlight);
             }
 
-            MenuDngMes[3]->SetMovePosGyou(0, text_x, iy);
-            MenuDngMes[3]->SetMovePosGyou(1, ix + width - MenuDngMes[3]->line_w[1] - 0x10, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_FISHING]->SetMovePosGyou(0, text_x, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_FISHING]->SetMovePosGyou(1, ix + width - MenuDngMes[DNG_TREE_MAP_MES_FISHING]->line_w[1] - 0x10, iy);
 
-            if (MenuDngMes[3]->ClsMes::mes_no == 2) {
-                MenuDngMes[3]->SetMovePosGyou(1, right_text, iy);
+            if (MenuDngMes[DNG_TREE_MAP_MES_FISHING]->ClsMes::mes_no == 2) {
+                MenuDngMes[DNG_TREE_MAP_MES_FISHING]->SetMovePosGyou(1, right_text, iy);
             }
 
             icon_row_y += 0x16;
@@ -1283,7 +1293,7 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
                 }
 
                 if (CheckNowEurope()) {
-                    prize_x = ix + width - MenuDngMes[4]->line_w[1] - 0x10;
+                    prize_x = ix + width - MenuDngMes[DNG_TREE_MAP_MES_SPHEDA]->line_w[1] - 0x10;
                 }
 
                 highlight.left = medal_xytbl[3];
@@ -1294,12 +1304,12 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
                 }
 
                 if (CheckNowEurope()) {
-                    prize_x = ix + width - MenuDngMes[4]->line_w[1] - 0x10;
+                    prize_x = ix + width - MenuDngMes[DNG_TREE_MAP_MES_SPHEDA]->line_w[1] - 0x10;
                 }
             }
 
-            MenuDngMes[4]->SetMovePosGyou(0, text_x, iy);
-            MenuDngMes[4]->SetMovePosGyou(1, prize_x, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_SPHEDA]->SetMovePosGyou(0, text_x, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_SPHEDA]->SetMovePosGyou(1, prize_x, iy);
             icon_row_y += 0x16;
             iy += 0x16;
         }
@@ -1312,30 +1322,30 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         }
 
         if (language == LANG_JAPANESE) {
-            MenuDngMes[5]->SetMovePosGyou(0, text_x, iy);
-            MenuDngMes[5]->SetMovePosGyou(1, right_text, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(0, text_x, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(1, right_text, iy);
             iy += 0x16;
         } else {
-            MenuDngMes[5]->SetMovePosGyou(0, text_x, iy);
+            MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(0, text_x, iy);
 
-            if (MenuDngMes[5]->ClsMes::mes_no == 0x6C) {
-                MenuDngMes[5]->SetMovePosGyou(1, ix + width - MenuDngMes[5]->line_w[1] - 0x10, iy);
+            if (MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->ClsMes::mes_no == 0x6C) {
+                MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(1, ix + width - MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->line_w[1] - 0x10, iy);
                 iy += 0x16;
             } else {
-                MenuDngMes[5]->SetMovePosGyou(1, text_x, iy + 0x16);
-                MenuDngMes[5]->SetMovePosGyou(2, ix + width - MenuDngMes[5]->line_w[2] - 0x10, iy + 0x12);
+                MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(1, text_x, iy + 0x16);
+                MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->SetMovePosGyou(2, ix + width - MenuDngMes[DNG_TREE_MAP_MES_PRACTICE]->line_w[2] - 0x10, iy + 0x12);
                 iy += 0x2C;
             }
         }
 
         prim->End();
-        MenuDngMes[6]->SetMovePosGyou(0, text_x, iy);
-        MenuDngMes[6]->SetMovePosGyou(1, ix + width - MenuDngMes[6]->line_w[1] - 0x1A, iy);
+        MenuDngMes[DNG_TREE_MAP_MES_KILL_COUNT]->SetMovePosGyou(0, text_x, iy);
+        MenuDngMes[DNG_TREE_MAP_MES_KILL_COUNT]->SetMovePosGyou(1, ix + width - MenuDngMes[DNG_TREE_MAP_MES_KILL_COUNT]->line_w[1] - 0x1A, iy);
 
         shown = DngInfoRoomInfo;
 
         if (shown != NULL && shown->geostone) {
-            MenuDngMes[7]->SetMovePosGyou(0, center - (MenuDngMes[7]->line_w[0] >> 1), iy + 0x24);
+            MenuDngMes[DNG_TREE_MAP_MES_GEOSTONE]->SetMovePosGyou(0, center - (MenuDngMes[DNG_TREE_MAP_MES_GEOSTONE]->line_w[0] >> 1), iy + 0x24);
         }
 
         for (int i = 0; i < DNG_TREE_MAP_MES_MAX; ++i) {
@@ -1343,8 +1353,8 @@ void DrawDngRoomInfo(DNGMAP_ROOM_INFO *room) {
         }
 
         if (MenuDCMsg[5] != NULL) {
-            DngInfoMedalMsgPutPos[0] = DngInfoMedalNumMsg[language * 2];
-            DngInfoMedalMsgPutPos[1] = DngInfoMedalNumMsg[language * 2 + 1];
+            DngInfoMedalMsgPutPos[0] = DngInfoMedalNumMsg[language][0];
+            DngInfoMedalMsgPutPos[1] = DngInfoMedalNumMsg[language][1];
             MenuDCMsg[5]->SetPutPos(DngInfoMedalMsgPutPos);
             MenuDCMsg[5]->SetMsgAlpha(alpha);
         }
@@ -1363,14 +1373,14 @@ static void DrawGeoramaMateria(int top_y, char *title, int unused_count, int *it
     DrawMenuFillBox((float) (left + 6), (float) (top_y + 6), 422.0f, 272.0f,
                     0x59, 0xC, 0xC, 0xC);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Floor_InfoTex);
     prim->Color(0x80, 0x80, 0x80, 0x80);
-    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y, 0x1AE, 0x46), dngboardbrdtbl, 1);
-    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y + 0x46, 0x1AE, 0xD2 - dngboardbrdtbl[15]),
-                           &dngboardbrdtbl[12], 1);
-    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y + 0x118 - dngboardbrdtbl_2[3], 0x1AE, dngboardbrdtbl_2[3]), dngboardbrdtbl_2, 1);
+    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y, 0x1AE, 0x46), dngboardbrdtbl[0], 1);
+    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y + 0x46, 0x1AE, 0xD2 - dngboardbrdtbl[3][3]),
+                           dngboardbrdtbl[3], 1);
+    Menu3DivideTextureDraw(prim, mgRect<int>(left, top_y + 0x118 - dngboardbrdtbl_2[0][3], 0x1AE, dngboardbrdtbl_2[0][3]), dngboardbrdtbl_2[0], 1);
     PrimQuad(prim, (float) ((mgScreenWidth >> 1) - (Floor_Info.right >> 1)) - 1.0f,
              (float) top_y + 10.0f, Floor_Info);
     prim->End();
@@ -1439,7 +1449,7 @@ void CDngFreeMap::DrawTreeMap(int opacity) {
         position[1] = -42.0f + (11.0f + position[1]);
         float reach_x = 62.0f - 62.0f * DngTreeMapActiveLightRate;
         float reach_y = 40.0f - 40.0f * DngTreeMapActiveLightRate;
-        SetSpriteEnv(prim, 4);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_ADD);
         prim->Bilinear(0);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(map_tex);
@@ -1457,7 +1467,7 @@ void CDngFreeMap::DrawTreeMap(int opacity) {
     for (int i = 0; i < floor_manager->glid_num; i++, glid++) {
         CalcGlidPutPos(glid, cell_rect.left, cell_rect.top, 0);
 
-        if (menu_debug_flag != 0) {
+        if (menu_debug_flag) {
             DrawGlid(cell_rect);
         }
 
@@ -1466,7 +1476,7 @@ void CDngFreeMap::DrawTreeMap(int opacity) {
         if (glid->type == GLID_TYPE_ROOM) {
             float brightness = 1.0f;
 
-            if (glid->blink != 0 && blink_cnt % 25 < 14) {
+            if (glid->blink && blink_cnt % 25 < 14) {
                 brightness = 0.5f;
             }
 
@@ -1498,7 +1508,7 @@ void CDngFreeMap::DrawPlayer(int opacity) {
     float sprite_alpha = static_cast<float>(opacity);
 
     if (mode == DNGMAP_MODE_EVENT) {
-        if (koma_move != 0 && koma_now != NULL) {
+        if (koma_move && koma_now != NULL) {
             dng_player_pos[0] = koma_now->x;
             dng_player_pos[1] = koma_now->y;
             koma_now = koma_now->next;
@@ -1525,7 +1535,7 @@ void CDngFreeMap::DrawPlayer(int opacity) {
     }
 
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(koma_tex);
@@ -1537,7 +1547,7 @@ void CDngFreeMap::DrawPlayer(int opacity) {
 }
 
 void CDngFreeMap::Step() {
-    if (active == 0) {
+    if (!active) {
         return;
     }
 
@@ -1622,20 +1632,8 @@ static unsigned int bittable_2134[8] = {
     DNG_FLOOR_FLAG_SPHEDA_CLEAR,
     DNG_FLOOR_FLAG_GEOSTONE_FOUND};
 
-/**
- *
- * Kinds of passages identified by the floor map's debug readout.
- *
- */
-enum DNGMAP_ROOT_TYPE {
-    DNGMAP_ROOT_NORMAL = 0, /**< Ordinary passage to the next floor. */
-    DNGMAP_ROOT_SUN = 1,    /**< Passage unlocked with a sun key. */
-    DNGMAP_ROOT_MOON = 2,   /**< Passage unlocked with a moon key. */
-    DNGMAP_ROOT_STAR = 3,   /**< Passage unlocked with a star key. */
-};
-
 void CDngFreeMap::Draw() {
-    if (active != 0 && !(alpha <= 0.0f)) {
+    if (active && !(alpha <= 0.0f)) {
         mgCTextureManager *textures = &mgTexManager;
         mgCTexture        *texture = map_tex;
 
@@ -1661,7 +1659,7 @@ void CDngFreeMap::Draw() {
 
         if (mode != DNGMAP_MODE_EVENT) {
             mgCDrawPrim *prim = GetMenuPrim();
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Bilinear(1);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(name_tex);
@@ -1674,7 +1672,7 @@ void CDngFreeMap::Draw() {
             prim->End();
         }
 
-        if (menu_debug_flag == 0) {
+        if (!menu_debug_flag) {
             return;
         }
 
@@ -2298,10 +2296,10 @@ int CDngFreeMap::LoadDngInfo(mgCMemory *stack, int block, int dungeon, int room,
 
     view_rect.Set(60.0f, 40.0f, (float) (mgScreenWidth - 40), (float) (mgScreenHeight - 40));
     SetUserGlid(user_room_no);
-    ResetDngMapPos(user_room_no, 1);
+    ResetDngMapPos(user_room_no, true);
     koma_now = NULL;
     koma_path = NULL;
-    koma_move = 0;
+    koma_move = false;
     CalcGlidPutPos(user_glid, dng_player_pos[0], dng_player_pos[1], 0);
     dng_player_pos[0] += 8.0f;
     dng_player_pos[1] += -28.0f;
@@ -2628,7 +2626,7 @@ int CDngFreeMap::LoadDngInfo(mgCMemory *stack, int block, int dungeon, int room,
 
         while (glid != NULL) {
             CalcGlidPutPos(glid, gx, gy, 0);
-            glid->blink = 1;
+            glid->blink = true;
 
             if (glid->type == GLID_TYPE_ROOT) {
                 int passage_index = glid->root.shape;
