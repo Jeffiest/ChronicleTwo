@@ -51,9 +51,7 @@ No first-game counterpart: Dark Cloud has no `CActiveMonster`, `CMonsterMan` or 
   0x134C (SetActiveMonster's 4th arg; read by `CLockOnModel::Draw`), 0x1358 (set on death by
   certain kinds/attrs: kinds 0xB0-0xB4 with attr 0x40000, kind 0xDC with 0x80000; read by
   `_SET_DEAD_START`), 0x1488/0x148C (only zeroed/copied).
-- MONSTER_ATTRIB bits 0x2 (tested by `_SET_DEAD_OFF`) and 0x80 (CheckDamage) unexplained.
-- MONSTER_STATUS bits 0x8/0x20: grey palette flash, timer `grey_time` 300/900 steps; meaning not
-  named. Status set from colprim attr bits 0x8 / 0x8000 / 0x10000 unless tbl->resist_attr has them.
+- MONSTER_STATUS and MONSTER_ATTRIB bit meanings: see `Status and attribute bits`.
 - `CMonsterLocateInfo` arrays: the two s16[32] arrays at CMonsterMan+0x10000/+0x10040 are placed
   inside CMonsterLocateInfo (making it 0x8C); they could equally be CMonsterMan members.
   SetPutFlag only touches +0/+4/+8.
@@ -224,3 +222,15 @@ to alter the compiler's helper-call argument-register history and is removed.
 Any required integer helper history must be represented by a verified Satan's
 Fiddle translation-unit mask. Its effect on the merged unit's new native bodies
 requires canonical validation after tool and header reconciliation.
+
+## Status and attribute bits
+
+- MONSTER_STATUS_STOP (0x8) is set by hit status bit 0x8 for 300 steps; MONSTER_STATUS_STONE (0x20) by hit status bit 0x8000 for 900
+  steps (the 0x8000 bit is carried by the damage entries named 石化攻撃 "stone attack" and シードラ攻撃 in colprim.cpp); each hit
+  takes 90 steps off grey_time; both make CheckDamage pick MONSTER_HIT_STATUS (program 400).
+- MONSTER_ATTRIB_NO_DEAD_EFFECT (0x2) suppresses the death effect in the monster script's death command (runscript_opcodes.cpp);
+  MONSTER_ATTRIB_NO_BLOW (0x80) suppresses the knock-back vector that CheckDamage sets.
+- MONSTER_PROG_CATCH (1100) is requested by CheckThrowTarget when a frame lifts a monster.
+- Texture blocks: loaded kind slot i uses block MONSTER_TEXB_REFER + i; Initialize clears blocks free_texb .. MONSTER_TEXB_FREE_END-1.
+- CActiveMonster unk_1300/unk_1304 (floats 400.0/300.0), unk_1308 (180), unk_1322 (copied from BASE_MONSTER_TBL::unk_5a),
+  unk_1488/unk_148c (0) are written in Initialize/SetActiveMonster but never read by C++ code.

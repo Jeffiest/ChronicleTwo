@@ -193,7 +193,8 @@ The built ELF in `build/pal` marks everything GLOBAL; the retail ELF does not. U
   vifpacket, packet_buf, data_buf, frame_tex, fixz_tex, gs_simage. Function-local statics:
   `dimx$281` (mgInit), `count$580/cpu_ratio$583/free_ratio$586` + `init$...` (mgEndFrame),
   `store_data$614` (mgEndFrame, 0x1000 bytes = u_int[0x400] z read-back), `image_num$1535`
-  (StoreImage). `@863` is a 16-byte .bss zero vector used by `mgSetBackGround(ffff)`.
+  (StoreImage). `@863` is a 16-byte .bss zero vector: the compiler's initializer for
+  `float vector[4] = {red, green, blue, alpha}` in `mgSetBackGround(ffff)`.
 - Retail true sizes differ from the padded INCLUDE_BSS slots: VSyncField 4 (slot 8),
   mgChangeLight 4, draw_performance_meter 4, mgTexManager 0x21C (slot 0x220), gs_simage 0x70
   (slot 0xA0), prog_adr 12 (3 pointers).
@@ -350,9 +351,8 @@ identity required by library data.
   u_int` addresses are memory-mapped register accesses.
 - `mgFlushRenderInfo` writes the fog floats into VIF packet words as
   `words[n] = *(u_int *) &mgRenderInfo.fog.x`.
-- `CheckVuProgID` (`global_optimizer off`) keeps `*(int *) ((id << 2) +
-  (int) user_prog_adr - user_vu_prog_base * 4)`: `user_prog_adr[id -
-  user_vu_prog_base]` subtracts before scaling and
-  `(&user_prog_adr[id])[-user_vu_prog_base]` shortens the function.
+- `CheckVuProgID` needs no pragma. The NULL test is written as `user_prog_adr[id -
+  MG_VU_PROG_USER] == NULL`, and the built-in range check keeps its `goto valid;` form
+  because a `return true;` form does not match.
 - `mgGetFogParam` copies the four colour bytes as one word through
   `mgFogColor` views.

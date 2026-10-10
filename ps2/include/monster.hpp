@@ -6,6 +6,7 @@
 
 #include "actionchara.hpp"
 #include "automap.hpp"
+#include "colprim.hpp"
 #include "dng_hud.hpp"
 #include "effscript.hpp"
 #include "mapparts.hpp"
@@ -67,13 +68,13 @@ enum MONSTER_VIEW {
  */
 enum MONSTER_ATTRIB {
     MONSTER_ATTRIB_NO_LOCK_ON = 0x1, /**< The player cannot lock on to the monster. */
-    MONSTER_ATTRIB_UNK_2 = 0x2,
+    MONSTER_ATTRIB_NO_DEAD_EFFECT = 0x2, /**< The monster dies without the death effect. */
     MONSTER_ATTRIB_SET_VELOCITY = 0x4, /**< The walk towards the next position replaces the velocity instead of adding to it. */
     MONSTER_ATTRIB_NO_MAP_HIT = 0x8,   /**< The monster moves without being checked against the map. */
     MONSTER_ATTRIB_NO_BODY_HIT = 0x10, /**< The monster moves without being pushed off other monsters. */
     MONSTER_ATTRIB_NO_DAMAGE = 0x20,   /**< The monster takes no damage and cannot be stunned. */
     MONSTER_ATTRIB_QUICK_DEAD = 0x40,  /**< The monster vanishes at once when it dies. */
-    MONSTER_ATTRIB_UNK_80 = 0x80,
+    MONSTER_ATTRIB_NO_BLOW = 0x80, /**< Hits do not knock the monster back. */
     MONSTER_ATTRIB_SKIP_GROUND = 0x100, /**< The map check skips the search for ground. */
     MONSTER_ATTRIB_ALWAYS_VIEW = 0x200  /**< The monster counts as in sight wherever it is. */
 };
@@ -86,8 +87,8 @@ enum MONSTER_ATTRIB {
 enum MONSTER_STATUS_ATTR {
     MONSTER_STATUS_POISON = 0x1, /**< Loses a share of its life every 120 steps. */
     MONSTER_STATUS_SLOW = 0x2,   /**< Moves at half speed. */
-    MONSTER_STATUS_UNK_8 = 0x8,  /**< Greyed out for a while; set by hits with attribute bit 0x8. */
-    MONSTER_STATUS_UNK_20 = 0x20 /**< Greyed out for a while; set by hits with attribute bit 0x8000. */
+    MONSTER_STATUS_STOP = 0x8,   /**< Stopped and greyed out for a while; set by hits with the stop attribute bit 0x8. */
+    MONSTER_STATUS_STONE = 0x20  /**< Turned to stone and greyed out for a while; set by hits with the stone attribute bit 0x8000. */
 };
 
 /**
@@ -106,6 +107,7 @@ enum MONSTER_PROG {
     MONSTER_PROG_ESCAPE_0 = 800, /**< Dodges the target's first kind of attack. */
     MONSTER_PROG_ESCAPE_1 = 900, /**< Dodges the target's second kind of attack. */
     MONSTER_PROG_DEAD = 1000,    /**< Runs the monster's death. */
+    MONSTER_PROG_CATCH = 1100,   /**< Reacts to being caught by a frame that lifts it. */
     MONSTER_PROG_LAND = 1200,    /**< Lands the monster after it has been thrown. */
     MONSTER_PROG_PIYORI = 1400   /**< Stuns the monster. */
 };
@@ -133,6 +135,27 @@ enum MONSTER_SCOOP_TYPE {
 
 /**
  *
+ * Texture blocks that the monster manager uses.
+ *
+ */
+enum MONSTER_TEXB {
+    MONSTER_TEXB_REFER = 0x28,   /**< Block of the first loaded kind slot; each loaded kind slot takes the next block. */
+    MONSTER_TEXB_FREE_END = 0xAA /**< Block after the last of the free blocks that the manager clears when it starts. */
+};
+
+/**
+ *
+ * Kinds of score that HitScoreSet shows where a monster was hit.
+ *
+ */
+enum HIT_SCORE_TYPE {
+    HIT_SCORE_DAMAGE = 0,    /**< The damage dealt, as digits. */
+    HIT_SCORE_NO_DAMAGE = 1, /**< The label for a hit that did no damage. */
+    HIT_SCORE_GUARD = 2      /**< The label for a guarded hit. */
+};
+
+/**
+ *
  * Says when a photo of a monster can be taken, and what the photo is.
  *
  */
@@ -155,7 +178,7 @@ STATIC_ASSERT(sizeof(MONSTER_SCOOP) == 0x18);
 struct MONSTER_STATUS {
     u32 attr;         /**< Statuses on the monster, MONSTER_STATUS_ATTR bits. */
     s16 poison_count; /**< Steps since poison last took life. */
-    s16 grey_time;    /**< Steps left of MONSTER_STATUS_UNK_8 and MONSTER_STATUS_UNK_20. */
+    s16 grey_time;    /**< Steps left of MONSTER_STATUS_STOP and MONSTER_STATUS_STONE. */
     s16 slow_time;    /**< Steps left of MONSTER_STATUS_SLOW. */
 };
 
@@ -168,9 +191,9 @@ STATIC_ASSERT(sizeof(MONSTER_STATUS) == 0xC);
  */
 struct MONSTER_REACT {
     s16 kind; /**< DamageKind that the entry is for. */
-    s16 practice_actions;
+    s16 practice_actions; /**< DNG_PRACTICE_ACTION bits recorded in the battle area when a hit of this kind lands. */
     s16 blow; /**< Nonzero when a hit of this kind knocks the monster back. */
-    s16 pad;
+    s16 unk_6;
 };
 
 STATIC_ASSERT(sizeof(MONSTER_REACT) == 0x8);
@@ -282,7 +305,7 @@ public:
      * @address 0x1DAF60
      * @size 0x44
      */
-    int IsDraw(int view_state);
+    int IsDraw(int alive_only);
 
     /**
      *
@@ -414,6 +437,14 @@ public:
      */
     void DrawEffectScript();
 
+    /**
+     *
+     * Finds the monster that a photo taken now would show, filling in its kind and distance, and gives back its photo number or -1.
+     *
+     * @mangled CheckPhoto__11CMonsterManFPQ26CScene17InScreenCharaInfo
+     * @address 0x1DE5E0
+     * @size 0x2CC
+     */
     int CheckPhoto(CScene::InScreenCharaInfo *info);
 
     /**
@@ -715,6 +746,46 @@ BASE_MONSTER_TBL *GetMonsterTable(int id);
  * @size 0x108
  */
 float SearchArea(CScene *scene, float *from, float *to, float range);
+
+/**
+ *
+ * Starts the spark and flash effects of a hit on a monster at a point, moved towards the camera.
+ *
+ * @mangled HitEffectSet__FP6CScenePfi
+ * @address 0x1DEEA0
+ * @size 0x334
+ */
+void HitEffectSet(CScene *scene, float *point, int flags);
+
+/**
+ *
+ * Starts the spark and flash effects of a guarded hit at a point, and with play_script set its effect script too.
+ *
+ * @mangled GuardEffectSet__FP6CScenePfi
+ * @address 0x1DF1E0
+ * @size 0x21C
+ */
+void GuardEffectSet(CScene *scene, float *point, int play_script);
+
+/**
+ *
+ * Shows a damage score or a no-damage or guard label at a position, a HIT_SCORE_TYPE type.
+ *
+ * @mangled HitScoreSet__FPfii
+ * @address 0x1DF400
+ * @size 0x120
+ */
+void HitScoreSet(float *pos, int type, int value);
+
+/**
+ *
+ * Says whether a hit carries the gift pack items that the monster's gift type accepts.
+ *
+ * @mangled CheckGiftPack__FP14CActiveMonsterP8CColPrim
+ * @address 0x1DF520
+ * @size 0xB0
+ */
+int CheckGiftPack(CActiveMonster *monster, CColPrim *prim);
 
 /**
  *

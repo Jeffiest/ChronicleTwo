@@ -43,6 +43,7 @@ enum mgVU_PROG_ID {
     MG_VU_PROG_MAIN = 0,     /**< Main model microprogram (Vu_prog0). */
     MG_VU_PROG_SHADOW = 1,   /**< Shadow microprogram (Vu_prog_sdw). */
     MG_VU_PROG_3DSPRITE = 2, /**< Camera-facing sprite microprogram (Vu_prog_3dsp). */
+    MG_VU_PROG_BUILTIN_NUM = 3, /**< Number of built-in microprograms. */
     MG_VU_PROG_USER = 0x100, /**< First identifier of the table registered with mgSetUserVuProg. */
 };
 
@@ -499,7 +500,7 @@ void mgSetPacketBuffer(mgCMemory *pool_a, mgCMemory *pool_b);
  * @address 0x1426B0
  * @size 0xC0
  */
-void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_head);
+void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_header);
 
 /**
  *
@@ -619,6 +620,16 @@ void mgEndDraw(int mode, mgCDrawManager *manager);
  * @unknownret
  */
 void mgStoreFrameImage();
+
+/**
+ *
+ * Writes the selected frame buffer to a numbered TGA image on the host device.
+ *
+ * @mangled StoreImage__Fi
+ * @address 0x146390
+ * @size 0x284
+ */
+void StoreImage(int front_buffer);
 
 /**
  *
@@ -811,7 +822,7 @@ void mgSetBackGround(float *color);
  * @address 0x143EB0
  * @size 0x40
  */
-void mgSetBackGround(float r, float g, float b, float a);
+void mgSetBackGround(float red, float green, float blue, float alpha);
 
 /**
  *
@@ -836,13 +847,13 @@ void mgInitActiveLighting();
 /**
  *
  * Selects one of the eight lighting sets, copying the current set into it
- * when copy is non-zero, and gives the set that was selected before.
+ * when copy_from_previous is non-zero, and gives the set that was selected before.
  *
  * @mangled mgActiveLighting__Fii
  * @address 0x143F50
  * @size 0x20
  */
-int mgActiveLighting(int slot, int copy);
+int mgActiveLighting(int slot, int copy_from_previous);
 
 /**
  *
@@ -852,7 +863,7 @@ int mgActiveLighting(int slot, int copy);
  * @address 0x143F70
  * @size 0x20
  */
-void mgSetLight(float (*direction)[4], float (*color)[4]);
+void mgSetLight(float (*directions)[4], float (*colors)[4]);
 
 /**
  *
@@ -862,7 +873,7 @@ void mgSetLight(float (*direction)[4], float (*color)[4]);
  * @address 0x143F90
  * @size 0x20
  */
-void mgGetLight(float (*direction)[4], float (*color)[4]);
+void mgGetLight(float (*directions)[4], float (*colors)[4]);
 
 /**
  *
@@ -913,7 +924,7 @@ void mgSetPlight(int index, float *position, float *color, float attenuation, fl
  * @address 0x144040
  * @size 0x20
  */
-void mgSetPlight(int index, mgPOINT_LIGHT *point_light);
+void mgSetPlight(int index, mgPOINT_LIGHT *light);
 
 /**
  *
@@ -964,7 +975,7 @@ void mgSetDropShadowMatrix(float *light, float *position, float *normal);
  * @address 0x144110
  * @size 0x10
  */
-void mgFogEnable(int enable);
+void mgFogEnable(int enabled);
 
 /**
  *
@@ -984,7 +995,7 @@ int mgGetFogEnable();
  * @address 0x144130
  * @size 0x10
  */
-void mgPlightEnable(int enable);
+void mgPlightEnable(int enabled);
 
 /**
  *
@@ -1129,8 +1140,8 @@ mgCDrawEnv *mgGetpDrawEnv(int which);
  * @address 0x144D90
  * @size 0x40
  */
-void mgSetPkMoveImage(mgCTexture *source, mgRect<int> src_rect, mgCTexture *destination, int extra0, int extra1,
-                      int extra2);
+void mgSetPkMoveImage(mgCTexture *source, mgRect<int> rect, mgCTexture *destination, int dst_x, int dst_y,
+                      int direction);
 
 /**
  *
@@ -1152,7 +1163,7 @@ void mgSetPkMoveImage(sceGsTex0 *src, mgRect<int> src_rect, sceGsTex0 *dst, int 
  * @size 0x60
  */
 void mgSetPkMoveImage(mgCTexture *source, mgRect<int> source_rect, mgCTexture *destination, mgRect<int> destination_rect,
-                      mgCDrawEnv *env);
+                      mgCDrawEnv *draw_env);
 
 /**
  *
@@ -1174,7 +1185,7 @@ void mgSetPkMoveImage(sceGsTex0 *src, mgRect<int> src_rect, sceGsTex0 *dst, int 
  * @address 0x1455A0
  * @size 0x300
  */
-void mgSetPkClearScreen(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+void mgSetPkClearScreen(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 
 /**
  *
@@ -1206,7 +1217,7 @@ int mgStoreZBuffImage(mgRect<int> &rect, u_long128 *buffer);
  * @address 0x145BD0
  * @size 0x60
  */
-float mgConvZBuffToDist(unsigned int z);
+float mgConvZBuffToDist(unsigned int zbuf);
 
 /**
  *
@@ -1228,7 +1239,7 @@ mgCTexture *mgGetTextureZ(int index);
  * @address 0x145D20
  * @size 0xD0
  */
-int mgTransWorldPrim(int *out, float *position);
+int mgTransWorldPrim(int *out, float *pos);
 
 /**
  *
@@ -1239,7 +1250,7 @@ int mgTransWorldPrim(int *out, float *position);
  * @address 0x145DF0
  * @size 0x50
  */
-int mgTransWorldScreen(int *out, float *position);
+int mgTransWorldScreen(int *out, float *pos);
 
 /**
  *
@@ -1250,7 +1261,7 @@ int mgTransWorldScreen(int *out, float *position);
  * @address 0x145E40
  * @size 0xD0
  */
-int mgTransViewPrim(int *out, float *position);
+int mgTransViewPrim(int *out, float *pos);
 
 /**
  *
@@ -1260,7 +1271,7 @@ int mgTransViewPrim(int *out, float *position);
  * @address 0x145F10
  * @size 0x10
  */
-void mgTransWorldView(float *a, float *b);
+void mgTransWorldView(float *view_pos, float *world_pos);
 
 /**
  *
@@ -1280,7 +1291,7 @@ int mgTransZPrim(float z);
  * @address 0x145F60
  * @size 0x10
  */
-float mgGetDistFromCamera(float *position);
+float mgGetDistFromCamera(float *pos);
 
 /**
  *
@@ -1290,7 +1301,7 @@ float mgGetDistFromCamera(float *position);
  * @address 0x145F70
  * @size 0x10
  */
-void mgGetDirFromCamera(float *direction, float *position);
+void mgGetDirFromCamera(float *dir, float *pos);
 
 /**
  *

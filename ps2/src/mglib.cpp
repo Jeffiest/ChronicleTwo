@@ -147,7 +147,7 @@ static int now_prog_id = -1;
  * Upload packets for the built-in VU1 microprograms.
  *
  */
-static u_long128 *prog_adr[3] = {Vu_prog0, Vu_prog_sdw, Vu_prog_3dsp};
+static u_long128 *prog_adr[MG_VU_PROG_BUILTIN_NUM] = {Vu_prog0, Vu_prog_sdw, Vu_prog_3dsp};
 
 /**
  *
@@ -228,13 +228,6 @@ static sceGsDimx mgDIMX[1];
 
 /**
  *
- * Zero vector used to initialize the temporary background colour.
- *
- */
-static sceVu0FVECTOR at_863;
-
-/**
- *
  * TIMER0 count register sampled for frame timing.
  *
  */
@@ -283,43 +276,6 @@ static const u_int gs_dispfb2 = 0x12000090;
 static const u_int gs_display2 = 0x120000A0;
 /**
  *
- * DMA CALL tag linking a VU1 microprogram upload packet.
- *
- */
-static const u_int dma_tag_call = 0x50000000;
-/**
- *
- * Number of built-in VU1 microprogram upload packets.
- *
- */
-static const int builtin_vu_prog_count = 3;
-/**
- *
- * First identifier in the user VU1 microprogram table.
- *
- */
-static const int user_vu_prog_base = 0x100;
-
-/**
- *
- * GS register addresses used by direct drawing packets.
- *
- */
-enum {
-    gs_prim = 0x00,
-    gs_rgbaq = 0x01,
-    gs_xyzf2 = 0x04,
-    gs_clamp1 = 0x08,
-    gs_tex1_1 = 0x14,
-    gs_scanmsk = 0x22,
-    gs_texflush = 0x3F,
-    gs_alpha1 = 0x42,
-    gs_test1 = 0x47,
-    gs_zbuf1 = 0x4E
-};
-
-/**
- *
  * DMA channel identifiers used by the graphics library.
  *
  */
@@ -329,8 +285,6 @@ enum mgDMA_CHANNEL {
     MG_DMA_CHANNEL_FROM_SPR = 8, /**< DMA channel transferring data from scratchpad memory. */
 };
 
-void StoreImage(int front_buffer);
-int  VSyncCallBack(int field);
 
 /**
  *
@@ -358,14 +312,13 @@ int mgGetPerformanceMeterFlag() {
  * @mangled VSyncCallBack__Fi
  * @address 0x141870
  * @size 0x7C
- *
  */
 int VSyncCallBack(int field) {
-    call_back_active = 1;
+    call_back_active = true;
     u_long csr = *(volatile u_long *) gs_csr;
     VSyncField = !((csr >> 13) & 1);
 
-    if (VSyncCallBack2 != 0) {
+    if (VSyncCallBack2 != NULL) {
         VSyncCallBack2(field);
     }
 
@@ -375,7 +328,7 @@ int VSyncCallBack(int field) {
         vcount = 0;
     }
 
-    call_back_active = 0;
+    call_back_active = false;
 
     ExitHandler();
 
@@ -399,7 +352,6 @@ void mgSetRotateThread(int priority) {
  * @mangled WaitVSync__Fii
  * @address 0x141910
  * @size 0x64
- *
  */
 void WaitVSync(int start, int frames) {
     for (;;) {
@@ -424,27 +376,26 @@ int mgGetVSyncCount() {
  * @mangled GetScreenSize__FiPiPiPiPiPiPi
  * @address 0x141990
  * @size 0xC0
- *
  */
 static int GetScreenSize(int mode, int *width, int *height, int *left, int *top, int *right, int *bottom) {
     switch (mode) {
         case MG_SCREEN_MODE_640X448:
-            *width = 0x280;
-            *height = 0x1C0;
+            *width = 640;
+            *height = 448;
             break;
         case MG_SCREEN_MODE_512X480:
-            *width = 0x200;
-            *height = 0x1E0;
+            *width = 512;
+            *height = 480;
             break;
         case MG_SCREEN_MODE_512X416:
-            *width = 0x200;
-            *height = 0x1A0;
+            *width = 512;
+            *height = 416;
             break;
         case MG_SCREEN_MODE_512X448:
         default:
             mode = MG_SCREEN_MODE_512X448;
-            *width = 0x200;
-            *height = 0x1C0;
+            *width = 512;
+            *height = 448;
             break;
     }
 
@@ -464,14 +415,14 @@ void mgInit(int screen_mode, int video_mode) {
     int            i;
 
     font_cons = -1;
-    font_draw_flag = 0;
-    mgChangeLight = 1;
+    font_draw_flag = false;
+    mgChangeLight = true;
     sceDmaReset(1);
     sceDmaGetEnv(&dma_env);
     dma_env.notify = 0x100;
     sceDmaPutEnv(&dma_env);
     sceGsResetPath();
-    mgAntialiasing = 1;
+    mgAntialiasing = true;
     mgDBuffID = 0;
     mgDataID = 0;
     memset(&mgRenderInfo, 0, sizeof(mgRenderInfo));
@@ -520,7 +471,7 @@ void mgInit(int screen_mode, int video_mode) {
     mgBackColor[2] = 0.0f;
     mgDBuff.draw1.frame1.FBP = frame_buf0;
     mgBackColor[3] = 128.0f;
-    mgClearBackFlag = 1;
+    mgClearBackFlag = true;
     mgDBuff.draw0.zbuf1.bits.zbp = mgDBuff.draw1.zbuf1.bits.zbp = frame_buf1 * 2;
     mgDBuff.clear0.rgbaq.bytes.red = (int) mgBackColor[0];
     mgDBuff.clear0.rgbaq.bytes.green = (int) mgBackColor[1];
@@ -562,10 +513,10 @@ void mgInit(int screen_mode, int video_mode) {
     *(volatile u_int *) timer0_mode = 0x83;
     mgFrameRate = 2;
     vcount = 0;
-    over_vsync = 0;
+    over_vsync = false;
     sceGsSyncVCallback(VSyncCallBack);
-    VSyncCallBack2 = 0;
-    call_back_active = 0;
+    VSyncCallBack2 = NULL;
+    call_back_active = false;
     FlushCache(0);
     sceGsSwapDBuff(&mgDBuff, 0);
     sceDmaSync(DmaCH2, 0, 0);
@@ -709,12 +660,12 @@ void mgBeginFrame(mgCDrawManager *manager) {
     *(u_long128 *) &mgGiftagAD = 0;
     mgGiftagAD.EOP = 1;
     mgGiftagAD.NREG = 1;
-    mgGiftagAD.REGS0 = 0xE;
+    mgGiftagAD.REGS0 = SCE_GIF_PACKED_AD;
     sceVif1PkCnt(mgVif1Packet, 0);
     sceVif1PkOpenDirectCode(mgVif1Packet, 0);
     sceVif1PkOpenGifTag(mgVif1Packet, *(u_long128 *) &mgGiftagAD);
-    sceVif1PkAddGsAD(mgVif1Packet, gs_scanmsk, 0);
-    sceVif1PkAddGsAD(mgVif1Packet, gs_texflush, 0);
+    sceVif1PkAddGsAD(mgVif1Packet, SCE_GS_SCANMSK, 0);
+    sceVif1PkAddGsAD(mgVif1Packet, SCE_GS_TEXFLUSH, 0);
     sceVif1PkCloseGifTag(mgVif1Packet);
     sceVif1PkCloseDirectCode(mgVif1Packet);
     mgSetPkTextureRepeat(1);
@@ -894,10 +845,10 @@ void mgEndFrame(mgCDrawManager *manager) {
         }
     }
 
-    over_vsync = 0;
+    over_vsync = false;
 
     if (vcount - old_vcount >= mgFrameRate) {
-        over_vsync = 1;
+        over_vsync = true;
     }
 
     WaitVSync(old_vcount, mgFrameRate);
@@ -915,7 +866,7 @@ void mgEndFrame(mgCDrawManager *manager) {
         cap_ture_cnt++;
     }
 
-    capture_on = 0;
+    capture_on = false;
 
     if (font_draw_flag != 0 && font_cons >= 0) {
         if (font_cons >= 0) {
@@ -925,7 +876,7 @@ void mgEndFrame(mgCDrawManager *manager) {
         sceDevConsDraw(font_cons);
     }
 
-    font_draw_flag = 0;
+    font_draw_flag = false;
 
     if (mgAntialiasing != 0) {
         mgDBuff.disp[mgDBuffID].pmode = 0x7F23;
@@ -1065,9 +1016,9 @@ void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
         prim.Initialize(NULL, NULL);
         prim.DepthTestEnable(0);
         prim.AlphaTestEnable(0);
-        prim.ZMask(-1);
+        prim.ZMask(MG_Z_MASK_MASKED);
         prim.TextureMapEnable(0);
-        prim.Begin(6);
+        prim.Begin(MG_PRIM_SPRITE);
         prim.Color(0, 0, 0, 0);
         prim.Vertex(0, 0, 0);
         prim.Vertex(shadow->width, shadow->height, 0);
@@ -1091,10 +1042,10 @@ void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
         prim.AlphaTestEnable(1);
         prim.AlphaTest(SCE_GS_GEQUAL, 1);
         prim.AlphaBlendEnable(1);
-        prim.ZMask(-1);
+        prim.ZMask(MG_Z_MASK_MASKED);
         prim.TextureMapEnable(1);
         prim.Bilinear(1);
-        prim.Begin(SCE_GS_PRIM_SPRITE);
+        prim.Begin(MG_PRIM_SPRITE);
         prim.Color(128, 128, 128, 128);
         prim.Texture(&texture);
         alpha.bits.a = SCE_GS_ALPHA_ZERO;
@@ -1139,32 +1090,27 @@ void mgSetBackGround(float *color) {
 }
 
 void mgSetBackGround(float red, float green, float blue, float alpha) {
-    float vector[4];
-    *(u_long128 *) vector = *(u_long128 *) at_863;
-    vector[0] = red;
-    vector[1] = green;
-    vector[2] = blue;
-    vector[3] = alpha;
+    float vector[4] = {red, green, blue, alpha};
     mgSetBackGround(vector);
 }
 
 void mgInitLighting() {
     mgRenderInfo.InitLighting();
-    mgChangeLight = 1;
+    mgChangeLight = true;
 }
 
 void mgInitActiveLighting() {
     mgRenderInfo.InitActiveLighting();
-    mgChangeLight = 1;
+    mgChangeLight = true;
 }
 
 int mgActiveLighting(int slot, int copy_from_previous) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     return mgRenderInfo.ActiveLighting(slot, copy_from_previous);
 }
 
 void mgSetLight(float (*directions)[4], float (*colors)[4]) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     mgRenderInfo.SetLight(directions, colors);
 }
 
@@ -1173,12 +1119,12 @@ void mgGetLight(float (*directions)[4], float (*colors)[4]) {
 }
 
 void mgSetLight(int index, float *direction, float *color) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     mgRenderInfo.SetLight(index, direction, color);
 }
 
 void mgSetAmbient(float *color) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     mgRenderInfo.SetAmbient(color);
 }
 
@@ -1187,12 +1133,12 @@ void mgGetAmbient(float *ambient) {
 }
 
 void mgSetPlight(int index, float *position, float *color, float attenuation, float range) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     mgRenderInfo.SetPlight(index, position, color, attenuation, range);
 }
 
 void mgSetPlight(int index, mgPOINT_LIGHT *light) {
-    mgChangeLight = 1;
+    mgChangeLight = true;
     mgRenderInfo.SetPlight(index, light);
 }
 
@@ -1203,7 +1149,7 @@ void mgGetPlight(int index, mgPOINT_LIGHT *out) {
 void mgResetPlight() {
     int index;
 
-    mgChangeLight = 1;
+    mgChangeLight = true;
     index = 0;
 
     do {
@@ -1284,10 +1230,10 @@ void mgFlushRenderInfo() {
     sceVif1PkTerminate(mgVif1Packet);
     u_int *words = packet->pCurrent;
 
-    words[0] = 0x10000004;
+    words[0] = MG_DMA_CNT | 4;
     words[1] = 0;
     words[2] = 0;
-    words[3] = 0x6C01003B;
+    words[3] = MG_VIF_UNPACK_V4_32 | (1 << MG_VIF_NUM_SHIFT) | 0x3B;
     words[4] = *(u_int *) &mgRenderInfo.fog.offset;
     words[5] = *(u_int *) &mgRenderInfo.fog.near_value;
     words[6] = *(u_int *) &mgRenderInfo.fog.far_value;
@@ -1296,7 +1242,7 @@ void mgFlushRenderInfo() {
     words[9] = 0;
     words[10] = 0;
 
-    words[11] = 0x6C020039;
+    words[11] = MG_VIF_UNPACK_V4_32 | (2 << MG_VIF_NUM_SHIFT) | 0x39;
     *(u_long128 *) &words[12] = *(u_long128 *) mgRenderInfo.guard_max;
     *(u_long128 *) &words[16] = *(u_long128 *) mgRenderInfo.guard_min;
     sceVif1PkReserve(packet, 0x14);
@@ -1304,7 +1250,7 @@ void mgFlushRenderInfo() {
 
 void mgSetPkTextureRepeat(int mode) {
     sceGsClamp clamp;
-    memset(&clamp, 0, 8);
+    memset(&clamp, 0, sizeof(clamp));
 
     if (mode == 0) {
         clamp.WMS = 1;
@@ -1319,7 +1265,7 @@ void mgSetPkTextureRepeat(sceGsClamp clamp) {
     sceVif1PkCnt(mgVif1Packet, 0);
     sceVif1PkOpenDirectCode(packet, 0);
     sceVif1PkOpenGifTag(packet, *(u_long128 *) &mgGiftagAD);
-    sceVif1PkAddGsAD(packet, gs_clamp1, *(u_long *) &clamp);
+    sceVif1PkAddGsAD(packet, SCE_GS_CLAMP_1, *(u_long *) &clamp);
     sceVif1PkCloseGifTag(packet);
     sceVif1PkCloseDirectCode(packet);
 }
@@ -1509,13 +1455,13 @@ mgCDrawEnv *mgGetpDrawEnv(int which) {
     return &mgRenderInfo.draw_env[index];
 }
 
-void mgSetPkMoveImage(mgCTexture *source, mgRect<int> rect, mgCTexture *destination, int extra0,
-                      int extra1, int extra2) {
+void mgSetPkMoveImage(mgCTexture *source, mgRect<int> rect, mgCTexture *destination, int dst_x,
+                      int dst_y, int direction) {
     if (source == NULL || destination == NULL) {
         return;
     }
 
-    mgSetPkMoveImage(&source->tex0, rect, &destination->tex0, extra0, extra1, extra2);
+    mgSetPkMoveImage(&source->tex0, rect, &destination->tex0, dst_x, dst_y, direction);
 }
 
 void mgSetPkMoveImage(sceGsTex0 *src, mgRect<int> src_rect, sceGsTex0 *dst, int dst_x, int dst_y, int direction) {
@@ -1650,7 +1596,7 @@ void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
     sceVif1PkCnt(mgVif1Packet, 0);
     sceVif1PkOpenDirectCode(packet, 0);
     sceVif1PkOpenGifTag(packet, *(u_long128 *) &mgGiftagAD);
-    sceVif1PkAddGsAD(packet, gs_texflush, 0);
+    sceVif1PkAddGsAD(packet, SCE_GS_TEXFLUSH, 0);
     sceVif1PkCloseGifTag(packet);
     sceVif1PkCloseDirectCode(packet);
     sceVif1PkCnt(packet, 0);
@@ -1659,35 +1605,35 @@ void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
     sceGsTest test = mgTEST_1;
     test.bits.ate = 0;
     test.bits.zte = 1;
-    test.bits.ztst = 1;
+    test.bits.ztst = SCE_GS_ALWAYS;
     test.bits.date = 0;
-    sceVif1PkAddGsAD(packet, gs_test1, *(u_long *) &test);
+    sceVif1PkAddGsAD(packet, SCE_GS_TEST_1, *(u_long *) &test);
     sceGsZbuf zbuf = mgZBUF_1;
     zbuf.bits.zmsk = 0;
-    sceVif1PkAddGsAD(packet, gs_zbuf1, *(u_long *) &zbuf);
+    sceVif1PkAddGsAD(packet, SCE_GS_ZBUF_1, *(u_long *) &zbuf);
     sceGsAlpha blend = mgALPHA_1;
-    blend.bits.a = 2;
-    blend.bits.b = 2;
-    blend.bits.c = 2;
-    blend.bits.d = 0;
-    sceVif1PkAddGsAD(packet, gs_alpha1, *(u_long *) &blend);
-    sceVif1PkAddGsAD(packet, gs_tex1_1, 1);
-    sceVif1PkAddGsAD(packet, gs_prim, 0x146);
-    sceVif1PkAddGsAD(packet, gs_rgbaq,
+    blend.bits.a = SCE_GS_ALPHA_ZERO;
+    blend.bits.b = SCE_GS_ALPHA_ZERO;
+    blend.bits.c = SCE_GS_ALPHA_FIX;
+    blend.bits.d = SCE_GS_ALPHA_CS;
+    sceVif1PkAddGsAD(packet, SCE_GS_ALPHA_1, *(u_long *) &blend);
+    sceVif1PkAddGsAD(packet, SCE_GS_TEX1_1, 1);
+    sceVif1PkAddGsAD(packet, SCE_GS_PRIM, 0x146);
+    sceVif1PkAddGsAD(packet, SCE_GS_RGBAQ,
                      (u_long) red | ((u_long) green << 8) | ((u_long) blue << 16) |
                          ((u_long) alpha << 24));
 
     for (int x = 0; x < mgScreenWidth * 16; x += 0x200) {
         int left = (mgScreenOffx << 4) + x;
-        sceVif1PkAddGsAD(packet, gs_xyzf2,
+        sceVif1PkAddGsAD(packet, SCE_GS_XYZF2,
                          ((long long) (mgScreenOffy << 4) << 16) | (long long) left);
         int right = (mgScreenOffx << 4) + x + 0x200;
-        sceVif1PkAddGsAD(packet, gs_xyzf2,
+        sceVif1PkAddGsAD(packet, SCE_GS_XYZF2,
                          ((long long) ((mgScreenOffy + mgScreenHeight) << 4) << 16) |
                              (long long) right);
     }
 
-    sceVif1PkAddGsAD(packet, gs_texflush, 0);
+    sceVif1PkAddGsAD(packet, SCE_GS_TEXFLUSH, 0);
     sceVif1PkCloseGifTag(packet);
     sceVif1PkCloseDirectCode(packet);
 }
@@ -1696,7 +1642,7 @@ int mgStoreImage(mgCTexture *texture, u_long128 *buffer) {
     sceGsStoreImage store_image;
     int             block_width;
 
-    if (texture == 0 || buffer == 0) {
+    if (texture == NULL || buffer == NULL) {
         return 0;
     }
 
@@ -1757,7 +1703,7 @@ float mgConvZBuffToDist(u_int zbuf) {
 
 mgCTexture *mgGetTextureZ(int index) {
     if (index < 0 || index > 1) {
-        return 0;
+        return NULL;
     }
 
     return &fixz_tex[index];
@@ -1770,26 +1716,25 @@ mgCTexture *mgGetTextureZ(int index) {
  * @mangled prim_clip_check__FPf
  * @address 0x145C70
  * @size 0xB0
- *
  */
 static int prim_clip_check(float *vertex) {
     mgRENDER_INFO *info = &mgRenderInfo;
 
     if (vertex[0] < 0.0f || vertex[0] > 4095.0f) {
-        return 0;
+        return false;
     }
 
     if (vertex[1] < 0.0f || vertex[1] > 4095.0f) {
-        return 0;
+        return false;
     }
 
     float z = vertex[3];
 
     if (z < info->clip_min[2] || z > info->clip_max[2]) {
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 int mgTransWorldPrim(int *out, float *pos) {
@@ -1827,8 +1772,8 @@ int mgTransViewPrim(int *out, float *pos) {
     return prim_clip_check(v);
 }
 
-void mgTransWorldView(float *a, float *b) {
-    sceVu0ApplyMatrix(a, mgRenderInfo.view, b);
+void mgTransWorldView(float *view_pos, float *world_pos) {
+    sceVu0ApplyMatrix(view_pos, mgRenderInfo.view, world_pos);
 }
 
 int mgTransZPrim(float z) {
@@ -1906,63 +1851,62 @@ int mgTransWorldPrim3DSprite(int *top_left, int *bottom_right, float *position, 
  * @mangled CheckVuProgID__Fi
  * @address 0x1461C0
  * @size 0x94
- *
  */
 static int CheckVuProgID(int id) {
-    if (id < user_vu_prog_base) {
+    if (id < MG_VU_PROG_USER) {
         if (id <= -1) {
-            return 0;
+            return false;
         }
 
-        if (id >= builtin_vu_prog_count) {
-            return 0;
+        if (id >= MG_VU_PROG_BUILTIN_NUM) {
+            return false;
         }
 
         goto valid;
     }
 
-    if (id < user_vu_prog_base) {
-        return 0;
+    if (id < MG_VU_PROG_USER) {
+        return false;
     }
 
-    if (id >= user_prog_num + user_vu_prog_base) {
-        return 0;
+    if (id >= user_prog_num + MG_VU_PROG_USER) {
+        return false;
     }
 
-    if (user_prog_adr == 0) {
-        return 0;
+    if (user_prog_adr == NULL) {
+        return false;
     }
 
-    if (*(int *) ((id << 2) + (int) user_prog_adr - user_vu_prog_base * 4) == 0) {
-        return 0;
+    if (user_prog_adr[id - MG_VU_PROG_USER] == NULL) {
+        return false;
     }
 
 valid:
-    return 1;
+    return true;
 }
 
 u_long128 *mgGetVuProgPacket(int id) {
-    if (CheckVuProgID(id) == 0) {
+    if (!CheckVuProgID(id)) {
         return NULL;
     }
 
-    if (id < user_vu_prog_base) {
+    if (id < MG_VU_PROG_USER) {
         return prog_adr[id];
     }
 
     u_long128 **user_table = user_prog_adr;
-    return user_table[id - user_vu_prog_base];
+    return user_table[id - MG_VU_PROG_USER];
 }
 
 int mgSendVuProg(u_int *tag, int id) {
-    if (CheckVuProgID(id) == 0) {
+    if (!CheckVuProgID(id)) {
         now_prog_id = -1;
         return 0;
     }
 
     if (id != now_prog_id) {
         void *packet = mgGetVuProgPacket(id);
-        tag[0] = dma_tag_call;
+        tag[0] = MG_DMA_CALL;
         tag[1] = (u_int) packet;
         tag[2] = 0;
         tag[3] = 0;
@@ -1986,15 +1930,6 @@ void mgSetUserVuProgAdr(int index, u_long128 *adr) {
     user_prog_adr[index] = adr;
 }
 
-/**
- *
- * Writes the selected frame buffer to a numbered TGA image on the host device.
- *
- * @mangled StoreImage__Fi
- * @address 0x146390
- * @size 0x284
- *
- */
 void StoreImage(int front_buffer) {
     static int image_num = 0;
     u_char     tga[18] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 0};
@@ -2062,7 +1997,7 @@ void StoreImage(int front_buffer) {
 
 int mgInitFont() {
     sceDevConsInit();
-    font_cons = sceDevConsOpen((mgScreenOffx + 8) * 0x10, (mgScreenOffy + 8) * 0x10, 0x28, 0x18);
+    font_cons = sceDevConsOpen((mgScreenOffx + 8) * 16, (mgScreenOffy + 8) * 16, 40, 24);
     return font_cons;
 }
 
@@ -2071,7 +2006,7 @@ void mgCloseFont() {
         sceDevConsClose(font_cons);
     }
 
-    font_draw_flag = 0;
+    font_draw_flag = false;
 }
 
 int            mgAntialiasing;

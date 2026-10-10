@@ -3370,7 +3370,7 @@ int _SET_DEAD_OFF(RS_STACKDATA *args, int argc) {
     size = height / 32.0f;
     nowMonster->GetEntryObjectPos(0, position);
 
-    if ((nowMonster->attrib & MONSTER_ATTRIB_UNK_2) == 0) {
+    if ((nowMonster->attrib & MONSTER_ATTRIB_NO_DEAD_EFFECT) == 0) {
         if (BattleFX.dead == NULL) {
             effect = NULL;
         } else {
