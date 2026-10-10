@@ -286,7 +286,6 @@ void CChillAfterHit::Draw() {
         CHILL_AFTER_HIT_PIECE *p;
         int                   *rect;
         int                    alpha;
-        int                    trail_offset;
         float                  size;
         int                    side;
         prim.Initialize(NULL, NULL);
@@ -309,12 +308,11 @@ void CChillAfterHit::Draw() {
                     prim.Texture(TEX_ExFx_ICE);
                     alpha = p->alpha;
                     j = 0;
-                    trail_offset = 0;
                     rect = chill_tex_rect_910[p->rect];
 
                     while (j < p->trail_num) {
 
-                        trans_float_to_sceVector(vec, (float *) ((u8 *) p + trail_offset + 0x38), 0);
+                        trans_float_to_sceVector(vec, p->trail[j], 0);
                         size = p->size;
                         LocalTransWorldPrimPos(trail_quad, vec, size, size, p->angle);
                         prim.Color(0x80, 0x80, 0xB6, alpha);
@@ -330,7 +328,6 @@ void CChillAfterHit::Draw() {
                         prim.Vertex4(trail_quad[3]);
                         prim.Flush();
                         alpha = alpha >> 1;
-                        trail_offset += 0xC;
                         j++;
                     }
 
@@ -379,7 +376,6 @@ void CFireAfterHit::SetPos(float *pos, float size, int strength) {
     FIRE_AFTER_HIT_FLAME *e;
     FIRE_AFTER_HIT_TRAIL (*trails)[FIRE_AFTER_HIT_TRAIL_MAX];
     int i;
-    int trail_offset;
 
     if (strength < 32) {
         return;
@@ -403,7 +399,6 @@ void CFireAfterHit::SetPos(float *pos, float size, int strength) {
     size = 8.0f + size / 14.0f;
     active = true;
     i = 0;
-    trail_offset = 0;
 
     while (i < flame_num) {
         e->velocity[0] = fRand(1.0f) - 0.5f;
@@ -416,11 +411,10 @@ void CFireAfterHit::SetPos(float *pos, float size, int strength) {
         e->alpha = iRand(40) + 97;
         e->age = fptosi((1.3f - rate) * fRand(4.0f));
 
-        trans_float_to_sceVector(e->pos, (float *) ((u8 *) trails + trail_offset), 1);
+        trans_float_to_sceVector(e->pos, trails[i][0].pos, 1);
         e->trail_head += 1;
         e->fade_speed = iRand(10) + 4;
         e->delay = iRand(3);
-        trail_offset += 0x78;
         i++;
         e++;
     }
@@ -432,21 +426,19 @@ void CFireAfterHit::Step() {
     int                   any_alive;
     FIRE_AFTER_HIT_FLAME *e;
     FIRE_AFTER_HIT_TRAIL *row;
-    int                   trail_offset;
     int                   spawned;
 
     if (active != 0) {
         any_alive = false;
         e = flame;
         i = 0;
-        trail_offset = 0;
 
         while (i < flame_num) {
             if (0 < e->delay) {
                 e->delay -= 1;
             } else {
 
-                row = (FIRE_AFTER_HIT_TRAIL *) ((u8 *) this + trail_offset + 0x2B0);
+                row = trail[i];
                 spawned = false;
                 j = 0;
 
@@ -506,7 +498,6 @@ void CFireAfterHit::Step() {
                 e->age += 1;
             }
 
-            trail_offset += 0x78;
             i++;
             e++;
         }
@@ -936,7 +927,7 @@ void CSparcEffect::Draw() {
 
         attr.no_light = true;
 
-        switch ((s64) color) {
+        switch (color) {
             case WEAPON_ELEMENT_FIRE:
                 attr.color[0] = 255.0f;
                 attr.color[1] = 64.0f;
@@ -973,7 +964,7 @@ void CSparcEffect::Draw() {
         model[2]->SetPosition(pos);
         model[2]->SetScale(sx, sx, sz);
 
-        switch ((s64) pattern) {
+        switch (pattern) {
             case SPARC_EFFECT_PATTERN_FIRST_PAIR:
                 mgDrawDirect(model[0]);
                 mgDrawDirect(model[1]);
@@ -2424,16 +2415,22 @@ void CMapEffect_Sprite::Draw(mgCCamera *camera, CPreSprite *sprite) {
     }
 }
 
-void CMapEffectsManeger::Init_LightBoll(mgCMemory *memory, int count) {
-    sprite_num = count;
-    u32 blocks;
-
-    if (((u32) count * (int) sizeof(CMapEffect_Sprite)) & 0xF) {
-        blocks = (((u32) count * (int) sizeof(CMapEffect_Sprite)) >> 4) + 1;
-    } else {
-        blocks = ((u32) count * (int) sizeof(CMapEffect_Sprite)) >> 4;
+/**
+ *
+ * Rounds a byte count up to a number of 16-byte allocation blocks.
+ *
+ */
+static inline u_int align16_blocks(u_int size) {
+    if (size & 15) {
+        return (size >> 4) + 1;
     }
 
+    return size >> 4;
+}
+
+void CMapEffectsManeger::Init_LightBoll(mgCMemory *memory, int count) {
+    sprite_num = count;
+    u32 blocks = align16_blocks(count * sizeof(CMapEffect_Sprite));
     void *block = memory->Alloc(blocks + 2);
     sprite = (CMapEffect_Sprite *) __construct_new_array(
         operator new[](count *(int) sizeof(CMapEffect_Sprite) + 0x10, (u_long128 *) block), 0, 0,
@@ -2564,19 +2561,6 @@ void CMapEffectsManeger::Draw(mgCCamera *camera) {
 }
 
 #pragma opt_propagation reset
-
-/**
- *
- * Rounds a byte count up to a number of 16-byte allocation blocks.
- *
- */
-static inline u_int align16_blocks(u_int size) {
-    if (size & 15) {
-        return (size >> 4) + 1;
-    }
-
-    return size >> 4;
-}
 
 int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
     switch (kind) {
