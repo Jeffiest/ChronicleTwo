@@ -38,7 +38,6 @@
 #include "snd_seseq.hpp"
 #include "water.hpp"
 
-static const char at_1107__2[] = "br = %.2f\n";
 static int        chill_tex_rect_910[6][3] = {
     {0,  0,  32},
     {32, 0,  32},
@@ -643,7 +642,7 @@ void CTornado::SetPos(float *pos, float size, float strength) {
     sceVu0CopyVector(center, pos);
     rate = strength / 255.0f;
     live_num = fptosi(14.0f * rate) + 4;
-    printf(at_1107__2, (double) rate);
+    printf("br = %.2f\n", (double) rate);
     p = piece;
 
     for (i = 0; i < TORNADO_PIECE_MAX; i++) {
