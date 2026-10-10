@@ -433,14 +433,14 @@ mgCMemory *MenuSpiStack;
  * First miscellaneous-information slot of the current script block.
  *
  */
-static u16 Menu_Target_No;
+static short Menu_Target_No;
 
 /**
  *
  * Miscellaneous-information offset within the current script block.
  *
  */
-static u16 Menu_Target_No_local;
+static short Menu_Target_No_local;
 
 /**
  *
@@ -1242,7 +1242,7 @@ int _MENU_ETCINFO(SPI_STACK *stack, int arg_count) {
     int           i;
     MENU_ETCINFO *entry;
 
-    index = (short) Menu_Target_No + (short) Menu_Target_No_local;
+    index = Menu_Target_No + Menu_Target_No_local;
 
     if (index >= MenuPosData->etc_tbl_num) {
         return 1;
@@ -1265,7 +1265,7 @@ int _MENU_ETCINFO(SPI_STACK *stack, int arg_count) {
     entry->name = mgCopyString(name, MenuSpiStack);
     entry->value[0] = spiGetStackInt(stack++);
     entry->value[1] = spiGetStackInt(stack);
-    Menu_Target_No_local = (short) Menu_Target_No_local + 1;
+    Menu_Target_No_local++;
     return 1;
 }
 
@@ -1341,7 +1341,7 @@ int _MENU_ETCINFO2(SPI_STACK *stack, int arg_count) {
     int            j;
     MENU_ETCINFO2 *entry;
 
-    index = (short) Menu_Target_No + (short) Menu_Target_No_local;
+    index = Menu_Target_No + Menu_Target_No_local;
 
     if (index >= MenuPosData->etc_tbl2_num) {
         return 1;
@@ -1364,7 +1364,7 @@ int _MENU_ETCINFO2(SPI_STACK *stack, int arg_count) {
         entry->value[j] = spiGetStackFloat(stack++);
     }
 
-    Menu_Target_No_local = (short) Menu_Target_No_local + 1;
+    Menu_Target_No_local++;
     return 1;
 }
 
@@ -1500,16 +1500,7 @@ int _MENU_TEXNAME(SPI_STACK *stack, int argc) {
 
     int index = spiGetStackInt(block_arg);
 
-    struct {
-        u8 prefix[0xC];
-
-        struct {
-            short block;
-            short tail;
-        } entries[16];
-    } *common = (typeof(common)) MenuCommonInfo;
-
-    menu_analyze_texblock = common->entries[index].block;
+    menu_analyze_texblock = MenuCommonInfo->tex_block[index];
     return 1;
 }
 
