@@ -28,6 +28,20 @@ enum ROBO_MODEL_SLOT {
 
 /**
  *
+ * Shape of the table of memory stack sizes that main characters are loaded with.
+ *
+ */
+enum CHARA_MEM_SIZE {
+    CHARA_MEM_LAYOUT_HUMAN = 0,   /**< Row of stack sizes for Max or Monica. */
+    CHARA_MEM_LAYOUT_ROBO = 1,    /**< Row of stack sizes for the ridepod. */
+    CHARA_MEM_LAYOUT_EDIT = 2,    /**< Row of stack sizes for Max or Monica in edit mode. */
+    CHARA_MEM_LAYOUT_MONSTER = 3, /**< Row of stack sizes for a monster that Monica has transformed into. */
+    CHARA_MEM_LAYOUT_NUM = 4,     /**< Number of rows of stack sizes. */
+    CHARA_MEM_STACK_NUM = 7,      /**< Memory stacks that a main character's parts load into. */
+};
+
+/**
+ *
  * Model and joint names of one ridepod body.
  *
  */
@@ -66,17 +80,6 @@ extern ROBO_INFO_BODY robo_info_body[11];
 
 /**
  *
- * Record of the ridepod's files and behaviour that GetRoboPartsInfo
- * fills and returns.
- *
- * @mangled robo_dat
- * @address 0x1EF7830
- * @size 0x24
- */
-extern ROBO_INFO_DATA robo_dat;
-
-/**
- *
  * Writes the path of the sound bank of a main character: Max's chosen by
  * his equipped weapon, Monica's, or the ridepod's from its arm.
  *
@@ -89,7 +92,7 @@ void GetCharacterSnd(CUserDataManager *user_data, int unit, char *path);
 /**
  *
  * Loads the models, weapons, skins and action script of a main character
- * into the scene's characters and links them; returns 0 if the scene lacks
+ * into the scene's characters and links them; returns false if the scene lacks
  * a character.
  *
  * @mangled SetupMainUnit__FP1P9mgCMemoryP9mgCMemoryiP6CSceneP16CUserDataManagerii
@@ -112,7 +115,7 @@ int GetCharaMemAllocSize();
 /**
  *
  * Empties a memory and carves from it the stacks that a main character's
- * parts load into; returns 0 if the memory runs out.
+ * parts load into; returns false if the memory runs out.
  *
  * @mangled GetCharaMemAllocPtr__FP9mgCMemoryP9mgCMemoryii
  * @address 0x1EB0F0

@@ -250,7 +250,7 @@ static signed char MenuNPCLoadFlag;
  */
 static int mos_effect_read_num;
 
-void SetupUnitMan(CScene *scene, CUserDataManager *user_data, int unit, ROBO_INFO_DATA *robo);
+void SetupUnitMan(CScene *scene, CUserDataManager *user_data, int unit, ROBO_INFO_DATA *robo_info);
 void GetBajjiPosition(CMenuPosDataForm *form, int slot, int unused, int *pos);
 void SetSwordBlurEffect(CCharacter2 *chara, mgCMemory *stack, int blur_type);
 

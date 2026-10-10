@@ -36,6 +36,16 @@ enum DNG_DEBUG_COMMAND {
 
 /**
  *
+ * Values of the debug menu's information line that choose a system parameter window.
+ *
+ */
+enum DNG_DEBUG_INFORMATION {
+    DNG_DEBUG_INFORMATION_SYSTEM = 2, /**< Player position, collision primitives in use and stack use. */
+    DNG_DEBUG_INFORMATION_TARGET = 3, /**< As DNG_DEBUG_INFORMATION_SYSTEM, plus the monster the player is locked on to. */
+};
+
+/**
+ *
  * State of the dungeon debug menu and the settings it keeps between the
  * times that it is open. The dungeon reads it after the menu closes to run
  * the command that the menu chose.
@@ -62,13 +72,6 @@ STATIC_ASSERT(sizeof(DNG_DEBUG_INFO) == 0x20);
  *
  */
 extern DNG_DEBUG_INFO dbinfo;
-
-/**
- *
- * Font the dungeon debug screens draw their text with.
- *
- */
-extern CFont dbFont;
 
 /**
  *

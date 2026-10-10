@@ -34,7 +34,7 @@ mangled names use `i`.
   (dng_main, event_func, menuchr) uses a return value; v0 merely holds sprintf's result.
 
 ## ROBO_INFO_DATA (0x24)
-Filled by `GetRoboPartsInfo` into `robo_dat`:
+Filled by `GetRoboPartsInfo` into `robo_dat` (static in charasetup.cpp):
 - 0x00/0x04/0x08/0x10 model_name[0,1,2,4] = `r_robo_pname` rows (16 bytes each, item file
   names via `GetItemFileName(id,0)`); parts read from user_data+0x4660+slot*0x6C+0x32 for slots
   {3,0,1,2} (a local aggregate initialized `{3,0,1,2}`, copied to the stack as 16 bytes).
@@ -46,8 +46,9 @@ Filled by `GetRoboPartsInfo` into `robo_dat`:
 - 0x1C move_type = `GetRoboInfoType` on user_data+0x47D4 (legs) if legs present.
 - 0x20 attack_type = `GetRoboInfoType` on user_data+0x4690 (arm) if arm present.
 `robo_dat` has declared size 0x24; its piece extends to 0x30 because the next BSS symbol is 16-byte
-aligned. Retail binds its symbol LOCAL, but the header keeps a public declaration because menuchr
-(`MenuItemRoboDataLoad`: reads [3] and +0x14) uses it.
+aligned. Retail binds its symbol LOCAL, so it is `static` in charasetup.cpp.
+`ROBO_DATA::parts` slots used here: 0 arm, 1 body, 2 back pack, 3 legs (`GetRoboPartsInfo`'s part
+order `{3,0,1,2}` for leg, arm, body, back pack, and `SetupRobo`'s reads of slots 0, 1 and 3).
 `SetupRobo` reads the arm/leg joint names itself; the five SetRef names are a local pointer
 aggregate `{"body%d","spine","joint2","joint1","hat",NULL}` (leg, arm, body, mints, bpack) ->
 `ROBO_MODEL_SLOT`.
@@ -57,10 +58,11 @@ Each row: `char[13]` body file then `char[24]` arm name. Retail contains one
 `body01.chr`/`arm1` row followed by ten identical `body02.chr`/`arm2` rows. Indexed by body type - 1
 (body item info +0x22). The zero tail of the 0x1A0-byte retail piece is alignment padding, not a row.
 
-## mem_table (local, 0x351D50, 0x70) -> `static int mem_table[4][7]`
-Stack sizes per character row. `GetCharaMemAllocSize` returns max row sum + 0x10.
-`GetCharaMemAllocPtr` uses row/count: monster row 0 x6, ridepod row 1 x5, Max/Monica row 0 x7
-(row 2 when edit_mode). A negative entry ends early. Stacks are `mgCMemory` at stride 0x30;
+## mem_table (local, 0x351D50, 0x70) -> `static int mem_table[CHARA_MEM_LAYOUT_NUM][CHARA_MEM_STACK_NUM]`
+Stack sizes per character layout (`CHARA_MEM_SIZE` row). `GetCharaMemAllocSize` returns max row sum + 0x10.
+`GetCharaMemAllocPtr` uses row/count: monster `CHARA_MEM_LAYOUT_HUMAN` x6, ridepod
+`CHARA_MEM_LAYOUT_ROBO` x5, Max/Monica `CHARA_MEM_LAYOUT_HUMAN` x7
+(`CHARA_MEM_LAYOUT_EDIT` when edit_mode). A negative entry ends early. Stacks are `mgCMemory` at stride 0x30;
 `memory+0x1C`/`+0x24` are reset (mgCMemory fields).
 
 ## Other data
