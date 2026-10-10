@@ -12,7 +12,7 @@ No class is owned by this unit (`class_units.tsv` has none). The unit drives one
 ## Globals (all `static` in retail: listed in `local_symbols.tsv`, so no `extern` in the header)
 | Symbol | Addr | Size | Type / meaning |
 |---|---|---|---|
-| `HelpMesBuff` | 0x1F5EF60 | 0x1000 | `char[0x1000]` (passed to `ClsMes::SetBuff` as `short *`): copy of `etc/help%d.mes` (`%d` = `LanguageCode`). `LoadHelpMes` rejects files > 0x1000 with printf "HMes Buffer Over!!(%d/%dbyte)". A `short[0x800]` declaration changes three instruction/relocation sites around `CreateHelpMes+0x3C8`. |
+| `HelpMesBuff` | 0x1F5EF60 | 0x1000 | `char[0x1000]` (passed to `ClsMes::SetBuff` as `short *`): copy of `etc/help%d.mes` (`%d` = `LanguageCode`). `LoadHelpMes` rejects files > 0x1000 with printf "HMes Buffer Over!!(%d/%dbyte)". A `short[0x800]` declaration changes three instruction/relocation sites around `CreateHelpMes+0x3C8`, so the buffer stays `char[0x1000]`. |
 | `HelpMes` | 0x1F5FF60 | 0x2958 | `ClsMes`. Constructed in `__sinit_helpmes_cpp`. The eight-byte alignment gap before `HelpMesInfo` includes a separately split `D_01F628BC` boundary; native alignment supplies both fragments. |
 | `HelpMesInfo` | 0x1F628C0 | 0x1C | `HELP_MES_INFO` (header). Reset in `__sinit`, `CreateHelpMes`, and inline in Step/Show*. |
 | `WindowMode` | 0x37E9D0 | 4 | `int`, a `MesWindowMode`: `ShowHelpMes` stores 0 (`MES_WIN_NONE`), `ShowErrorHelpMes` 4 (`MES_WIN_VERSATILE_1`); `StepHelpMes` passes it to `ClsMes::SetWindowMode`. |
@@ -38,7 +38,7 @@ Step also writes `HelpMes.fade_speed` (+0x190) = 1.0f.
   `InitFileCache__FP1i`). Return void (m2c; Ghidra's return of memcpy/printf is spurious; callers
   in mainloop ignore it). Loads with `LoadFile2(path, buffer, &size, 0)`, then memcpy to HelpMesBuff.
 - `GetHepMesInfo()` (retail typo "Hep") is file-local; returns `&HelpMesInfo`. Callers null-check it.
-- `CreateHelpMes(int tex_no)`: callers pass 0x58 (InitDungeonMain) and 0x9A (EditInit). The body
+- `CreateHelpMes(int texture_block)`: callers pass 0x58 (InitDungeonMain) and 0x9A (EditInit). The body
   re-initialises most of `HelpMes` field by field (looks like an inlined ClsMes init/ctor body:
   zeroes, `draw_speed_def = GetDrawSpeedDef()`, `InitMesWinTbl()`, 16x memset of `name[i]` 0x32,
   `item_mes[]` = -1, per-line arrays for 20 lines, etc.), then Preset(4), SetWindowMode(0),
@@ -62,3 +62,9 @@ No corresponding unit or class in Dark Cloud (only `EdSetHelpMes` etc. in edit.h
 `HelpMes` and `HelpMesInfo` are file-scope C++ objects whose constructors
 produce `__sinit_helpmes_cpp`; there is no source definition of that compiler
 initializer. The two load/error strings are literals at their use.
+
+## Code shape kept for matching
+- `LoadHelpMes` compares the file size with the literal `0x1000`; comparing against `sizeof(HelpMesBuff)`
+  (unsigned) changes the signed comparison and fails `LoadHelpMes+0x42`. The `printf` argument uses `sizeof`.
+- `StepHelpMes` and `DrawHelpMes` keep the nested `if (info != NULL)` / `int hidden` form; the flattened
+  `if (info == NULL || !info->show)` form changes code in other units.
