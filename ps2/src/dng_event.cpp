@@ -55,8 +55,6 @@
 #include "water.hpp"
 
 static int                     FLS_FLOOR_ID;
-static float                   at_1082__2[4] = {0.0f, -99999.0f, 0.0f, 1.0f};
-static float                   at_1248[4] = {0.0f, 1.0f, 0.0f, 0.0f};
 static int                     gatekey_index[7] = {337, 339, 341, 342, 344, 348, 350};
 static int                     keydoor_key_index[7] = {338, 340, -1, 343, 346, 349, 351};
 static int                     counter_1489;
@@ -466,14 +464,13 @@ void CGeoStone::DrawMiniMapSymbol(CMiniMapSymbol *symbol_drawer) {
 }
 
 void CGeoStone::SetFlag(int flag) {
-    float      query[4];
     CMapParts *object;
 
     this->flag = flag;
 
     if (this->flag == 0 && (object = AutoMapGen.gio_parts) != NULL) {
-        *(u_long128 *) query = *(u_long128 *) at_1082__2;
-        object->SetPosition(query);
+        sceVu0FVECTOR hidden_pos = {0.0f, -99999.0f, 0.0f, 1.0f};
+        object->SetPosition(hidden_pos);
     }
 }
 
@@ -658,10 +655,9 @@ void CTreasureBox::DrawShadow(float *view_pos, float *light_direction) {
     float position[4];
     float shadow_position[4];
     float rotation[4];
-    float up[4];
 
     if (this->model != NULL) {
-        *(DngEventVector *) up = *(DngEventVector *) at_1248;
+        sceVu0FVECTOR up = {0.0f, 1.0f, 0.0f, 0.0f};
         this->GetPosition(shadow_position);
         shadow_position[1] -= 20.0f;
         mgSetDropShadowMatrix(light_direction, shadow_position, up);
@@ -942,7 +938,7 @@ int Lamb2WolfManager() {
         return -1;
     }
 
-    form = *(s16 *) ((u8 *) info->equip + 2);
+    form = info->equip[0].item_no;
 
     if (form != 0x38 && form != 0x58) {
         return -1;
@@ -1127,7 +1123,7 @@ void ScriptDebugCommand(int command) {
 }
 
 void XChgMapLighting() {
-    int       saved[0x74];
+    int       saved[sizeof(CMapLightingInfo) / sizeof(int)];
     int       i;
     CMapInfo *map;
     int       byte_offset;
@@ -1971,14 +1967,13 @@ int _FL(SPI_STACK *stack, int argc) {
         return 1;
     }
 
-    {
-        for (i = 0; i < argc / 2; i++) {
-            entry = ActiveMonster->locate.num;
-            ActiveMonster->locate.monster_id[entry] = spiGetStackInt(stack++);
-            ActiveMonster->locate.param[entry] = spiGetStackInt(stack++);
-            ActiveMonster->locate.num++;
-        }
+    for (i = 0; i < argc / 2; i++) {
+        entry = ActiveMonster->locate.num;
+        ActiveMonster->locate.monster_id[entry] = spiGetStackInt(stack++);
+        ActiveMonster->locate.param[entry] = spiGetStackInt(stack++);
+        ActiveMonster->locate.num++;
     }
+
     return 1;
 }
 
