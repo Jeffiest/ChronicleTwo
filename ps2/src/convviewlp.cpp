@@ -407,7 +407,7 @@ int SaveDataConvertLoop() {
                 }
 
                 printf("\n");
-                int number = -1;
+                int                   number = -1;
                 SAVEDATA_CONVERT_TYPE type = SAVEDATA_CONVERT_TYPE_NONE;
 
                 if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dkcl", 4) == 0) {
