@@ -22,8 +22,7 @@ Retail spellings (`Textuer`, `Viewe` in the Finish functions) are kept as in the
 
 ## INIT_LOOP_ARG
 - Not owned by any class in `class_units.tsv`; its user is `mainloop` (`NextLoop(int, INIT_LOOP_ARG)`,
-  global `NextInitArg` at 0x3FB060, size 0x50). No `mainloop.hpp` existed when this header was
-  written, so the header forward-declares `struct INIT_LOOP_ARG;` (enough for prototypes).
+  global `NextInitArg` at 0x3FB060, size 0x50). The header includes `mainloop.hpp`, which defines it.
 - Size 0x50 (NextLoop copies 10 x 8 bytes). From NextLoop: 0x00 a 4-byte word; 0x04..0x43 a
   0x40-byte block copied bytewise (likely `char[0x40]`); 0x44, 0x48, 0x4C three 4-byte words.
   Field meanings unknown here.
