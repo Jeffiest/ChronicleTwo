@@ -288,16 +288,16 @@ void MenuMesInit(ClsMes *mes) {
 
 CDC2Mes::CDC2Mes() {
     scissor.Set(0, 0, 0, 0);
-    msg_change = 0;
+    msg_change = false;
     cursor = -1;
     text_off_x = -1;
     text_off_y = -1;
     mes_no = -1;
-    cursor_on = 1;
-    put_centering = 0;
-    scissor_on = 0;
+    cursor_on = true;
+    put_centering = false;
+    scissor_on = false;
     scissor.Set(0, 0, 0x200, 0x19F);
-    memset(str, 0, 0xC1);
+    memset(str, 0, sizeof(str));
 }
 
 void CDC2Mes::SetMessData(short *buff_system, short *buff) {
@@ -310,9 +310,9 @@ void CDC2Mes::MsgPreset(int preset) {
     SetMsgCursor(-1);
     mes_no = 0;
     str[0] = 0;
-    cursor_on = 1;
-    put_centering = 0;
-    scissor_on = 0;
+    cursor_on = true;
+    put_centering = false;
+    scissor_on = false;
     scissor.Set(0, 0, mgScreenWidth - 1, mgScreenHeight - 1);
 
     switch (preset) {
@@ -633,7 +633,7 @@ void CDC2Mes::SetMsgItemNo(int *messages, int count) {
         previous[index] = item_mes[index];
 
         if (previous[index] != messages[index]) {
-            msg_change = 1;
+            msg_change = true;
         }
 
         int message = messages[index];
@@ -662,13 +662,13 @@ void CDC2Mes::SetMsgItemNo(char **strings, int count) {
 
         if (strings[index] == NULL) {
             if (strcmp(name[index], "") != 0) {
-                msg_change = 1;
+                msg_change = true;
             }
 
             strcpy(name[index], "");
         } else {
             if (strcmp(previous[index], strings[index]) != 0) {
-                msg_change = 1;
+                msg_change = true;
             }
 
             if (strings[index] != NULL) {
@@ -693,7 +693,7 @@ void CDC2Mes::SetMsgVolumeNo(int *numbers, int count) {
         previous[index] = values[index];
 
         if (previous[index] != numbers[index]) {
-            msg_change = 1;
+            msg_change = true;
         }
 
         values[index] = numbers[index];
@@ -708,7 +708,7 @@ void CDC2Mes::SetMsgVolumeNo(int *numbers, int *digit_widths, int count) {
         previous[index] = values[index];
 
         if (previous[index] != numbers[index]) {
-            msg_change = 1;
+            msg_change = true;
         }
 
         int next = numbers[index];
@@ -830,7 +830,7 @@ void CDC2Mes::StepMsg() {
 
         if ((s8) msg_change != 0) {
             ClsMes::mes_no = -1;
-            msg_change = 0;
+            msg_change = false;
         }
 
         int choice = cursor;
@@ -898,7 +898,7 @@ void CDC2Mes::SetMsgAlpha(int value) {
 }
 
 void CMenuMoveItem::Initialize() {
-    move_on = 0;
+    move_on = false;
 
     for (int index = 0; index < 2; index++) {
         form[index] = NULL;
@@ -936,7 +936,7 @@ int CMenuMoveItem::CheckMove() {
                         entry->dest->CopyDataItem(&entry->item);
                     }
 
-                    entry->active = 0;
+                    entry->active = false;
                     entry->item.Init();
                     entry->dest = NULL;
                     form[index]->draw_flag = 0;
@@ -957,7 +957,7 @@ int CMenuMoveItem::CheckMove() {
     }
 
     if (moving == 0) {
-        move_on = 0;
+        move_on = false;
     }
 
     return move_on;
@@ -1003,8 +1003,8 @@ void CMenuMoveItem::SetMoveItemInfo(MENU_ITEM_MOVE_INFO *request, int *start, in
             part->etc_info[0] = 0;
             part->etc_info[1] = entry->item.GetNum();
             part->etc_info[2] = 1;
-            move_on = 1;
-            entry->active = 1;
+            move_on = true;
+            entry->active = true;
             break;
         }
     }
@@ -1073,11 +1073,11 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
     MenuUsedItemType = effect.use_flags;
     MenuUsedItemNo = item->item_no;
-    MenuUsedNotErrorCode = 0;
-    int items_blocked = 0;
+    MenuUsedNotErrorCode = false;
+    int items_blocked = false;
 
     if (battle->floor_status & DNG_FLOOR_DISABLE_ITEMS) {
-        items_blocked = 1;
+        items_blocked = true;
     }
 
     int party = user->GetNowPartyMember();
@@ -1089,10 +1089,10 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
             }
 
             chara = (CHARA_DATA *) target->target.data;
-            short dead = 0;
+            short dead = false;
 
             if (chara->hp.GetRate() <= 0.0f) {
-                dead = 1;
+                dead = true;
             }
 
             if (dead == 1 && (effect.status_flags & 0x10)) {
@@ -1155,7 +1155,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
             }
 
             if ((chara->status_attr & CHARA_STATUS_UNK_40) && (effect.status_flags & 0x10) && item->item_no != 0x110) {
-                MenuUsedNotErrorCode = 1;
+                MenuUsedNotErrorCode = true;
                 break;
             }
 
@@ -1215,17 +1215,17 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 ConvertItemAttrToCharaAttr(effect.use_flags, &add, &cure);
 
                 if ((add != 0 || cure != 0) && GetNowLoopNo() != (int) LOOP_EDIT) {
-                    int available = 0;
-                    int changed = 0;
+                    int available = false;
+                    int changed = false;
 
                     if (add != 0) {
                         for (int i = 0; i < 7; i++) {
                             if (!(chara->status_attr & st_bittable[i]) && add == st_bittable[i]) {
-                                available = 1;
+                                available = true;
 
                                 if (apply != 0) {
                                     chara->status_attr |= add;
-                                    changed = 1;
+                                    changed = true;
 
                                     if (st_bittable[i] & CHARA_STATUS_POWER) {
                                         chara->status_time[0] = 750;
@@ -1247,16 +1247,16 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         }
                     }
 
-                    int cured = 0;
+                    int cured = false;
 
                     if (cure != 0) {
                         for (int i = 0; i < 7; i++) {
                             if ((chara->status_attr & st_bittable[i]) && (cure & st_bittable[i])) {
-                                available = 1;
+                                available = true;
 
                                 if (apply != 0) {
-                                    cured = 1;
-                                    changed = 1;
+                                    cured = true;
+                                    changed = true;
                                     chara->status_attr &= ~cure;
                                 }
                             }
