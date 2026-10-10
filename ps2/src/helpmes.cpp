@@ -23,7 +23,7 @@ static int InitFlag;
  * Window style selected for the current help message.
  *
  */
-static int WindowMode;
+static MesWindowMode WindowMode;
 
 /**
  *
