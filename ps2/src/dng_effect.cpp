@@ -2566,7 +2566,7 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
     switch (kind) {
         case BATTLE_EFFECT_HIT: {
             u_int prim_bytes = num * HIT_EFFECT_SPARK_MAX * sizeof(BattleEffectPrim);
-            hit_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            hit_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * HIT_EFFECT_SPARK_MAX];
             u_int hit_bytes = num * sizeof(CHitEffectImage);
             hit = new (memory->Alloc(align16_blocks(hit_bytes) + 2)) CHitEffectImage[num];
             hit_num = 0;
@@ -2671,7 +2671,7 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             u_int chara_bytes = num * sizeof(CCharacter2);
             chara = new (memory->Alloc(align16_blocks(chara_bytes) + 2)) CCharacter2[num];
             u_int slot_bytes = num * sizeof(BattleEffectChara);
-            chara_slot = (BattleEffectChara *) operator new[](slot_bytes, memory->Alloc(align16_blocks(slot_bytes) + 2));
+            chara_slot = new (memory->Alloc(align16_blocks(slot_bytes) + 2)) BattleEffectChara[num];
             chara_num = num;
 
             for (int i = 0; i < num; i++) {
