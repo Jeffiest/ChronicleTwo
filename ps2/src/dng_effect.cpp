@@ -2610,7 +2610,7 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
         }
         case BATTLE_EFFECT_POWER_LINE: {
             u_int prim_bytes = num * POWER_LINE_PRIM_MAX * sizeof(BattleEffectPrim);
-            power_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            power_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * POWER_LINE_PRIM_MAX];
             u_int power_bytes = num * sizeof(CPowerLine);
             power = new (memory->Alloc(align16_blocks(power_bytes) + 2)) CPowerLine[num];
             power_num = 0;
@@ -2636,12 +2636,12 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
         }
         case BATTLE_EFFECT_DEAD: {
             u_int prim_bytes = num * DEAD_EFFECT_PRIM_MAX * sizeof(BattleEffectPrim);
-            dead_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            dead_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * DEAD_EFFECT_PRIM_MAX];
             u_int dead_bytes = num * sizeof(CDeadEffect);
             dead = (CDeadEffect *) __construct_new_array(
                 operator new[](num *(int) sizeof(CDeadEffect) + 16, memory->Alloc(align16_blocks(dead_bytes) + 2)), NULL, NULL,
                 sizeof(CDeadEffect), num);
-            memset(dead_prim, 0x37, num * 0xF00);
+            memset(dead_prim, 0x37, prim_bytes);
             memset(dead, 0x37, dead_bytes);
             dead_num = 0;
 
