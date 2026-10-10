@@ -20170,10 +20170,6 @@ static int _COPY_MONS2SCNCHR(RS_STACKDATA *stack, int argc) {
     return true;
 }
 
-CObject::CObject(const CObject &other)
-    : mgCObject(other), far_dist(other.far_dist), fade(other.fade), fade_alpha(other.fade_alpha),
-      fade_speed(other.fade_speed), near_dist(other.near_dist), show(other.show), draw_off(other.draw_off) {}
-
 /**
  *
  * Unlocks a scene memory stack.
