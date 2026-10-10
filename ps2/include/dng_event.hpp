@@ -55,7 +55,15 @@ enum EpisodeTitleState {
 enum TreasureBoxState {
     TREASURE_BOX_STATE_NONE = 0,     /**< The slot holds no box. */
     TREASURE_BOX_STATE_UNOPENED = 1, /**< The box waits to be opened, and shows on the mini map. */
-    TREASURE_BOX_MAX = 24,
+};
+
+/**
+ *
+ * Number of treasure box slots on a floor.
+ *
+ */
+enum {
+    TREASURE_BOX_MAX = 24, /**< Box slots that CTreasureBoxManager holds. */
 };
 
 /**
@@ -76,8 +84,46 @@ enum TreasureBoxFlag {
 enum DungeonEventPointKind {
     DUNGEON_EVENT_POINT_PLAYER = 0,       /**< Grid cell that the player stands in. */
     DUNGEON_EVENT_POINT_TREASURE_BOX = 1, /**< Treasure box that the player stands at. */
-    DUNGEON_EVENT_POINT_WAY_20 = 2,       /**< First of the "way32" to "way35" parts on the map. */
-    DUNGEON_EVENT_POINT_WAY_24 = 3,       /**< First of the "way36" to "way51" parts on the map. */
+    DUNGEON_EVENT_POINT_WAY_32 = 2,       /**< First of the "way32" to "way35" parts on the map. */
+    DUNGEON_EVENT_POINT_WAY_36 = 3,       /**< First of the "way36" to "way51" parts on the map. */
+};
+
+/**
+ *
+ * Groups of "way" map parts that SearchMapEventParts looks for.
+ *
+ */
+enum MapEventPartsKind {
+    MAP_EVENT_PARTS_WAY_32 = 0, /**< Parts "way32" to "way35". */
+    MAP_EVENT_PARTS_NONE = 1,   /**< Looks for no parts. */
+    MAP_EVENT_PARTS_WAY_36 = 2, /**< Parts "way36" to "way51". */
+};
+
+/**
+ *
+ * Bits of MessageTaskManager::flag.
+ *
+ */
+enum MessageTaskManagerFlag {
+    MESSAGE_TASK_MANAGER_FLAG_HOLD = 0x1, /**< Holds the queue back. */
+};
+
+/**
+ *
+ * Number of message slots that MessageTaskManager holds.
+ *
+ */
+enum {
+    MESSAGE_TASK_MAX = 6, /**< Message slots of MessageTaskManager. */
+};
+
+/**
+ *
+ * Debug commands that ScriptDebugCommand runs.
+ *
+ */
+enum ScriptDebugCommandKind {
+    SCRIPT_DEBUG_COMMAND_RESTORE_HP = 0, /**< Restores the player's health. */
 };
 
 /**
@@ -216,9 +262,9 @@ STATIC_ASSERT(sizeof(MESSAGE_TASK) == 0x90);
  */
 class MessageTaskManager {
 public:
-    u32           flag;    /**< Holds the queue back while bit 0 is set. */
+    u32           flag;    /**< Queue state, a combination of ::MessageTaskManagerFlag bits. */
     ClsMes       *mes;     /**< Message window that shows the messages. */
-    MESSAGE_TASK  task[6]; /**< Message slots. */
+    MESSAGE_TASK  task[MESSAGE_TASK_MAX]; /**< Message slots. */
     MESSAGE_TASK *top;     /**< Message shown now, at the head of the queue. */
 
     /**
@@ -590,7 +636,7 @@ public:
      * @address 0x2902A0
      * @size 0xD0
      */
-    void SetLargeModel(CCharacter2 *model, int value);
+    void SetLargeModel(CCharacter2 *model, int tex_block);
 
     /**
      *
@@ -695,7 +741,7 @@ STATIC_ASSERT(sizeof(CTreasureBoxManager) == 0xAA0);
  * @address 0x290A10
  * @size 0x40
  */
-int GetGateKeyIndex(int floor, int level);
+int GetGateKeyIndex(int dungeon, int floor);
 
 /**
  *
@@ -705,7 +751,7 @@ int GetGateKeyIndex(int floor, int level);
  * @address 0x290A50
  * @size 0x40
  */
-int GetKeyDoorIndex(int floor, int level);
+int GetKeyDoorIndex(int dungeon, int floor);
 
 /**
  *
