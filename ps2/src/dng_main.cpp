@@ -2794,7 +2794,7 @@ void IsEventRun() {
         }
     }
 
-    if (MainChara__2->move_check.ground_poly.area_kind == 8 && info->chr_no != USER_CHARA_ROBO) {
+    if (MainChara__2->move_check.ground_poly.area_kind == COL_AREA_HEALING && info->chr_no != USER_CHARA_ROBO) {
         int max;
         int attr;
 

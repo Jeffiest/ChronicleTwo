@@ -515,10 +515,10 @@ static MONSTER_REACT react_tbl[14] = {
     {DAMAGE_KIND_ITEM,          1,  1, 0},
     {DAMAGE_KIND_RIDEPOD_PUNCH, 32, 1, 0},
     {DAMAGE_KIND_RIDEPOD_SWORD, 32, 1, 0},
-    {14,                        32, 1, 0},
+    {DAMAGE_KIND_RIDEPOD_OTHER, 32, 1, 0},
     {DAMAGE_KIND_RIDEPOD_GUN,   32, 1, 0},
     {DAMAGE_KIND_MONSTER,       64, 1, 0},
-    {21,                        64, 1, 0},
+    {DAMAGE_KIND_MONSTER_OTHER, 64, 1, 0},
     {-1,                        0,  0, 0}
 };
 
@@ -2214,7 +2214,7 @@ void CMonsterMan::CheckDamage() {
 
             switch (prim->param->kind) {
                 case DAMAGE_KIND_MONSTER:
-                case 21:
+                case DAMAGE_KIND_MONSTER_OTHER:
                 case DAMAGE_KIND_ITEM:
                 case DAMAGE_KIND_MAX_MELEE:
                     se_no = 0x1C;
@@ -2229,7 +2229,7 @@ void CMonsterMan::CheckDamage() {
                 case DAMAGE_KIND_RIDEPOD_PUNCH:
                     se_no = 0x19;
                     break;
-                case 14:
+                case DAMAGE_KIND_RIDEPOD_OTHER:
                 case DAMAGE_KIND_RIDEPOD_GUN:
                 case DAMAGE_KIND_MONICA_MAGIC:
                 case DAMAGE_KIND_LASER_GUN:
