@@ -205,39 +205,6 @@ static inline unsigned int blocks_for(unsigned int size) {
 
 /**
  *
- * Number of monster memo entries.
- *
- */
-const int kMonsterMemoCount = 0x119;
-/**
- *
- * Frames waited before starting a monster preview load.
- *
- */
-const int kModelDelayFrames = 20;
-/**
- *
- * Maximum value of the monster preview display wait counter.
- *
- */
-const int kModelFrameCap = 20;
-
-/**
- *
- * Commands used to close the monster book or turn its page.
- *
- */
-enum {
-    kCmdClose = 0xA,
-    kCmdTurnPage = 0x64
-};
-
-enum {
-    kEnvStepSunMoon = 0x38
-};
-
-/**
- *
  * Non-zero while the party townsperson model is loading.
  *
  */
@@ -249,58 +216,6 @@ static signed char MenuNPCLoadFlag;
  *
  */
 static int mos_effect_read_num;
-
-void SetupUnitMan(CScene *scene, CUserDataManager *user_data, int unit, ROBO_INFO_DATA *robo);
-void GetBajjiPosition(CMenuPosDataForm *form, int slot, int unused, int *pos);
-void SetSwordBlurEffect(CCharacter2 *chara, mgCMemory *stack, int blur_type);
-
-/**
- *
- * Stores a four-component camera point.
- *
- */
-struct CameraPoint {
-    float xyzw[4]; /**< Camera-space point components. */
-};
-
-/**
- *
- * Message numbers of the monster box's badge commands.
- *
- */
-enum MOS_SELECT_COMMAND_MSG {
-    MOS_SELECT_CMD_TRANSFORM = 0x14B6,   /**< Turns Monica into one of the badge's monsters. */
-    MOS_SELECT_CMD_STATUS = 0x14B7,      /**< Shows the status of the badge's monster. */
-    MOS_SELECT_CMD_CLASS_CHANGE = 0x14B8 /**< Moves the badge on to a higher class of monster. */
-};
-
-/**
- *
- * Page of the monster box shown, as CBaseMenuClass::key_arg_no holds it.
- *
- */
-enum MOS_SELECT_PAGE {
-    MOS_SELECT_PAGE_BADGE = 0,   /**< The cursor moves over the badges. */
-    MOS_SELECT_PAGE_COMMAND = 1, /**< A command of the chosen badge is picked and run. */
-    MOS_SELECT_PAGE_STATUS = 2   /**< The status of the badge's monster forms is shown. */
-};
-
-/**
- *
- * Step of the badge command page, as CBaseMenuClass::step holds it while key_arg_no is MOS_SELECT_PAGE_COMMAND.
- *
- */
-enum MOS_SELECT_COMMAND_STEP {
-    MOS_SELECT_STEP_COMMAND = 0,            /**< A badge command is chosen. */
-    MOS_SELECT_STEP_ERROR = 1,              /**< A message that the command is not possible waits for a button. */
-    MOS_SELECT_STEP_CLASS_SELECT = 10,      /**< The monster to change class to is chosen. */
-    MOS_SELECT_STEP_CLASS_CONFIRM = 11,     /**< The class change waits for its yes/no answer. */
-    MOS_SELECT_STEP_CLASS_EFFECT = 12,      /**< The class-change effect loads and plays. */
-    MOS_SELECT_STEP_CLASS_DONE = 13,        /**< The class change's end message waits for a button. */
-    MOS_SELECT_STEP_CLASS_REWARD = 14,      /**< The monster-drop reward message waits for a button. */
-    MOS_SELECT_STEP_CLASS_LAST_REWARD = 15, /**< The last class's item reward message waits for a button. */
-    MOS_SELECT_STEP_FORM_SELECT = 20        /**< The monster form to transform into is chosen. */
-};
 
 /**
  *
@@ -336,16 +251,6 @@ static u8 *mos_effect_readbuff2[4];
  *
  */
 static int mos_effect_readbuff2_size[4];
-
-/**
- *
- * Dimensions of the monster badge grid.
- *
- */
-enum {
-    MOS_SELECT_GRID_COLUMNS = 4, /**< Columns of monster badges. */
-    MOS_SELECT_GRID_ROWS = 3     /**< Rows of monster badges. */
-};
 
 /**
  *
@@ -770,15 +675,6 @@ static s8 menu_debug_npcselect;
 
 /**
  *
- * Number of resistance or weakness icons that the monster book can display.
- *
- */
-enum {
-    MOS_BOOK_AFFINITY_NUM = 8
-};
-
-/**
- *
  * Page counter format of the monster book for each supported language.
  *
  */
@@ -798,8 +694,6 @@ static char *monstere_file_template[LANG_CHINESE + 1] = {
  *
  */
 static int menu_debug_select__2;
-
-int CosutmeSelDefaultSet(int costume_id, short *costume_list);
 
 /**
  *
@@ -840,9 +734,7 @@ static CMenuChrCngMenu *ChrChangMenuPt;
  */
 static u8 MenuGetPartySeFlag;
 
-static int  MenuMemoryDivide(mgCMemory *memory, mgCMemory **list, int chara);
-static void MenuItemCharaDataLoadPack(int chara_no, CActionChara *chara, CActionChara *body, int part,
-                                      u_int *pack, mgCMemory *stack, int tex_block, int blur_type);
+
 /**
  *
  * Quadword capacities of the ridepod menu work buffers.
@@ -858,7 +750,6 @@ static const u16 menu_robo_memorytbl[MENU_CHARA_LOAD_MAX] = {
  */
 static const u16 menu_chr_memorytbl[MENU_CHARA_LOAD_MAX] = {
     0x1B80, 0x9AC0, 0x1C84, 0x11C0, 0x0BC0, 0x26C0, 0x0708};
-int ReadBGSync();
 
 void InitMenuBGReadInfo2(MENU_BGREAD_INFO2 *info) {
     info->reading = 0;
@@ -2545,16 +2436,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 case 0xD:
                 case 0x14:
                 case 0x19: {
-                    /**
-                     *
-                     * Capacity of the aquarium-food list supplied by a townsperson.
-                     *
-                     */
-                    enum {
-                        NPC_GIFT_FOOD_CAPACITY = 32
-                    };
-
-                    int esa[NPC_GIFT_FOOD_CAPACITY];
+                    int esa[CHR_CNG_GIFT_BAIT_MAX];
                     gift_item = -1;
                     gift_num = 1;
 
@@ -4262,8 +4144,8 @@ void MenuMonsterBoxInit(mgCMemory *stack, int *tex_block, int mode) {
         }
     }
 
-    *(CameraPoint *) MenuMosSelectPtr->camera_pos = *(CameraPoint *) MenuDrawEnv->pos;
-    *(CameraPoint *) MenuMosSelectPtr->camera_ref = *(CameraPoint *) MenuDrawEnv->ref;
+    *(mgVec4 *) MenuMosSelectPtr->camera_pos = *(mgVec4 *) MenuDrawEnv->pos;
+    *(mgVec4 *) MenuMosSelectPtr->camera_ref = *(mgVec4 *) MenuDrawEnv->ref;
     sceVu0CopyVector(MenuDrawEnv->pos, posdef);
     sceVu0CopyVector(MenuDrawEnv->ref, refdef);
     MenuDrawEnv->camera.SetPos(posdef);
@@ -4344,24 +4226,6 @@ int CMenuMosSelect::KeyStep() {
         "\x8F\x6E\x97\xFB\x8D\xC5\x91\xE5",
     };
 
-    /**
-     *
-     * Actions requested by the badge, command, form-list and status keys.
-     *
-     */
-    enum MosSelectAction {
-        MOS_SELECT_ACTION_NONE = 0,              /**< No action requested. */
-        MOS_SELECT_ACTION_REJECT = 5,            /**< Rejects the key with the cancel sound. */
-        MOS_SELECT_ACTION_TRANSFORM = 10,        /**< Turns Monica into the monster form chosen in the form list. */
-        MOS_SELECT_ACTION_CANNOT_TRANSFORM = 11, /**< Shows that the transformation is not possible. */
-        MOS_SELECT_ACTION_FORM_LIST = 12,        /**< Opens the list of the badge's monster forms to transform into. */
-        MOS_SELECT_ACTION_STATUS = 20,           /**< Opens the status page of the badge's monster. */
-        MOS_SELECT_ACTION_CLASS_CHANGE = 30,     /**< Opens the list of monsters the badge can change class to. */
-        MOS_SELECT_ACTION_BADGES = 500,          /**< Returns to the badge selection. */
-        MOS_SELECT_ACTION_COMMANDS = 600,        /**< Opens the chosen badge's command window. */
-        MOS_SELECT_ACTION_CLOSE = 1000           /**< Closes the monster box. */
-    };
-
     int      size;
     int      i;
     int      keys = MenuCommonInfo->CheckSelectKey();
@@ -4396,8 +4260,8 @@ int CMenuMosSelect::KeyStep() {
 
                 MenuDrawEnv->camera.SetPos(camera_pos);
                 MenuDrawEnv->camera.SetRef(camera_ref);
-                *(CameraPoint *) MenuDrawEnv->pos = *(CameraPoint *) camera_pos;
-                *(CameraPoint *) MenuDrawEnv->ref = *(CameraPoint *) camera_ref;
+                *(mgVec4 *) MenuDrawEnv->pos = *(mgVec4 *) camera_pos;
+                *(mgVec4 *) MenuDrawEnv->ref = *(mgVec4 *) camera_ref;
                 ExeScript("\x8F\x49\x97\xB9\x8F\x88\x97\x9D");
                 MenuPosData->TexGetInfoClear(0xAA, 0x100);
                 MenuPosData->FormInfoClear(0x3C, 0x4F);
@@ -5168,7 +5032,7 @@ void MenuTimeStepEnvFunc(CScene *scene, CActionChara *chara, int step) {
         return;
     }
 
-    if (step != kEnvStepSunMoon) {
+    if (step != MENU_ENV_STEP_SUN_MOON) {
         return;
     }
 
@@ -7560,7 +7424,7 @@ void CMosBookMenu::InitEnd() {
     MenuMemoryAdjust(&scratch, &this->stack, MenuActionCharaBuffer, 3);
     this->list_num = 0;
 
-    for (i = 0; i < kMonsterMemoCount; i++) {
+    for (i = 0; i < MOS_BOOK_MEMO_NUM; i++) {
         entry = GetMonsterBaseInfoForMonsterMemoIndex(i);
 
         if (entry != NULL && 0 < KillMonsterCount(entry->id, 0)) {
@@ -7569,7 +7433,7 @@ void CMosBookMenu::InitEnd() {
         }
     }
 
-    for (i = this->list_num; i < kMonsterMemoCount; i++) {
+    for (i = this->list_num; i < MOS_BOOK_MEMO_NUM; i++) {
         this->list[i] = -1;
     }
 
@@ -7876,7 +7740,7 @@ int CMosBookMenu::KeyStep() {
         case MENU_ASK_MODE_NONE:
             if ((lr & MENU_SELECT_KEY_L1) || (lr & MENU_SELECT_KEY_R1) ||
                 (select & MENU_SELECT_KEY_LEFT) || (select & MENU_SELECT_KEY_RIGHT)) {
-                cmd = kCmdTurnPage;
+                cmd = MOS_BOOK_COMMAND_TURN_PAGE;
 
                 if (select & MENU_SELECT_KEY_LEFT) {
                     this->select -= 1;
@@ -7909,11 +7773,11 @@ int CMosBookMenu::KeyStep() {
                 this->monster_info = GetMonsterBaseInfo(this->list[this->select]);
                 this->SetMonsterInfo(this->monster_info);
             } else if (push & MENU_PUSH_BUTTON_CANCEL) {
-                cmd = kCmdClose;
+                cmd = MOS_BOOK_COMMAND_CLOSE;
                 MenuSePlay(SYSTEM_SE_CANCEL);
             } else if (menu_debug_flag != 0) {
                 if (push & MENU_PUSH_BUTTON_TRIANGLE) {
-                    for (i = 0; i < kMonsterMemoCount; i++) {
+                    for (i = 0; i < MOS_BOOK_MEMO_NUM; i++) {
                         if (i != 0x30 && i != 0x44) {
                             KillMonsterCount(i, 1);
                         }
@@ -7928,11 +7792,11 @@ int CMosBookMenu::KeyStep() {
 
     if (0 <= cmd) {
         switch (cmd) {
-            case kCmdClose:
+            case MOS_BOOK_COMMAND_CLOSE:
                 this->mode = MENU_ASK_MODE_CLOSE;
                 FadeOutMenu(0x3C, 0.0f);
                 break;
-            case kCmdTurnPage:
+            case MOS_BOOK_COMMAND_TURN_PAGE:
                 this->load_phase = 1;
                 break;
         }
@@ -7949,7 +7813,7 @@ int CMosBookMenu::KeyStep() {
         case 2:
             this->load_wait += 1;
 
-            if (this->load_wait >= kModelDelayFrames) {
+            if (this->load_wait >= MOS_BOOK_LOAD_DELAY) {
                 StartReadBG();
 
                 this->stack.stack_used = 0;
@@ -7986,8 +7850,8 @@ int CMosBookMenu::KeyStep() {
 
             this->show_wait += 1;
 
-            if (this->show_wait > kModelFrameCap) {
-                this->show_wait = kModelFrameCap;
+            if (this->show_wait > MOS_BOOK_SHOW_WAIT_MAX) {
+                this->show_wait = MOS_BOOK_SHOW_WAIT_MAX;
             }
 
             break;
