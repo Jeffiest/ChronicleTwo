@@ -847,7 +847,7 @@ void CDC2Mes::StepMsg() {
 
         select = choice;
 
-        if ((s8) str[0] == 0) {
+        if (str[0] == 0) {
             MakeMesWin(message_no);
             Step();
         } else {
@@ -1335,7 +1335,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         int amount = 999;
 
                         if (weapon->item_type == ITEM_DATA_ROBO_ARM) {
-                            amount = (int) (weapon->data.robopart.whp.max / 2.0f);
+                            amount = weapon->data.robopart.whp.max / 2.0f;
                         }
 
                         weapon->Repair(amount);
