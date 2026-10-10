@@ -1344,21 +1344,21 @@ int CMenuChrCngMenu::KeyChangeMain() {
     CDC2Mes       *cmd_mes = MenuDCMsg[4];
     CDC2Mes       *npc_mes = MenuDCMsg[5];
     CDC2Mes       *repair_mes = MenuDCMsg[7];
-    int            action = 0;
+    int            action = CHR_CNG_ACTION_NONE;
     CGameDataUsed *item = NULL;
-    int            cancelled = 0;
+    int            cancelled = false;
     static s8      SelectedCmdNo = -1;
 
     switch (key_arg_no) {
-        case 2:
+        case CHR_CNG_PAGE_NPC_JOIN:
             if (buttons) {
-                action = 0x1E;
+                action = CHR_CNG_ACTION_NPC_PAGE;
             }
 
             break;
-        case 3:
+        case CHR_CNG_PAGE_NPC:
             switch (step) {
-                case 0: {
+                case CHR_CNG_NPC_STEP_COMMAND: {
                     int last_cmd = npc_data->ability_num - 1;
 
                     if (last_cmd < 0) {
@@ -1402,16 +1402,16 @@ int CMenuChrCngMenu::KeyChangeMain() {
                             switch (buttons) {
                                 case MENU_PUSH_BUTTON_DECIDE:
                                 case MENU_PUSH_BUTTON_TRIANGLE:
-                                    action = 5;
+                                    action = CHR_CNG_ACTION_REJECT;
 
                                     if (npc_data->ability_num > 0) {
-                                        action = 100;
+                                        action = CHR_CNG_ACTION_ABILITY;
                                         SelectedCmdNo = cmd_mes->GetMsgCursor();
                                     }
 
                                     break;
                                 case MENU_PUSH_BUTTON_CANCEL:
-                                    action = 0x3C;
+                                    action = CHR_CNG_ACTION_NPC_PAGE_END;
                                     break;
                             }
 
@@ -1421,31 +1421,31 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                     break;
                 }
-                case 1:
-                case 2:
+                case CHR_CNG_NPC_STEP_NO_POINT:
+                case CHR_CNG_NPC_STEP_RESULT:
                     if (buttons) {
-                        cancelled = 1;
-                        action = 0x1E;
+                        cancelled = true;
+                        action = CHR_CNG_ACTION_NPC_PAGE;
 
                         if (close_on_end) {
                             mode = MENU_ASK_MODE_CLOSE;
                             ExeScript("GET_P_END");
-                            action = -1;
-                            MenuArg.end_code = 5;
+                            action = CHR_CNG_ACTION_CLOSED;
+                            MenuArg.end_code = MENU_END_DNG_MOVE;
                             MenuArg.result[0] = 1;
                             MenuArg.result[1] = 1;
                             MenuArg.result[2] = 0;
                         }
 
                         if (got_item) {
-                            step = 3;
+                            step = CHR_CNG_NPC_STEP_GOT_ITEM;
                         }
                     }
 
                     break;
-                case 3:
+                case CHR_CNG_NPC_STEP_GOT_ITEM:
                     break;
-                case 10: {
+                case CHR_CNG_NPC_STEP_CONFIRM: {
                     int widest;
 
                     if (npc_mes->page_num <= 0) {
@@ -1467,46 +1467,46 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             if (cursor - (widest - 2) == 0) {
-                                action = 0x5A;
+                                action = CHR_CNG_ACTION_USE_ABILITY;
 
-                                if (npc_no == 1) {
+                                if (npc_no == PARTY_NPC_CEDRIC) {
                                     if (SelectedCmdNo == 0) {
-                                        action = 0xC8;
+                                        action = CHR_CNG_ACTION_REPAIR_WEAPON;
                                     }
 
                                     if (SelectedCmdNo == 1) {
-                                        action = 0xC9;
+                                        action = CHR_CNG_ACTION_REPAIR_ARM;
                                     }
                                 }
 
                                 break;
                             }
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x1E;
-                            cancelled = 1;
+                            action = CHR_CNG_ACTION_NPC_PAGE;
+                            cancelled = true;
                             break;
                     }
 
                     break;
                 }
-                case 11:
+                case CHR_CNG_NPC_STEP_IDLE:
                     break;
-                case 20:
+                case CHR_CNG_NPC_STEP_REPAIR_SELECT:
                     MenuItemBrdKey(keys, &item_brd_select, &item_brd_pos, 0);
 
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                         case MENU_PUSH_BUTTON_TRIANGLE:
                             item = MenuDrawItemInfo[item_brd_select];
-                            action = 5;
+                            action = CHR_CNG_ACTION_REJECT;
 
                             if (item != NULL && item->IsRepair()) {
-                                action = 0x5A;
+                                action = CHR_CNG_ACTION_USE_ABILITY;
                             }
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x1E;
+                            action = CHR_CNG_ACTION_NPC_PAGE;
                             ExeScript("BACK_NPCVIEW");
                             MenuCommonInfo->SetWakuType(-1);
                             break;
@@ -1516,7 +1516,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             break;
-        case 1: {
+        case CHR_CNG_PAGE_CONFIRM: {
             int answer = cmd_mes->YesNoCursor();
 
             switch (buttons) {
@@ -1524,17 +1524,17 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 case MENU_PUSH_BUTTON_TRIANGLE:
                 case MENU_PUSH_BUTTON_SQUARE:
                     if (answer == 0) {
-                        action = 0x14;
+                        action = CHR_CNG_ACTION_CHANGE;
                         break;
                     }
                 case MENU_PUSH_BUTTON_CANCEL:
-                    action = 0x50;
+                    action = CHR_CNG_ACTION_CHANGE_CANCEL;
                     break;
             }
 
             break;
         }
-        case 0:
+        case CHR_CNG_PAGE_SELECT:
             if (change_phase) {
                 keys = 0;
             }
@@ -1550,7 +1550,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             if (menu_debug_flag) {
-                if (select != 4) {
+                if (select != CHR_CNG_SELECT_NPC) {
                     int lr = MenuCommonInfo->CheckLRKey();
 
                     if (lr & MENU_SELECT_KEY_R1 || lr & MENU_SELECT_KEY_RIGHT) {
@@ -1562,14 +1562,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (MenuDebugChangeSelectMode < 0) {
-                        MenuDebugChangeSelectMode = 2;
+                        MenuDebugChangeSelectMode = MENU_DEBUG_CHANGE_MASK;
                     }
 
-                    if (MenuDebugChangeSelectMode > 2) {
-                        MenuDebugChangeSelectMode = 0;
+                    if (MenuDebugChangeSelectMode > MENU_DEBUG_CHANGE_MASK) {
+                        MenuDebugChangeSelectMode = MENU_DEBUG_CHANGE_PARTY;
                     }
 
-                    if (MenuDebugChangeSelectMode == 0) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_PARTY) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1579,23 +1579,23 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
-                        if (buttons & MENU_PUSH_BUTTON_DECIDE && MenuDebugCharaChangeSelect < 4) {
+                        if (buttons & MENU_PUSH_BUTTON_DECIDE && MenuDebugCharaChangeSelect < USER_CHARA_NUM) {
                             MenuUserDataManPtr->JoinPartyMember(MenuDebugCharaChangeSelect);
                         }
 
-                        if (buttons & MENU_PUSH_BUTTON_CANCEL && MenuDebugCharaChangeSelect < 4) {
+                        if (buttons & MENU_PUSH_BUTTON_CANCEL && MenuDebugCharaChangeSelect < USER_CHARA_NUM) {
                             MenuUserDataManPtr->LeavePartyMember(MenuDebugCharaChangeSelect);
                         }
                     }
 
-                    if (MenuDebugChangeSelectMode == 1) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_ENABLE) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1605,10 +1605,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
@@ -1621,7 +1621,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
                     }
 
-                    if (MenuDebugChangeSelectMode == 2) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_MASK) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1631,10 +1631,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
@@ -1650,14 +1650,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (buttons & MENU_PUSH_BUTTON_TRIANGLE) {
                         MenuUserDataManPtr->JoinPartyMember(USER_CHARA_MAX);
                         MenuUserDataManPtr->JoinPartyMember(USER_CHARA_MONICA);
-                        MenuUserDataManPtr->EnableCharaChange(0);
-                        MenuUserDataManPtr->EnableCharaChange(1);
-                        MenuUserDataManPtr->EnableCharaChange(2);
-                        MenuUserDataManPtr->EnableCharaChange(3);
-                        MenuUserDataManPtr->EnableCharaChangeMask(0);
-                        MenuUserDataManPtr->EnableCharaChangeMask(1);
-                        MenuUserDataManPtr->EnableCharaChangeMask(2);
-                        MenuUserDataManPtr->EnableCharaChangeMask(3);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MAX);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MONICA);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_ROBO);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MONSTER);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MAX);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MONICA);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_ROBO);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MONSTER);
                     }
                 } else {
                     if (keys & MENU_SELECT_KEY_UP) {
@@ -1668,12 +1668,12 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         menu_debug_npcselect++;
                     }
 
-                    if (menu_debug_npcselect < 1) {
-                        menu_debug_npcselect = 1;
+                    if (menu_debug_npcselect < PARTY_NPC_CEDRIC) {
+                        menu_debug_npcselect = PARTY_NPC_CEDRIC;
                     }
 
-                    if (menu_debug_npcselect >= 0x1B) {
-                        menu_debug_npcselect = 0x1A;
+                    if (menu_debug_npcselect >= PARTY_NPC_LIN + 1) {
+                        menu_debug_npcselect = PARTY_NPC_LIN;
                     }
 
                     if (keys & MENU_SELECT_KEY_RIGHT) {
@@ -1696,19 +1696,19 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         int npc = menu_debug_npcselect;
 
                         if (GetUserDataMan()->GetPartyCharaStatus(npc) == 0) {
-                            GetUserDataMan()->JoinPartyChara(npc, 0x80, 1);
+                            GetUserDataMan()->JoinPartyChara(npc, PARTY_CHARA_STATUS_JOIN, 1);
                         }
 
                         if (menu_debug_npc_decide == 0) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 1);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_IN_PARTY);
                         }
 
                         if (menu_debug_npc_decide == 1) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 2);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_JOINED);
                         }
 
                         if (menu_debug_npc_decide == 2) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 4);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_IN_HOUSE);
                         }
                     }
                 }
@@ -1717,7 +1717,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             switch (step) {
-                case 0: {
+                case CHR_CNG_STEP_SELECT: {
                     int last_select = select;
                     int dir = -1;
 
@@ -1766,11 +1766,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (last_select != select) {
                         MenuSePlay(SYSTEM_SE_CURSOR);
 
-                        if (select == 4) {
+                        if (select == CHR_CNG_SELECT_NPC) {
                             MenuDCMsg[0]->SetBuff(mes_data);
                         }
 
-                        if (last_select == 4) {
+                        if (last_select == CHR_CNG_SELECT_NPC) {
                             MenuDCMsg[0]->SetBuff(sys_mes);
                         }
                     }
@@ -1778,31 +1778,31 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             switch (select) {
-                                case 4:
-                                    action = 5;
+                                case CHR_CNG_SELECT_NPC:
+                                    action = CHR_CNG_ACTION_REJECT;
 
                                     if (MenuCommonInfo->open_type != MENU_OPEN_CHARA_CHANGE_DUNGEON && 0 < npc_no) {
-                                        action = 0x22;
+                                        action = CHR_CNG_ACTION_NPC_MENU;
                                     }
 
                                     break;
                                 case USER_CHARA_MONSTER:
-                                    action = 0x32;
+                                    action = CHR_CNG_ACTION_MONSTER_BOX;
                                     break;
                                 default:
-                                    action = 0x46;
+                                    action = CHR_CNG_ACTION_ASK_CHANGE;
                                     break;
                             }
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x28;
+                            action = CHR_CNG_ACTION_CLOSE;
 
                             if (MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
-                                action = 5;
+                                action = CHR_CNG_ACTION_REJECT;
 
                                 if (MenuUserDataManPtr->GetHp(MenuUserDataManPtr->active_chr_no) < 1.0f) {
-                                    action = 5;
+                                    action = CHR_CNG_ACTION_REJECT;
                                 } else {
                                     mode = MENU_ASK_MODE_CLOSE;
                                     FadeOutMenu(40, 0.0f);
@@ -1814,10 +1814,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                     break;
                 }
-                case 1: {
+                case CHR_CNG_STEP_NPC_MENU: {
                     int last = 1;
 
-                    if (npc_no == 0x1A) {
+                    if (npc_no == PARTY_NPC_LIN) {
                         last = 0;
                     }
 
@@ -1826,16 +1826,16 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             if (cursor == 0) {
-                                action = 0x1E;
+                                action = CHR_CNG_ACTION_NPC_PAGE;
                             }
 
                             if (cursor == 1) {
-                                step = 2;
+                                step = CHR_CNG_STEP_NPC_LEAVE;
                                 ExeScript("NPC_\x8A\x4F\x82\xB7\x81\x48");
                                 char *names[1] = {GetNPCName(npc_no)};
                                 cmd_mes->SetMsgItemNo(names, 1);
 
-                                if (party_info->status & 4) {
+                                if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
                                     cmd_mes->MakeMsg(0x1B0);
                                 } else {
                                     cmd_mes->MakeMsg(0x1AF);
@@ -1844,21 +1844,21 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            step = 0;
+                            step = CHR_CNG_STEP_SELECT;
                             ExeScript("NPC_CMDEND");
                             break;
                     }
 
                     break;
                 }
-                case 2: {
+                case CHR_CNG_STEP_NPC_LEAVE: {
                     int answer = cmd_mes->YesNoCursor2(0);
 
-                    if (answer == 1) {
-                        if (party_info->status & 4) {
-                            party_info->status = 4;
+                    if (answer == MES_YESNO_YES) {
+                        if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
+                            party_info->status = PARTY_CHARA_STATUS_IN_HOUSE;
                         } else {
-                            party_info->status = 2;
+                            party_info->status = PARTY_CHARA_STATUS_JOINED;
                             int map_no = MenuNowMapNo;
 
                             if (map_no == SearchMapNo("s07") || map_no == SearchMapNo("s38")) {
@@ -1872,11 +1872,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         npc_mes_cmd = -1;
                         npc_mes_cancel = -1;
                         ExeScript("NPC\x8A\x4F\x82\xB7");
-                        step = 0;
+                        step = CHR_CNG_STEP_SELECT;
                     }
 
-                    if (answer == 2) {
-                        step = 1;
+                    if (answer == MES_YESNO_NO) {
+                        step = CHR_CNG_STEP_NPC_MENU;
                         ExeScript("NPC_\x8A\x4F\x82\xB7\x81\x48"
                                   "END");
                     }
@@ -1891,26 +1891,26 @@ int CMenuChrCngMenu::KeyChangeMain() {
     int active_chara = key_func->GetActiveCharaNo();
 
     switch (action) {
-        case 5:
+        case CHR_CNG_ACTION_REJECT:
             MenuSePlay(SYSTEM_SE_CANCEL);
             break;
-        case 0x22:
-            if (party_info->status & 4) {
+        case CHR_CNG_ACTION_NPC_MENU:
+            if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
                 ExeScript("NPC_CMD2");
             } else {
                 ExeScript("NPC_CMD");
             }
 
-            if (npc_no == 0x1A) {
+            if (npc_no == PARTY_NPC_LIN) {
                 MenuDCMsg[5]->MakeMsg(0x1B3);
             }
 
             MenuSePlay(SYSTEM_SE_WINDOW);
-            step = 1;
+            step = CHR_CNG_STEP_NPC_MENU;
             npc_mes->point_x = 20;
             npc_mes->point_y = 200;
             break;
-        case 0x1E:
+        case CHR_CNG_ACTION_NPC_PAGE:
             if (mode == MENU_ASK_MODE_OPEN) {
                 break;
             }
@@ -1923,9 +1923,9 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 }
 
                 MenuSePlay(2);
-                key_arg_no = 3;
+                key_arg_no = CHR_CNG_PAGE_NPC;
                 star_stop_wait = 20;
-                step = 0;
+                step = CHR_CNG_NPC_STEP_COMMAND;
                 ExeScript("NPCSETBUF");
 
                 if (cancelled != 1) {
@@ -1953,24 +1953,24 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
                 }
 
-                star_fade_out = 0;
+                star_fade_out = false;
 
                 if (key_func->open_type == MENU_OPEN_CHARA_CHANGE) {
                     cmd_mes->SetMsgCursor(-1);
                 } else {
-                    star_fade_out = 1;
+                    star_fade_out = true;
                 }
 
-                MenuItemBrdCalcManner = 1;
+                MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_JUMP;
                 item_brd_select = 0;
                 item_brd_pos = 0;
-                MenuItemBrdSetInfo(item_brd_select, item_brd_pos, GetNowBagMax(0) / 6, 5);
+                MenuItemBrdSetInfo(item_brd_select, item_brd_pos, GetNowBagMax(ITEM_BOARD_MAIN) / 6, 5);
             } else {
                 MenuSePlay(SYSTEM_SE_CANCEL);
             }
 
             break;
-        case 0x46: {
+        case CHR_CNG_ACTION_ASK_CHANGE: {
             COMMON_GAGE *robo_hp = &MenuUserParam.robo->hp;
 
             if (active_chara == select) {
@@ -2047,7 +2047,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 break;
             }
 
-            key_arg_no = 1;
+            key_arg_no = CHR_CNG_PAGE_CONFIRM;
             ExeScript("\x83\x4C\x83\x83\x83\x89\x83\x60\x83\x46\x83\x93\x83\x57\x8A\x6D\x94\x46");
             cmd_mes->MakeMsg(msgtbl1[select]);
             npc_chara = NULL;
@@ -2059,10 +2059,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
             change_chara = select;
             MENU_LOAD_INFO *load_info = &MenuLoadInfo;
             load_info->chara_no = select;
-            load_info->mode = 2;
+            load_info->mode = MENU_LOAD_MODE_SCENE;
             load_info->request_phase = -1;
             load_info->load_phase = 0;
-            load_info->update_scene = 1;
+            load_info->update_scene = true;
             ReEquipFishingGameWeapon();
             MenuCharaLoadStack.stack_used = 0;
             MenuCharaLoadStack.lock = 0;
@@ -2072,29 +2072,29 @@ int CMenuChrCngMenu::KeyChangeMain() {
             switch (change_chara) {
                 case USER_CHARA_MAX:
                 case USER_CHARA_MONICA:
-                    load_info->load_all = 1;
+                    load_info->load_all = true;
                     load_info->request_phase = -1;
                     MenuItemCharaDataLoad(&MenuCharaLoadStack, change_chara, MenuCharaBuild2, 1);
                     break;
                 case USER_CHARA_ROBO:
-                    load_info->load_all = 1;
+                    load_info->load_all = true;
                     MenuCharaLoadStack.Alloc(blocks_for(MenuItemRoboDataLoad(&MenuCharaLoadStack, MenuCharaBuild2, 1)));
                     break;
             }
 
             change_phase = CHR_CNG_PHASE_LOAD;
-            change_ready = 0;
+            change_ready = false;
             break;
         }
-        case 0x50:
-            key_arg_no = 0;
+        case CHR_CNG_ACTION_CHANGE_CANCEL:
+            key_arg_no = CHR_CNG_PAGE_SELECT;
             change_phase = CHR_CNG_PHASE_NONE;
             ExeScript("CHANGE_CANCEL");
             break;
-        case 0x14: {
-            change_ready = 1;
+        case CHR_CNG_ACTION_CHANGE: {
+            change_ready = true;
             ExeScript("CHNG_BEGIN");
-            MenuArg.end_code = 1;
+            MenuArg.end_code = MENU_END_CHARA_CHANGE;
             MenuArg.result[0] = select;
             int last_chara = GetUserDataMan()->active_chr_no;
             GetUserDataMan()->SetActiveChrNo(MenuArg.result[0]);
@@ -2132,11 +2132,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0x28: {
+        case CHR_CNG_ACTION_CLOSE: {
             mode = MENU_ASK_MODE_CLOSE;
             ReturnMenuIntern(0);
             ExeScript("PREEND");
-            MenuMainFrameModeSet(5, 0);
+            MenuMainFrameModeSet(MENU_MAIN_FRAME_RETURN_RIGHT, 0);
             CMenuPosDataForm *main_form = MenuFormMI2;
 
             if (main_form != NULL) {
@@ -2146,7 +2146,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0x32:
+        case CHR_CNG_ACTION_MONSTER_BOX:
             if (!GetMenuMainFrameEndFlag()) {
                 break;
             }
@@ -2162,7 +2162,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             FadeOutMenu(40, 0.0f);
             MenuSePlay(SYSTEM_SE_DECIDE);
             break;
-        case 0x3C:
+        case CHR_CNG_ACTION_NPC_PAGE_END:
             MenuSePlay(2);
             ExeScript("RETURN_CHANGESELECT");
 
@@ -2171,22 +2171,22 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             key_func->MenuPosPlay();
-            key_arg_no = 0;
-            star_fade_out = 0;
+            key_arg_no = CHR_CNG_PAGE_SELECT;
+            star_fade_out = false;
             star_stop_wait = 20;
-            step = 0;
+            step = CHR_CNG_STEP_SELECT;
             break;
-        case 100:
+        case CHR_CNG_ACTION_ABILITY:
             if (npc_data == NULL || party_info == NULL) {
                 MenuSePlay(SYSTEM_SE_CANCEL);
                 break;
             }
 
-            got_item = 0;
+            got_item = false;
             ExeScript("NPCCMD_PRE");
 
             if (!MenuUserDataManPtr->UseNpcAbility(npc_no, SelectedCmdNo, 0)) {
-                step = 1;
+                step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
                 npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
                 npc_mes->StepMsg();
@@ -2195,17 +2195,17 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-                int dungeon_only = 0;
+                int dungeon_only = false;
 
                 switch (npc_no) {
-                    case 5:
-                    case 6:
-                    case 0x12:
-                    case 0x13:
-                    case 0x15:
-                    case 0x16:
-                    case 0x17:
-                        dungeon_only = 1;
+                    case PARTY_NPC_PARN:
+                    case PARTY_NPC_DR_DELL:
+                    case PARTY_NPC_PRIEST_BRUNO:
+                    case PARTY_NPC_RUFIO:
+                    case PARTY_NPC_OLIVIE:
+                    case PARTY_NPC_JULIA:
+                    case PARTY_NPC_MINA:
+                        dungeon_only = true;
                         break;
                 }
 
@@ -2214,7 +2214,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     npc_mes->StepMsg();
                     AdjustNPCTalk(npc_mes, npc_chara);
                     MenuSePlay(SYSTEM_SE_CANCEL);
-                    step = 2;
+                    step = CHR_CNG_NPC_STEP_RESULT;
                     break;
                 }
             }
@@ -2243,67 +2243,67 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 npc_mes->draw_speed = 0.0f;
                 AdjustNPCTalk(npc_mes, npc_chara);
                 MenuSePlay(SYSTEM_SE_CURSOR);
-                step = 10;
+                step = CHR_CNG_NPC_STEP_CONFIRM;
             }
             break;
-        case 0x5A: {
+        case CHR_CNG_ACTION_USE_ABILITY: {
             MenuMesForm[6]->draw_flag = 0;
             npc_mes->push_button = 0;
             npc_mes->SetMsgCursor(-1);
             int sound_mode = 0;
 
             if (party_info->point - npc_data->ability_cost[SelectedCmdNo] < 0) {
-                step = 1;
+                step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
                 npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
                 break;
             }
 
             int se = 5;
-            int used = 0;
-            int in_dungeon = 0;
+            int used = false;
+            int in_dungeon = false;
 
             if (GetMenuLoopType() == MENU_LOOP_DUNGEON) {
-                in_dungeon = 1;
+                in_dungeon = true;
             }
 
-            int              boss_floor = 0;
+            int              boss_floor = false;
             DNG_BATTLE_AREA *area = &MenuMainScene->battle_area;
 
             if (area != NULL && area->floor_status & DNG_FLOOR_DISABLE_ITEMS) {
-                boss_floor = 1;
+                boss_floor = true;
             }
 
             int bit_ctrl = GetSaveData()->GetBitCtrl();
             int max_bad = CheckBadStatus(MenuUserDataManPtr->GetCharaStatusAttirbute(USER_CHARA_MAX));
             int monica_bad = CheckBadStatus(MenuUserDataManPtr->GetCharaStatusAttirbute(USER_CHARA_MONICA));
-            int max_hurt = 0;
+            int max_hurt = false;
 
             if (MenuUserDataManPtr->chara_data[USER_CHARA_MAX].hp.GetRate() < 1.0f) {
-                max_hurt = 1;
+                max_hurt = true;
             }
 
-            int monica_hurt = 0;
+            int monica_hurt = false;
 
             if (MenuUserDataManPtr->party_member & (1 << USER_CHARA_MONICA) && MenuUserDataManPtr->chara_data[USER_CHARA_MONICA].hp.GetRate() < 1.0f) {
-                monica_hurt = 1;
+                monica_hurt = true;
             }
 
-            step = 2;
+            step = CHR_CNG_NPC_STEP_RESULT;
             int volume[8] = {0};
             int message = GetPartyCharaMessage(npc_no, 7, 0) + SelectedCmdNo;
 
             switch (npc_no) {
-                case 1:
+                case PARTY_NPC_CEDRIC:
                     if (SelectedCmdNo == 2) {
                         if (1.0f <= MenuUserDataManPtr->robo_data.AddPoint(0.0f)) {
-                            used = 0;
-                            message = GetPartyCharaMessage(1, 8, 0);
+                            used = false;
+                            message = GetPartyCharaMessage(PARTY_NPC_CEDRIC, 8, 0);
                         } else {
                             MenuUserDataManPtr->robo_data.AddPoint(999.0f);
                             se = 10;
                             UpdataLife();
-                            used = 1;
+                            used = true;
                         }
                     } else {
                         int pos[2];
@@ -2312,50 +2312,50 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         MenuPosData->GetPosMenuItemBrdKoma(pos, item_brd_select, 0);
                         MenuRepairMan->Generate(pos[0], pos[1]);
                         UpdataLife();
-                        used = 1;
-                        step = 20;
+                        used = true;
+                        step = CHR_CNG_NPC_STEP_REPAIR_SELECT;
                         message = 0;
                     }
 
                     break;
-                case 0x16:
-                    used = 0;
+                case PARTY_NPC_JULIA:
+                    used = false;
 
                     if (in_dungeon && ActiveMonster != NULL) {
                         ActiveMonster->SetNearAreaPiyori(350.0f);
                         se = 10;
-                        used = 1;
+                        used = true;
                     } else {
-                        message = GetPartyCharaMessage(0x16, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_JULIA, 8, 0);
                     }
 
                     break;
-                case 5:
-                    used = 0;
+                case PARTY_NPC_PARN:
+                    used = false;
 
                     if (in_dungeon) {
-                        used = 1;
+                        used = true;
                         area = &MenuMainScene->battle_area;
 
                         if (bit_ctrl & 1) {
-                            used = 0;
+                            used = false;
                         }
 
                         if (area->boss_map && area->battle_clear) {
-                            used = 0;
+                            used = false;
                         }
                     }
 
                     if (used) {
-                        close_on_end = 1;
+                        close_on_end = true;
                     } else {
-                        message = GetPartyCharaMessage(5, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PARN, 8, 0);
                     }
 
                     break;
-                case 6:
+                case PARTY_NPC_DR_DELL:
                     if (in_dungeon && !boss_floor && (max_bad || monica_bad)) {
-                        used = 1;
+                        used = true;
                         se = 0x56;
                         sound_mode = 1;
                         MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
@@ -2363,13 +2363,13 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(6, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_DR_DELL, 8, 0);
                     }
 
                     break;
-                case 0x17:
+                case PARTY_NPC_MINA:
                     if (in_dungeon && !boss_floor && (max_bad || monica_bad || max_hurt || monica_hurt)) {
-                        used = 1;
+                        used = true;
                         se = 10;
                         MenuUserDataManPtr->AddHp(USER_CHARA_MAX, 999);
                         MenuUserDataManPtr->AddHp(USER_CHARA_MONICA, 999);
@@ -2379,22 +2379,22 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(0x17, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_MINA, 8, 0);
                     }
 
                     break;
-                case 0x12:
+                case PARTY_NPC_PRIEST_BRUNO:
                     if (in_dungeon && !boss_floor) {
-                        used = 0;
+                        used = false;
 
-                        if (MenuUserDataManPtr->GetHp(0) < 1.0f) {
-                            MenuUserDataManPtr->chara_data[(int) USER_CHARA_MAX].hp.SetFillRate(1.0f);
-                            used = 1;
+                        if (MenuUserDataManPtr->GetHp(USER_CHARA_MAX) < 1.0f) {
+                            MenuUserDataManPtr->chara_data[USER_CHARA_MAX].hp.SetFillRate(1.0f);
+                            used = true;
                         }
 
-                        if (MenuUserDataManPtr->GetHp(1) < 1.0f) {
-                            MenuUserDataManPtr->chara_data[(int) USER_CHARA_MONICA].hp.SetFillRate(1.0f);
-                            used = 1;
+                        if (MenuUserDataManPtr->GetHp(USER_CHARA_MONICA) < 1.0f) {
+                            MenuUserDataManPtr->chara_data[USER_CHARA_MONICA].hp.SetFillRate(1.0f);
+                            used = true;
                         }
                     }
 
@@ -2403,19 +2403,19 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 0x56;
                         UpdataLife();
                     } else {
-                        message = GetPartyCharaMessage(0x12, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PRIEST_BRUNO, 8, 0);
                     }
 
                     break;
-                case 0x15:
+                case PARTY_NPC_OLIVIE:
                     if (in_dungeon) {
-                        used = 0;
+                        used = false;
 
                         for (int chara = 0; chara < 2; chara++) {
                             if (MenuUserDataManPtr->GetNowPartyMember() & (1 << chara) &&
                                 1.0f <= MenuUserDataManPtr->GetHp(chara)) {
                                 MenuUserDataManPtr->SetCharaStatusAttirbuteVol(chara, CHARA_STATUS_POWER, 750);
-                                used = 1;
+                                used = true;
                             }
                         }
                     }
@@ -2424,33 +2424,33 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         sound_mode = 1;
                         se = 0x56;
                     } else {
-                        message = GetPartyCharaMessage(0x15, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_OLIVIE, 8, 0);
                     }
 
                     break;
-                case 7:
-                case 0xC:
-                case 0xD:
-                case 0x14:
-                case 0x19: {
+                case PARTY_NPC_FERDINAND:
+                case PARTY_NPC_AUNT_POLLY:
+                case PARTY_NPC_ERIK:
+                case PARTY_NPC_FABIO:
+                case PARTY_NPC_GRANNY_ROSA: {
                     int esa[CHR_CNG_GIFT_BAIT_MAX];
                     gift_item = -1;
                     gift_num = 1;
 
-                    if (npc_no == 7) {
+                    if (npc_no == PARTY_NPC_FERDINAND) {
                         gift_item = 0x10E;
                     }
 
-                    if (npc_no == 0xC) {
+                    if (npc_no == PARTY_NPC_AUNT_POLLY) {
                         gift_item = 0x10C;
                     }
 
-                    if (npc_no == 0xD) {
+                    if (npc_no == PARTY_NPC_ERIK) {
                         gift_item = 0x186;
                         gift_num = 3;
                     }
 
-                    if (npc_no == 0x14) {
+                    if (npc_no == PARTY_NPC_FABIO) {
                         int count = GetUseableEsaNo(esa);
 
                         if (count > 0) {
@@ -2466,7 +2466,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         gift_num = 3;
                     }
 
-                    if (npc_no == 0x19) {
+                    if (npc_no == PARTY_NPC_GRANNY_ROSA) {
                         gift_item = 0x10D;
                         gift_num = 1;
                     }
@@ -2477,8 +2477,8 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (gift_num == 0) {
                         message = GetPartyCharaMessage(npc_no, 0xB, 0);
                     } else {
-                        used = 1;
-                        got_item = 1;
+                        used = true;
+                        got_item = true;
                         se = 0x12;
                         MenuUserDataManPtr->GetItem(gift_item, gift_num);
                     }
@@ -2505,14 +2505,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0xC8:
-        case 0xC9:
-        case 0xCA:
+        case CHR_CNG_ACTION_REPAIR_WEAPON:
+        case CHR_CNG_ACTION_REPAIR_ARM:
+        case CHR_CNG_ACTION_REPAIR_ENERGY:
             MenuMesForm[6]->draw_flag = 0;
             MenuMesForm[5]->draw_flag = 0;
 
-            if (npc_no == 1) {
-                step = 20;
+            if (npc_no == PARTY_NPC_CEDRIC) {
+                step = CHR_CNG_NPC_STEP_REPAIR_SELECT;
                 MenuCommonInfo->SetWakuType(0);
                 ExeScript("\x83\x58\x83\x5E\x81\x5B\x83\x75\x83\x8B\x8F\x43\x97\x9D");
                 repair_mes->abs_win.width = 0xDC;
@@ -2524,18 +2524,18 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 repair_mes->MakeMsg(0x1C3);
                 item_brd_select = 0;
                 item_brd_pos = 0;
-                MenuItemBrdCalcManner = 0;
+                MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
 
                 if (SelectedCmdNo == 0) {
-                    SetModeMenuDrawItemBoard(1);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_WEAPON);
                 }
 
                 if (SelectedCmdNo == 1) {
-                    SetModeMenuDrawItemBoard(2);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_RIDEPOD_ARM);
                 }
 
                 if (SelectedCmdNo == 2) {
-                    SetModeMenuDrawItemBoard(3);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_ENERGY_PACK);
                 }
             }
 
