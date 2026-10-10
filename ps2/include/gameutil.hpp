@@ -38,7 +38,7 @@ enum MotionKeyType {
     MOTION_KEY_MATERIAL_ALPHA  = 40, /**< Transparency of one material of the frame's visual. */
     MOTION_KEY_MATERIAL_COLOR  = 41, /**< Colour of one material of the frame's visual. */
     MOTION_KEY_VISIBLE         = 50, /**< Visibility of the frame. */
-    MOTION_KEY_VISIBLE_TREE          = 51, /**< Visibility of the frame, with the other pair of draw modes. */
+    MOTION_KEY_VISIBLE_TREE    = 51, /**< Visibility of the frame, with the other pair of draw modes. */
 };
 
 // clang-format on

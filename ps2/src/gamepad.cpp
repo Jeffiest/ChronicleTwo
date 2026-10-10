@@ -55,9 +55,9 @@ static CGamePad *GamePad;
 static int read_pad(PAD_STATUS *status, int port, int slot);
 
 void CGamePad::Init() {
-    key_lock = 0;
-    key_lock2 = 0;
-    vibration_enabled = 1;
+    key_lock = false;
+    key_lock2 = false;
+    vibration_enabled = true;
     vibration_elapsed = 0;
     capture_mode = PAD_CAPTURE_OFF;
     capture_frame = 0;
@@ -178,7 +178,7 @@ static int read_pad(PAD_STATUS *status, int port, int slot) {
         *phase = PAD_PHASE_QUERY;
     }
 
-    valid = 0;
+    valid = false;
 
     switch (*phase) {
         case PAD_PHASE_QUERY:
@@ -275,7 +275,7 @@ static int read_pad(PAD_STATUS *status, int port, int slot) {
                         *previous_pad_mode = 0;
                         *phase = PAD_PHASE_QUERY;
                     } else {
-                        valid = 1;
+                        valid = true;
                     }
 
                     *previous_pad_mode = *pad_mode;
@@ -285,7 +285,7 @@ static int read_pad(PAD_STATUS *status, int port, int slot) {
             break;
     }
 
-    if (valid == 0) {
+    if (!valid) {
         status->button = 0;
         status->left_y = PAD_ANALOG_CENTER;
         status->left_x = PAD_ANALOG_CENTER;
@@ -327,7 +327,7 @@ int CGamePad::Connect() {
     int state = scePadGetState(0, 0);
 
     if (state == scePadStateStable) {
-        return 1;
+        return true;
     }
 
     return state == scePadStateFindCTP1;
@@ -629,28 +629,28 @@ int CGamePad::GetPadUp() {
 }
 
 float CGamePad::GetRXf() {
-    return (float) GetRX() / 128.0f;
+    return GetRX() / 128.0f;
 }
 
 float CGamePad::GetRYf() {
-    return (float) GetRY() / 128.0f;
+    return GetRY() / 128.0f;
 }
 
 float CGamePad::GetLXf() {
-    return (float) GetLX() / 128.0f;
+    return GetLX() / 128.0f;
 }
 
 float CGamePad::GetLYf() {
-    return (float) GetLY() / 128.0f;
+    return GetLY() / 128.0f;
 }
 
 float CGamePad::GetRXf2() {
-    return (float) GetRX2() / 128.0f;
+    return GetRX2() / 128.0f;
 }
 
 int CGamePad::On(int mask) {
     if (key_lock) {
-        return 0;
+        return false;
     }
 
     return (pad[0].button & mask) != 0;
@@ -658,11 +658,11 @@ int CGamePad::On(int mask) {
 
 int CGamePad::On2(int mask) {
     if (key_lock) {
-        return 0;
+        return false;
     }
 
     if (key_lock2) {
-        return 0;
+        return false;
     }
 
     return (pad[1].button & mask) != 0;
@@ -670,7 +670,7 @@ int CGamePad::On2(int mask) {
 
 int CGamePad::Down(int mask) {
     if (key_lock) {
-        return 0;
+        return false;
     }
 
     return (mask & (pad[0].button & ~previous_pad[0].button)) != 0;
@@ -678,11 +678,11 @@ int CGamePad::Down(int mask) {
 
 int CGamePad::Down2(int mask) {
     if (key_lock) {
-        return 0;
+        return false;
     }
 
     if (key_lock2) {
-        return 0;
+        return false;
     }
 
     return (mask & (pad[1].button & ~previous_pad[1].button)) != 0;
@@ -690,7 +690,7 @@ int CGamePad::Down2(int mask) {
 
 int CGamePad::Up(int mask) {
     if (key_lock) {
-        return 0;
+        return false;
     }
 
     return (mask & (~pad[0].button & previous_pad[0].button)) != 0;
@@ -760,7 +760,7 @@ void CGamePad::Capture(PAD_STATUS *status) {
         frame->left_x = status->left_x;
         frame->right_y = status->right_y;
         frame->right_x = status->right_x;
-        capture_frame = capture_frame + 1;
+        capture_frame++;
     }
 }
 
@@ -776,7 +776,7 @@ void CGamePad::Play(PAD_STATUS *status) {
         status->left_x = frame->left_x;
         status->right_y = frame->right_y;
         status->right_x = frame->right_x;
-        capture_frame = capture_frame + 1;
+        capture_frame++;
     }
 }
 
