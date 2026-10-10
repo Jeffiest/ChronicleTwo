@@ -1934,24 +1934,19 @@ void CFlushEffect::Draw() {
 }
 
 void CFlushEffect::Step() {
-    switch (active) {
-        case 0:
-            break;
-        default:
-            if (follow != NULL) {
-                follow->GetWorldPosition0(pos);
-            }
+    if (active != 0) {
+        if (follow != NULL) {
+            follow->GetWorldPosition0(pos);
+        }
 
-            size += grow;
-            alpha -= (short) fade_speed;
+        size += grow;
+        alpha -= (short) fade_speed;
 
-            if (alpha <= 0) {
-                alpha = 0;
-                active = false;
-                follow = NULL;
-            }
-
-            break;
+        if (alpha <= 0) {
+            alpha = 0;
+            active = false;
+            follow = NULL;
+        }
     }
 }
 
