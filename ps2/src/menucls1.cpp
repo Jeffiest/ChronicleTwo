@@ -36,11 +36,15 @@ int            MenuUsedNotErrorCode;
 
 char *GetHatena() {
     /**
+     *
      * Full-width placeholder for an unidentified item name.
+     *
      */
     static char *MenuHatena = "\x81H\x81H\x81H";
     /**
+     *
      * Single-byte placeholder for an unidentified item name.
+     *
      */
     static char *MenuHatena_1byte = "???";
 
@@ -87,7 +91,9 @@ void SetMenuBigNum2(char *out, int number) {
 
 void SetMenuBigNum(char *out, int number) {
     /**
+     *
      * Single-byte glyphs used to write decimal item counts.
+     *
      */
     static char *sn[10] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
@@ -1041,7 +1047,9 @@ int CheckRoboShieldKit(CUserDataManager *manager, CGameDataUsed *item, int apply
 
 int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply) {
     /**
+     *
      * Character status bits tested when an item adds or cures a condition.
+     *
      */
     static u32 st_bittable[7] = {
         CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_UNK_4, CHARA_STATUS_UNK_8,
