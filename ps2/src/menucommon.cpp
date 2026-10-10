@@ -1476,11 +1476,7 @@ int _MENU_TEXDATA_MALLOC(SPI_STACK *stack, int argc) {
 
     bytes = count * sizeof(MENU_BASETEXINFO);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     MENU_BASETEXINFO *table = (MENU_BASETEXINFO *) MenuSpiStack->Alloc(blocks);
     CPosDataManage   *pos_data = MenuPosData;
@@ -1577,11 +1573,7 @@ int _MENU_FORM_MALLOC(SPI_STACK *stack, int argc) {
     unsigned int bytes = count * sizeof(CMenuPosDataForm);
     unsigned int blocks;
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     u_long128        *block = MenuSpiStack->Alloc(blocks + 2);
     CMenuPosDataForm *table = (CMenuPosDataForm *) operator new[](bytes, block);
@@ -1655,11 +1647,7 @@ int _MENU_FORM_PARTNUM(SPI_STACK *stack, int argc) {
     menu_formPt->parts_num = spiGetStackInt(stack);
     bytes = menu_formPt->parts_num * sizeof(MENUFORMPARTS_TYPE);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     menu_formPt->parts = (MENUFORMPARTS_TYPE *) MenuSpiStack->Alloc(blocks);
 
@@ -2034,11 +2022,7 @@ int _MENU_ACTION_TABLE_NUM(SPI_STACK *stack, int argc) {
     count = spiGetStackInt(stack);
     bytes = count * sizeof(MENU_FORM_ACTION);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     table = (MENU_FORM_ACTION *) MenuSpiStack->Alloc(blocks);
     menu_formPt->action = table;
@@ -2661,11 +2645,7 @@ int _MENU_PARTS_EFF_NUM(SPI_STACK *stack, int argc) {
     menu_form_part->effect_num = count;
     bytes = count * sizeof(MENU_PARTS_EFFECT_STRUCT1);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     menu_form_part->effect = (MENU_PARTS_EFFECT_STRUCT1 *) MenuSpiStack->Alloc(blocks);
     menu_parts_effect_ptr = menu_form_part->effect;
