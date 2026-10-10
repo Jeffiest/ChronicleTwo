@@ -105,7 +105,7 @@ public:
     s32   phase;    /**< Current stage of the banner, a ::LevelupInfoPhase. */
     s32   x;        /**< Screen x of the banner's text. */
     s32   y;        /**< Screen y of the banner's text. */
-    s32   unk_30;
+    s32   weapon_slot; /**< Weapon slot (0 or 1) whose weapon levelled up. */
     s32   unk_34;
 
     /**
@@ -148,7 +148,7 @@ STATIC_ASSERT(sizeof(CLevelupInfo) == 0x38);
  */
 class CPiyori {
 public:
-    mgCObject *target;        /**< Character that the stars circle; NULL while no stars are shown. */
+    CCharacter2 *target;      /**< Character that the stars circle; NULL while no stars are shown. */
     float      star_angle[3]; /**< Angle, in radians, of the bob of each star. */
     float      circle_angle;  /**< Angle, in radians, of the first star around the circle. */
     float      height;        /**< Height of the circle above the character's position. */
@@ -342,7 +342,7 @@ public:
      * @address 0x1CB4D0
      * @size 0xA0
      */
-    void Set(float *pos, int new_max_life, int new_life, int count, int new_pinned);
+    void Set(float *pos, int new_max_life, int new_life, int gekirin_count, int new_screen);
 
     /**
      *
@@ -456,7 +456,7 @@ public:
      * @address 0x1CBE50
      * @size 0x90
      */
-    void SetSprite(float *pos, int u, int v, int u1, int v1);
+    void SetSprite(float *pos, int u, int v, int width, int height);
 
     /**
      *
@@ -542,7 +542,7 @@ public:
     ClsMes       *mes;   /**< Message window that shows the enemy's name. */
     float         angle; /**< Angle, in radians, by which the marker is turned. */
     char         *name;  /**< Name of the locked-on enemy; NULL when none is shown. */
-    s32           message_no;
+    s32           message_no; /**< Message number of the locked-on enemy, offset by 5000, when it is the kind of monster the player has become; -1 otherwise. */
     u8            unk_94[0xC];
     sceVu0FVECTOR pos; /**< World position of the marker and of the name. */
 
