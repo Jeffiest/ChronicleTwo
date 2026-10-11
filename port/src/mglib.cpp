@@ -377,14 +377,37 @@ PORT_OVERRIDE void mgGetFrameBackBuffer(mgCTexture *texture) {
     texture->tex0.TBP0 = draw_env->FBP * 32;
 }
 
+// Retail clears with a sprite over the game's screen that writes colour and a depth of 0. Nothing
+// clears a recorded tick otherwise, so each one would draw over the last tick's colour and depth.
+// The bars are the window outside the letterboxed frame, which no draw reaches.
 PORT_OVERRIDE void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
-    // The clear's colour and enable are already in mgBackColor and mgClearBackFlag, which the
-    // renderer's frame begin reads; the GS registers and vertices retail wrote here are the
-    // renderer's own.
-    (void) red;
-    (void) green;
-    (void) blue;
-    (void) alpha;
+    gfx::LogicalMapping mapping = gfx::GetLogicalMapping(gfx::kMainTarget);
+
+    if (mapping.pixel_width != 0 && mapping.pixel_height != 0) {
+        float            width = gfx::LogicalWidth();
+        float            height = gfx::LogicalHeight();
+        float            left = -mapping.offset_x / mapping.scale_x;
+        float            top = -mapping.offset_y / mapping.scale_y;
+        float            right = ((float) mapping.pixel_width - mapping.offset_x) / mapping.scale_x;
+        float            bottom = ((float) mapping.pixel_height - mapping.offset_y) / mapping.scale_y;
+        uint8_t          black[4] = {0, 0, 0, 0x80};
+        gfx::LogicalRect bars[4] = {
+            {left,  top,    -left,         bottom - top    },
+            {width, top,    right - width, bottom - top    },
+            {0.0f,  top,    width,         -top            },
+            {0.0f,  height, width,         bottom - height },
+        };
+
+        for (const gfx::LogicalRect &bar : bars) {
+            if (bar.w > 0.0f && bar.h > 0.0f) {
+                gfx::Clear(true, black, true, 0.0f, &bar);
+            }
+        }
+    }
+
+    gfx::LogicalRect frame = gfx::LogicalFrame();
+    uint8_t          color[4] = {red, green, blue, alpha};
+    gfx::Clear(true, color, true, 0.0f, &frame);
 }
 
 PORT_OVERRIDE void mgSetPkTextureRepeat(int mode) {
