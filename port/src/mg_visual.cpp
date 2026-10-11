@@ -4,6 +4,7 @@
 #include <libvu0.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <span>
 #include <vector>
@@ -237,7 +238,9 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
     }
 
     bool ambient_boost = info->attr->ambient_boost != 0;
-    bool lit = !(info->attr->no_light != 0 || info->lighting_enabled == 0 || ambient_boost);
+    // Diagnostic: DC_NO_LIGHT=1 draws every model unlit, to tell bad lighting from bad textures.
+    static const bool force_unlit = std::getenv("DC_NO_LIGHT") != nullptr;
+    bool lit = !(info->attr->no_light != 0 || info->lighting_enabled == 0 || ambient_boost || force_unlit);
     FillFog(constants, state, info);
 
     for (mgFACE_GROUP *node = face_group; node != NULL; node = node->next) {
