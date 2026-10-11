@@ -1172,7 +1172,7 @@ void DrawFireEffect(float (*lw_matrix)[4], CFuncPointMngr *mngr, CFuncPointCheck
                 frame.visual = sprite;
                 attr.no_cull = 1;
                 attr.draw = 3;
-                attr.fog = 2;
+                attr.fog = MG_FOG_BLACK;
                 frame.attr = &attr;
                 mgDrawDirect(&frame);
             }

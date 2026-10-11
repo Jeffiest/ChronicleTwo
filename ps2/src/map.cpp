@@ -1019,7 +1019,7 @@ void CMap::DrawEffect() {
     static mgCFrameAttr attr;
     attr.draw = MG_FRAME_DRAW_VISIBLE | MG_FRAME_DRAW_SKIP_CHILDREN;
     attr.no_cull = 1;
-    attr.fog = 2;
+    attr.fog = MG_FOG_BLACK;
     attr.no_cull = 1;
     attr.depth_bias = 1.015f;
     func_point.GetStart(FUNC_POINT_EFFECT);
