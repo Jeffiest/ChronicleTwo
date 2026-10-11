@@ -1,3 +1,6 @@
+#include <cstdlib>
+#include <cstdio>
+#include <algorithm>
 #include "mg_drawprim.hpp"
 
 #include <cmath>
@@ -377,6 +380,33 @@ void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
         for (gfx::Vertex2D &vertex : state.vertices) {
             vertex.u *= g_regs.u_scale;
             vertex.v *= g_regs.v_scale;
+        }
+    }
+
+    // Diagnostic: DC_DUMP_DRAWS=1 prints untextured black runs with their extent, target and state.
+    static const bool dump_black = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    static int        dumped_black;
+
+    if (dump_black && dumped_black < 150 && owner.prim.TME == 0 && !state.vertices.empty()) {
+        const gfx::Vertex2D &first = state.vertices[0];
+
+        if (first.color[0] == 0 && first.color[1] == 0 && first.color[2] == 0) {
+            float lo_x = 1e30f, lo_y = 1e30f, hi_x = -1e30f, hi_y = -1e30f;
+            for (const gfx::Vertex2D &vertex : state.vertices) {
+                lo_x = std::min(lo_x, vertex.x);
+                hi_x = std::max(hi_x, vertex.x);
+                lo_y = std::min(lo_y, vertex.y);
+                hi_y = std::max(hi_y, vertex.y);
+            }
+            gfx::DrawState current = CurrentState(owner);
+            dumped_black++;
+            std::fprintf(stderr,
+                         "black2d prim %d verts %zu x %.1f..%.1f y %.1f..%.1f rgba %u %u %u %u target %#x blend %d "
+                         "depth_test %d depth_write %d cwm %u scissor %d\n",
+                         (int) primitive, state.vertices.size(), lo_x, hi_x, lo_y, hi_y, first.color[0], first.color[1],
+                         first.color[2], first.color[3], gfx::CurrentRenderTarget(), current.blend,
+                         (int) current.depth_test, current.depth_write, (unsigned) current.color_write_mask,
+                         current.scissor);
         }
     }
 
