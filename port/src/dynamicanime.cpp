@@ -201,6 +201,17 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
             }
         }
 
+        // A vertex that no bone claims keeps its base position, as VU1 left it.
+        if (out[0] == 0.0f && out[1] == 0.0f && out[2] == 0.0f && out[3] == 0.0f) {
+            float total = 0.0f;
+            for (int influence = 0; influence < 4; influence++) {
+                total += vertex_weight.weight[influence];
+            }
+            if (total == 0.0f) {
+                vu0::Copy(out, base_vertex[i]);
+            }
+        }
+
         vu0::Copy(visual->vertex[i], out);
 
         // Normals are indexed by face, not by vertex, so a model can hold fewer of them than vertices; the

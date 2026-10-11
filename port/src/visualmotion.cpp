@@ -19,6 +19,10 @@ namespace {
 // Loading a model again at the same address replaces its set, so the store stays bounded.
 std::unordered_map<const void *, std::vector<std::unique_ptr<int[]>>> kept_indices;
 
+// The same for the skin weights: retail builds them in the scratch arena only to fill its VU1 packets, but
+// the host skins from them every frame, and the arena is reused by the next model that loads.
+std::unordered_map<const void *, std::unique_ptr<mgVertexWeight[]>> kept_weights;
+
 } // namespace
 
 // Retail keeps the packet buffer's address in an int and hands the truncated value straight back
@@ -42,6 +46,7 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
     work->stack_used = 0;
     work->lock = 0;
     kept_indices[this].clear();
+    kept_weights.erase(this);
 
     if (textures == NULL) {
         textures = &mgTexManager;
@@ -54,6 +59,14 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
     base_matrix = data->base_matrix;
     frame_id = data->frame_id;
     CreateVertexWeight(data->weight_data, data->frame_id, work);
+
+    if (weight != NULL && weight_num > 0) {
+        auto copy = std::make_unique<mgVertexWeight[]>(weight_num);
+
+        std::memcpy(copy.get(), weight, (size_t) weight_num * sizeof(mgVertexWeight));
+        weight = copy.get();
+        kept_weights[this] = std::move(copy);
+    }
     count = 0;
 
     do {
