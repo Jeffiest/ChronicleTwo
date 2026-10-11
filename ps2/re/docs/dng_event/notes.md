@@ -15,15 +15,15 @@ row for `AutoSetTreasureBox__Fv` evaluating the binary32 zero first at callee
 `PutTreasureBox__19CTreasureBoxManagerFiPffiiiii` (the key-box rotation zero is
 evaluated before the nested `GetKeyDoorIndex` call and kept in `f20`).
 
-The unit's data is still largely assembly-backed: `INCLUDE_RODATA` markers for
-the strings listed under "Globals", `gatekey_index`, `keydoor_key_index`,
-`xchg_rot_list`, `tag__5`, `tag2`, the compiler templates
-`at_1466__5`..`at_1468__5`, `at_1825__2`..`at_1829__3`,
-`at_2198__2`..`at_2200__2`, `at_2446`..`at_2456`, `at_2529`, and the vtables
-`__vt__9CGeoStone` / `__vt__13CRedMarkModel`; `INCLUDE_BSS` for `counter_1489`
-(the `StatusWarningSnd` function-local static `counter`), `nowTbFloor`,
-`nowTboxGroup`, `nowTboxItemCnt`, `FLS_FLOOR_ID` and `at_1348`. The native
-functions reference these through `extern` declarations.
+The unit's data is defined in `dng_event.cpp`: string literals are inlined
+where they are used, and the vtables (`__vt__9CGeoStone`, `__vt__13CRedMarkModel`)
+and compiler template objects are generated from the native definitions.
+`gatekey_index`,
+`keydoor_key_index`, `xchg_rot_list`, `tag__5` and `tag2` are file-local
+`static` definitions, and `counter_1489` (the `StatusWarningSnd`
+function-local static `counter`), `nowTbFloor`, `nowTboxGroup`,
+`nowTboxItemCnt` and `FLS_FLOOR_ID` are file-local `static` definitions.
+`at_1348` is a compiler-generated static of `DrawShadow`.
 
 ## Globals
 Every data symbol of the unit is LOCAL in retail (`build/re/local_symbols.tsv`), so the header has

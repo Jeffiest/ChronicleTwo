@@ -65,9 +65,8 @@ owned (`class_units.tsv` lists none for this unit). No first-game counterpart (D
 
 All seven functions are matched C++. The four main-board tables are local
 array initialisers in `DrawMainUnitStatusBord`, so the unit's `.data` comes
-from the compiler and no `INCLUDE_RODATA` remains. The `.sbss` statics stay
-as `INCLUDE_BSS` entries with extern function-scope declarations, as in the
-other boards.
+from the compiler and no `INCLUDE_RODATA` remains. The `.sbss` statics are
+file-local `static` definitions in `dng_status.cpp`, as in the other boards.
 
 ## Number glyph calls
 
