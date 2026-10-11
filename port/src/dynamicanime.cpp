@@ -122,6 +122,23 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
         return;
     }
 
+    // Visuals copied from one model share its vertex array (mgCVisualMotionMDT::Copy), and this pass writes the
+    // skinned result back in place. The whole tree is skinned before anything draws, so two copies posed
+    // differently, a pair of hands, would both draw whichever was skinned last. Each visual gets an array of
+    // its own to write into; the shared one stays as the undeformed model.
+    static std::unordered_map<const void *, std::vector<float>> private_vertices;
+    std::vector<float> &own = private_vertices[visual];
+
+    if (visual->vertex != reinterpret_cast<sceVu0FVECTOR *>(own.data())) {
+        own.resize(static_cast<size_t>(visual->vertex_num) * 4);
+        std::memcpy(own.data(), visual->vertex, own.size() * sizeof(float));
+        // The base pose was never skinned into the shared array, so capture it from there first.
+        MotionBase &shared_base = MotionBaseOf(visual);
+        visual->vertex = reinterpret_cast<sceVu0FVECTOR *>(own.data());
+        MotionBase &private_base = g_motion_bases[visual->vertex];
+        private_base = shared_base;
+    }
+
     MotionBase &base = MotionBaseOf(visual);
 
     if (base.vertex_num <= 0 || base.vertex.empty()) {
