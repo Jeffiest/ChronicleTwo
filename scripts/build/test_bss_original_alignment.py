@@ -23,11 +23,10 @@ class BssAlignmentTests(unittest.TestCase):
         retail = NS(relocations={})
         return compiled, rows, pieces, retail
 
-    def apply(self, fx, held=frozenset(), placeholders=frozenset()):
+    def apply(self, fx):
         compiled, rows, pieces, retail = fx
         with patch.object(p.layout, 'section_of', return_value='.bss'):
-            p.pad_data(compiled, 'unit', placeholders, pieces=pieces, rows=rows,
-                       retail=retail, held=held)
+            p.pad_data(compiled, 'unit', pieces=pieces, rows=rows, retail=retail)
         return compiled.sections[1].sh_size
 
     def test_original_alignment_explains_the_exact_next_start(self):
@@ -69,10 +68,10 @@ class BssAlignmentTests(unittest.TestCase):
 
     def test_padded_section_alignment_does_not_replace_original_evidence(self):
         fx = self.fixture(alignment=4, end=0x3040, size=4)
-        original = p.native_data_extents(fx[0], set())
+        original = p.native_data_extents(fx[0])
         fx[0].sections[2].sh_addralign = 64
         with patch.object(p.layout, 'section_of', return_value='.bss'):
-            p.pad_data(fx[0], 'unit', set(), pieces=fx[2], rows=fx[1], retail=fx[3],
+            p.pad_data(fx[0], 'unit', pieces=fx[2], rows=fx[1], retail=fx[3],
                        native_extents=original)
         self.assertEqual(fx[0].sections[1].sh_size, 4)
 
@@ -124,18 +123,6 @@ class BssAlignmentTests(unittest.TestCase):
                                                    {key: listed[('unit', 'object')]}):
                 self.assertEqual(self.apply(self.fixture(alignment=4, end=0x3040, size=4)), 4)
 
-    def test_listed_missing_next_native_object_does_not_supply_its_payload(self):
-        fx = self.fixture(alignment=4, end=0x3040, size=4)
-        listed = self.listed(fx)
-        listed[('unit', 'object')] = listed[('unit', 'object')][:6] + ((None,),)
-        fx[0].symtab.symbols.pop()
-        fx[0].sections.pop()
-        with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
-            self.assertEqual(self.apply(fx, held={'following'}), 64)
-        self.assertEqual(len(fx[0].sections), 2)
-        self.assertEqual(len(fx[0].symtab.symbols), 1)
-        self.assertEqual(fx[0].symtab.symbols[0].st_size, 4)
-
     def test_explicit_reservation_cannot_bypass_interior_evidence(self):
         for invalid in ('retail_relocation', 'native_relocation', 'declared', 'wrong_owner'):
             with self.subTest(invalid=invalid):
@@ -161,9 +148,9 @@ class BssAlignmentTests(unittest.TestCase):
                (rows[1][1], rows[1][0], rows[1][0] + 4)]
         pieces = NS(unit=lambda unit: [('.sbss', run)])
         with patch.object(p.layout, 'section_of', return_value='.sbss'):
-            p.pad_data(fx[0], 'another_unit', set(), pieces=pieces, rows=rows, retail=fx[3])
+            p.pad_data(fx[0], 'another_unit', pieces=pieces, rows=rows, retail=fx[3])
             self.assertEqual(fx[0].sections[1].sh_size, 4)
-            p.pad_data(fx[0], 'convviewlp', set(), pieces=pieces, rows=rows, retail=fx[3])
+            p.pad_data(fx[0], 'convviewlp', pieces=pieces, rows=rows, retail=fx[3])
             self.assertEqual(fx[0].sections[1].sh_size, 52)
 
     def test_listed_reservation_rejects_invalid_live_next_evidence(self):
@@ -183,54 +170,12 @@ class BssAlignmentTests(unittest.TestCase):
                 with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
                     self.assertEqual(self.apply(fx), 4)
 
-    def test_marker_exception_requires_retained_source_and_valid_placeholder(self):
-        for invalid in ('source', 'flags', 'type', 'size', 'alias'):
-            with self.subTest(invalid=invalid):
-                fx = self.fixture(alignment=4, end=0x3040, size=4)
-                listed = self.listed(fx)
-                listed[('unit', 'object')] = listed[('unit', 'object')][:6] + ((None,),)
-                with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
-                    self.assertEqual(self.apply(fx, held={'following'}, placeholders={2}), 64)
-                fx[0].sections[1].sh_size = 4
-                if invalid == 'flags': fx[0].sections[2].sh_flags = 0
-                elif invalid == 'type': fx[0].sections[2].sh_type = p.SHT_PROGBITS
-                elif invalid == 'size': fx[0].sections[2].sh_size = 8
-                elif invalid == 'alias': fx[0].symtab.symbols.append(symbol('alias', 2, 4))
-                with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
-                    held = set() if invalid == 'source' else {'following'}
-                    self.assertEqual(self.apply(fx, held=held, placeholders={2}), 4)
-
-    def test_retained_placeholder_accepts_only_equal_offset_declaration_aliases(self):
-        for declared in (1, 4):
-            with self.subTest(declared=declared):
-                fx = self.fixture(alignment=4, end=0x3040, size=4)
-                fx[1][-1] = (0x3040, 'following', declared, False)
-                fx[0].symtab.symbols.append(symbol('following', 2, declared))
-                listed = self.listed(fx)
-                listed[('unit', 'object')] = listed[('unit', 'object')][:6] + ((None,),)
-                with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
-                    self.assertEqual(self.apply(fx, held={'following'}, placeholders={2}), 64)
-        for invalid in ('name', 'offset', 'size', 'type', 'section'):
-            with self.subTest(invalid=invalid):
-                fx = self.fixture(alignment=4, end=0x3040, size=4)
-                alias = symbol('following', 2, 4)
-                fx[0].symtab.symbols.append(alias)
-                listed = self.listed(fx)
-                listed[('unit', 'object')] = listed[('unit', 'object')][:6] + ((None,),)
-                if invalid == 'name': alias.name = 'competing'
-                elif invalid == 'offset': alias.st_value = 1
-                elif invalid == 'size': alias.st_size = 8
-                elif invalid == 'type': alias.type = p.STT_FUNC
-                else: alias.st_shndx = 1
-                with patch.object(p, 'BSS_RETAIL_RESERVATIONS', listed):
-                    self.assertEqual(self.apply(fx, held={'following'}, placeholders={2}), 4)
-
     def test_stale_snapshot_rejects_current_next_section_exceeding_its_piece(self):
         fx = self.fixture(alignment=64, end=0x3040, size=4)
-        original = p.native_data_extents(fx[0], set())
+        original = p.native_data_extents(fx[0])
         fx[0].sections[2].sh_size = 128
         with patch.object(p.layout, 'section_of', return_value='.bss'):
-            p.pad_data(fx[0], 'unit', set(), pieces=fx[2], rows=fx[1], retail=fx[3],
+            p.pad_data(fx[0], 'unit', pieces=fx[2], rows=fx[1], retail=fx[3],
                        native_extents=original)
         self.assertEqual(fx[0].sections[1].sh_size, 4)
 

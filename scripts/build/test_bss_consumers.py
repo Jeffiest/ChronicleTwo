@@ -26,7 +26,7 @@ class LocalBssConsumerTests(unittest.TestCase):
 
     def apply(self, fixture):
         compiled, kwargs = fixture
-        return p.bss_data_names(compiled, 'unit', set(), **kwargs)
+        return p.bss_data_names(compiled, 'unit', **kwargs)
 
     def test_unique_local_suffix_and_complete_code_identify_bss(self):
         compiled, kwargs = self.fixture()
@@ -88,7 +88,7 @@ class LocalBssConsumerTests(unittest.TestCase):
                 kwargs['pieces'].unit = lambda unit: previous(unit) + [('.rodata', [('at_10', 0x4000, 0x4008)])]
                 kwargs['pieces'].layout.sections = lambda unit: [('.rodata', 0x4000, 0x4008)]
                 self.assertEqual(self.apply((compiled, kwargs)), {})
-                p.name_literal_data(compiled, 'unit', set(), **kwargs)
+                p.name_literal_data(compiled, 'unit', **kwargs)
                 self.assertEqual(compiled.symtab.symbols[0].name, 'at_1__2' if valid else 'at_999')
 
 

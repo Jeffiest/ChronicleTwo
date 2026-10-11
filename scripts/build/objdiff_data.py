@@ -255,7 +255,7 @@ def set_reference_data_symbols(elf, unit, ctx):
                 existing.type = p.STT_OBJECT
 
 
-def normalize_data_callbacks(elf, unit, ctx, function_identities, held, native_extents):
+def normalize_data_callbacks(elf, unit, ctx, function_identities, native_extents):
     """Keep fully verified local callback identities in data, preserving raw code."""
     ranges = [(lo, hi) for name, lo, hi in ctx.layout.sections(unit) if name in p.CODE]
     rows = {}
@@ -302,7 +302,7 @@ def normalize_data_callbacks(elf, unit, ctx, function_identities, held, native_e
             continue
         owner = owners[0]
         values = rows.get(owner.name, [])
-        if (owner.type != p.STT_OBJECT or owner.st_value or owner.name in held
+        if (owner.type != p.STT_OBJECT or owner.st_value
                 or len(values) != 1 or values[0][2] or not values[0][1]
                 or extents.get(id(owner)) != values[0][1]
                 or not values[0][1] <= len(section.data)
@@ -344,30 +344,24 @@ def normalize_data_callbacks(elf, unit, ctx, function_identities, held, native_e
 def prepare_native_data(elf, unit, ctx):
     """Normalize only compiler-emitted data; reservation arrays supply no credit."""
     before = code_snapshot(elf)
-    placeholders = {symbol.st_shndx for symbol in elf.symtab.symbols
-                    if symbol.name.endswith(layout.PLACEHOLDER_SUFFIX)
-                    and 0 < symbol.st_shndx < len(elf.sections)}
-    drop_sections(elf, placeholders)
-    native_extents = p.native_data_extents(elf, set())
-    source = Path(ctx.layout.source(unit)).read_text()
-    held = fallback_data_names(source)
+    native_extents = p.native_data_extents(elf)
     function_names = [(symbol, symbol.name) for symbol in elf.symtab.symbols
                       if 0 < symbol.st_shndx < len(elf.sections)
                       and elf.sections[symbol.st_shndx].sh_flags & p.SHF_EXECINSTR]
     anonymous = p.project_native_names(elf)
-    p.name_literal_data(elf, unit, set(), retail=ctx.retail, pieces=ctx.literal_pieces,
+    p.name_literal_data(elf, unit, retail=ctx.retail, pieces=ctx.literal_pieces,
                         addresses=ctx.addresses, rows=ctx.rows, padding_pieces=ctx.pieces)
-    p.materialize_alignment_fragments(elf, unit, set(), native_extents, held=held,
+    p.materialize_alignment_fragments(elf, unit, native_extents,
                                      retail=ctx.retail, pieces=ctx.pieces, rows=ctx.rows)
     for symbol in anonymous:
         if symbol.name.startswith('at_') and int(symbol.name.split('__')[0][3:]) >= 1 << 64:
             symbol.name = '.unmapped_' + symbol.name
             symbol.st_name = elf.strtab.add_symbol(symbol.name)
-    p.pad_data(elf, unit, set(), retail=ctx.retail, pieces=ctx.pieces, rows=ctx.rows,
-               native_extents=native_extents, held=held)
+    p.pad_data(elf, unit, retail=ctx.retail, pieces=ctx.pieces, rows=ctx.rows,
+               native_extents=native_extents)
     p.bind_suffixed_references(elf, unit)
-    p.pad_data(elf, unit, set(), retail=ctx.retail, pieces=ctx.pieces, rows=ctx.rows,
-               native_extents=native_extents, held=held)
+    p.pad_data(elf, unit, retail=ctx.retail, pieces=ctx.pieces, rows=ctx.rows,
+               native_extents=native_extents)
     renamed = p.retail_sections(elf, ctx.addresses, unit)
     own = [(lo, hi) for _name, lo, hi in ctx.layout.sections(unit)]
     for index, section in enumerate(elf.sections):
@@ -429,41 +423,9 @@ def prepare_native_data(elf, unit, ctx):
     for symbol, name in function_names:
         symbol.name = p.project_name(name)
         symbol.st_name = elf.strtab.add_symbol(symbol.name)
-    normalize_data_callbacks(elf, unit, ctx, function_identities, held, native_extents)
-    # A retained data marker explicitly keeps that piece assembly-supplied,
-    # even when the compiler happens to emit an otherwise identical copy.
-    drop_sections(elf, {symbol.st_shndx for symbol in elf.symtab.symbols
-                        if symbol.name in held and 0 < symbol.st_shndx < len(elf.sections)})
+    normalize_data_callbacks(elf, unit, ctx, function_identities, native_extents)
     if code_snapshot(elf) != before:
         raise ValueError(f'{unit}: data preparation changed code')
-
-
-def fallback_data_names(source):
-    """Recognize marker tokens outside comments and quoted literal contents."""
-    pattern = re.compile(
-        r'(?P<comment>/\*.*?\*/|//[^\n]*)|'
-        r'(?P<string>(?:u8|u|U|L)?R"(?P<delimiter>[^ ()\\\t\r\n]{0,16})'
-        r'\(.*?\)(?P=delimiter)"|(?:u8|u|U|L)?"(?:\\.|[^"\\])*")|'
-        r"(?P<char>(?:u8|u|U|L)?'(?:\\.|[^'\\])*')|"
-        r'(?P<identifier>[A-Za-z_]\w*)|(?P<punctuation>[^\s])', re.DOTALL)
-    tokens = [(match.lastgroup, match.group()) for match in pattern.finditer(source)
-              if match.lastgroup != 'comment']
-    names = set()
-    for index, (kind, token) in enumerate(tokens):
-        if kind != 'identifier':
-            continue
-        arguments = tokens[index + 1:index + 6]
-        if token == 'INCLUDE_BSS' and len(arguments) >= 3:
-            if arguments[0][1] == '(' and arguments[1][0] == 'identifier' and arguments[2][1] == ',':
-                names.add(arguments[1][1])
-        elif token == 'INCLUDE_RODATA' and len(arguments) == 5:
-            if (arguments[0][1] == '(' and arguments[1][0] == 'string'
-                    and arguments[2][1] == ',' and arguments[3][0] == 'identifier'
-                    and arguments[4][1] == ')' and arguments[3][1].endswith('__DATA')):
-                name = arguments[3][1][:-len('__DATA')]
-                if name:
-                    names.add(name)
-    return names
 
 
 def set_data_symbol_extents(elf, unit, ctx):

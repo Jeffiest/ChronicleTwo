@@ -1,8 +1,6 @@
 """Data callbacks may retain verified local identities without rewriting code."""
 
-from pathlib import Path
 import struct
-import tempfile
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -45,20 +43,17 @@ class DataCallbackTests(unittest.TestCase):
         ctx.literal_pieces = ctx.pieces
         return compiled, ctx
 
-    def prepare(self, compiled, ctx, source=''):
-        with tempfile.TemporaryDirectory() as directory:
-            cpp = Path(directory) / 'owner.cpp'
-            cpp.write_text(source)
-            ctx.layout = NS(source=lambda unit: cpp, kinds={'owner': 'cpp'},
-                            sections=lambda unit: [('.text', 0x1000, 0x2004),
-                                                   ('.data', 0x3000, 0x3004)])
-            with patch.object(d.p, 'name_literal_data'), \
-                 patch.object(d.p.layout, 'Layout', return_value=ctx.layout), \
-                 patch.object(d.p.layout, 'read_symbols', return_value=ctx.rows), \
-                 patch.object(d.p, 'retail_sections', side_effect=lambda obj, *args:
-                              {index: section.name for index, section in enumerate(obj.sections)
-                               if section.sh_flags & d.p.SHF_ALLOC}):
-                d.prepare_native_data(compiled, 'owner', ctx)
+    def prepare(self, compiled, ctx):
+        ctx.layout = NS(kinds={'owner': 'cpp'},
+                        sections=lambda unit: [('.text', 0x1000, 0x2004),
+                                               ('.data', 0x3000, 0x3004)])
+        with patch.object(d.p, 'name_literal_data'), \
+             patch.object(d.p.layout, 'Layout', return_value=ctx.layout), \
+             patch.object(d.p.layout, 'read_symbols', return_value=ctx.rows), \
+             patch.object(d.p, 'retail_sections', side_effect=lambda obj, *args:
+                          {index: section.name for index, section in enumerate(obj.sections)
+                           if section.sh_flags & d.p.SHF_ALLOC}):
+            d.prepare_native_data(compiled, 'owner', ctx)
 
     def test_local_callback_keeps_canonical_data_identity_and_original_code(self):
         compiled, ctx = self.fixture()
@@ -115,15 +110,6 @@ class DataCallbackTests(unittest.TestCase):
         self.prepare(compiled, ctx)
         self.assertEqual(compiled.relocations[1].relocations[0].symbol_index, 3)
         self.assertEqual(len(compiled.symtab.symbols), 4)
-
-    def test_held_callback_table_keeps_no_native_storage_or_alias(self):
-        compiled, ctx = self.fixture()
-        before = d.code_snapshot(compiled)
-        self.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", table__DATA);')
-        self.assertEqual(compiled.symtab.symbols[2].st_shndx, 0)
-        self.assertFalse(any(symbol.name == 'helper__Fv__2' for symbol in compiled.symtab.symbols))
-        self.assertEqual(d.code_snapshot(compiled), before)
-
 
 if __name__ == '__main__':
     unittest.main()

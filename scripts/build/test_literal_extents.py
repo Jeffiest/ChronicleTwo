@@ -31,7 +31,7 @@ class LiteralExtentTests(unittest.TestCase):
 
     def apply(self, fixture):
         elf, pieces, retail, rows = fixture
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             addresses={'table': 0x4000}, rows=rows)
         return elf.symtab.symbols[0].name
 
@@ -42,7 +42,7 @@ class LiteralExtentTests(unittest.TestCase):
         canonical = NS(unit=lambda unit: [('.rodata', [
             ('at_1', 0x3000, start), ('at_2', start, start + 12),
             ('D_0000302C', start + 12, start + 16)])])
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             padding_pieces=canonical, addresses={'table': 0x4000}, rows=rows)
         self.assertEqual(elf.symtab.symbols[0].name, 'at_2')
         self.assertEqual(len(elf.sections[1].data), 12)
@@ -52,7 +52,7 @@ class LiteralExtentTests(unittest.TestCase):
         fixture = self.fixture(native=8, declared=8, gap=8)
         elf, pieces, retail, rows = fixture
         canonical = NS(unit=lambda unit: [('.rodata', [('at_2', 0x3020, 0x3024)])])
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             padding_pieces=canonical, addresses={'table': 0x4000}, rows=rows)
         self.assertEqual(elf.symtab.symbols[0].name, 'at_999')
         self.assertEqual(len(elf.sections[1].data), 8)
@@ -105,7 +105,7 @@ class LiteralExtentTests(unittest.TestCase):
         elf, pieces, retail, rows = fixture
         symbols = NS(rows=rows, within=lambda lo, hi: [row for row in rows if lo <= row[0] < hi])
         canonical = p.disassemble.Pieces(lay=pieces.layout, symbols=symbols, references=[0x302c])
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             padding_pieces=canonical, addresses={'table': 0x4000}, rows=rows)
         self.assertEqual(elf.symtab.symbols[0].name, 'at_2')
         self.assertEqual(len(elf.sections[1].data), 12)
