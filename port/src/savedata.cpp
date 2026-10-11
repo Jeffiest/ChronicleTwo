@@ -5,7 +5,7 @@
 // The save record and the game options need no host code: every body in ps2/src/savedata.cpp
 // is plain data work - story flags and counters, the Georama numbers, the fishing tournament
 // schedule, the sub-games' records and SV_CONFIG_OPTION's defaults - and all of it compiles
-// and behaves the same on the host, so the weak definitions there stand. What the port adds
+// and behaves the same on the host, so the definitions there stand. What the port adds
 // around them lives elsewhere:
 //
 //  - port/src/memcard.cpp builds the save image (SAVEDATA_FORMAT) and carries it to and from

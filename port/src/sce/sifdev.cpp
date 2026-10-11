@@ -232,7 +232,7 @@ int sceGetstat(const char *name, struct sce_stat *stat) {
 }
 
 // The development kit's console drew its text into GS memory the port does not keep. It is
-// absent here, so the calls are stand-ins; the weak ps2/src/mglib.cpp font bodies (mgInitFont
+// absent here, so the calls are stand-ins; the ps2/src/mglib.cpp font bodies (mgInitFont
 // opens one, the frame's draw fills it) still link and stay harmless.
 void sceDevConsInit() {}
 

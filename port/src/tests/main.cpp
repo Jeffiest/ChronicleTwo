@@ -3,8 +3,8 @@
 #include "platform/settings.hpp"
 #include "platform/window.hpp"
 
-// A main of the tests' own rather than gtest_main's: the game's main is a weak definition in the
-// link, and an archive member is not pulled in to replace a symbol that is already defined.
+// A main of the tests' own rather than gtest_main's: the game's main is stripped from ps2/src's
+// unit by the tag on port/src/main.cpp's, which the tests do not link.
 int main(int argc, char **argv) {
     // The shared host tests run as this game: its environment variables and window identity.
     SettingsSetEnvPrefix("DC");

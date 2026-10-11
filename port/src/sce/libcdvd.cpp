@@ -11,7 +11,7 @@
 #include "cdvd_file.hpp"
 
 // The disc is the extracted tree again (cdvd_file.hpp). sceCdSearchFile resolves the names the
-// game asks for - the DATA.* pair behind the weak ps2/src/dataread.cpp bodies, MOVIE/*.PSS for
+// game asks for - the DATA.* pair behind the ps2/src/dataread.cpp bodies, MOVIE/*.PSS for
 // the movie player, a script's file for the CD_SEEK command - and hands back an lsn that names
 // the host file. The streaming group takes that lsn back, so here the lsn is a handle over a
 // file, never a disc address, and a streamed read is complete when it returns, as every host

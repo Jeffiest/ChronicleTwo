@@ -17,8 +17,8 @@
 // path's packet-layer functions. The count the game reads is the clock's tick count and every
 // wait pumps it, so the platform (window, input, audio) keeps moving while the game waits for its
 // next field. The VIF1 packet builder has no host counterpart, so the frame functions keep the
-// manager and frame state the game reads and leave the packet bytes to ps2/src's weak copies
-// elsewhere in the unit (mgSetPkMoveImage, mgStoreImage, the direct-draw entry points).
+// manager and frame state the game reads and leave the packet bytes to ps2/src's
+// definitions elsewhere in the unit (mgSetPkMoveImage, mgStoreImage, the direct-draw entry points).
 
 // A packet cursor with a home, so a write that lands before a mode has initialised the real
 // packet buffers cannot reach nothing. The size is one frame's packet - the game's menu sizes its
