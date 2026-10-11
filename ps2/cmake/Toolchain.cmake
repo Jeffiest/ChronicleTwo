@@ -31,6 +31,7 @@ set(CC_FLAGS -O3,p -strings readonly -c -Cpp_exceptions off -RTTI off
     -pragma "divbyzerocheck on" -i ${INCLUDE_DIR})
 # Units built with other optimization settings than the rest of the game. Each
 # list is appended after CC_FLAGS, so its options override CC_FLAGS'.
+set(UNIT_CC_FLAGS_mg_dataset -O2,p)
 set(UNIT_CC_FLAGS_mg_shadow -O2,p)
 set(UNIT_CC_FLAGS_mg_tanime -O2,p)
 set(UNIT_CC_FLAGS_mg_texture -O2,p)
