@@ -70,8 +70,7 @@ optional 6 -> +0x18 area_no (default 0 from memset).
 Getters: +0x0 GetMapName (+0x4 to `*title`), +0x4 GetMapTitle, +0x8 GetAddMapPath, +0xC GetMapType
 (-1 default), +0x10 GetMapSelType (0 default), +0x14 GetMapSndDataID (-1), +0x18 GetMapAreaNo (-1).
 `type` values seen: 1 (editloop: georama map, edit data saved/loaded, CreateTable), 5 (editloop
-EditMapJump: town with PartsOnOff), 2/4/6 (dngmenu CMenuTreeMap::Step). Meaning not established,
-so no enum; left `int`.
+EditMapJump: town with PartsOnOff), 2/4/6 (dngmenu CMenuTreeMap::Step). The values are the `MapType` enumerators (see the MapType section below; values follow Adubbz's map1.cfg reading).
 
 ## MapType
 `MapType` names the values `MAP_NAME_INFO::type` holds and `GetMapType` returns: 1 `MAP_TYPE_GEORAMA` (a

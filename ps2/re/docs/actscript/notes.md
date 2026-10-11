@@ -123,10 +123,10 @@ switch emits its own jump table.
 
 ## `_SHOT` floating-argument schedule
 
-Both the attack-type 40 and attack-type 90 branches finish their effect setup
+Both the `WEAPON_ATTACK_RIDEPOD_LASER` and `WEAPON_ATTACK_BEAM` branches finish their effect setup
 with `action_info.chara->effect_man->SetValue(4, 160.0f, 0, -1)`. Retail
 materializes the 160.0f argument before the `action_info` load only in the
-attack-type-90 call; the default MWCC schedule exchanges the `v0`/`v1`
+`WEAPON_ATTACK_BEAM` call; the default MWCC schedule exchanges the `v0`/`v1`
 registers for the constant and `action_info` loads at `_SHOT+0x8B0..+0x8C4`.
 Both calls have the same parsed shape (direct binary32 constant, same callee,
 receiver load, three integer constants), so a function/callee/value policy
