@@ -8,7 +8,7 @@
 #    whole-unit files name every section a unit could own; MWLD rejects any
 #    zero-sized input section.
 #    The same pass removes the sections scripts/build/postprocess_object.py
-#    marked `.dead`: the compiler's copies of data a placeholder supplies.
+#    marked `.dead`, which hold discarded copies of data.
 # 2. Restores the functions MWCC marked for the linker to keep one copy of.
 #    Their symbols are global in what the compiler wrote, but it places them
 #    among the locals, and every objcopy pass rebuilds the table from sh_info

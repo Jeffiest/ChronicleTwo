@@ -137,10 +137,10 @@ Literal identity uses declared objects; padding additionally uses the canonical
 reference boundaries, so an alignment tail cannot swallow a separately
 referenced word. Referenced interior addresses and explicit `D_<address>` source identifiers
 remain separate piece boundaries. A timestamp-preserving manifest tracks the
-global source-address set and splat's per-source definition, INCLUDE_ASM and
-INCLUDE_RODATA classifications. Adding or removing a cut or fallback refreshes
+global source-address set and splat's per-source function definitions. Adding
+or removing a cut refreshes
 the split before compiling; ordinary body and comment edits preserve it.
-The classifier follows the pinned splat comment/string and include syntax.
+The classifier follows the pinned splat comment and string syntax.
 A negative-addend table access cannot bind the table to a placeholder for the
 preceding word. Its original addend remains intact, and an established native
 name must agree with the inferred retail base. If the table itself has a
