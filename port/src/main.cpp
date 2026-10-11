@@ -153,7 +153,7 @@ void RequireData() {
         std::fprintf(stderr,
                      "no game data: %s %s; point --data (or DC_DATA) at the extracted disc, the "
                      "directory holding DATA.HD4 and DATA.DAT\n",
-                     root.c_str(), why);
+                     root.string().c_str(), why);
         std::exit(kExitNoData);
     }
 }

@@ -95,7 +95,7 @@ bool SafeRelative(std::string_view path) {
 // the sector boundary were overwritten too; they are zeroed rather than left as the caller's.
 bool ReadWhole(const cdvd::File &file, void *buffer) {
     if (!cdvd::ReadAt(file, 0, buffer, file.size)) {
-        std::fprintf(stderr, "cannot read %s\n", file.path.c_str());
+        std::fprintf(stderr, "cannot read %s\n", file.path.string().c_str());
         return false;
     }
 
@@ -209,7 +209,7 @@ void ReadIndex(const fs::path &hd4_path, const fs::path &dat_path, const fs::pat
     }
 
     if (past_end != 0) {
-        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT\n", root.c_str(),
+        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT\n", root.string().c_str(),
                      past_end);
     }
 }
@@ -274,7 +274,7 @@ void LoadIndex() {
     }
 
     if (error) {
-        std::fprintf(stderr, "%s: %s\n", root.c_str(), error.message().c_str());
+        std::fprintf(stderr, "%s: %s\n", root.string().c_str(), error.message().c_str());
     }
 
     if (plain_files.empty()) {

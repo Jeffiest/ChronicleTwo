@@ -4,6 +4,7 @@ $ErrorActionPreference = 'Stop'
 $root = Resolve-WindowsRoot $Root
 $build = Resolve-WindowsBuild $root $BuildDirectory
 $cmake = Find-WindowsTool cmake 'C:/Program Files/CMake/bin/cmake.exe'
+if (-not (Test-Path "$build/CMakeCache.txt")) { throw "no configured build in $build; run tools/windows/configure.ps1 first" }
 $targets = @('darkchronicle')
 if ($Tests) {
     # port/src/tests/CMakeLists.txt still names the test executable darkcloud_tests, as in the game this port was copied from.
