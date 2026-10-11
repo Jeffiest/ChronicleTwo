@@ -494,9 +494,6 @@ mgCDrawManager::mgCDrawManager() {
     unk_70 = 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCDrawManager::SetSortTable(int num) {
     float near_dist = 1.0f;
     float far_dist = 2.0f;
@@ -517,9 +514,6 @@ void mgCDrawManager::SetSortTable(int num) {
     sort_scale = sort_num_f;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
 #pragma opt_loop_invariants off
 #pragma global_optimizer off
 
@@ -631,8 +625,6 @@ void mgCDrawManager::PreEndDraw() {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma schedule off
 
 int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
     mgCTextureManager *manager = texture_manager;
@@ -657,9 +649,6 @@ int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
     return 1;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
 #pragma global_optimizer off
 
 int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
@@ -721,12 +710,6 @@ int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
     return 1;
 }
 
-#pragma global_optimizer reset
-#pragma schedule reset
-
-#pragma schedule off
-#pragma global_optimizer off
-
 void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
     int i;
     int group;
@@ -745,8 +728,6 @@ void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma schedule off
 
 void mgCDrawManager::AddPacket(int group, u_long128 *common, u_long128 *packet, int vu_program) {
     int            index;

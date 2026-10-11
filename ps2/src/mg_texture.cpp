@@ -441,9 +441,6 @@ void mgCTextureBlock::Add(mgCTexture *texture) {
     }
 }
 
-#pragma global_optimizer reset
-#pragma global_optimizer off
-
 void mgCTextureBlock::Delete(mgCTexture *texture) {
     mgCTexture *node = this->texture;
     mgCTexture *prev = NULL;
@@ -510,9 +507,6 @@ void mgCTextureManager::SetTableBuffer(int texture_count, int block_total, mgCMe
 
     hash_num = 0;
 }
-
-#pragma global_optimizer reset
-#pragma global_optimizer off
 
 void mgCTextureManager::Initialize(int start, int end) {
     int i;
