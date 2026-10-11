@@ -5222,7 +5222,7 @@ void CRemovalMenu::MakeNPCList() {
         status = MenuUserDataManPtr->GetPartyCharaStatus(i);
 
         if (status != 0 && ((i != 13 && i != 2) || GetNowChapter(GetSaveData()) >= 5) &&
-            status != 0 && !(status & 4)) {
+            status != 0 && !(status & PARTY_CHARA_STATUS_IN_HOUSE)) {
             npc_list[npc_num++] = i;
         }
 
@@ -5558,7 +5558,7 @@ int CRemovalMenu::KeyStep() {
                     break;
                 }
                 case REMOVAL_ACTION_MOVE_IN:
-                    MenuUserDataManPtr->SetPartyCharaStatus(select_npc, 4);
+                    MenuUserDataManPtr->SetPartyCharaStatus(select_npc, PARTY_CHARA_STATUS_IN_HOUSE);
                     house->npc_no[0] = select_npc;
                     MakeNPCList();
                     remake = 1;
