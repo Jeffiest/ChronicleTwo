@@ -3121,7 +3121,7 @@ int CheckEditToWalk(CScene *scene, float *position) {
 
     *(u_long128 *) position = *(u_long128 *) ground_hit;
 
-    if (polys[ground_index].area_kind != 9) {
+    if (polys[ground_index].area_kind != COL_AREA_EDIT_WALK) {
         return 0;
     }
 

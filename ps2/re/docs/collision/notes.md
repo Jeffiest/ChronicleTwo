@@ -27,6 +27,21 @@ fills it. Size: stride 0x50 in every loop (`CreateCollisionMDT`, `PickUpNearPoly
   `index | 0x1000`; copied with `lhu`.
 - 0x4A s16, 0x4C float: only copied (lh/sh, lwc1/swc1).
 
+## Area kinds (CCPoly::area_kind, enum CCPolyAreaKind)
+Values written from the MDT material's `diffuse[2]` and read by the game:
+- 0 ordinary ground.
+- 1 and 7 are water surfaces that characters splash in: `pot.cpp` (two switches) and
+  `gameutil.cpp` (`GetCPolyAttr`) treat both as water.
+- 7 is also the fishing water: `fishingobj.cpp` sets `ignore_mask |= 8` on these triangles, and
+  `fishing.cpp` tests 7 for the fishing line.
+- 5 is a flat floor that `dng_event.cpp` (SearchMapFlatPosition) stops at to place objects.
+- 11 (0xB) stops that same search, so the flat-floor search does not look below it.
+- 8 is a healing spot that `dng_main.cpp` tests for the player's characters except the ridepod.
+- 9 is ground from which `editmode.cpp` (CheckEditToWalk) lets edit mode walk out.
+
+`CreateCollisionMDT` tests the GS primitive with `MG_FACE_PRIM_MASK` and `MG_PRIM_TRIANGLE_STRIP`
+and rejects any primitive with `MG_FACE_COLOUR` set.
+
 ## CCollision (0x40), first game `CCollision`
 - 0x00 s32 `unk_00`: zeroed by Initialize, never read anywhere found.
 - 0x10 `mgVu0FBOX bbox` (max at 0x10, min at 0x20): `InsidePoint` -> `mgClipBoxVertex(p, max,
@@ -51,7 +66,7 @@ fills it. Size: stride 0x50 in every loop (`CreateCollisionMDT`, `PickUpNearPoly
   Intersection(base), PickUpNearPoly(MDT), Copy(base), Initialize(MDT), +24 new virtual
   `Copy(CCollisionMDT&, mgCMemory*)`. `CEditCollision` (editmap) has an identical vtable.
 - `Copy`: dest.bbox = bbox; dest.poly_count = poly_count; count < 1 -> dest.poly = 0; mem null
-  -> shares `poly`; else `new (Alloc(count*5+2)) CCPoly[count]`-style `__nwa(count*0x50, ...)`
+  -> shares `poly`; else `new (Alloc(count*5+2)) CCPoly[count]`, which emits the retail `__nwa(count*0x50, ...)` call
   and a 0x50-byte struct copy per element.
   The exact C++ copy indexes `poly[i]` and `dest.poly[i]`, then views each
   0x50-byte element as five `CollisionQuad` blocks for the retail quadword
@@ -100,8 +115,8 @@ Callers: mdslist `pcpMDS_END` (MDS kinds 1 and 3), CSphida/CTreasureBoxManager
 Reads raw MDT words (no MDT struct declared here): word 4 = vertex table offset (16-byte
 vertices), word 10 = primitive-list block offset (block +8 = list count, lists from +0x10),
 word 14 = material table offset (stride 0x60). Each list: [flags, index count, material],
-then index words, three per triangle. Returns null if any list has `(flags & 7) == 4` or
-`flags & 0x100`, or if the poly Alloc fails (the CCollisionMDT is leaked). Ends with virtual
+then index words, three per triangle. Returns null if any list has
+`MG_FACE_PRIM_MASK` bits equal to `MG_PRIM_TRIANGLE_STRIP` or has `MG_FACE_COLOUR` set, or if the poly Alloc fails (the CCollisionMDT is leaked). Ends with virtual
 CreateBBox (+8).
 
 ## Source status and implementation notes

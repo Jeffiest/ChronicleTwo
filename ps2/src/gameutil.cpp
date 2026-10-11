@@ -1956,8 +1956,8 @@ void GetCPolyAttr(MoveCheckInfo *info, float *from, float *to, float dy, CCPoly 
         kind = polys[hit_index[i]].area_kind;
 
         switch (kind) {
-            case 1:
-            case 7:
+            case COL_AREA_WATER:
+            case COL_AREA_FISHING_WATER:
                 info->crossed_area = 1;
                 info->signed_distance = mgDistVector(from, to);
 
@@ -1983,8 +1983,8 @@ void GetCPolyAttr(MoveCheckInfo *info, float *from, float *to, float dy, CCPoly 
         kind = polys[hit_index[i]].area_kind;
 
         switch (kind) {
-            case 1:
-            case 7:
+            case COL_AREA_WATER:
+            case COL_AREA_FISHING_WATER:
                 info->in_water = 1;
                 *(u_long128 *) info->water_surface = *(u_long128 *) hit_point[i];
                 break;

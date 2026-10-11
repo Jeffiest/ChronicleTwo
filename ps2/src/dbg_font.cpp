@@ -12,27 +12,10 @@
 
 /**
  *
- * Finds the first variadic argument after register-backed named arguments.
- *
- */
-static inline char *VaStart(char *stack_arguments, int named_arguments) {
-    int register_bytes;
-
-    if (named_arguments >= 8) {
-        register_bytes = 0;
-    } else {
-        register_bytes = (8 - named_arguments) * 8;
-    }
-
-    return stack_arguments - register_bytes;
-}
-
-/**
- *
  * Converts a Shift JIS character code to a JIS character code.
  *
  */
-unsigned long SjisToJis(unsigned long sjis) {
+static unsigned long SjisToJis(unsigned long sjis) {
     unsigned long hi = (sjis >> 8) & 0xFF;
     unsigned long lo = sjis & 0xFF;
 
@@ -61,7 +44,7 @@ unsigned long SjisToJis(unsigned long sjis) {
  * Converts a Shift JIS character code to a font serial number.
  *
  */
-unsigned long SjisToSerno(unsigned long sjis) {
+static unsigned long SjisToSerno(unsigned long sjis) {
     unsigned long jis = SjisToJis(sjis);
     unsigned long offset = 0xFFFFFFFFFFFFFFDFUL;
     unsigned long row = (jis >> 8) + offset;
@@ -74,7 +57,7 @@ unsigned long SjisToSerno(unsigned long sjis) {
  * Maps a single-byte character to its debug font serial number.
  *
  */
-unsigned long ascii2serno(u8 ch) {
+static unsigned long ascii2serno(u8 ch) {
     int code;
 
     code = ch & 0xFF;
@@ -91,9 +74,9 @@ unsigned long ascii2serno(u8 ch) {
         case 0xA5:
             return 0x212F;
         case 0xDE:
-            return 0x2134;
+            return DBG_FONT_SERNO_DAKUTEN;
         case 0xDF:
-            return 0x2135;
+            return DBG_FONT_SERNO_HANDAKUTEN;
         case 0xA7:
             return 0x21E6;
         case 0xA8:
@@ -206,7 +189,7 @@ unsigned long ascii2serno(u8 ch) {
             return 0x2238;
         case 0xA0:
         default:
-            return 0x227E;
+            return DBG_FONT_SERNO_UNKNOWN;
     }
 }
 
@@ -216,15 +199,15 @@ dbgCJISFont::dbgCJISFont() {
 
 void dbgCJISFont::Initialize() {
     texture_id[DBG_FONT_SHEET_FULL_WIDTH_0] = texture_id[DBG_FONT_SHEET_FULL_WIDTH_1] = texture_id[DBG_FONT_SHEET_HALF_WIDTH] = loaded_texture_id = -1;
-    texture_name[DBG_FONT_SHEET_FULL_WIDTH_0][0] = texture_name[DBG_FONT_SHEET_FULL_WIDTH_1][0] = texture_name[DBG_FONT_SHEET_HALF_WIDTH][0] = 0;
+    texture_name[DBG_FONT_SHEET_FULL_WIDTH_0][0] = texture_name[DBG_FONT_SHEET_FULL_WIDTH_1][0] = texture_name[DBG_FONT_SHEET_HALF_WIDTH][0] = '\0';
     x = y = 0;
     char_width = char_height = 16;
-    buffer[0] = 0;
+    buffer[0] = '\0';
     color[0] = color[1] = color[2] = color[3] = 128;
-    back_enable = 0;
+    back_enable = false;
     back_color[0] = back_color[1] = back_color[2] = 0;
     back_color[3] = 64;
-    shadow_enable = 0;
+    shadow_enable = false;
 }
 
 void dbgCJISFont::InitTexture(int full0_id, char *full0_name, int full1_id, char *full1_name, int half_id, char *half_name) {
@@ -237,7 +220,7 @@ void dbgCJISFont::InitTexture(int full0_id, char *full0_name, int full1_id, char
 }
 
 void dbgCJISFont::Clear() {
-    buffer[0] = 0;
+    buffer[0] = '\0';
 }
 
 void dbgCJISFont::__putc(unsigned long serno) {
@@ -274,9 +257,9 @@ void dbgCJISFont::__putc(unsigned long serno) {
 
         mgCDrawPrim prim;
         prim.Initialize(NULL, NULL);
-        prim.DepthTestEnable(0);
-        prim.AlphaTestEnable(0);
-        prim.AlphaBlendEnable(1);
+        prim.DepthTestEnable(false);
+        prim.AlphaTestEnable(false);
+        prim.AlphaBlendEnable(true);
 
         if (back_enable != 0) {
             prim.Begin(MG_PRIM_SPRITE);
@@ -286,7 +269,7 @@ void dbgCJISFont::__putc(unsigned long serno) {
             prim.End();
         }
 
-        prim.TextureMapEnable(1);
+        prim.TextureMapEnable(true);
 
         if (shadow_enable != 0) {
             prim.Begin(MG_PRIM_SPRITE);
@@ -346,7 +329,7 @@ void dbgCJISFont::PrintDirect(int start_x, int start_y, char *format, ...) {
     char *args = (char *) __builtin_next_arg(format) - (__builtin_args_info(2) >= 8 ? 0 : (8 - __builtin_args_info(2)) * 8);
     vsprintf((char *) text, format, args);
 
-    while ((ch = *cursor) != 0) {
+    while ((ch = *cursor) != '\0') {
         long code = ch;
 
         if (!(code & 0x80)) {
@@ -363,7 +346,7 @@ void dbgCJISFont::PrintDirect(int start_x, int start_y, char *format, ...) {
                 case 'E':
                     length = 0;
 
-                    while (length < 5 && cursor[length] != 0) {
+                    while (length < 5 && cursor[length] != '\0') {
                         escape[length] = cursor[length];
                         length++;
                     }
@@ -380,7 +363,7 @@ void dbgCJISFont::PrintDirect(int start_x, int start_y, char *format, ...) {
                         }
                     }
                 default:
-                    __putc(*cursor + 0x204D);
+                    __putc(*cursor + DBG_FONT_SERNO_ASCII);
                     cursor++;
                     break;
             }
