@@ -36,7 +36,7 @@ corners set to 1.0.
 - `CompGameData(a, b)`: compares `sort_table[CGameData::GetCommonData(id)->byte0]` (kind order);
   ids < 1 sort as 0x24 (last); ties by id; returns 1/-1/0.
 - `GetSameAdrressUserData(item, kind)`: only kind 0 searches; walks the bag array at `0x01EFC900`
-  (a CUserDataManager member, stride 0x6C) for `GetNowBagMax(1)` entries; returns index or -1.
+  (a CUserDataManager member, stride 0x6C) for `GetNowBagMax(ITEM_BOARD_ALL)` entries; returns index or -1.
 - `local_sort1(int &sel, int *num, int *list)`: shifts list[sel..num-1] down by one, `--*num`,
   decrements sel if > 0.
 - `GetNowChapter(CSaveData*)`: int at CSaveData+0x1A08 (scenario progress): <2 -> 0, 2/3 -> 1,
@@ -44,7 +44,7 @@ corners set to 1.0.
 - `MenuCalcBufAlignment`: same as the first game's (u_long128* rounded up to 64). Retail mangles
   `u_long128*` as `P1`.
 - `LoadFileMenu(char*, u_long128*, int mode)`: path = `"menu/"` + `langdirpathTable[LanguageCode]`
-  + name; mode 0 -> `LoadFileBG(path, buf, &size)`, 1 -> `LoadFile2(path, buf, &size, 0)`; returns
+  + name; `MENU_FILE_LOAD_BG` (0) -> `LoadFileBG(path, buf, &size)`, `MENU_FILE_LOAD_DIRECT` (1) -> `LoadFile2(path, buf, &size, LOAD_FILE_READ)`; returns
   size, -1 for null args. Callers pass only 0 or 1 (enum `MenuFileLoadMode`).
   The function-local `langdirpathTable` has seven entries: "0/", "1/", "2/",
   "3/", "4/", "5/", and "1/". Retail declares 0x1C bytes; the following
@@ -54,7 +54,7 @@ corners set to 1.0.
   Returns total bytes. `mode` is passed on to LoadFileMenu in $a2.
   `names` is a `char **`, but direct `names[i]` indexing changes the PAL loop's
   register allocation (99.18% at the same 0xC4 size); retaining the byte
-  offset remains necessary for an exact object.
+  offset remains necessary for an exact object. The pointer walk (`*names`, `names++`) also fails.
   Retaining the byte induction variable but indexing `names[i / 4]` scores
   97.12%; indexing with an unsigned shift scores 95.82%. Advancing a typed
   `char **` cursor scores 86.47%. All three compile to the same 0xC4-byte
@@ -63,7 +63,7 @@ corners set to 1.0.
   9-char codes become one byte from two hex digits looked up in the function-local
   `mes_cord_conv` table (16 pairs
   {char, nibble}); type 1 maps 'R' -> 0xBD, 'S' -> 0xBE.
-- `CheckNowEurope`: 1 when 0 < LanguageCode < 6 (see `LanguageCodeNo` in mainloop.hpp).
+- `CheckNowEurope`: true when `LANG_JAPANESE < LanguageCode < LANG_CHINESE` (see `LanguageCodeNo` in mainloop.hpp).
 - `MenuWorkTextureEnter(block, name, w, h, bpp)`: rounds w,h up to 64, `EnterTexture(block, name,
   NULL, w, h, bpp, NULL, 0, 0)`; result discarded (void; no caller reads $v0).
 - `MenuEnterIMG(block, img, suffix)`: copies suffix into `mgTexManager.name_suffix` (+0x1D8), or
@@ -143,6 +143,17 @@ The `fptosi` conversion used by this unit is the CodeWarrior runtime helper decl
 `mw_runtime.h`; using that header preserves the complete object.
 
 ## Matching source forms
+
+Forms that match the retail object:
+- `align16_blocks(bytes)` replaces the explicit `bytes & 0xF` rounding in the five allocation helpers
+  (`_MENU_TEXDATA_MALLOC`, `_MENU_FORM_MALLOC`, `_MENU_FORM_PARTNUM`, `_MENU_ACTION_TABLE_NUM`, `_MENU_PARTS_EFF_NUM`).
+- `_MENU_TEXNAME` reads `MenuCommonInfo->tex_block[index]` (`CMenuKeyFunc::tex_block`).
+- `Menu_Target_No` and `Menu_Target_No_local` are `short`, indexed with `+` and `++`.
+- Casts removed from `_MENU_TEXDATA` (`tex_block`), `_MENU_FORM_RGBA` (`rgba`) and `_MENU_FORM_PUTXY`.
+- `MenuCommonReadData` keeps the byte-offset walk over `names` (see above).
+
+Enum names in use: `MENUFORMPARTS_DTYPE_*`, `MENUFORM_RGBA_BIT_*`, `MENU_PARTS_EFFECT_FILLBOX`,
+`MenuFileLoadMode`, `LOAD_FILE_READ`, `SND_PORT_MENU`, `ITEM_BOARD_ALL`, `LANG_JAPANESE`, `LANG_CHINESE`.
 
 `_MENU_FORM_MALLOC` retains the explicit placement `operator new[]` call.
 Spelling the allocation as `new (block) CMenuPosDataForm[count]` removes the
