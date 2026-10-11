@@ -80,6 +80,10 @@ endif()
 # ps2/include that the compiler is pointed at instead of ps2/include (a header found beside the
 # one including it would win over any other directory, so the mirror holds all of them).
 set(WIN_REWRITE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/win_rewrite.py)
+set(HOST_SCRIPT_STORAGE ${CMAKE_SOURCE_DIR}/scripts/port/host_script_storage.py)
+set(HOST_SCRIPT_STORAGE_UNITS event.cpp actscript.cpp effscript.cpp runscript_opcodes.cpp)
+set(HOST_MENU_POINTERS ${CMAKE_SOURCE_DIR}/scripts/port/host_menu_pointers.py)
+set(HOST_PHOTO_NAMES ${CMAKE_SOURCE_DIR}/scripts/port/host_photo_names.py)
 set(WIN_REWRITE_UNITS "")
 set(PS2_INCLUDE ${CMAKE_SOURCE_DIR}/ps2/include)
 if(WIN32)
@@ -140,11 +144,32 @@ foreach(unit IN LISTS PS2_SOURCES)
     if(unit IN_LIST WIN_REWRITE_UNITS)
         set(win_rewrite COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} unit ${original} ${copy})
     endif()
+    set(script_storage "")
+    set(script_storage_deps "")
+    if(unit IN_LIST HOST_SCRIPT_STORAGE_UNITS)
+        set(script_storage COMMAND ${Python3_EXECUTABLE} ${HOST_SCRIPT_STORAGE} unit src/${unit} ${copy})
+        set(script_storage_deps ${HOST_SCRIPT_STORAGE} ${CMAKE_SOURCE_DIR}/port/include/script_storage.hpp)
+    endif()
+    set(menu_pointers "")
+    set(menu_pointer_deps "")
+    if(unit STREQUAL "menuop.cpp")
+        set(menu_pointers COMMAND ${Python3_EXECUTABLE} ${HOST_MENU_POINTERS} unit src/${unit} ${copy})
+        set(menu_pointer_deps ${HOST_MENU_POINTERS})
+    endif()
+    set(photo_names "")
+    set(photo_name_deps "")
+    if(unit STREQUAL "inventmn.cpp")
+        set(photo_names COMMAND ${Python3_EXECUTABLE} ${HOST_PHOTO_NAMES} ${copy})
+        set(photo_name_deps ${HOST_PHOTO_NAMES} ${CMAKE_SOURCE_DIR}/port/include/photo_name_storage.hpp)
+    endif()
     add_custom_command(OUTPUT ${copy}
         COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
             ${port_override_defines} ${original} ${copy}
         ${win_rewrite}
-        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${WIN_REWRITE_SCRIPT} ${header}
+        ${script_storage}
+        ${menu_pointers}
+        ${photo_names}
+        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${WIN_REWRITE_SCRIPT} ${header} ${script_storage_deps} ${menu_pointer_deps} ${photo_name_deps}
         COMMENT "Removing overridden definitions from ps2/src/${unit}"
         VERBATIM)
     list(APPEND PS2_UNITS ${copy})
@@ -188,6 +213,23 @@ target_compile_options(dc_options INTERFACE -ffp-contract=off)
 
 add_library(dc_ps2 OBJECT ${PS2_UNITS} ${PORT_OVERRIDES_CHECKED})
 target_link_libraries(dc_ps2 PRIVATE dc_options)
+add_custom_target(dc_compatibility_audit
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/compatibility_audit.py --check
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_script_storage.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_menu_pointers.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_photo_names.py
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Checking the host compatibility source inventory"
+    VERBATIM)
+add_dependencies(dc_ps2 dc_compatibility_audit)
+add_custom_target(dc_pointer_array_check
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_host_pointer_arrays.py
+        --generated ${CMAKE_BINARY_DIR}/ps2_src --host ${PORT_DIR}
+    DEPENDS ${PS2_UNITS}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Checking generated/native host pointer-array accesses"
+    VERBATIM)
+add_dependencies(dc_ps2 dc_pointer_array_check)
 if(WIN32)
     add_dependencies(dc_ps2 dc_ps2_include)
 endif()
@@ -301,6 +343,73 @@ if(EXISTS ${PORT_DIR}/main.cpp)
     include(GNUInstallDirs)
     install(TARGETS darkchronicle RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
+
+# Focused compatibility checks use the same objects as the executable.
+add_executable(dc_monster_memory_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/monster_memory_standalone.cpp)
+set_target_properties(dc_monster_memory_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+dc_link_game(dc_monster_memory_test)
+target_compile_options(dc_monster_memory_test PRIVATE -UNDEBUG)
+add_executable(dc_script_storage_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/script_storage.cpp)
+set_target_properties(dc_script_storage_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+dc_link_game(dc_script_storage_test)
+target_compile_options(dc_script_storage_test PRIVATE -UNDEBUG)
+add_executable(dc_input_lifecycle_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/input_lifecycle_test.cpp)
+set_target_properties(dc_input_lifecycle_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+dc_link_game(dc_input_lifecycle_test)
+target_compile_options(dc_input_lifecycle_test PRIVATE -UNDEBUG)
+add_executable(dc_color_capture_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/color_capture_standalone.cpp)
+set_target_properties(dc_color_capture_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+dc_link_game(dc_color_capture_test)
+target_compile_options(dc_color_capture_test PRIVATE -UNDEBUG)
+add_executable(dc_arena_memory_test EXCLUDE_FROM_ALL
+    ${PORT_DIR}/tests/mg_memory_arena_standalone.cpp ${PORT_DIR}/mg_memory.cpp)
+set_target_properties(dc_arena_memory_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+target_link_libraries(dc_arena_memory_test PRIVATE dc_options)
+add_executable(dc_menu_loader_test EXCLUDE_FROM_ALL
+    ${PORT_DIR}/tests/menu_loader_standalone.cpp ${PORT_DIR}/menucommon.cpp ${PORT_DIR}/mg_memory.cpp)
+set_target_properties(dc_menu_loader_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+target_link_libraries(dc_menu_loader_test PRIVATE dc_options)
+set(MENU_OPTION_FIXTURE ${CMAKE_BINARY_DIR}/tests/menu_option_body.cpp)
+add_custom_command(OUTPUT ${MENU_OPTION_FIXTURE}
+    COMMAND ${Python3_EXECUTABLE} ${HOST_MENU_POINTERS} fixture src/menuop.cpp
+        ${CMAKE_BINARY_DIR}/ps2_src/menuop.cpp ${MENU_OPTION_FIXTURE}
+    DEPENDS ${CMAKE_BINARY_DIR}/ps2_src/menuop.cpp ${HOST_MENU_POINTERS}
+    VERBATIM)
+add_executable(dc_menu_option_test EXCLUDE_FROM_ALL
+    ${PORT_DIR}/tests/menu_option_standalone.cpp ${MENU_OPTION_FIXTURE})
+set_target_properties(dc_menu_option_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+target_link_libraries(dc_menu_option_test PRIVATE dc_options)
+target_compile_options(dc_menu_option_test PRIVATE -UNDEBUG)
+add_executable(dc_villager_outputs_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/villager_outputs_standalone.cpp)
+set_target_properties(dc_villager_outputs_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+target_link_libraries(dc_villager_outputs_test PRIVATE dc_options)
+add_executable(dc_photo_name_storage_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/photo_name_storage_standalone.cpp)
+set_target_properties(dc_photo_name_storage_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+dc_link_game(dc_photo_name_storage_test)
+target_compile_options(dc_photo_name_storage_test PRIVATE -UNDEBUG)
+if(WIN32)
+    add_dependencies(dc_arena_memory_test dc_ps2_include)
+    add_dependencies(dc_menu_loader_test dc_ps2_include)
+    add_dependencies(dc_menu_option_test dc_ps2_include)
+    add_dependencies(dc_villager_outputs_test dc_ps2_include)
+endif()
+add_custom_target(dc_compatibility_tests
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_script_storage.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/tests/test_compatibility_audit.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/tests/test_host_pointer_arrays.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/run_compatibility_tests.py
+        --arena $<TARGET_FILE:dc_arena_memory_test>
+        --scripts $<TARGET_FILE:dc_script_storage_test>
+        --monsters $<TARGET_FILE:dc_monster_memory_test>
+        --input $<TARGET_FILE:dc_input_lifecycle_test>
+        --capture $<TARGET_FILE:dc_color_capture_test>
+        --menus $<TARGET_FILE:dc_menu_loader_test>
+        --options $<TARGET_FILE:dc_menu_option_test>
+        --villagers $<TARGET_FILE:dc_villager_outputs_test>
+        --photos $<TARGET_FILE:dc_photo_name_storage_test>
+    DEPENDS dc_arena_memory_test dc_script_storage_test dc_monster_memory_test dc_input_lifecycle_test dc_color_capture_test dc_menu_loader_test dc_menu_option_test dc_villager_outputs_test dc_photo_name_storage_test
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    VERBATIM)
 
 # The tests use an installed GoogleTest, or fetch one at configure time; a
 # build with neither turns them off.

@@ -14,6 +14,7 @@
 
 #include "gfx/gfx.hpp"
 #include "platform/clock.hpp"
+#include "color_capture.hpp"
 
 bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
@@ -80,6 +81,22 @@ mgCTexture *FindFrameTarget(int fbp) {
         }
     }
 
+    return NULL;
+}
+
+mgCTexture *FindCaptureTarget(const mgCTexture *source) {
+    mgCTextureManager *managers[2] = {mgDrawManager.texture_manager, &mgTexManager};
+    for (mgCTextureManager *manager : managers) {
+        if (manager == NULL || manager->blocks == NULL) continue;
+        for (int block = 0; block <= manager->block_max; ++block) {
+            mgCTexture *texture = block < manager->block_max ? manager->blocks[block].texture : manager->fix_block.texture;
+            for (; texture != NULL; texture = texture->next) {
+                if (texture == source || (texture->tex0.TBP0 == source->tex0.TBP0 &&
+                    texture->width == source->width && texture->height == source->height &&
+                    texture->tex0.PSM == source->tex0.PSM && texture->image[0] == NULL)) return texture;
+            }
+        }
+    }
     return NULL;
 }
 
@@ -459,6 +476,51 @@ PORT_OVERRIDE void mgGetFrameBackBuffer(mgCTexture *texture) {
 
     *texture = g_frame_tex;
     texture->tex0.TBP0 = draw_env->FBP * 32;
+}
+
+// The retail ABI has no capacity argument: its callers provide width*height*bpp/8 bytes.
+// New host callers use the bounded operation in color_capture.hpp directly when possible.
+PORT_OVERRIDE int mgStoreImage(mgCTexture *texture, u_long128 *buffer) {
+    if (texture == NULL || buffer == NULL) return 0;
+    int psm = texture->tex0.PSM;
+    int bpp = psm == SCE_GS_PSMCT32 ? 32 : psm == SCE_GS_PSMCT24 ? 24 :
+              (psm == SCE_GS_PSMCT16 || psm == SCE_GS_PSMCT16S) ? 16 : 0;
+    size_t bytes = port_capture::ImageBytes(texture->width, texture->height, bpp);
+    if (!bytes || bpp != texture->bpp || bytes > static_cast<size_t>(0x7FFFFFFF / 8)) {
+        std::fprintf(stderr, "mgStoreImage: unsupported color descriptor '%s' %dx%d bpp %d psm %d\n",
+                     texture->name, texture->width, texture->height, texture->bpp, psm);
+        std::abort();
+    }
+    // A synchronous CPU consumer cannot run ahead of a deferred display list. Returning a fake
+    // success, or letting ignored failures expose uninitialised photo pixels, is unsafe.
+    if (gfx::Recording() || gfx::InFrame()) {
+        std::fprintf(stderr, "mgStoreImage: synchronous color capture '%s' during recording/frame is unsupported\n",
+                     texture->name);
+        std::abort();
+    }
+    gfx::TextureHandle source = gfx::kNullTexture;
+    gfx::Rect rect{0, 0, texture->width, texture->height};
+    int fbp = texture->tex0.TBP0 >> 5;
+    bool screen = texture->image[0] == NULL &&
+                  (texture->tex0.TBP0 == (mgDBuff.draw0.frame1.FBP << 5) ||
+                   texture->tex0.TBP0 == (mgDBuff.draw1.frame1.FBP << 5));
+    if (screen) {
+        // Read the completed canonical tick, never the interpolated/window-sized display image.
+        source = gfx::kPreviousFrame;
+        rect.w = static_cast<int>(gfx::LogicalWidth());
+        rect.h = static_cast<int>(gfx::LogicalHeight());
+    } else {
+        mgCTexture *target = texture->image[0] == NULL ? FindCaptureTarget(texture) : texture;
+        gfx::TextureBinding binding;
+        if (target != NULL && PortMgTextureBinding(target, binding)) source = binding.texture;
+    }
+    if (source == gfx::kNullTexture ||
+        !port_capture::ReadColor(source, rect, texture->width, texture->height, bpp, buffer, bytes)) {
+        std::fprintf(stderr, "mgStoreImage: color readback failed for '%s' at GS page %d\n", texture->name, fbp);
+        std::abort();
+    }
+    // Retail returns bits, rather than bytes; keep that ABI for existing consumers.
+    return static_cast<int>(bytes * 8);
 }
 
 // Retail clears with a sprite over the game's screen that writes colour and a depth of 0. Nothing

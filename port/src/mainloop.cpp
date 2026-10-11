@@ -274,6 +274,10 @@ bool FrameBoundaryStop() {
 
 } // namespace
 
+void PortInitializePadBindings(int language) {
+    InitPadTable(language);
+}
+
 PORT_OVERRIDE int GetCaptureMode() {
     return CaptureMode;
 }
@@ -414,7 +418,7 @@ PORT_OVERRIDE void MainLoop() {
 
     mgSetUserVuProg(vu_prog, 16);
     mgSetUserVuProgAdr(0, Vu_prog_wtr);
-    InitPadTable(LanguageCode);
+    PortInitializePadBindings(LanguageCode);
     GameItemDataManage.LoadData();
     GameItemDataManage.LoadItemSystemMes(LanguageCode);
     LoadSystemMes();
@@ -435,7 +439,7 @@ PORT_OVERRIDE void MainLoop() {
     }
 
     LoadMonsterLanguage(LanguageCode);
-    InitPadTable(LanguageCode);
+    PortInitializePadBindings(LanguageCode);
     LanguageEquipChange();
     DebugGetItem(user_data, 0);
     CaptureMode = CAPTURE_OFF;

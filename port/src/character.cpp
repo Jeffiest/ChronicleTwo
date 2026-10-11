@@ -87,7 +87,7 @@ PORT_OVERRIDE void CCharacter2::SetDeformMesh() {
 }
 
 // charasetup.cpp's mem_table sizes the character stacks in PS2 16-byte blocks, but the host's
-// mgCFrame and mgCFace are wider than the PS2's 0x110-byte frame and 3-block face. Monica's skin
+// mgCFrame and motion visuals are wider than retail's runtime objects. Monica's skin
 // overran its 40000-block stack (stack over 40025/40000), mgCMemory::Alloc returned NULL and
 // CreateFace dereferenced it. The table keeps retail's shape with every size doubled; the pool
 // GetCharaMemAllocSize hands BuffCharacter grows from ~2.3 MB to ~4.6 MB, which the main buffer holds.

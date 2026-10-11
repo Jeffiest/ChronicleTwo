@@ -330,6 +330,19 @@ PORT_OVERRIDE int CGamePad::GetLY() {
     return AxisCalibration(pad[0].left_y);
 }
 
+// Retail's menu mode uses the left-stick threshold to add d-pad presses. The host also changes
+// how keyboard menu shortcuts are composed while that mode is active; keep the two lifecycles in
+// lockstep with the same callers that invoke these retail methods.
+PORT_OVERRIDE void CGamePad::MenuModeOn(int threshold) {
+    axis_threshold[0] = threshold;
+    InputSetMenuNavigation(true);
+}
+
+PORT_OVERRIDE void CGamePad::MenuModeOff() {
+    axis_threshold[0] = 0;
+    InputSetMenuNavigation(false);
+}
+
 // The PS2 yielded to its controller thread here. The host runs the game on one thread, and UpDate
 // has already stepped vibration in the thread's place.
 PORT_OVERRIDE void SwitchGamePadThread() {
