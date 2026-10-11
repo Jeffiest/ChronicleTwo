@@ -934,8 +934,8 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
     character->GetPosition(position);
     *(u_long128 *) velocity = *(u_long128 *) character->velocity;
     angle = camera->GetAngle();
-    stick_x = pad->Analog(5);
-    stick_y = pad->Analog(4);
+    stick_x = pad->Analog(PAD_ANALOG_LEFT_X_2);
+    stick_y = pad->Analog(PAD_ANALOG_LEFT_Y_2);
     speed_x = stick_x * cosf(angle) + stick_y * sinf(angle);
     speed_z = -stick_x * sinf(angle) + stick_y * cosf(angle);
     speed_x *= 5.0f * frame_rate;
@@ -1136,7 +1136,7 @@ static void CameraControl(CScene *scene, CPadControl *pad) {
 
                     if (pad != NULL) {
                         if (ViewMode == EDIT_VIEW_MODE_WALK) {
-                            eye_pressed = pad->Btn(6);
+                            eye_pressed = pad->Btn(PAD_BTN_R2);
                             photo_pressed = !photo_locked && pad->Btn(PAD_BTN_ACTION_SQUARE);
 
                             if (eye_pressed) {
@@ -1165,7 +1165,7 @@ static void CameraControl(CScene *scene, CPadControl *pad) {
                                 }
                             }
                         } else if (ViewMode == EDIT_VIEW_MODE_EYE || ViewMode == EDIT_VIEW_MODE_PHOTO) {
-                            if (pad->Btn(6) || pad->Btn(PAD_BTN_CANCEL)) {
+                            if (pad->Btn(PAD_BTN_R2) || pad->Btn(PAD_BTN_CANCEL)) {
                                 if (ViewMode == EDIT_VIEW_MODE_PHOTO) {
                                     EndTakePhoto();
                                 }
@@ -1478,7 +1478,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             LadderStep = EDIT_LADDER_STEP_HOLD;
             break;
         case EDIT_LADDER_STEP_HOLD:
-            if (pad->Analog(4) < -0.1f) {
+            if (pad->Analog(PAD_ANALOG_LEFT_Y_2) < -0.1f) {
                 LadderStep = EDIT_LADDER_STEP_CLIMB_UP;
                 change_motion = true;
 
@@ -1495,7 +1495,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
 
                 character->SetStep(0.0f);
                 LdrNext = 14.0f + position[1];
-            } else if (!(pad->Analog(4) <= 0.1f)) {
+            } else if (!(pad->Analog(PAD_ANALOG_LEFT_Y_2) <= 0.1f)) {
                 LadderStep = EDIT_LADDER_STEP_CLIMB_DOWN;
                 change_motion = true;
 
@@ -1528,7 +1528,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
                     if (!(position[1] < LdrNext)) {
                         position[1] = LdrNext;
 
-                        if (pad->Analog(4) < -0.1f) {
+                        if (pad->Analog(PAD_ANALOG_LEFT_Y_2) < -0.1f) {
                             character->SetMotion("\x82\xCC\x82\xDA\x82\xE8L", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                             LdrNext = 14.0f + position[1];
                         } else {
@@ -1568,7 +1568,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
                     if (position[1] <= LdrNext) {
                         position[1] = LdrNext;
 
-                        if (!(pad->Analog(4) <= 0.1f)) {
+                        if (!(pad->Analog(PAD_ANALOG_LEFT_Y_2) <= 0.1f)) {
                             character->SetMotion("\x8D\x7E\x82\xE8L", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                             LdrNext = position[1] - 14.0f;
                         } else {

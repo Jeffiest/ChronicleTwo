@@ -1737,8 +1737,8 @@ int sgLoopFishing(SubGameInfo *info) {
             break;
     }
 
-    oldPadRx = pad->Analog(5);
-    oldPadRy = pad->Analog(4);
+    oldPadRx = pad->Analog(PAD_ANALOG_LEFT_X_2);
+    oldPadRy = pad->Analog(PAD_ANALOG_LEFT_Y_2);
 
     if (NextCharaMode >= 0) {
         CharaMode = NextCharaMode;
@@ -2133,8 +2133,8 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
             }
 
             camera_angle = camera->GetAngle();
-            stick_y = pad->Analog(5);
-            stick_x = pad->Analog(4);
+            stick_y = pad->Analog(PAD_ANALOG_LEFT_X_2);
+            stick_x = pad->Analog(PAD_ANALOG_LEFT_Y_2);
             move_x = stick_y * cosf(camera_angle) + stick_x * sinf(camera_angle);
             move_z = -stick_y * sinf(camera_angle) + stick_x * cosf(camera_angle);
             move_x *= 3.5f;
@@ -2352,7 +2352,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
     }
 
     camera->Rotate(turn);
-    CastDist -= 5.0f * pad->Analog(4);
+    CastDist -= 5.0f * pad->Analog(PAD_ANALOG_LEFT_Y_2);
     max_dist = 240.0f * (0.5f * (1.0f + (float) RodData.status[0] / 100.0f));
     max_dist += 160.0f;
 
@@ -2418,7 +2418,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
 
     CastPoint.v[1] = cast_dir[1];
     CastPointCur.v[1] = cast_dir[1];
-    lean = 0.05f * -pad->Analog(5);
+    lean = 0.05f * -pad->Analog(PAD_ANALOG_LEFT_X_2);
     lean_abs = lean < 0.0f ? -lean : lean;
 
     if (!(lean_abs <= 0.01f)) {
