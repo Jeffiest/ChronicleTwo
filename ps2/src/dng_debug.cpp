@@ -130,7 +130,7 @@ void dngDebugStart() {
     GamePad__2.SetAutoRepeat(PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT, 15, 4);
     GamePad__2.SetAutoRepeat(PAD_UP | PAD_DOWN, 8, 1);
     dbinfo.saved_pause_flag = BattleAreaScene->pause_flag;
-    BattleAreaScene->pause_flag = 15;
+    BattleAreaScene->pause_flag = DNG_PAUSE_MONSTER_AI | DNG_PAUSE_PLAYER_STEP | DNG_PAUSE_PLAYER_CONTROL | DNG_PAUSE_FIELD_STEP;
 }
 
 void dngDebugDraw() {
@@ -294,8 +294,8 @@ int dngDebugKey() {
             floor = DngSaveDataDungeon->floor_id[dungeon];
             DngUserData->GetItem(GetGateKeyIndex(dungeon, floor), 1);
             DngUserData->GetItem(GetKeyDoorIndex(dungeon, floor), 1);
-            DngUserData->GetItem(0x132, 1);
-            DngUserData->GetItem(0x131, 1);
+            DngUserData->GetItem(ITEM_ID_MAGIC_CRYSTAL, 1);
+            DngUserData->GetItem(ITEM_ID_MAP, 1);
             dngDebugExit();
             return true;
         } else if (dbinfo.cursor == DNG_DEBUG_CMD_SOUND_FLAG) {

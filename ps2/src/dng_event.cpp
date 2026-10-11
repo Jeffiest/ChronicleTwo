@@ -888,7 +888,7 @@ int CTreasureBoxManager::CheckEvent(float *pos, float dist) {
 
 int GetGateKeyIndex(int dungeon, int floor) {
     if (dungeon == 4 && floor >= 17) {
-        return 345;
+        return ITEM_ID_ROPE;
     }
 
     return gatekey_index[dungeon];
@@ -896,7 +896,7 @@ int GetGateKeyIndex(int dungeon, int floor) {
 
 int GetKeyDoorIndex(int dungeon, int floor) {
     if (dungeon == 4 && floor >= 17) {
-        return 347;
+        return ITEM_ID_WHITE_WIND_VASE;
     }
 
     return keydoor_key_index[dungeon];
@@ -919,7 +919,7 @@ int Lamb2WolfManager() {
 
     form = info->equip[0].item_no;
 
-    if (form != 0x38 && form != 0x58) {
+    if (form != ITEM_ID_LAMBS_SWORD && form != ITEM_ID_ISLAND_KING) {
         return -1;
     }
 
@@ -929,7 +929,7 @@ int Lamb2WolfManager() {
         return -1;
     }
 
-    if (form == 0x58) {
+    if (form == ITEM_ID_ISLAND_KING) {
         object = chara->SearchObject("parts01");
 
         if (object != NULL) {
@@ -1720,11 +1720,11 @@ void AutoSetTreasureBox() {
 
                 if (box < 2) {
                     if (box == 0) {
-                        item0 = 306;
+                        item0 = ITEM_ID_MAGIC_CRYSTAL;
                     }
 
                     if (box == 1) {
-                        item0 = 305;
+                        item0 = ITEM_ID_MAP;
                     }
 
                     flags = 0x41;
@@ -2100,7 +2100,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     area->battle_clear = true;
     area->battle_bgm_state = DNG_BGM_MAP;
     area->battle_bgm_vol = 0.0f;
-    area->camera_mode = 0;
+    area->camera_mode = DNG_CAMERA_FOLLOW;
     area->pause_flag = 0;
     area->timer = 0;
     area->minimap_reveal = 0;
@@ -2110,7 +2110,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     area->practice_actions = 0;
     area->floor_status = 0;
     area->weather = DNG_WEATHER_NORMAL;
-    area->lock_on_mode = 0;
+    area->lock_on_mode = DNG_LOCK_ON_NEAREST;
     area->pause_flag |= DNG_PAUSE_PLAYER_STATUS;
     CheckItemDngKey();
     mgInitLighting();

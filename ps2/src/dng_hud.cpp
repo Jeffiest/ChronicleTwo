@@ -851,7 +851,7 @@ void CLockOnModel::Draw() {
         return;
     }
 
-    CHARA_ENTRY_OBJECT *entry = target->GetEntryObjectPos(0, 0, target_pos);
+    CHARA_ENTRY_OBJECT *entry = target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
 
     if (entry == NULL) {
         return;

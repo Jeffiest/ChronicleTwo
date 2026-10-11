@@ -44,7 +44,7 @@ entry 2 <-> `DebugInfo[0]` (mainloop), entry 3 <-> `DebugInfo[1]`, entry 5 <-> s
 `BattleAreaScene+0x9E`, entries 8..11 <-> dbinfo 0x10..0x1C.
 Entry 6 (Information) value is a `DNG_DEBUG_INFORMATION`: `DNG_DEBUG_INFORMATION_SYSTEM` (2)
 selects `DrawSystemParamInfo`, `DNG_DEBUG_INFORMATION_TARGET` (3) selects `DrawSystemParamInfo2`.
-`pause_flag = 15` sets DNG_PAUSE bits 0x1|0x2|0x4|0x8 (0x8 is unnamed in scenesnd.hpp).
+`pause_flag` is set to DNG_PAUSE_MONSTER_AI | DNG_PAUSE_PLAYER_STEP | DNG_PAUSE_PLAYER_CONTROL | DNG_PAUSE_FIELD_STEP (0x1|0x2|0x4|0x8).
 
 ## dngDebugKey actions (accept = pad 0x20)
 - 0 RunEvent: command=0, event_no=value, Exit, return 1.
