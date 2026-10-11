@@ -1,7 +1,7 @@
 # BSS reservation evidence
 
-Fresh raw linked compiles classify 162 BSS gaps. Two have original compiler
-alignment proof and need no reservation; the other 160 placements across 23
+Fresh raw linked compiles classify 157 BSS gaps. Two have original compiler
+alignment proof and need no reservation; the other 155 placements across 23
 units are explicit unresolved retail storage in
 `postprocess_object.py:BSS_RETAIL_RESERVATIONS`. One of them belongs to a
 function-local static: `CMenuChrCngMenu::KeyChangeMain` in `menuchr.cpp`
@@ -14,7 +14,7 @@ one does not explain that gap.
 |---|---:|---|
 | Native alignment | 2 | Exact following native extent and original alignment explain the gap. |
 | Four-byte placement | 148 | Retail small-data placement fits minimum-four-byte alignment; its original policy is unproved. |
-| Retained following marker | 8 | The following retail object has no native alignment proof. |
+| Retained following marker | 3 | The following retail object has no native alignment proof. |
 | Larger gap | 4 | Original following alignment contradicts the observed gap. |
 
 The four-byte group contains 146 scalar/guard slots and two aggregate slots:
@@ -107,8 +107,6 @@ list. Every other row is an unresolved placement.
 | convviewlp | `init_817` | 0x0037eac8 | 1 | 3 | `init_820` | 1 | Four-byte placement |
 | convviewlp | `init_820` | 0x0037eacc | 1 | 3 | `init_823` | 1 | Four-byte placement |
 | convviewlp | `init_823` | 0x0037ead0 | 1 | 3 | `init_826` | 1 | Four-byte placement |
-| dng_debug | `dbFont` | 0x01ecdc30 | 184 | 8 | `dbinfo` | none | Retained following marker |
-| dng_main | `nowload` | 0x01ee5210 | 60 | 4 | `at_941__2` | none | Retained following marker |
 | dng_main | `init_1107` | 0x0037d470 | 1 | 3 | `init_1824` | none | Retained following marker |
 | dngmenu | `dngfloor_infoview` | 0x0037d52c | 1 | 3 | `dngfloor_backdraw` | 1 | Four-byte placement |
 | dngmenu | `DngInfoFishOkFlag` | 0x0037d53c | 1 | 3 | `DngInfoSphidaOkFlag` | 1 | Four-byte placement |
@@ -247,8 +245,6 @@ list. Every other row is an unresolved placement.
 | title | `TitleOmakeFlag` | 0x0037e0cc | 2 | 2 | `TitleMCCheckBootMode` | 1 | Four-byte placement |
 | title | `TitlePhase` | 0x0037e038 | 2 | 2 | `TitlePushStart_AlphaPlus` | 2 | Four-byte placement |
 | title | `TitleMCActivePort` | 0x0037e024 | 2 | 2 | `TitleMCCheckNow` | 1 | Four-byte placement |
-| title | `DCSelectedMovie` | 0x0037e008 | 1 | 3 | `DCRuncherCounter` | none | Retained following marker |
-| title | `TitleRushWaitCountBoot` | 0x0037dfd4 | 1 | 3 | `TitleSelectInit` | none | Retained following marker |
 | title | `debug_start_drawflag` | 0x0037e098 | 1 | 3 | `HDDPhase` | 2 | Four-byte placement |
 | title | `TitleCopyRightDispPhase` | 0x0037e044 | 1 | 3 | `TitleCopyRightDispCounter` | 2 | Four-byte placement |
 | title | `TitleCopyRightDispCounter` | 0x0037e048 | 2 | 2 | `TitleSkipLogoFlag` | 1 | Four-byte placement |
@@ -256,7 +252,6 @@ list. Every other row is an unresolved placement.
 | title | `HDDConfirmType` | 0x0037e0a0 | 2 | 2 | `HDDnowDisplayImageNo` | 2 | Four-byte placement |
 | title | `HDDnowDisplayImageNo` | 0x0037e0a4 | 2 | 2 | `HDDDlBarDrawFlag` | 1 | Four-byte placement |
 | title | `HDDModeSelect` | 0x0037e0c8 | 2 | 2 | `TitleOmakeFlag` | 2 | Four-byte placement |
-| title | `TitleSkipLogoFlag` | 0x0037e04c | 1 | 3 | `Tex_TitleBG` | none | Retained following marker |
 | title | `TitleMCCheckBootMode` | 0x0037e0d0 | 1 | 3 | `TitleMCCheckPort` | 2 | Four-byte placement |
 | title | `TitleMCCheckPort` | 0x0037e0d4 | 2 | 2 | `TitleMCCheckPhase` | 2 | Four-byte placement |
 | title | `MasterDebugModeOn` | 0x0037dffc | 1 | 3 | `TitleBootEventNo` | 1 | Four-byte placement |
