@@ -419,7 +419,7 @@ void CRocketLauncher::Step() {
                 target = DngMainScene->GetCharacter(target_chara);
 
                 if (target != NULL) {
-                    target->GetEntryObjectPos(0, 0, target_pos);
+                    target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
                 }
             }
 
@@ -904,7 +904,7 @@ void CLaserGun::Step() {
                         CCharacter2 *chara = DngMainScene->GetCharacter(target_chara);
 
                         if (chara != NULL) {
-                            chara->GetEntryObjectPos(0, 0, target_pos);
+                            chara->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
                         }
                     }
 
@@ -1997,7 +1997,7 @@ void CRoboVoiceSystem::Step() {
             break;
 
         case ROBO_VOICE_PLAY:
-            if (CSnd.StreamGetState(ROBO_VOICE_STREAM_CHANNEL) == 0x8000) {
+            if (CSnd.StreamGetState(ROBO_VOICE_STREAM_CHANNEL) == SND_STREAM_STATE_END) {
                 CSnd.StreamClose(ROBO_VOICE_STREAM_CHANNEL);
                 status = ROBO_VOICE_WAIT;
                 stream_open = false;
