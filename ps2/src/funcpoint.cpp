@@ -749,7 +749,7 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
     count = 0;
     skip_unlit = 0;
 
-    if (mode & 1) {
+    if (mode & FUNC_POINT_LIGHT_CHARA) {
         skip_unlit = 1;
     }
 
@@ -785,7 +785,7 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
 
     GetEnd();
 
-    if ((mode & 3) == 3) {
+    if ((mode & (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) == (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) {
         GetStart(FUNC_POINT_FIRE);
         first = Get();
         point = first;
@@ -1172,7 +1172,7 @@ void DrawFireEffect(float (*lw_matrix)[4], CFuncPointMngr *mngr, CFuncPointCheck
                 frame.visual = sprite;
                 attr.no_cull = 1;
                 attr.draw = 3;
-                attr.fog = 2;
+                attr.fog = MG_FOG_BLACK;
                 frame.attr = &attr;
                 mgDrawDirect(&frame);
             }

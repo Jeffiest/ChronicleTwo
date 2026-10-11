@@ -1051,14 +1051,14 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
     character->GetPosition(event_position);
     character->GetRotation(event_rotation);
     CSceneEventData event;
-    event_check = 0;
+    event_check = MAP_EVENT_CHECK_TOUCH;
 
     if (pad->Btn(PAD_BTN_CONFIRM)) {
-        event_check = 1;
+        event_check = MAP_EVENT_CHECK_ACTION;
     }
 
     if (pad->Btn(PAD_BTN_ACTION_SQUARE)) {
-        event_check = 2;
+        event_check = MAP_EVENT_CHECK_ITEM;
     }
 
     if (scene->GetMapEvent(event_position, event_check, &event)) {

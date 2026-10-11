@@ -889,7 +889,7 @@ int CEditMap::RemoveEditParts(int index, float *pos, RemoveInfo *remove_info_opa
     }
 
     if (RemoveRiver(pos) != 0) {
-        river_info = GetePartsInfoAtType((int) EDIT_PARTS_TYPE_RIVER);
+        river_info = GetePartsInfoAtType(EDIT_PARTS_TYPE_RIVER);
 
         if (river_info != 0) {
             id = river_info->id;
@@ -1043,7 +1043,7 @@ CEditParts *CEditMap::PlaceEditParts(int index, EP_PLACE_INFO *place, float *pos
         return 0;
     }
 
-    if (edit_parts->GetPartsType() != (int) EDIT_PARTS_TYPE_RIVER) {
+    if (edit_parts->GetPartsType() != EDIT_PARTS_TYPE_RIVER) {
         if (!CreatePlaceLog(index, place)) {
             return 0;
         }
