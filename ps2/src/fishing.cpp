@@ -52,46 +52,47 @@ struct Vec4 {
 
 static void StepDataLoading(void *arg);
 
-enum {
-    kFishShapeCount = 5,
-    kFishShapeCircle = 2
+/**
+ *
+ * Number of shapes that a fish appearance place can take.
+ *
+ */
+enum FishPlaceAreaCount {
+    FISH_PLACE_AREA_COUNT = 5, /**< Shapes at or above this value are read as shape 0. */
 };
 
 const int kFishPlaceValueCount = 5;
 const int kFishPlaceMaxFish = 8;
 
-enum {
-    kUkiStart = 0,
-    kUkiWaitBite = 1,
-    kUkiPoke = 2,
-    kUkiPull = 3,
-    kUkiReeledIn = 4,
-    kUkiCharge = 5,
-    kUkiBite = 6,
-};
-
 /**
  *
- * Fishing modes selected for float bait and lures.
+ * Steps of the bait and lure bite sequence, as the static UkiMode holds them.
  *
  */
-enum {
-    kFishingModeFloat = 1,
-    kFishingModeLure = 2
+enum FISHING_UKI_MODE {
+    FISHING_UKI_MODE_START = 0,     /**< Resets the bite sequence and sets the wait before the next step. */
+    FISHING_UKI_MODE_WAIT_BITE = 1, /**< The float bobs on the water until a fish nibbles it. */
+    FISHING_UKI_MODE_POKE = 2,      /**< A fish touches the float and the rod pulls once, before the strike. */
+    FISHING_UKI_MODE_PULL = 3,      /**< The fish pulls the float and the player must press to hook it. */
+    FISHING_UKI_MODE_REELED_IN = 4, /**< The line is reeled in and the casting ends after a short delay. */
+    FISHING_UKI_MODE_CHARGE = 5,    /**< The lure is worked by button presses until a fish bites. */
+    FISHING_UKI_MODE_BITE = 6,      /**< A fish has bitten the lure and the player can hook it. */
 };
 
 const int kFishCameraState = 1000;
 
-enum {
-    kFishBtnCameraToggle = 6,
-    kFishBtnAction = 0x78,
-    kFishBtnReel = 0x79,
-    kFishBtnReelFast = 0x7A,
-};
-
-enum {
-    kFishAxisUp = 4,
-    kFishAxisSide = 5,
+/**
+ *
+ * Logical buttons that the fishing code reads from its CPadControl.
+ *
+ */
+enum FISHING_PAD_BTN {
+    FISHING_PAD_BTN_CAMERA_TOGGLE = 6, /**< Switches the camera between the float view and the player view. */
+    FISHING_PAD_BTN_DEBUG_JUMP = 1,    /**< Debug jump of the player during the debug movement. */
+    FISHING_PAD_BTN_CAST = 0x78,       /**< Starts a cast and confirms the casting point. */
+    FISHING_PAD_BTN_ACTION = 0x78,     /**< Charges the lure and confirms the fish result messages. */
+    FISHING_PAD_BTN_REEL = 0x79,       /**< Reels the line in. */
+    FISHING_PAD_BTN_REEL_FAST = 0x7A,  /**< Reels the line in quickly. */
 };
 
 int                InitUkiWait(CScene *scene);
@@ -124,12 +125,6 @@ int                StepLoadThread();
 void               DeleteLoadThread();
 void               DrawNumber(mgCDrawPrim *prim, int digit, int x, int y);
 int                InitCasting(CScene *scene);
-
-enum {
-    kPadButtonDebugJump = 1,
-    kPadButtonCancel = 1,
-    kPadButtonCast = 0x78
-};
 
 int InitSelectCastingPoint(CScene *scene);
 int CheckCasting(CScene *scene, float *position, float *direction);
@@ -178,25 +173,31 @@ static int EsaInfo[18] = {
  */
 static char *lure_file[4] = {"supina.chr", "kaeru.chr", "lure01.chr", "fork.chr"};
 
-enum {
-    kCameraSettled = 1000
+/**
+ *
+ * Index limit of the FishParam table.
+ *
+ */
+enum FishParamLimit {
+    FISH_PARAM_LAST_INDEX = 18, /**< Index of the last FishParam entry. */
 };
 
-enum {
-    kLastFishParam = 18
+/**
+ *
+ * Scheduling priority of the fishing data loading thread.
+ *
+ */
+enum FishingLoadPriority {
+    FISHING_LOAD_THREAD_PRIORITY = 10, /**< Priority of the thread that loads fishing data. */
 };
 
-enum {
-    kLoadThreadPriority = 10
-};
-
-enum {
-    kCharaModeReel = 6,
-    kCharaModeReel2 = 7,
-};
-
-enum {
-    kCaptureSeed = 0xC31AFF
+/**
+ *
+ * Random seed used by the fishing casting and capture code.
+ *
+ */
+enum FishingCaptureSeed {
+    FISHING_CAPTURE_SEED = 0xC31AFF, /**< Seed set while controller input is recorded or replayed, so the replay repeats. */
 };
 
 static void CharaControl(CScene *scene, CPadControl *pad);
@@ -995,7 +996,7 @@ static mgCMemory FishStack;
  *
  */
 static FISH_PARAM *GetFishParam(int index) {
-    if (index < 0 || index > kLastFishParam) {
+    if (index < 0 || index > FISH_PARAM_LAST_INDEX) {
         return NULL;
     }
 
@@ -1182,7 +1183,7 @@ int sgRestartFishing(SubGameInfo *info) {
     }
 
     if (info->rod_no == ITEM_ID_LURE_ROD) {
-        SetFishingMode(kFishingModeLure);
+        SetFishingMode(FISHING_MODE_LURE);
         EsaChara = NULL;
         char lure_path[0x40] = "sg/fish/";
         int  lure_no = LocalEsaNo - 14;
@@ -1212,7 +1213,7 @@ int sgRestartFishing(SubGameInfo *info) {
 
         LureNo = lure_no;
     } else {
-        SetFishingMode(kFishingModeFloat);
+        SetFishingMode(FISHING_MODE_BAIT);
         char *esa_path = GetItemFilePath(info->esa_no, 0);
 
         if (esa_path != NULL) {
@@ -1334,7 +1335,7 @@ int InitDataLoading() {
  *
  */
 int switch_thread() {
-    return RotateThreadReadyQueue(kLoadThreadPriority);
+    return RotateThreadReadyQueue(FISHING_LOAD_THREAD_PRIORITY);
 }
 
 /**
@@ -1357,7 +1358,7 @@ int CreateLoadThread(mgCMemory *memory) {
 
     param.entry = StepDataLoading;
     step_end_flag = 0;
-    param.initPriority = kLoadThreadPriority;
+    param.initPriority = FISHING_LOAD_THREAD_PRIORITY;
     param.option = 0;
     param.gpReg = &_gp;
     param.stack = (void *) ThreadStack;
@@ -2113,7 +2114,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
 
         if (camera != NULL) {
             switch (camera->Iam()) {
-                case kCameraSettled:
+                case CAMERA_KIND_CONTROL:
                     break;
                 default:
                     return;
@@ -2147,7 +2148,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                     move_z *= 3.0f;
                 }
 
-                if (pad->Btn(kPadButtonDebugJump) != 0) {
+                if (pad->Btn(FISHING_PAD_BTN_DEBUG_JUMP) != 0) {
                     velocity[1] = 8.0f;
                 }
             }
@@ -2199,7 +2200,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
             if (can_cast != 0 && CheckCasting(scene, position, cast_dir) != 0) {
                 ShowHelpMes(0x65, 1);
 
-                if (pad->Btn(kPadButtonCast) != 0 && InitSelectCastingPoint(scene) != 0) {
+                if (pad->Btn(FISHING_PAD_BTN_CAST) != 0 && InitSelectCastingPoint(scene) != 0) {
                     SetNextMode(FISHING_CHARA_MODE_SELECT_POINT);
                 }
             }
@@ -2245,7 +2246,7 @@ int InitSelectCastingPoint(CScene *scene) {
 
     camera = (CCameraControl *) scene->GetCamera(scene->active_camera);
 
-    if (camera == NULL || camera->Iam() != kCameraSettled) {
+    if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
         return 0;
     }
 
@@ -2258,7 +2259,7 @@ int InitSelectCastingPoint(CScene *scene) {
     param->far_height = 12.0f;
 
     if (GetCaptureMode() != 0) {
-        srand(kCaptureSeed);
+        srand(FISHING_CAPTURE_SEED);
     }
 
     LoadExMotionBG(GetNowSubGameInfo(), ReadBuffer);
@@ -2274,7 +2275,7 @@ int EndSelectCastingPoint(CScene *scene) {
     CCameraControl *camera = (CCameraControl *) scene->GetCamera(scene->active_camera);
     CCharacter2    *chara;
 
-    if (camera == NULL || camera->Iam() != kCameraSettled) {
+    if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
         return 1;
     }
 
@@ -2332,7 +2333,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
     }
 
     switch (camera->Iam()) {
-        case kCameraSettled:
+        case CAMERA_KIND_CONTROL:
             break;
         default:
             return;
@@ -2432,11 +2433,11 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
 
     ReadBG();
 
-    if (CastOKFlag != 0 && pad->Btn(kPadButtonCast) != 0) {
+    if (CastOKFlag != 0 && pad->Btn(FISHING_PAD_BTN_CAST) != 0) {
         if (InitCasting(scene) != 0) {
             SetNextMode(FISHING_CHARA_MODE_CASTING);
         }
-    } else if (pad->Btn(kPadButtonCancel) != 0) {
+    } else if (pad->Btn(PAD_BTN_CANCEL) != 0) {
         BreakReadBG();
 
         if (EndSelectCastingPoint(scene) != 0) {
@@ -2613,7 +2614,7 @@ void CastingLoop(CScene *scene, CPadControl *pad) {
  */
 int InitUkiWait(CScene *scene) {
     RodActFlag = 0;
-    UkiMode = kUkiStart;
+    UkiMode = FISHING_UKI_MODE_START;
     UkiModeCnt = 0;
     UkiCameraFlag = 0;
     return 1;
@@ -2676,7 +2677,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
     camera = (CCameraControl *) scene->GetCamera(scene->active_camera);
 
-    if (UkiMode == kUkiReeledIn) {
+    if (UkiMode == FISHING_UKI_MODE_REELED_IN) {
         UkiModeCnt += 1;
 
         if (UkiModeCnt > 15) {
@@ -2693,8 +2694,8 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     }
 
     moved = 1;
-    stick_side = pad->Analog(kFishAxisSide);
-    stick_up = pad->Analog(kFishAxisUp);
+    stick_side = pad->Analog(PAD_ANALOG_LEFT_X_2);
+    stick_up = pad->Analog(PAD_ANALOG_LEFT_Y_2);
 
     if (stick_up > 0.8f) {
         RodActFlag = 1;
@@ -2724,11 +2725,11 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     reel_held = 0;
     reel_sound = 7;
 
-    if (pad->Btn(kFishBtnReel) != 0) {
+    if (pad->Btn(FISHING_PAD_BTN_REEL) != 0) {
         reel_sound = 7;
         reel_result = ExtendLine(-1.0f);
         moved = reel_held = 1;
-    } else if (pad->Btn(kFishBtnReelFast) != 0) {
+    } else if (pad->Btn(FISHING_PAD_BTN_REEL_FAST) != 0) {
         reel_result = ExtendLine(-2.5f);
         moved = 1;
         reel_held = moved;
@@ -2736,7 +2737,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     }
 
     if (reel_result < 0) {
-        UkiMode = kUkiReeledIn;
+        UkiMode = FISHING_UKI_MODE_REELED_IN;
 
         if (chara != NULL) {
             chara->SetMotion("\x65\x78\x82\xC2\x82\xE8\x8A\xC6\x8E\x9D\x82\xBF\x97\xA7\x82\xBF", 0);
@@ -2754,7 +2755,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     chara->GetPosition(chara_pos);
 
     if (!(hari_pos[1] <= GetWaterLevel() - 3.0f)) {
-        if (GetFishingMode() == kFishingModeFloat) {
+        if (GetFishingMode() == FISHING_MODE_BAIT) {
             FishData.fish_no = -1;
         }
     }
@@ -2787,19 +2788,19 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     CastDistSizeRate = (dist - 160.0f) / 240.0f;
     CastDistSizeRate = 0.8f + 0.4f * CastDistSizeRate;
 
-    if (GetFishingMode() == kFishingModeFloat) {
+    if (GetFishingMode() == FISHING_MODE_BAIT) {
         ShowHelpMes(0x67, 1);
 
         switch (UkiMode) {
-            case kUkiStart:
+            case FISHING_UKI_MODE_START:
                 scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_EXCLAMATION);
                 UkiModeCnt = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 boze_cnt = 0;
-                UkiMode = kUkiWaitBite;
+                UkiMode = FISHING_UKI_MODE_WAIT_BITE;
                 hamon_count = 10;
-            case kUkiWaitBite:
+            case FISHING_UKI_MODE_WAIT_BITE:
                 if (moved != 0 || boze_cnt > 0x258) {
-                    UkiMode = kUkiStart;
+                    UkiMode = FISHING_UKI_MODE_START;
                 } else {
                     if (hamon_count <= 0) {
                         DrawHamon(uki_pos, 0.4f);
@@ -2811,24 +2812,24 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                     if (FishData.fish_no < 0) {
                         boze_cnt += 1;
                     } else if (UkiModeCnt <= 0) {
-                        UkiMode = kUkiPoke;
+                        UkiMode = FISHING_UKI_MODE_POKE;
                         UkiModeCnt = GetUkiPokeTime(&FishData);
                         pull_uki_cnt = 0;
                     }
                 }
 
                 break;
-            case kUkiPoke:
+            case FISHING_UKI_MODE_POKE:
                 if (moved != 0) {
-                    UkiMode = kUkiStart;
+                    UkiMode = FISHING_UKI_MODE_START;
                 } else {
                     if (UkiModeCnt <= 0) {
                         if (FishData.fish_no <= 0) {
-                            UkiMode = kUkiStart;
+                            UkiMode = FISHING_UKI_MODE_START;
                             break;
                         }
 
-                        UkiMode = kUkiPull;
+                        UkiMode = FISHING_UKI_MODE_PULL;
                         UkiModeCnt = GetUkiPullTime(&FishData);
                     }
 
@@ -2843,9 +2844,9 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 }
 
                 break;
-            case kUkiPull:
+            case FISHING_UKI_MODE_PULL:
                 if (FishData.fish_no <= 0) {
-                    UkiMode = kUkiStart;
+                    UkiMode = FISHING_UKI_MODE_START;
                 } else {
                     scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_EXCLAMATION);
 
@@ -2856,7 +2857,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                     GamePad__2.SetVibration(1, 0x96, 4);
 
                     if (UkiModeCnt <= 0) {
-                        UkiMode = kUkiStart;
+                        UkiMode = FISHING_UKI_MODE_START;
                     } else {
                         PullUki(10.0f);
                     }
@@ -2868,21 +2869,21 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
         ShowHelpMes(0x68, 1);
 
         switch (UkiMode) {
-            case kUkiStart:
+            case FISHING_UKI_MODE_START:
                 scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_EXCLAMATION);
                 RodActionPoint = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 act_count = 0;
-                UkiMode = kUkiCharge;
+                UkiMode = FISHING_UKI_MODE_CHARGE;
                 charge_point = 0;
                 act_interval = 0;
-            case kUkiCharge:
+            case FISHING_UKI_MODE_CHARGE:
                 if (act_count <= 0 && pushed != 0) {
                     RodActionPoint -= charge_point;
                     act_count = 0;
                     charge_point = 0;
                 }
 
-                if (pushed != 0 || pad->Btn(kFishBtnAction) != 0) {
+                if (pushed != 0 || pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
                     if (act_interval < 3) {
                         RodActionPoint = RodActionPoint + fptosi(3.0f * mgRnd());
                     } else {
@@ -2900,7 +2901,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 act_count -= 1;
 
                 if (FishData.fish_no >= 0 && RodActionPoint < 0) {
-                    UkiMode = kUkiBite;
+                    UkiMode = FISHING_UKI_MODE_BITE;
                     UkiModeCnt = 0x23;
                     DrawHamon(hari_now, 0.8f);
                     DrawSplash(hari_now, 0.5f);
@@ -2908,7 +2909,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 }
 
                 break;
-            case kUkiBite:
+            case FISHING_UKI_MODE_BITE:
                 if (UkiModeCnt < 0x20 && pushed != 0) {
                     caught = 1;
                 }
@@ -2917,7 +2918,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 GamePad__2.SetVibration(1, 0x96, 4);
 
                 if (UkiModeCnt <= 0) {
-                    UkiMode = kUkiStart;
+                    UkiMode = FISHING_UKI_MODE_START;
                 } else {
                     PullUki(10.0f);
                 }
@@ -2934,7 +2935,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
     camera->SetRotCameraCancel(CAMERA_ROT_CANCEL_AUTO_MOVE);
 
-    if (caught == 0 && GetFishingMode() == kFishingModeFloat) {
+    if (caught == 0 && GetFishingMode() == FISHING_MODE_BAIT) {
         GetUkiPos(camera_target[0], uki_pos2);
 
         if (!(camera_target[0][1] <= 1.0f + GetWaterLevel())) {
@@ -2955,8 +2956,8 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
         EditCameraControl(scene, pad, NULL);
     }
 
-    if (GetFishingMode() == kFishingModeFloat) {
-        if (pad->Btn(kFishBtnCameraToggle) != 0) {
+    if (GetFishingMode() == FISHING_MODE_BAIT) {
+        if (pad->Btn(FISHING_PAD_BTN_CAMERA_TOGGLE) != 0) {
             if (UkiCameraFlag == 0) {
                 UkiCamOldRot = camera->GetAngle();
                 UkiCameraFlag = 1;
@@ -3096,8 +3097,8 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
     }
 
     BattleBgmCnt += 1;
-    stick_side = pad->Analog(kFishAxisSide);
-    stick_up = pad->Analog(kFishAxisUp);
+    stick_side = pad->Analog(PAD_ANALOG_LEFT_X_2);
+    stick_up = pad->Analog(PAD_ANALOG_LEFT_Y_2);
     up_now = stick_up > 0.8f;
     right_now = stick_side > 0.8f;
     left_now = stick_side < -0.8f;
@@ -3185,7 +3186,7 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
 
     reel_result = 0;
 
-    if (pad->Btn(kFishBtnReel) != 0) {
+    if (pad->Btn(FISHING_PAD_BTN_REEL) != 0) {
         scene->loop_se.SeLoopPlayStop(FishSnd, 7, 2, 100);
         reel_result = ExtendLine(-1.0f);
         WindReel = 1;
@@ -3193,7 +3194,7 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
         WindReel = 0;
     }
 
-    if (pushed || pad->Btn(kFishBtnAction) != 0) {
+    if (pushed || pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
         ActionCount += 1;
         ActionDecCount = 10;
     }
@@ -3310,7 +3311,7 @@ int InitFalse(CScene *scene) {
     chance = 0.3f;
     chance *= 1.0f - 0.5f * RodData.status4_rate;
 
-    if (GetFishingMode() == kFishingModeLure) {
+    if (GetFishingMode() == FISHING_MODE_LURE) {
         chance *= 0.5f;
     }
 
@@ -3382,7 +3383,7 @@ void FalseLoop(CScene *scene, CPadControl *pad) {
         FalseMotionCount = 40;
     }
 
-    if (FalseStep > 0 && FalseMotionCount <= 0 && pad->Btn(kFishBtnAction) != 0) {
+    if (FalseStep > 0 && FalseMotionCount <= 0 && pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
         ExtendLine(-1000.0f);
         ResetLineVelo();
         EndSelectCastingPoint(scene);
@@ -3450,7 +3451,7 @@ int InitSuccess(CScene *scene) {
     FalseMotionCount = GetMotionCount(chara, "\x92\xDE\x82\xE8\x8F\xE3\x82\xB0\x8A\xEC\x82\xD1", 20, 300, 0);
     save_data = GetSaveData();
 
-    if (GetFishingMode() == kFishingModeFloat) {
+    if (GetFishingMode() == FISHING_MODE_BAIT) {
         DeleteEsa();
     }
 
@@ -3570,7 +3571,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
     static int font_h = 0;
 
     if (FalseStep == 1) {
-        if (FalseMotionCount <= 0 && pad->Btn(kFishBtnAction) != 0) {
+        if (FalseMotionCount <= 0 && pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
             if (message->select < 0) {
                 message->cursor_time = 0;
             }
@@ -3613,7 +3614,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
     if (FalseStep == 2) {
         ClsMes *result_message = scene->GetMessage(1);
         int     state = result_message->State();
-        int     confirm = pad->Btn(kFishBtnAction);
+        int     confirm = pad->Btn(FISHING_PAD_BTN_ACTION);
 
         switch (FalseStep2) {
             case 0:
@@ -4272,7 +4273,7 @@ int FISH_PLACE_MAP::CheckFishPlace(float *pos) {
     mgZeroVector(center);
 
     switch (area_type) {
-        case kFishShapeCircle:
+        case FISH_PLACE_AREA_CIRCLE:
             center[0] = area_param[0];
             center[2] = area_param[1];
             float dist = mgDistVectorXZ(center, pos);
@@ -4348,7 +4349,7 @@ static int fpFISH_PLACE(SPI_STACK *args, int arg_count) {
 
     area_type = spiGetStackInt(args++);
 
-    if (area_type < 0 || area_type >= kFishShapeCount) {
+    if (area_type < 0 || area_type >= FISH_PLACE_AREA_COUNT) {
         area_type = 0;
     }
 
