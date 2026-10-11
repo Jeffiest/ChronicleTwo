@@ -252,7 +252,7 @@ void MenuChapterDraw() {
     mgRect<int> source;
     prim.offset_x = 0;
     prim.offset_y = 0;
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     prim.Begin(MG_PRIM_SPRITE);
 
     if (MenuChapterBG != NULL) {

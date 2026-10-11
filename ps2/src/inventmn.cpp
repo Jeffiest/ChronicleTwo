@@ -2107,7 +2107,7 @@ void CMenuInvent::LoadCharaCheck() {
                 poly_chr_form[0]->SetActionCharaPtr(NULL, tex_block[1], -1);
             }
 
-            MenuLoadInfo.mode = 1;
+            MenuLoadInfo.mode = MENU_LOAD_MODE_INVENT;
             MenuLoadInfo.load_all = true;
             MenuLoadInfo.chara_no = 0;
             MenuLoadInfo.update_scene = false;
@@ -2804,7 +2804,7 @@ void CMenuInvent::InitEnd() {
 
     cursor_snap = true;
     ExeScript("INIT_END");
-    MenuItemBrdCalcManner = 0;
+    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
 }
 
 void CMenuInvent::ExitEnd() {
@@ -3782,11 +3782,11 @@ int CMenuInvent::IsMakeObject(int keys, int button) {
                 int koma[10] = {256, 225, 100, 100};
                 MenuPosData->GetPosMenuItemBrdKoma(koma, make_space_no, 0);
                 mgCTexture *effect_tex = MenuPosData->icon_effect_tex;
-                MenuEffect[0]->PresetEffect(&MenuCharaLoadStack, effect_tex, 0, koma);
+                MenuEffect[0]->PresetEffect(&MenuCharaLoadStack, effect_tex, MENU_EFFECT_TYPE_GATHER, koma);
                 MenuEffect[0]->EffectStart();
                 koma[2] = 32;
                 koma[3] = 40;
-                MenuEffect[1]->PresetEffect(&MenuCharaLoadStack, effect_tex, 4, koma);
+                MenuEffect[1]->PresetEffect(&MenuCharaLoadStack, effect_tex, MENU_EFFECT_TYPE_FLASH, koma);
                 MenuEffect[1]->EffectStart();
                 MenuCommonInfo->SetVibeR(6, 4);
 
@@ -5659,7 +5659,7 @@ void MenuInventCreateCardDraw(int &tex_block, float *pos) {
         int          origin[2] = {(int) pos[0], (int) pos[1]};
         put_rect.Set(origin[0], origin[1], card_rect.right, card_rect.bottom);
         u8 rgba[4] = {0x80, 0x80, 0x80, 0x80};
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Bilinear(true);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(texture);
@@ -5736,7 +5736,7 @@ void PictureDraw(mgCTexture *tex, USER_PICTURE_INFO *photo, float x, float y, fl
     }
 
     prim = GetMenuPrim();
-    SetSpriteEnv(prim, 1);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR);
     prim->Shading(false);
     prim->AntiAliasing(true);
     prim->Begin(MG_PRIM_SPRITE);
@@ -5764,7 +5764,7 @@ void PictureDraw(mgCTexture *tex, USER_PICTURE_INFO *photo, float x, float y, fl
     prim->Vertex(x - 2.0f, (y - 2.0f) - 1.0f, 0.0f);
     prim->Vertex(right - 1.0f, bottom - 1.0f, 0.0f);
     prim->End();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->AntiAliasing(true);
     prim->Bilinear(true);
     prim->AlphaTestEnable(false);
@@ -5786,7 +5786,7 @@ static void PictureMemoOne(float x, float y, int alpha) {
     mgCDrawPrim *prim;
 
     prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(true);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_Hatsumei);
@@ -5871,7 +5871,7 @@ void MenuInventPictureBoardDraw(float *pos, int &tex_block, int alpha) {
         PictureDraw(CMenuInventPt->photo_tex[i], photo, x, y, 0.7f, alpha, 0x80, 0x80, 0x80);
 
         if (*(s8 *) &photo->is_new != 0) {
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_Hatsumei);
             prim->Color(0x80, 0x80, 0x80, alpha);
@@ -6002,7 +6002,7 @@ void MenuInventNetaMemoDraw(float *origin, int &loaded_tex) {
         left = 16.0f + origin[0];
         row_y = 2.0f + (24.0f + CMenuInventPt->memo_scroll);
         prim = GetMenuPrim();
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Tex_Hatsumei);
         prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -6024,7 +6024,7 @@ void MenuInventNetaMemoDraw(float *origin, int &loaded_tex) {
         prim->End();
         ResetMenuScissor();
         bar_rect.Set(0x90, 0x166, 8, 0x1C);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Tex_Hatsumei);
         prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -6278,7 +6278,7 @@ int MenuInventInit(mgCMemory *memory, int *tex_block, int arg) {
     switch (CMenuInventPt->photo_only) {
         case 1:
             CMenuInventPt->key_arg_no = INVENT_MODE_PHOTO_VIEW;
-            MenuMainFrameModeSet(1, 1);
+            MenuMainFrameModeSet(MENU_MAIN_FRAME_CLOSE, true);
             ReturnMenuIntern(1);
             MenuMesForm[0]->draw_flag = false;
             CMenuPosDataForm *image_form = MenuPosData->GetFormInfo("mainpureimage");
@@ -6299,7 +6299,7 @@ int MenuInventInit(mgCMemory *memory, int *tex_block, int arg) {
                                      "0");
             CMenuInventPt->PrepareNextMode(CMenuInventPt->key_arg_no);
             CMenuInventPt->GradationSet(INVENT_GRADATION_OFF);
-            MenuMainFrameModeSet(6, 1);
+            MenuMainFrameModeSet(MENU_MAIN_FRAME_LEAVE_DOWN, true);
             SetSpectolInfo(NULL, NULL);
             break;
     }
@@ -6334,7 +6334,7 @@ int MenuInventInit(mgCMemory *memory, int *tex_block, int arg) {
     CheckEnableHaveItemNum();
     InventInNetaEffectFlag = false;
     InitMenuDl(NULL, 0);
-    SetModeMenuDrawItemBoard(0);
+    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_BAG);
     return 1;
 }
 
@@ -7167,7 +7167,7 @@ static int MenuInventPushKey(int pad, int pushed) {
                 break;
             case INVENT_KEY_COMMAND_RETURN_HELD: {
                 MENU_SWAPITEM_INFO held_info;
-                held_info.Set(-1, 0, -1, 0);
+                held_info.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
                 memcpy(&held_info, &MenuCommonInfo->have_swap, sizeof(held_info));
                 CGameDataUsed *source = GetGameDataUsedForSWAPINFO(&held_info);
                 CGameDataUsed  source_copy;
@@ -7333,7 +7333,7 @@ static int MenuInventPushKey(int pad, int pushed) {
                 } while (i < 3);
             } else {
                 CMenuInventPt->ExeScript("\x91\x4f\x8f\x49\x97\xb9\x8f\x88\x97\x9d");
-                MenuMainFrameModeSet(7, 0);
+                MenuMainFrameModeSet(MENU_MAIN_FRAME_RETURN_DOWN, false);
                 ReturnMenuIntern(0);
             }
         }

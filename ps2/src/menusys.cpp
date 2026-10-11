@@ -142,19 +142,6 @@ struct MenuCharaReadBuffers {
     u_int *outline; /**< Loaded outline data. */
 };
 
-void                 MenuWeaponStatusInfoFormSet(CGameDataUsed *item, CDataWeapon *data);
-int                  ReadBGSync();
-
-int         AfterSpectolFusion(CGameDataUsed *item, CGameDataUsed *part);
-void        local_item_infoview_set(MENUFORMPARTS_TYPE *part, CGameDataUsed *item);
-int         MenuItemSelectDiffer(int select);
-void        MenuItemCharaActWepInfoDraw(CMenuPosDataForm *form, CGameDataUsed *equip, int chara_no, int flag);
-int         MenuAquaKey();
-int         NameRegistKey();
-int         MenuNPCQuestViewKey();
-void        MenuAquaDraw();
-void        NameRegistDraw();
-void        MenuNPCQuestViewDraw();
 static void MenuItemDebugDraw();
 static void MenuPosFormValueSetCharaRobo(ROBO_DATA *robo, int flag);
 
@@ -846,7 +833,7 @@ void DrawTrushMenuMessage() {
 CBaseMenuClass::CBaseMenuClass() {
     int i;
 
-    swap_info.Set(-1, 0, -1, 0);
+    swap_info.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
     memset(this, 0, sizeof(CBaseMenuClass));
     opened = false;
     mode = MENU_ASK_MODE_OPEN;
@@ -1852,7 +1839,7 @@ int CBaseMenuClass::IsSpectolTrans(int select_key, int push_button) {
             int          effect_type = effect->type;
 
             if (effect->end) {
-                if (effect_type == 18) {
+                if (effect_type == MENU_EFFECT_TYPE_SPECTOL_BREAK) {
                     TransSpectolDataSave(ask_para.item, SpectolBreakNum);
                     trans_spectol_pos = MenuSpectolTransPos;
                     ask_para.item2 = MenuUserDataManPtr->GetUsedDataPtr(trans_spectol_pos);
@@ -1860,13 +1847,13 @@ int CBaseMenuClass::IsSpectolTrans(int select_key, int push_button) {
 
                 spegetflag = false;
 
-                if (effect_type == 20) {
+                if (effect_type == MENU_EFFECT_TYPE_SPECTOL_GATHER) {
                     result = 3;
                     break;
                 }
             }
 
-            if (spegetflag == false && effect_type == 20) {
+            if (spegetflag == false && effect_type == MENU_EFFECT_TYPE_SPECTOL_GATHER) {
                 MENU_EFFECT_INFO *info = &MenuEffect[0]->info[111];
 
                 if (info->shrinking == 1.0f || !(info->ring_size < 29.0f)) {
@@ -4602,7 +4589,7 @@ int CMenuKeyFunc::ReturnItemMenu(int hide) {
 
 void CMenuKeyFunc::InitHaveData() {
     have_item.Init();
-    have_swap.Set(-1, 0, -1, 0);
+    have_swap.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
     SetHaveItemInfo(0, 1);
 }
 
@@ -5297,7 +5284,7 @@ CGameDataUsed *CMenuItemInfo::SearchNowPosItemExist() {
 
 void CMenuItemInfo::IsCancelNoneLoadItem() {
     MENU_SWAPITEM_INFO swap;
-    swap.Set(-1, 0, -1, 0);
+    swap.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
     memcpy(&swap, &MenuCommonInfo->have_swap, sizeof(swap));
     swap.flag = 0;
     CGameDataUsed *target = GetGameDataUsedForSWAPINFO(&swap);
@@ -5357,7 +5344,7 @@ int CMenuItemInfo::IsCancelLoadItem() {
         }
 
         MENU_SWAPITEM_INFO swap;
-        swap.Set(-1, 0, -1, 0);
+        swap.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
         memcpy(&swap, &MenuCommonInfo->have_swap, sizeof(swap));
         swap.flag = 0;
         CGameDataUsed *target = GetGameDataUsedForSWAPINFO(&swap);
@@ -6876,7 +6863,7 @@ void CMenuItemInfo::ExitEnd() {
     MenuPosData->TexGetInfoClear(0x5A, 0x100);
     MenuPosData->EtcTblClear(0x1E, 0x60);
     MenuCommonInfo->have_item.Init();
-    MenuMainFrameModeSet(0, 0);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, false);
 }
 
 void CMenuItemInfo::AttachFormInfo() {
@@ -7579,18 +7566,18 @@ void CBaseMenuClass::EffectDrawCheck(CMenuPosDataForm *form) {
     if (mode == MENU_ASK_MODE_SPECTOL && step == 1) {
         if (part != NULL) {
             switch (effect_type) {
-                case 19:
+                case MENU_EFFECT_TYPE_SPECTOL_FLASH:
                     trans_spectol_posold = ask_para.arg0;
                     trans_spectol_rgb = (int) (128.0f + 96.0f * sinf(0.05235988f * trans_spectol_cnt));
                     trans_spectol_cnt += 1.0f;
                     part->rgba[3] = (s8) trans_spectol_rgb;
                     break;
-                case 18:
+                case MENU_EFFECT_TYPE_SPECTOL_BREAK:
                     part->draw_flag = false;
                     part = &form->parts[trans_spectol_posold];
                     part->rgba[3] = 0x80;
                     break;
-                case 20:
+                case MENU_EFFECT_TYPE_SPECTOL_GATHER:
                     part->draw_flag = false;
 
                     if (spegetflag != 0) {
@@ -7601,7 +7588,7 @@ void CBaseMenuClass::EffectDrawCheck(CMenuPosDataForm *form) {
             }
         }
     } else if (mode == MENU_ASK_MODE_FUSION) {
-        if (effect_type == 10) {
+        if (effect_type == MENU_EFFECT_TYPE_FUSION_SWIRL) {
             switch (step) {
                 case 1:
                     trans_spectol_posold = trans_spectol_pos;
@@ -7679,10 +7666,10 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
         CMenuItemInfoPt->equipped_model_no = MenuUserParam.chara[chara_no]->equip[0].GetModelNo();
     }
 
-    MenuLoadInfo.alternate_model = 0;
+    MenuLoadInfo.alternate_model = false;
 
     if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-        MenuLoadInfo.alternate_model = 1;
+        MenuLoadInfo.alternate_model = true;
         CMenuItemInfoPt->equipped_model_no = -1;
     }
 
@@ -7754,14 +7741,14 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
     MenuCommonInfo->top_line = MenuItem_ItemBoardTopLine;
     MenuCommonInfo->key_arg = &item_menu_argtbl[CMenuItemInfoPt->key_arg_no];
     MenuItemBrdSetInfo(MenuCommonInfo->cursor, MenuCommonInfo->top_line, MenuItemBoardTotalLine, MENU_ITEM_BOARD_ROWS);
-    MenuItemBrdCalcManner = 0;
+    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
     itemmenu_chr_rotflag = true;
 
     if (!trush) {
         CMenuItemInfoPt->FadeInMenu(1, 0.0f);
     }
 
-    MenuMainFrameModeSet(2, 1);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_SLIDE_LEFT, true);
     SetSpectolInfo(NULL, NULL);
     BuildUpWeaponInfo.weapon = &MenuUserParam.chara[0]->equip[1];
     MenuWeaponStatusInfoFormSet(NULL, NULL);
@@ -7774,7 +7761,7 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
         SetFishingGamePreEquip(NULL);
     }
 
-    SetModeMenuDrawItemBoard(0);
+    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_BAG);
     return 1;
 }
 
@@ -8507,7 +8494,7 @@ static void MenuItemDebugDraw() {
     switch (CMenuItemInfoPt->key_arg_no) {
         case ITEM_MENU_PANEL_BAG: {
             tex_manager->ReloadTexture(MenuCommonInfo->tex_block[1], (sceVif1Packet *) NULL);
-            SetSpriteEnv(&prim, 2);
+            SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR_AA);
             prim.Begin(MG_PRIM_SPRITE);
             prim.Color(0, 0, 0, 0x40);
             prim.Vertex(0, 0, 0);
@@ -8516,7 +8503,7 @@ static void MenuItemDebugDraw() {
             prim.Vertex(20, 60, 0);
             prim.Vertex(276, 316, 0);
             prim.End();
-            SetSpriteEnv(&prim, 0);
+            SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
             u8  color[4] = {0x80, 0x80, 0x80, 0x80};
             int page = (CMenuItemInfoPt->debug_item_no - 1) / 64;
 
@@ -8529,13 +8516,13 @@ static void MenuItemDebugDraw() {
                     if (item_no == CMenuItemInfoPt->debug_item_no) {
                         int x = col * 32 + 24;
                         int y = row * 32 + 60;
-                        SetSpriteEnv(&prim, 2);
+                        SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR_AA);
                         prim.Begin(MG_PRIM_SPRITE);
                         prim.Color(0x40, 0x40, 0x40, 0x94);
                         prim.Vertex(x, y, 0);
                         prim.Vertex(x + 32, y + 32, 0);
                         prim.End();
-                        SetSpriteEnv(&prim, 0);
+                        SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
                     }
 
                     DrawOneItem(&prim, mgRect<float>(col * 32 + 24, row * 32 + 60, 32.0f, 32.0f), item_no, 0, NULL, color, 0);
@@ -8907,7 +8894,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                 }
             }
 
-            swap.Set(-1, 0, -1, 0);
+            swap.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
 
             switch (this->key_arg_no) {
                 case ITEM_MENU_PANEL_ACTIVE_ITEMS:
@@ -9470,7 +9457,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                         char path[0x40];
                         char full_path[0x60];
                         int  file_size;
-                        SetMenuEtcFlag(1);
+                        SetMenuEtcFlag(MENU_ETC_FLAG_CHARA_RELOAD);
                         MainCharaReadStackReadAdr =
                             (u8 *) MainCharaReadStack.stGetTop();
                         GetMainCharaModelName(chara_no, path, 0);
@@ -9514,7 +9501,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                 } else {
                     // Runs the script that starts closing the menu.
                     this->ExeScript("\x91\x4F\x8F\x49\x97\xB9\x8F\x88\x97\x9D");
-                    MenuMainFrameModeSet(3, 1);
+                    MenuMainFrameModeSet(MENU_MAIN_FRAME_SLIDE_BACK, true);
                     ReturnMenuIntern(0);
 
                     if (MenuActionChara[0] != NULL) {
@@ -10372,7 +10359,7 @@ void MenuWeaponBuildUpDraw(int &tex_block) {
     int          y = top_y;
     int          height = 0;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_BuildUpBoard);
     prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -10528,7 +10515,7 @@ void MenuWeaponBuildUpDraw(int &tex_block) {
                 mos_rows[1] = 5;
             }
 
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_BuildUpBoard);
             prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -10884,7 +10871,7 @@ int CMenuItemInfo::ModelReadStart(int mode, int check_item, int restart_read) {
             break;
         }
         case MENU_ITEM_VIEW_ROBO:
-            if (MenuLoadInfo.load_all == 1) {
+            if (MenuLoadInfo.load_all == true) {
                 for (int j = 0; j < 7; j++) {
                     if (MenuActionChara[j] != NULL) {
                         MenuActionChara[j]->Initialize(NULL);
@@ -11587,7 +11574,7 @@ void MenuItemInfoCursorDraw(int &tex_block) {
     left_rect.Set(0x1A2, 0xC8, -0x16, 0x1E);
     put_rect.Set(0, 0, 0x1F, 0x29);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(texture);
@@ -11785,7 +11772,7 @@ int CMenuItemInfo::KeyStep() {
                         ExeScript("INITEND");
                         opened = true;
                         mode = MENU_ASK_MODE_NONE;
-                        MenuItemBrdCalcManner = 0;
+                        MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
                         TrushMesWindowFlag = false;
 
                         if (CheckTrushMenu() == 1) {
@@ -11851,7 +11838,7 @@ int CMenuItemInfo::KeyStep() {
 
                     if (item_consumed) {
                         MenuArg.result[0] = 1;
-                        MenuArg.end_code = 5;
+                        MenuArg.end_code = MENU_END_DNG_MOVE;
                         MenuArg.result[1] = 1;
                         result = 2;
                         MenuArg.result[2] = 0;
@@ -12082,15 +12069,15 @@ int MenuItemKey() {
                 MenuDCMsg[0]->msg_change = 1;
                 MenuMoveItemPtr->AttachForm();
                 AttachMessageForm();
-                MenuMainFrameModeSet(2, 0);
+                MenuMainFrameModeSet(MENU_MAIN_FRAME_SLIDE_LEFT, false);
                 MenuLoadInfo.mode = 0;
                 MenuLoadInfo.load_all = 0;
                 MenuLoadInfo.load_phase = 0;
                 MenuLoadInfo.request_phase = -1;
-                MenuLoadInfo.alternate_model = 0;
+                MenuLoadInfo.alternate_model = false;
 
                 if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-                    MenuLoadInfo.alternate_model = 1;
+                    MenuLoadInfo.alternate_model = true;
                 }
 
                 {
@@ -12461,7 +12448,7 @@ void CItemSelect::Draw() {
     frame_rect.Set(1, 0, 0x110, 0xFE);
     mgRect<float> *list = &list_rect;
     SetMenuScissor(mgRect<int>(0, (int) (37.0f + list_rect.top), mgScreenWidth - 1, (int) (147.0f + list_rect.top)));
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     float scroll_top = 37.0f + list->top - 55.0f * top_line;
     item_rect.top += (scroll_top - item_rect.top) / 4.0f;
@@ -12562,7 +12549,7 @@ void CItemSelect::Draw() {
     ResetMenuScissor();
     float list_x = list->left;
     float list_y = list->top;
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Color(0x80, 0x80, 0x80, alpha);

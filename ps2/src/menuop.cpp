@@ -577,7 +577,7 @@ void MenuManualInit(mgCMemory *memory, int *tex_block, int open_type) {
         }
     }
 
-    MenuMainFrameModeSet(8, 1);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_LEAVE_UP, true);
     MovieBattleBGMPhase = MOVIE_BATTLE_BGM_IDLE;
 }
 
@@ -833,7 +833,7 @@ int CManualMenu::KeyStep() {
                         }
                     } else if (pressed & MENU_PUSH_BUTTON_CANCEL) {
                         ReturnMenuIntern(0);
-                        MenuMainFrameModeSet(9, 0);
+                        MenuMainFrameModeSet(MENU_MAIN_FRAME_RETURN_UP, false);
                         MenuCommonInfo->SetMoveMethod(-1);
                         ExeScript("PREEND");
                         mode = MENU_ASK_MODE_CLOSE;
@@ -1375,7 +1375,7 @@ int CMenuOption::KeyStep() {
                     if (MenuArg.open_type == MENU_OPEN_OPTION) {
                         CBaseMenuClass::ExeScript("PREEND_T");
                     } else {
-                        MenuMainFrameModeSet(9, 0);
+                        MenuMainFrameModeSet(MENU_MAIN_FRAME_RETURN_UP, false);
                         ReturnMenuIntern(0);
                         MenuCommonInfo->SetWakuType(-1);
                         CBaseMenuClass::ExeScript("PREEND");
@@ -1796,7 +1796,7 @@ void MenuOptionInit(mgCMemory *memory, int *tex_block, int open_type) {
     MenuCommandAnalyzeInfo.system_mes_buff[0] = GetSystemMesBuffer();
     MenuCommandAnalyzeInfo.system_mes_buff[1] = main_messages;
     CMenuOptionPtr->ExeScript("MSG\x8F\x89\x8A\xFA\x89\xBB");
-    MenuMainFrameModeSet(8, 1);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_LEAVE_UP, true);
     MenuCommonInfo->SetMoveMethod(-1);
 }
 
@@ -2860,7 +2860,7 @@ void SaveFileListDraw(int &tex_block, float *pos, int alpha) {
         shadow_alpha = alpha / 3;
         MenuReloadTexture(tex_block, SaveMenuPtr->tex_block[1]);
         prim = GetMenuPrim();
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Tex_SaveFile);
         prim->Color(0x80, 0x80, 0x80, alpha);
