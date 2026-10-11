@@ -140,7 +140,7 @@ void SendDMA(void *packet, int size) {
     buff_id = !buff_id;
 }
 #endif
-int mgSetPkTEX0(u_int *packet, unsigned long tex0, unsigned long tex1) {
+int mgSetPkTEX0(u_int *packet, u_long tex0, u_long tex1) {
     *(u_long128 *) packet = *(u_long128 *) &set_tex0_dma;
     *(u_long128 *) (packet + 4) = *(u_long128 *) &set_tex0_giftag;
     *(unsigned long *) (packet + 8) = tex1;
@@ -150,7 +150,7 @@ int mgSetPkTEX0(u_int *packet, unsigned long tex0, unsigned long tex1) {
     return 4;
 }
 
-int mgSetPkTEX0(u_int *packet, unsigned long tex0, unsigned long tex1, unsigned long texa) {
+int mgSetPkTEX0(u_int *packet, u_long tex0, u_long tex1, u_long texa) {
     *(u_long128 *) packet = *(u_long128 *) &set_texa_dma;
     *(u_long128 *) (packet + 4) = *(u_long128 *) &set_texa_giftag;
     *(unsigned long *) (packet + 8) = tex1;

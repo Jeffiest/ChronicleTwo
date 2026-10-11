@@ -11,7 +11,8 @@
             "hidden": true,
             "generator": "Ninja",
             "cacheVariables": {
-                "PLATFORM": "PC"
+                "PLATFORM": "PC",
+                "DC_BUILD_TESTS": "ON"
             }
         },
         {

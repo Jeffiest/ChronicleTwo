@@ -154,18 +154,18 @@ TEST(PlatformConfig, SerializeRoundTrips) {
 
 // The host layer reads the settings through SettingsGet: the stick and mouse defaults here are this
 // game's, in the host layer's units.
-TEST(PlatformConfig, HostViewKeepsTheGamesMouseAndBindingDefaults) {
+TEST(PlatformConfig, HostViewKeepsPalRateAndSharedInputDefaults) {
     const HostSettings &host = SettingsGet();
-    ASSERT_TRUE(host.tick_rate == 50.0 && host.stick_sensitivity == 1.0f);
+    ASSERT_DOUBLE_EQ(host.tick_rate, 50.0);
+    ASSERT_FLOAT_EQ(host.stick_sensitivity, HostSettings{}.stick_sensitivity);
     ASSERT_TRUE(host.mouse_sensitivity > 0.229f && host.mouse_sensitivity < 0.2293f);
-    ASSERT_TRUE(host.key_bindings.size() == 4 && host.key_bindings[2].action == "rx");
-    ASSERT_TRUE((host.key_bindings[2].keys == std::vector<std::string>{"MouseX"}));
+    ASSERT_TRUE(host.key_bindings.empty());
     ASSERT_TRUE(ConfigGet().key_bindings.empty() && ConfigGet().mouse_sensitivity == 0.1f);
 }
 
 TEST(PlatformConfig, SettingsChangeWithTheViewUnchangedChangesNothing) {
-    char directory[] = "/tmp/dc_config_XXXXXX";
-    ASSERT_TRUE(mkdtemp(directory) != nullptr);
+    std::string directory = (std::filesystem::temp_directory_path() / "dc_config_XXXXXX").string();
+    ASSERT_TRUE(mkdtemp(directory.data()) != nullptr);
     PathsSetSaveRoot(directory);
     HostSettings same = SettingsGet();
     ASSERT_TRUE(SettingsChange(same));

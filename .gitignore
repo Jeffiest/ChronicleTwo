@@ -35,3 +35,6 @@ ctx.c
 
 # AI
 AGENTS.md
+
+/data/
+/save/

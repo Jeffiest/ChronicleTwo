@@ -91,7 +91,13 @@ if(WIN32)
         OUTPUT_VARIABLE WIN_REWRITE_UNITS OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
     set(PS2_INCLUDE ${CMAKE_BINARY_DIR}/ps2_include)
     file(GLOB_RECURSE PS2_HEADERS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/ps2/include/*)
+    set(PS2_MIRRORED_HEADERS "")
+    foreach(header IN LISTS PS2_HEADERS)
+        file(RELATIVE_PATH relative_header ${CMAKE_SOURCE_DIR}/ps2/include ${header})
+        list(APPEND PS2_MIRRORED_HEADERS ${PS2_INCLUDE}/${relative_header})
+    endforeach()
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/ps2_include.stamp
+        BYPRODUCTS ${PS2_MIRRORED_HEADERS}
         COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} headers ${CMAKE_SOURCE_DIR}/ps2/include ${PS2_INCLUDE}
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/ps2_include.stamp
         DEPENDS ${PS2_HEADERS} ${WIN_REWRITE_SCRIPT}
@@ -254,11 +260,9 @@ target_compile_options(dc_ps2 PRIVATE -Wall -Wno-writable-strings -Wno-unknown-p
 set(PORT_LIB_SOURCES ${PORT_SOURCES})
 list(FILTER PORT_LIB_SOURCES EXCLUDE REGEX "/tests/|/main\\.cpp$")
 
-# Kazarov's sce sources, compiled here with this game's SDK headers and port.h like the rest of
-# port/src/sce. Its libcdvd, libgraph, libmc, libpad, sifdev and sifrpc are smaller than this
-# game's, and its stubs/ for libdma, libgraph and libpkt abort where this game's pass quietly, so
-# those stay in port/src/sce.
-kz_port_sce_sources(KZ_SCE_SOURCES LIBS eekernel libvu0)
+# The game owns its kernel scheduler and SDK replacements. Kazarov's kernel thread-query
+# placeholders would conflict with that scheduler; only its vector routines are shared here.
+kz_port_sce_sources(KZ_SCE_SOURCES LIBS libvu0)
 list(APPEND PORT_LIB_SOURCES ${KZ_SCE_SOURCES})
 
 # gfx, audio and platform never see a game header, so the host library is built without dc_options.
@@ -393,7 +397,15 @@ if(WIN32)
     add_dependencies(dc_menu_option_test dc_ps2_include)
     add_dependencies(dc_villager_outputs_test dc_ps2_include)
 endif()
-add_custom_target(dc_compatibility_tests
+function(dc_add_compatibility_suite target)
+    if(ARGN STREQUAL "HEADLESS")
+        set(capture_args --skip-capture)
+        set(capture_dependency "")
+    else()
+        set(capture_args --capture $<TARGET_FILE:dc_color_capture_test>)
+        set(capture_dependency dc_color_capture_test)
+    endif()
+add_custom_target(${target}
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_script_storage.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/tests/test_compatibility_audit.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/tests/test_host_pointer_arrays.py
@@ -402,14 +414,17 @@ add_custom_target(dc_compatibility_tests
         --scripts $<TARGET_FILE:dc_script_storage_test>
         --monsters $<TARGET_FILE:dc_monster_memory_test>
         --input $<TARGET_FILE:dc_input_lifecycle_test>
-        --capture $<TARGET_FILE:dc_color_capture_test>
+        ${capture_args}
         --menus $<TARGET_FILE:dc_menu_loader_test>
         --options $<TARGET_FILE:dc_menu_option_test>
         --villagers $<TARGET_FILE:dc_villager_outputs_test>
         --photos $<TARGET_FILE:dc_photo_name_storage_test>
-    DEPENDS dc_arena_memory_test dc_script_storage_test dc_monster_memory_test dc_input_lifecycle_test dc_color_capture_test dc_menu_loader_test dc_menu_option_test dc_villager_outputs_test dc_photo_name_storage_test
+    DEPENDS dc_arena_memory_test dc_script_storage_test dc_monster_memory_test dc_input_lifecycle_test ${capture_dependency} dc_menu_loader_test dc_menu_option_test dc_villager_outputs_test dc_photo_name_storage_test
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     VERBATIM)
+endfunction()
+dc_add_compatibility_suite(dc_compatibility_tests)
+dc_add_compatibility_suite(dc_compatibility_tests_headless HEADLESS)
 
 # The tests use an installed GoogleTest, or fetch one at configure time; a
 # build with neither turns them off.

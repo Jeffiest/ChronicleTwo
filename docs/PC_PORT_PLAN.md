@@ -1,5 +1,12 @@
 # PC port plan
 
+Current integration status (2026-10-11): this document retains the upstream Phase 1
+work-package baseline. The implemented Windows branch has progressed through the prologue
+and menu opening; Items model memory and combat attacks remain unresolved. See `PC.md`
+for current commands, `port/COMPATIBILITY_AUDIT.md` for enforcement coverage and
+`port/UPSTREAM_SYNC.md` for integration evidence. Phase 1 aborts and test counts below
+describe the upstream baseline, not the current executable.
+
 This is the working plan for the native PC port of Dark Chronicle (PAL,
 `SCES_511.90`). It follows the shape of Chronicle's `docs/PC_PORT_PLAN.md`
 and shares Chronicle's host code through the Kazarov submodule wherever the
@@ -69,16 +76,19 @@ orchestrator or reviewed by it before and after.
 
 ## 2. Where the port stands
 
-Nothing of the port exists yet. The repository has the PS2 build only:
-`CMakeLists.txt` accepts `PLATFORM=PS2`; `kazarov.conf` defines `ps2-pal`;
-there is no `port/`, no `CMakePresets.json`, no `tools/windows/`, no
-`docs/PC.md`. The Kazarov submodule (`9929210`, tree identical to
-Chronicle's pin `aa436b5`) has `port_override.py`, `include/kazarov/port.h`
-(`PORT_INIT/RETURN/FIX`, the empty `PORT_OVERRIDE` marker) and a container
-image with clang/lld 23, SDL3, Vulkan, Mesa lavapipe, glslang and GoogleTest.
-Since Phase 0 (pin `0d72aa1`), Kazarov holds the shared host code in
+Phase 1 is done. `darkchronicle` builds with clang/lld, C++26, SDL3 and
+Vulkan 1.4 on Linux (container) and Windows (llvm-mingw). It opens a window
+or an offscreen surface, builds the shared renderer's 504 pipelines and
+aborts in `mgInit`'s `PS2_UNIMPLEMENTED` stub. The PS2 build still matches,
+and `docs/PC.md` describes the port.
+
+The Kazarov submodule (pinned at `ce459c1`) has `port_override.py`,
+`include/kazarov/port.h` (`PORT_INIT/RETURN/FIX`, the empty `PORT_OVERRIDE`
+marker) and a container image with clang/lld 23, SDL3, Vulkan, Mesa
+lavapipe, glslang and GoogleTest. Since Phase 0, Kazarov holds the shared host code in
 `tools/kazarov/port/{gfx,audio,platform,sce,tests}` and
-`cmake/KazarovPort.cmake`, and Chronicle consumes it from there.
+`cmake/KazarovPort.cmake`, and Chronicle consumes it from there. ChronicleTwo and Chronicle pin Kazarov
+`ce459c1`.
 
 Facts from the four surveys that shape the plan:
 
@@ -816,6 +826,77 @@ behaviour is implemented; nothing from Chronicle is copied.
   (host-side cases from `kz_port_tests` included, on lavapipe); CI green;
   `./build.sh ps2-pal` matches.
 - Depends: 1.10. Size: ~300.
+
+**Phase 1 status: done.**
+- Kazarov `ce459c1` (main):
+  - Aborting stub families: `eekernel_threads`, `libdev`, `libmpeg`,
+    `libsdr`, `modmsin`, `sifdma`.
+  - Additions to `libcdvd`, `sifdev`, `libmc` (`sceMcSeek`, `sceMcEnd`,
+    `sceMcRename`), `libpad`, `libpkt`, `sifrpc` (`sceSifExitCmd` succeeds;
+    an unbound client answers instead of aborting, because static
+    constructors run before `main` on the host but inside `mwInit` after the
+    IOP set-up on the PS2), `eekernel` (`ChangeThreadPriority`,
+    `GetThreadId` return 0).
+  - `sifdev.cpp` includes `<sifdev.h>` before host headers (glibc's
+    `st_ctime` macros).
+  - `sceMcOpen/Chdir/Mkdir/GetDir` and `scePadPortOpen` take their parameter
+    types from each game's own header (`sce/sdk_params.hpp`): the two
+    transcriptions differ, and correcting either changes MWCC's code for the
+    callers (an experiment broke the match).
+  - Chronicle's pin commit `706ce00e` declares `sceOpen` variadic in its
+    `sifdev.h` (SDK-true; `ps2-pal` still matches). Chronicle linux-x64
+    ctest: 281/281.
+- WP1.1-1.4: `port/CMakeLists.txt` (`ct_options`, `ct_ps2`, `ct_host`,
+  `ct_port`, `ct_link_game`, `darkchronicle`, `darkchronicle_tests`),
+  `kazarov.conf` with the six PC configurations, `CMakePresets.json`,
+  `tools/windows/*.ps1`, `port/include/port.h`, `port/src/runtime.cpp`
+  (`mwInit`, `__assert`, `exit__2`, `rand`/`srand`, `fptosi`/`fptoui`,
+  `__construct_new_array`), `exitcodes.hpp`, a minimal
+  `platform/settings.cpp` and `identity.cpp` (no `config.json` yet).
+- WP1.6: 55 guarded definitions (`mg_math` has 33, not 32) defined in
+  `port/src/mg_math.cpp` and `*_asm.cpp`; five stubs headers.
+  `mgUnitMatrix`, `mgZeroMatrix` and `mgZeroVectorW` are real C++ already,
+  because static constructors call them before `main`.
+- WP1.8: 46 `PORT_OVERRIDE` stubs in 19 files: `mglib` 6 (incl.
+  `StoreImage`, dev-kit address 0x2100000), `movie` 14, `mg_visual` 5,
+  `gamepad` 4 (`PAD_CAPTURE_BUFFER`, dev-kit address 0x3000000), `mg_shadow`
+  2, `mg_sprite` 2, and one each in `mg_drawprim`, `visualmotion`, `water`,
+  `sceneload`, `dng_event`, `dng_hud`, `dbg_font`, `funcpoint`, `map`,
+  `sceneevent`, `menucls1`, `menucapt`, `gyorace`, plus `main`.
+  Some are not hardware: functions clang cannot compile (MWCC varargs
+  builtins, anonymous unions holding non-trivial members, 128-bit literals,
+  `CFuncPoint`'s deleted assignment) are stubbed until their phase rewrites
+  them.
+- Deviation: the gate aborts in `mgInit` itself, not in `sceDmaReset`:
+  `mgInit` writes DMAC channel and T0 registers directly, so it is a stub.
+- Deviation: `scripts/port/header_fixups.py` builds a mirror of `ps2/include`
+  in the build tree with two textual fixups: `CRedMarkModel::Draw` and
+  `CLockOnModel::Draw` are declared `int`. MWCC let a `void Draw()` add a
+  vtable slot beside the base's `int Draw()`; clang rejects that, and every
+  standard spelling changes the PS2 vtables. On the port they override; their
+  bodies are stubs.
+- Link names: `stubs/dng_main.hpp` (`MainBuffer`, `BuffWorkData`,
+  `EventCamera` to their `__2` names), `stubs/event_func.hpp`
+  (`VectMatMul__2`), `Exit__2` to `Exit`; `linknames.cpp` (VU microprogram
+  placeholders and `_gp`); `cameracontrol.cpp` (`CameraCtrlParam::operator=`,
+  assembly-only in retail); `menudraw_primquad.cpp` (`PrimQuad<float>/<int>`).
+- WP1.10 `ps2/` edits, all byte-identical: split initialisations a `switch`
+  jumps over (`editmenu`, `effect`, `inventmn`, `mainloop`, `menuaqua`,
+  `menuop`, `menusys`, `nd_meswin`, `title`); case-scope braces with hoisted
+  declarations (`menusys` `MenuItemDebugDraw`, `menuop` `SubGameSaveKey`); a
+  named union with an empty constructor (`fishing` `CharaControl`); enum
+  casts in C++26 arithmetic (`inventmn`, `menusys`, `mg_tanime`); `u_long`
+  spelled as declared (`memcard`, `mg_visual`); `mg_tanime.hpp` declaration
+  order.
+- Windows: `--allow-multiple-definition` (header functions inline everywhere
+  but one unit), `-mno-constructor-aliases`, `index()` in `port.h`. Open: the
+  PS2 `CreateThread` stub shadows KERNEL32's import thunk; `mgSetPkTEX0`
+  stores through `unsigned long *`, 32-bit on Windows.
+- Verified: linux-x64 ctest 38/38 (5 skipped), including
+  `Smoke.LaunchAbortsAtFirstHardwareCall`; windows-x64 builds, and the
+  windowed run builds 504 pipelines and aborts in `mgInit`; its tests 45/45;
+  `ps2-pal` matches (6872/6872).
+- Not run: macOS, `pc.yml` CI.
 
 Phase 1 parallel groups: G1 = {1.5} (during phase 0); G2 = {1.1, 1.4, 1.7}
 (after 0.5); G3 = {1.2, 1.3, 1.6, 1.8, 1.9}; G4 = {1.10}; G5 = {1.11}.

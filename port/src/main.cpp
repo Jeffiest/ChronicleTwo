@@ -12,6 +12,7 @@
 #include "audio/mixer.hpp"
 #include "exitcodes.hpp"
 #include "gfx/gfx.hpp"
+#include "identity.hpp"
 #include "platform/audio.hpp"
 #include "platform/clock.hpp"
 #include "platform/config.hpp"
@@ -249,9 +250,7 @@ void ReportShaderProgress(uint32_t done, uint32_t total) {
 
 // What the shared host layer needs to know of this game before anything of it runs.
 void ConfigureHost() {
-    SettingsSetEnvPrefix("DC");
-    PathsConfigure({.app_dir = "chronicle-two", .env_data = "DC_DATA", .env_save = "DC_SAVE"});
-    WindowSetIdentity({.title = "Dark Chronicle", .app_id = "dcdecomp.darkchronicle"});
+    GameSetIdentity();
 }
 
 gfx::PresentMode PresentMode(ConfigPresentMode mode) {

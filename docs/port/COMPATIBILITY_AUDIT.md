@@ -28,6 +28,9 @@ Run the native regressions with the configured build:
 cmake --build E:/Chronicle-Two/win/build-rel --target dc_compatibility_tests
 ```
 
+On a runner without a Vulkan device, use `dc_compatibility_tests_headless`. It runs the
+same source checks and 25 native cases, skipping only the color/menu capture fixture.
+
 This target runs eight audit/gate fixtures and 26 native cases: script buffer separation and failures, arena bounds/growth/reset/alignment/owner diagnostics, all 24 monster buffers, controller edges and A/B/R2 action bindings, menu mode/language bindings, real Vulkan color/menu capture, common multi-file menu loading with the real allocator, Options choices/conditions, villager schedule/output pointers and photo-name ownership/sizing/required failures. The Options fixture extracts unchanged method bodies from the production generated host unit, preserving its private form guard. Fixtures use minimal initialization or file callbacks where permitted; a callback fixture does not verify the filesystem backend. Assertions stay enabled in optimized builds. Shared capture coverage and remaining limits are in `INPUT_CAPTURE_COVERAGE.md`.
 
 Optional component check with local PAL assets, without gameplay or graphics:

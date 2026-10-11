@@ -46,10 +46,10 @@ RULES = {
     "src/editeff.cpp": [(r"^inline CMapParts::CMapParts\(\) \{ Initialize\(\); \}$", "", 1)],
     "src/editmap.cpp": [(r"^inline CMapParts::CMapParts\(\) \{ Initialize\(\); \}$", "", 1)],
     "src/inventmn.cpp": [(r"\(0x80UL << 32\)", "(0x80ULL << 32)", 1)],
-    "src/memcard.cpp": [(U64, "u64", 4)],
+    "src/memcard.cpp": [(U64, "u64", 1)],
     "src/menuchr.cpp": [(U64, "u64", 2)],
     "src/mg_drawprim.cpp": [(U64, "u64", 2)],
-    "src/mg_visual.cpp": [(U64, "u64", 15)],
+    "src/mg_visual.cpp": [(U64, "u64", 10)],
     "src/movie.cpp": [(r"\blong pts, long dts\b", "s64 pts, s64 dts", 1)],
     "src/nd_meswin.cpp": [(r"\(unsigned long\)", "(u64)", 6)],
     "src/password.cpp": [
@@ -63,6 +63,11 @@ RULES = {
     "include/crandom.hpp": [(r"^float abs\(float value\);$", "#include <stdlib.h>", 1)],
     "include/dbg_font.hpp": [(r"\bunsigned long(\s+prev_serno;)", r"u64\1", 1)],
     "include/menuchr.hpp": [(U64, "u64", 1)],
+    "include/sce/eekernel.h": [
+        # GoogleTest imports Win32 CreateThread; the game SDK entry needs its own COFF symbol.
+        (r"int CreateThread\(struct ThreadParam \*param\);",
+         'int CreateThread(struct ThreadParam *param) __asm__("dc_CreateThread");', 1),
+    ],
     "include/mg_drawprim.hpp": [(U64, "u64", 2)],
     "include/movie.hpp": [
         (r"^(\s+)long(\s+)(pts|dts|total_bytes);", r"\1s64\2\3;", 3),

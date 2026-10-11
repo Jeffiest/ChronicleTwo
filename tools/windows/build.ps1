@@ -7,9 +7,7 @@ $cmake = Find-WindowsTool cmake 'C:/Program Files/CMake/bin/cmake.exe'
 if (-not (Test-Path "$build/CMakeCache.txt")) { throw "no configured build in $build; run tools/windows/configure.ps1 first" }
 $targets = @('darkchronicle')
 if ($Tests) {
-    # port/src/tests/CMakeLists.txt still names the test executable darkcloud_tests, as in the game this port was copied from.
-    $known = (& $cmake --build $build --target help) -join "`n"
-    $targets += if ($known -match '(?m)^\.\.\. darkchronicle_tests\b') { 'darkchronicle_tests' } else { 'darkcloud_tests' }
+    $targets += 'darkchronicle_tests'
 }
 & $cmake --build $build --target $targets -j $Jobs *> "$build/build.log"
 $code = $LASTEXITCODE

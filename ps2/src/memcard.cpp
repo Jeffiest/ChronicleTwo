@@ -437,7 +437,7 @@ int CMemoryCardManager::CheckDataFileNum() {
     return count;
 }
 
-u32 CMemoryCardManager::CheckOmake(unsigned long *out_mask) {
+u32 CMemoryCardManager::CheckOmake(u_long *out_mask) {
     int flags = 0;
     u64 mask = 0;
 
@@ -985,14 +985,14 @@ int CMemoryCardManager::MakeDir(int file_no) {
     return MC_STEP_BUSY;
 }
 
-int GetCostumeList(unsigned long mask, int type, short *list) {
+int GetCostumeList(u_long mask, int type, short *list) {
     if (list == NULL) {
         return 0;
     }
 
     int           count = 0;
     COSBIT_INFO  *row = cosbit_table;
-    unsigned long bit = 1;
+    u_long        bit = 1;
 
     for (unsigned long i = 0; i < MC_COSTUME_COUNT; i++) {
         if ((mask & bit) && type == GetItemDataType(row->item_no)) {

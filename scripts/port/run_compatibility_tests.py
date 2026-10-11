@@ -20,9 +20,13 @@ def run(executable, case=None, diagnostic=None, timeout=15):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("arena", "scripts", "monsters", "input", "capture", "menus", "options", "villagers", "photos"):
+    for name in ("arena", "scripts", "monsters", "input", "menus", "options", "villagers", "photos"):
         parser.add_argument(f"--{name}", required=True)
+    parser.add_argument("--capture")
+    parser.add_argument("--skip-capture", action="store_true", help="run without a Vulkan device")
     args = parser.parse_args()
+    if not args.skip_capture and not args.capture:
+        parser.error("--capture is required unless --skip-capture is specified")
     for case in ("bounds-growth", "invalid-reset-align", "optional-null", "reset-growth", "diagnostics-lifecycle"):
         run(args.arena, case)
     run(args.arena, "growth-failure", "arena placement failed")
@@ -33,7 +37,8 @@ def main():
     run(args.scripts, "size-overflow", "script storage size overflow")
     run(args.monsters)
     run(args.input)
-    run(args.capture, timeout=45)
+    if not args.skip_capture:
+        run(args.capture, timeout=45)
     for case in ("typed-names-and-content", "background-read", "invalid-missing", "insufficient-capacity"):
         run(args.menus, case)
     run(args.options)
