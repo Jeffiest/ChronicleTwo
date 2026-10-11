@@ -121,6 +121,16 @@ int sceSifFreeIopHeap(void *address) {
     return 0;
 }
 
+// ezbgm and ezmidi talk to IOP servers that do not exist here. Nothing the port runs reaches them,
+// but a COFF link wants every name an object uses defined.
+int sceSifBindRpc(struct sceSifClientData *client, unsigned int number, unsigned int mode) {
+    PS2_UNIMPLEMENTED();
+}
+
+int sceSifCheckStatRpc(struct sceSifClientData *client) {
+    PS2_UNIMPLEMENTED();
+}
+
 int sceSifCallRpc(struct sceSifClientData *client, unsigned int number, unsigned int mode,
                   void *send, int send_size, void *receive, int receive_size,
                   void (*end_callback)(void *), void *end_parameter) {
