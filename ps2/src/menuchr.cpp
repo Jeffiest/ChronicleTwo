@@ -5500,7 +5500,7 @@ unsigned int MenuCharaSoundLoad(mgCMemory *stack, int chara_no, int background) 
     if (chara_no < 3) {
         GetCharacterSnd(GetUserDataMan(), chara_no, path);
     } else {
-        GetMonsterModelFile(GetUserDataMan()->monster_id, 1, path);
+        GetMonsterModelFile(GetUserDataMan()->monster_id, MONSTER_FILE_SOUND, path);
     }
 
     if (background != 0) {
@@ -6018,12 +6018,12 @@ int MenuMonsterLoadBG(mgCMemory *stack, MENU_BGREAD_INFO2 **info, int monster_no
     char *model = model_buffer;
     monster_load_id = monster_no;
 
-    if (GetMonsterModelFile(monster_no, 0, model) == 0) {
+    if (GetMonsterModelFile(monster_no, MONSTER_FILE_MODEL, model) == 0) {
         return 0;
     }
 
     char *script = script_buffer;
-    GetMonsterModelFile(monster_no, 2, script);
+    GetMonsterModelFile(monster_no, MONSTER_FILE_SCRIPT, script);
     strcpy(info[0]->name, model);
     strcpy(path, MonsterDataPath[dir]);
     strcat(path, model);
@@ -6080,7 +6080,7 @@ int MenuMonsterLoadBGCheck(MENU_BGREAD_INFO2 **info, CActionChara **chara, int t
 
     u_int *pack = (u_int *) model->buffer;
     info[0]->chara = chara[0];
-    GetMonsterModelFile(monster_load_id, 3, name);
+    GetMonsterModelFile(monster_load_id, MONSTER_FILE_CONFIG, name);
 
     if (MenuLoadInfo.mode != 2) {
         mgCMemory *buffer = MenuActionCharaBuffer;
@@ -6375,7 +6375,7 @@ int ReadMainCharaBG() {
                 MenuCharaSoundLoad(&MenuCharaLoadStack, NowReadMainCharaNo, 1);
             }
 
-            if (NowReadMainCharaNo == 3 && GetMonsterModelFile(GetUserDataMan()->monster_id, 1, model) == 1) {
+            if (NowReadMainCharaNo == 3 && GetMonsterModelFile(GetUserDataMan()->monster_id, MONSTER_FILE_SOUND, model) == 1) {
                 StartReadBG();
                 CharaSndBuffer = (u32 *) MenuCharaLoadStack.stGetTop();
                 LoadFileBG(model, (u_long128 *) CharaSndBuffer, &size);
