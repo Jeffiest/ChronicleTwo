@@ -1261,7 +1261,7 @@ int CShopMenu::KeyStep() {
                         GetUserDataMan()->SetVoiceUnit(1);
                     }
 
-                    if (item_no == 0x163) {
+                    if (item_no == ITEM_ID_INSIDE_SCOOP_MEMO) {
                         GetUserDataMan()->GetInventUserData()->GetScoopData()->KnowScoop();
                     }
 

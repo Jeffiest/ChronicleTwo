@@ -829,11 +829,11 @@ void SetMenuLoadItemNo(int who) {
         }
         case USER_CHARA_ROBO: {
             ROBO_DATA &robo = user_data->robo_data;
-            MenuLoadItemNo[0] = robo.parts[3].item_no;
-            MenuLoadItemNo[1] = robo.parts[0].item_no;
-            MenuLoadItemNo[2] = robo.parts[1].item_no;
+            MenuLoadItemNo[0] = robo.parts[ROBO_PART_LEG].item_no;
+            MenuLoadItemNo[1] = robo.parts[ROBO_PART_ARM].item_no;
+            MenuLoadItemNo[2] = robo.parts[ROBO_PART_BODY].item_no;
             MenuLoadItemNo[3] = 0;
-            MenuLoadItemNo[4] = robo.parts[2].item_no;
+            MenuLoadItemNo[4] = robo.parts[ROBO_PART_PACK].item_no;
             count = 5;
             break;
         }

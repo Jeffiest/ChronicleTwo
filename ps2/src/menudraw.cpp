@@ -1592,7 +1592,7 @@ void DrawOneItem(mgCDrawPrim *prim, mgRect<float> rect, int item, int mode, MENU
                     prim->Vertex(shadow.left + shadow.right, shadow.top + shadow.bottom, 0.0f);
                 }
 
-                if ((item_flag & MENU_ITEM_ICON_HIGHLIGHT) || item == 0x128) {
+                if ((item_flag & MENU_ITEM_ICON_HIGHLIGHT) || item == ITEM_ID_FRUIT_OF_EDEN) {
                     int add = 0x30;
 
                     if (DrawItemDefCounter < 40) {

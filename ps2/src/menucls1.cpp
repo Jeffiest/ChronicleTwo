@@ -1171,7 +1171,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
             CHARA_DATA *monica = user->GetCharaDataPtr(USER_CHARA_MONICA);
             user->GetMonsterBajjiDataPtrMosId(user->monster_id);
 
-            if (MenuUsedItemNo == 0x10F) {
+            if (MenuUsedItemNo == ITEM_ID_DOUBLE_PUDDING) {
                 if ((!max->hp.CheckFill() && 0.0f < max->hp.GetRate()) ||
                     ((party & 2) && !monica->hp.CheckFill() && 0.0f < monica->hp.GetRate())) {
                     count++;
@@ -1203,7 +1203,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     }
                 }
             } else {
-                if (MenuUsedItemNo == 0x124 && (dead == 1 || chara->hp.max <= chara->hp.now)) {
+                if (MenuUsedItemNo == ITEM_ID_MELLOW_BANANA && (dead == 1 || chara->hp.max <= chara->hp.now)) {
                     break;
                 }
 
