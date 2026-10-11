@@ -350,7 +350,7 @@ void CShop::CheckEventItem() {
             local_sort1(cursor, &item_num, item_no);
         }
 
-        if (item_no[cursor] == 0xAC && user_data->GetNumSameItem(0xAC) > 0) {
+        if (item_no[cursor] == ITEM_ID_MONSTER_NOTES && user_data->GetNumSameItem(ITEM_ID_MONSTER_NOTES) > 0) {
             local_sort1(cursor, &item_num, item_no);
         }
 
@@ -363,11 +363,11 @@ void CShop::CheckEventItem() {
             local_sort1(cursor, &item_num, item_no);
         }
 
-        if (item_no[cursor] == 0x163 && user_data->GetNumSameItem(0x163) > 0) {
+        if (item_no[cursor] == ITEM_ID_INSIDE_SCOOP_MEMO && user_data->GetNumSameItem(ITEM_ID_INSIDE_SCOOP_MEMO) > 0) {
             local_sort1(cursor, &item_num, item_no);
         }
 
-        if (item_no[cursor] == 0x12F && user_data->GetNumSameItem(0x12F) > 0) {
+        if (item_no[cursor] == ITEM_ID_LURE_ROD && user_data->GetNumSameItem(ITEM_ID_LURE_ROD) > 0) {
             local_sort1(cursor, &item_num, item_no);
         }
 

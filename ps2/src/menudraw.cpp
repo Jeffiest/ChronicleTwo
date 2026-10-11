@@ -650,16 +650,6 @@ void MENU_BASETEXINFO_Init(MENU_BASETEXINFO *info);
 
 /**
  *
- * Item identities whose form icons use an embedded item number.
- *
- */
-enum MENU_ICON_ITEM {
-    MENU_ICON_ITEM_SPECTRUM = ITEM_ID_SPECTOL,        /**< Spectrumised attachment whose original item supplies the icon. */
-    MENU_ICON_ITEM_BOILED_FISH = ITEM_ID_BOILED_FISH, /**< Boiled fish whose original fish supplies the icon. */
-};
-
-/**
- *
  * Palette and effect modes used to render an item icon.
  *
  */
@@ -3993,7 +3983,7 @@ void MenuItemModeItemDraw(int &tex_block, mgRect<int> clip_rect, float *pos, MEN
             if (item_no == ITEM_ID_SPECTOL) {
                 item_no = used->GetSpectolNo();
                 icon_mode = MENU_ICON_MODE_SPECTRUM;
-            } else if (item_no == MENU_ICON_ITEM_BOILED_FISH) {
+            } else if (item_no == ITEM_ID_BOILED_FISH) {
                 item_no = used->data.item.num;
                 icon_mode = MENU_ICON_MODE_BOILED_FISH;
             } else if (used->used_type == USED_ITEM_TYPE_FISH && effect != NULL) {
@@ -4547,13 +4537,13 @@ void CMenuPosDataForm::MenuFormDrawNormal(int x, int y, float sway_x, float sway
                     int            icon_item = item;
                     MENU_ICON_MODE icon_mode = MENU_ICON_MODE_NORMAL;
 
-                    if (item == MENU_ICON_ITEM_SPECTRUM) {
+                    if (item == ITEM_ID_SPECTOL) {
                         icon_item = part->etc_info[2];
                         icon_mode = MENU_ICON_MODE_SPECTRUM;
                         item_effect = part->effect;
                     }
 
-                    if (item == MENU_ICON_ITEM_BOILED_FISH) {
+                    if (item == ITEM_ID_BOILED_FISH) {
                         icon_item = part->etc_info[2];
                         icon_mode = MENU_ICON_MODE_BOILED_FISH;
                     }
