@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "character.hpp"
 #include "mg_math.hpp"
 #include "mg_memory.hpp"
 #include "mglib.hpp"
@@ -213,7 +214,7 @@ void CVillagerMngr::Step() {
                         case VLGR_EX_STEP_START:
                             villager->ex_step = VLGR_EX_STEP_IN;
                             villager->req_motion = VLGR_MOTION_CAMERA_IN;
-                            villager->motion_flag = 2;
+                            villager->motion_flag = CHARA_MOTION_HOLD;
                             villager->parts_mode = VLGR_PARTS_MODE_POSE;
                             break;
                         case VLGR_EX_STEP_IN:
@@ -221,7 +222,7 @@ void CVillagerMngr::Step() {
 
                             if (villager->motion_end != 0) {
                                 villager->req_motion = VLGR_MOTION_CAMERA;
-                                villager->motion_flag = 4;
+                                villager->motion_flag = CHARA_MOTION_RESTART;
                                 villager->ex_step = VLGR_EX_STEP_HOLD;
                             }
 
@@ -233,7 +234,7 @@ void CVillagerMngr::Step() {
                                 villager->ex_step = VLGR_EX_STEP_OUT;
                                 villager->parts_mode = VLGR_PARTS_MODE_NORMAL;
                                 villager->req_motion = VLGR_MOTION_CAMERA_OUT;
-                                villager->motion_flag = 2;
+                                villager->motion_flag = CHARA_MOTION_HOLD;
                             }
 
                             break;
