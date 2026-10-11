@@ -1915,7 +1915,7 @@ int _SET_DMG2(RS_STACKDATA *stack, int argc) {
     }
 
     frame_b = NULL;
-    object = nowMonster->GetEntryObjectPos(3, index_a, pos);
+    object = nowMonster->GetEntryObjectPos(CHARA_ENTRY_GROUP_DAMAGE, index_a, pos);
 
     if (object == NULL) {
         return 0;
@@ -1928,7 +1928,7 @@ int _SET_DMG2(RS_STACKDATA *stack, int argc) {
     }
 
     if (index_b >= 0) {
-        object = nowMonster->GetEntryObjectPos(3, index_b, pos);
+        object = nowMonster->GetEntryObjectPos(CHARA_ENTRY_GROUP_DAMAGE, index_b, pos);
 
         if (object != NULL) {
             frame_b = object->frame;
