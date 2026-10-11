@@ -35,6 +35,15 @@ enum MdsType {
 
 /**
  *
+ * Limits of the PCP pack file loader.
+ *
+ */
+enum MdsListLimit {
+    MDS_PCP_ENTRY_MAX = 0x200, /**< Most model and character entries one pack file may list. */
+};
+
+/**
+ *
  * One entry of a PCP pack file: the data it was loaded as and the far-clip settings it gives the pieces that use it.
  *
  */
@@ -163,6 +172,11 @@ public:
     int      img_list_num; /**< Number of slots in img_list. */
     CIMGList img_list[16]; /**< Loaded IMG files. */
 
+    /**
+     *
+     * Creates a set with every pack file and IMG file slot free.
+     *
+     */
     CMdsListSet() { Initialize(); }
 
     /**

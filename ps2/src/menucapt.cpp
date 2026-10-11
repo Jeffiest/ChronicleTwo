@@ -34,7 +34,7 @@
  * Chapter title fade and display mode.
  *
  */
-static u32 MenuChapterMode;
+static MenuChapterModeID MenuChapterMode;
 
 /**
  *
@@ -114,10 +114,10 @@ void MenuChapterInit(mgCMemory *stack, int *tex_block, int open_type, int chapte
     sprintf(image_path, "chap%d.img", chapter);
     MenuChapterStack.Align64();
     u_long128 *image_buffer = MenuChapterStack.stack + MenuChapterStack.stack_used;
-    file_size = LoadFileMenu(image_path, image_buffer, 1);
+    file_size = LoadFileMenu(image_path, image_buffer, MENU_FILE_LOAD_DIRECT);
 
     if ((int) file_size <= 0) {
-        file_size = LoadFileMenu("chap0.img", image_buffer, 1);
+        file_size = LoadFileMenu("chap0.img", image_buffer, MENU_FILE_LOAD_DIRECT);
     }
 
     u_int blocks;
@@ -139,7 +139,7 @@ void MenuChapterInit(mgCMemory *stack, int *tex_block, int open_type, int chapte
     MenuChapterStack.Align64();
     menu_snd_counter = 0;
     unsigned int *sound_buffer = (unsigned int *) (MenuChapterStack.stack + MenuChapterStack.stack_used);
-    LoadFile2((char *) "snd2/sp/SP_007.snd", sound_buffer, (int *) &file_size, 0);
+    LoadFile2((char *) "snd2/sp/SP_007.snd", sound_buffer, (int *) &file_size, LOAD_FILE_READ);
 
     if (file_size & 0xF) {
         blocks = (file_size >> 4) + 1;
@@ -148,8 +148,8 @@ void MenuChapterInit(mgCMemory *stack, int *tex_block, int open_type, int chapte
     }
 
     MenuChapterStack.Alloc(blocks);
-    sndInitPort(8);
-    MenuChapterSnd_ID = sndLoadSound((int) SND_PORT_MENU, sound_buffer, &sound_memory);
+    sndInitPort(SND_PORT_MENU);
+    MenuChapterSnd_ID = sndLoadSound(SND_PORT_MENU, sound_buffer, &sound_memory);
     strcpy(voice_path, chap_voice[chapter]);
     CSnd.StreamOpenFast(1, voice_path);
 
@@ -175,10 +175,10 @@ int MenuChapterKey() {
     int         finished;
     CFadeInOut *fade;
 
-    finished = 0;
+    finished = false;
 
     static u32 wait_cnt = 0;
-    static u32 voiceflag = 0;
+    static u32 voiceflag = false;
 
     fade = &MenuMainScene->fade;
     fade_done = fade->FadeCheck();
@@ -199,7 +199,7 @@ int MenuChapterKey() {
                     MenuChapterInfo->show_cnt = 0;
                     menu_snd_counter = 0;
                     menu_chap_error_check_cnt = 0;
-                    voiceflag = 0;
+                    voiceflag = false;
                 }
             }
 
@@ -209,8 +209,8 @@ int MenuChapterKey() {
             menu_chap_error_check_cnt += 1;
             voice_state = CSnd.StreamGetState(1);
 
-            if (voice_state == 0x8000 || menu_chap_error_check_cnt > 0x5DC) {
-                voiceflag = 1;
+            if (voice_state == 0x8000 || menu_chap_error_check_cnt > 1500) {
+                voiceflag = true;
             }
 
             if ((voiceflag != 0) && (voice_state == 0)) {
@@ -222,20 +222,20 @@ int MenuChapterKey() {
                 menu_snd_counter += 1;
             }
 
-            if (menu_snd_counter == 0x24) {
+            if (menu_snd_counter == 36) {
                 sndSePlay(MenuChapterSnd_ID, 0, 0);
             }
 
-            if ((MenuChapterInfo->show_cnt > 0x12C) &&
-                (menu_snd_counter >= 0x15A)) {
-                MenuMainScene->fade.FadeOut(0x3C, 0.0f, 0.0f, 0.0f);
+            if ((MenuChapterInfo->show_cnt > 300) &&
+                (menu_snd_counter >= 346)) {
+                MenuMainScene->fade.FadeOut(60, 0.0f, 0.0f, 0.0f);
                 MenuChapterMode = MENU_CHAPTER_MODE_FADE_OUT;
             }
 
             break;
         case MENU_CHAPTER_MODE_FADE_OUT:
             if (fade_done != 0) {
-                finished = 1;
+                finished = true;
             }
 
             break;
@@ -245,7 +245,7 @@ int MenuChapterKey() {
 }
 
 void MenuChapterDraw() {
-    mgTexManager.ReloadTexture(MenuChapterInfo->tex_block[0], (sceVif1Packet *) 0);
+    mgTexManager.ReloadTexture(MenuChapterInfo->tex_block[0], (sceVif1Packet *) NULL);
     DrawMenuFillBox(128, 0, 0, 0);
     mgCDrawPrim prim;
     mgRect<int> screen;
@@ -255,7 +255,7 @@ void MenuChapterDraw() {
     SetSpriteEnv(&prim, 0);
     prim.Begin(MG_PRIM_SPRITE);
 
-    if (MenuChapterBG != 0) {
+    if (MenuChapterBG != NULL) {
         prim.Texture(MenuChapterBG);
         prim.Color(128, 128, 128, 128);
         source.Set(0, 0, 512, 448);
@@ -263,11 +263,11 @@ void MenuChapterDraw() {
         PrimQuad(&prim, screen, source);
     }
 
-    if (MenuChapter_Logo != 0) {
+    if (MenuChapter_Logo != NULL) {
         prim.Texture(MenuChapter_Logo);
         prim.Color(128, 128, 128, fptosi(MenuChapterInfo->logo_alpha));
         mgRect<int> title(0, 0, 512, 64);
-        PrimQuad(&prim, 0.0f, (float) mgScreenHeight / 2.0f - 32.0f - 12.0f, title);
+        PrimQuad(&prim, 0.0f, mgScreenHeight / 2.0f - 32.0f - 12.0f, title);
         prim.Color(128, 128, 128, 128);
         mgRect<int> overlay(0, 64, 512, 64);
         PrimQuad(&prim, 0.0f, 0.0f, overlay);
