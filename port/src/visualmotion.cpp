@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <cstdint>
+#include <cstring>
 
 #include "mg_texture.hpp"
 #include "mglib.hpp"
@@ -68,6 +69,17 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
         packet->packet_tag_word[2] = 0;
         packet->packet_tag_word[3] = 0;
         memory->Alloc(size);
+
+        // Retail rebuilds each part's indices in scratch and drops them once the packet exists; the host
+        // draws from them later, by which time the next part and the skin weights have overwritten scratch.
+        if (packet->index_num > 0) {
+            u_long128 *keep = memory->Alloc(packet->index_num / 4 + 1);
+
+            if (keep != NULL) {
+                std::memcpy(keep, packet->index, (size_t) packet->index_num * sizeof(int));
+                packet->index = (int *) keep;
+            }
+        }
     }
 
     return true;
