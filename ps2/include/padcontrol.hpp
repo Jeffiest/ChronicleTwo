@@ -37,23 +37,27 @@ enum PadCtrlTrigger {
  *
  */
 enum PadCtrlButton {
-    PAD_BTN_CONFIRM            = 0,
-    PAD_BTN_CANCEL             = 1,
+    PAD_BTN_CONFIRM            = 0,    /**< Confirm button pressed (circle or cross, by language). */
+    PAD_BTN_CANCEL             = 1,    /**< Cancel button pressed (cross or circle, by language). */
     PAD_BTN_R1_HELD            = 2,    /**< R1 while held. */
     PAD_BTN_L1_HELD            = 3,    /**< L1 while held. */
-    PAD_BTN_MENU               = 5,
+    PAD_BTN_L2                 = 4,    /**< L2 pressed: swings the field camera behind the player. */
+    PAD_BTN_MENU               = 5,    /**< Triangle pressed: opens the menu. */
+    PAD_BTN_R2                 = 6,    /**< R2 pressed: toggles the first-person view in town. */
     PAD_BTN_UP                 = 7,    /**< Up on the frame pressed. */
     PAD_BTN_DOWN               = 8,    /**< Down on the frame pressed. */
-    PAD_BTN_RIGHT              = 9,
-    PAD_BTN_LEFT               = 10,
-    PAD_BTN_START              = 0x0F,
-    PAD_BTN_PAUSE              = 0x15,
-    PAD_BTN_EVENT_SKIP         = 0x16,
-    PAD_BTN_QUICK_CHANGE       = 0x17,
-    PAD_BTN_ACTION_CONFIRM     = 0x32,
-    PAD_BTN_ACTION_SQUARE      = 0x33,
-    PAD_BTN_ACTION_CANCEL      = 0x34,
-    PAD_BTN_ACTION_HELD        = 0x38,
+    PAD_BTN_RIGHT              = 9,    /**< Right on the frame pressed. */
+    PAD_BTN_LEFT               = 10,   /**< Left on the frame pressed. */
+    PAD_BTN_START              = 0x0F, /**< Start pressed. */
+    PAD_BTN_PAUSE              = 0x15, /**< Start pressed: pauses the game. */
+    PAD_BTN_EVENT_SKIP         = 0x16, /**< Triangle pressed: skips an event. */
+    PAD_BTN_QUICK_CHANGE       = 0x17, /**< L3 pressed: switches the controlled character. */
+    PAD_BTN_ACTION_CONFIRM     = 0x32, /**< Confirm button pressed for a field action. */
+    PAD_BTN_ACTION_SQUARE      = 0x33, /**< Square pressed for a field action. */
+    PAD_BTN_ACTION_CANCEL      = 0x34, /**< Cancel button pressed for a field action. */
+    PAD_BTN_L1_HELD_2          = 0x35, /**< L1 while held, second binding. */
+    PAD_BTN_R1_HELD_2          = 0x36, /**< R1 while held, second binding. */
+    PAD_BTN_ACTION_HELD        = 0x38, /**< Circle while held for a field action. */
     PAD_BTN_EDIT_TURN_DECREASE = 0x64, /**< R2: turns the selected Georama part one way. */
     PAD_BTN_EDIT_TURN_INCREASE = 0x65, /**< L2: turns the selected Georama part the other way. */
     PAD_BTN_EDIT_PLACE         = 0x66, /**< Confirm button: places a Georama part or selects a wall. */
@@ -62,7 +66,7 @@ enum PadCtrlButton {
     PAD_BTN_EDIT_WALL_NEXT     = 0x69, /**< R2: selects the next wall. */
     PAD_BTN_EDIT_WALL_PREVIOUS = 0x6A, /**< L2: selects the previous wall. */
     PAD_BTN_EDIT_PAINT_ALL     = 0x6B, /**< Square: paints the roof or the whole fence. */
-    PAD_BTN_EDIT_SWITCH        = 0x6C,
+    PAD_BTN_EDIT_SWITCH        = 0x6C, /**< Select: switches between the Georama edit mode and walking. */
     PAD_BTN_EDIT_MAGNET        = 0x6D, /**< Square: toggles Georama part snapping. */
 };
 
@@ -74,10 +78,14 @@ enum PadCtrlButton {
  *
  */
 enum PadCtrlAnalog {
-    PAD_ANALOG_LEFT_X = 0,  /**< Left stick horizontal position. */
-    PAD_ANALOG_LEFT_Y = 1,  /**< Left stick vertical position. */
-    PAD_ANALOG_RIGHT_X = 2, /**< Right stick horizontal position. */
-    PAD_ANALOG_RIGHT_Y = 3, /**< Right stick vertical position. */
+    PAD_ANALOG_LEFT_X = 0,    /**< Left stick horizontal position. */
+    PAD_ANALOG_LEFT_Y = 1,    /**< Left stick vertical position. */
+    PAD_ANALOG_RIGHT_X = 2,   /**< Right stick horizontal position. */
+    PAD_ANALOG_RIGHT_Y = 3,   /**< Right stick vertical position. */
+    PAD_ANALOG_LEFT_Y_2 = 4,  /**< Left stick vertical position, second binding read by town, fishing and ridepod control. */
+    PAD_ANALOG_LEFT_X_2 = 5,  /**< Left stick horizontal position, second binding read by town, fishing and ridepod control. */
+    PAD_ANALOG_RIGHT_X_2 = 6, /**< Right stick horizontal position, second binding: turns the field camera. */
+    PAD_ANALOG_RIGHT_Y_2 = 7, /**< Right stick vertical position, second binding: raises the field camera. */
 };
 
 /**
