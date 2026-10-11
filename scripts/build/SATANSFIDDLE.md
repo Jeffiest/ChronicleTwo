@@ -8,8 +8,9 @@ builds outside the container, build Satan's Fiddle with its documented Linux,
 Rust, LLDB and unstripped `wibo` prerequisites.
 
 Objdiff's source-only base objects use the same adapter, profile, options and
-logical translation-unit name as the linked objects. They omit mwccgap so
-assembly fallbacks remain absent from the native-code metric. The generated
+logical translation-unit name as the linked objects. They run the adapter
+directly, without the postprocessing in `mwccgap.sh`, so the native-code metric
+measures compiler output alone. The generated
 objdiff configuration reads actual base-object symbols and maps sanitized retail
 template identities to MWCC's original template spelling.
 
@@ -39,14 +40,14 @@ allocated object and resolved relocation identities, so a pre-existing mismatch
 cannot conceal a new change. These rows describe compiler state, not additional
 game functions.
 
-`scripts/build/mwccgap.sh` supplies `satansfiddle-wibo.py` as mwccgap's
-`--wibo-path`. For each of mwccgap's two passes, the adapter preserves every
-compiler option and its argument boundary, separates the generated `-o OBJECT`
-and source arguments, and creates a private JSON configuration. The compiler
-path and options come from that invocation. The adapter passes the original
-source basename with `--translation-unit`, so the temporary `.c` in the second
-pass selects the same helper masks and floating-point identities. It retains
-the actual source path for quoted includes and dependency generation.
+`scripts/build/mwccgap.sh` runs `satansfiddle-wibo.py` once on the game source,
+then postprocesses the object. The adapter preserves every compiler option and
+its argument boundary, separates the generated `-o OBJECT` and source arguments,
+and creates a private JSON configuration for that compilation. The compiler path
+and options come from that invocation. The adapter passes the source basename
+with `--translation-unit`, which selects the unit's helper masks and
+floating-point identities. The compiler receives the actual source path, so
+quoted includes and dependency generation resolve from it.
 
 Expression overrides identify a translation unit, mangled function, binary32 or
 binary64 type and IEEE value bits. An optional `callee` narrows the identity to
@@ -160,7 +161,7 @@ selectors within the selected compilation. Callee-scoped rows can additionally s
 compiler invocation. Repeated callbacks for one call argument count once; two
 formal slots or two calls count separately. The assertion never changes identity,
 specificity, or selection and rejects both missing and excess matches. The five
-control-context calibration rows each require one match in each mwccgap pass.
+control-context calibration rows each require one match in their compilation.
 Ordinals, instruction addresses and
 compiler-arena addresses are not selectors. The 3.0 profile does
 not configure literal-reload behavior: the current `-O3,p` constants are immediate,
@@ -173,14 +174,15 @@ after configuration. A missing executable or profile fails with a setup message;
 the build does not silently compile through plain `wibo`.
 
 For a focused check after activation, compile one game unit and compare its
-object against retail:
+object against retail. `mg_texture` takes `-O2,p` after the common flags, as
+`UNIT_CC_FLAGS_mg_texture` in `ps2/cmake/Toolchain.cmake` gives it:
 
 ```sh
 mkdir -p /tmp/chronicletwo-check
 scripts/build/mwccgap.sh /tmp/chronicletwo-check/mg_texture.cpp.o \
   /tmp/chronicletwo-check/mg_texture.d ps2/src/mg_texture.cpp \
   -O3,p -strings readonly -c -Cpp_exceptions off -RTTI off \
-  -pragma 'divbyzerocheck on' -i ps2/include
+  -pragma 'divbyzerocheck on' -i ps2/include -O2,p
 sh scripts/build/fixup_sections.sh /tmp/chronicletwo-check/mg_texture.cpp.o
 python3 scripts/build/check_objects.py mg_texture --obj-dir /tmp/chronicletwo-check -v
 ```
@@ -225,8 +227,8 @@ all test targets; no wrapper-byte equivalence between recipes is asserted.
 The third patch, `patches/satansfiddle-placement-new.patch`, adds an optional
 `placement_new.statement_conversions` table. An empty table installs no new
 hooks. The capability supports only the hash-verified MWCC 3.0-011126 image.
-The adapter filters rows by the logical source name for both mwccgap passes
-and source-only objdiff compilation.
+The adapter filters rows by the logical source name for the game compilation
+and the source-only objdiff compilation.
 
 For example, the function-point allocation can request conversion after its
 constructor has been expression-inlined:

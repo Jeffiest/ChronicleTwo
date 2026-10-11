@@ -279,7 +279,6 @@ and the headers define none, so this does not establish a source form.
 ## Compiler options
 
 The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
-of the game's `-O3,p`. With that option and none of its former `schedule off` / `optimization_level` /
-`opt_loop_invariants off` pragmas the object is byte-identical to the build that used them.
- `CreateFrameVisual` alone is generated at level 3, with scheduling and loop-invariant motion off; its
-global-optimizer regions stay function-specific.
+of the game's `-O3,p`. `CreateFrameVisual` alone is generated at level 3, with scheduling and loop-invariant
+motion off (`optimization_level 3`, `schedule off`, `opt_loop_invariants off`); its global-optimizer
+regions stay function-specific.

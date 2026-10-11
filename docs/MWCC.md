@@ -92,13 +92,12 @@ therefore omits literal-reload policy settings.
 These rows were accepted through the canonical object comparison. They establish
 the listed functions' bytes and resolved relocations, not whole-unit matching
 when other source or data-layout failures remain.
+Unit-specific evidence is in the tracked mapjump and event_func RE notes and
+[pbuggy calibration notes](../ps2/re/docs/pbuggy/notes.md).
 
 `mg_dataset`, `mg_shadow`, `mg_tanime` and `mg_texture` are compiled with `-O2,p`, `password` with `-O0` and
 `scriptinterpreter` with `-inline off` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`). Each
-setting reproduces the whole unit's object without the pragmas it replaces; the other `mg_*`
-units differ at level 2.
-Unit-specific evidence is in the tracked mapjump and event_func RE notes and
-[pbuggy calibration notes](../ps2/re/docs/pbuggy/notes.md).
+setting reproduces the whole unit's object; building the other `mg_*` units at level 2 differs.
 
 ## Source matching and verification
 
@@ -110,11 +109,13 @@ imitate incidental allocation. Use correctly typed literals and real field
 layouts rather than pointer arithmetic or instruction-shaped source.
 
 For each calibration, copy the profile privately, compile with the repository
-wrapper and canonical flags, run `scripts/build/fixup_sections.sh`, then run
+wrapper and the canonical flags (`CC_FLAGS` followed by the unit's
+`UNIT_CC_FLAGS_<unit>` overrides), run `scripts/build/fixup_sections.sh`, then run
 `scripts/build/check_objects.py`. Accept a row only when the target has zero
 byte and resolved-relocation differences and existing unit failures are
-preserved or resolved. Fixup is required: mwccgap's temporary `.dead` sections
-are removed by the normal build stage.
+preserved or resolved. Fixup is required: `scripts/build/postprocess_object.py`
+marks discarded copies of data as `.dead` sections, and `fixup_sections.sh`
+removes them before linking.
 
 Objdiff source-only objects use the same Satan's Fiddle profile as linked
 objects; native template names are mapped structurally to retail identities.
