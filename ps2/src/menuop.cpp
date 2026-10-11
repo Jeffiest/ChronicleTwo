@@ -1612,7 +1612,7 @@ void CMenuOption::UpdateOptionForm() {
                 DefaultButton(loop_row);
 
                 for (i = 0, offset = 0; i < OPTION_BUTTON_NUM; i++, offset += 4) {
-                    if (config->map == (SV_CONFIG_MAP) i) {
+                    if (config->map == i) {
                         EnableButton(*(MENUFORMPARTS_TYPE **) ((u8 *) loop_row + offset));
                     }
                 }
