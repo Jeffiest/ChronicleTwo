@@ -2064,8 +2064,8 @@ int gcPARTY(SPI_STACK *stack, int arg_count) {
     manager = GetUserDataMan();
 
     if (manager != NULL) {
-        manager->JoinPartyChara(chara_no, 0x80, 1);
-        manager->SetPartyCharaStatus(chara_no, 1);
+        manager->JoinPartyChara(chara_no, PARTY_CHARA_STATUS_JOIN, 1);
+        manager->SetPartyCharaStatus(chara_no, PARTY_CHARA_STATUS_IN_PARTY);
     }
 
     return 1;

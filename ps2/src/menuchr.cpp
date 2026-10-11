@@ -2358,8 +2358,8 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         used = true;
                         se = 0x56;
                         sound_mode = 1;
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
                     }
 
                     if (!used) {
@@ -2373,8 +2373,8 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 10;
                         MenuUserDataManPtr->AddHp(USER_CHARA_MAX, 999);
                         MenuUserDataManPtr->AddHp(USER_CHARA_MONICA, 999);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
                         UpdataLife();
                     }
 
@@ -7157,7 +7157,7 @@ void CMenuCostumeSel::Draw() {
         CMenuFont font;
 
         for (i = 0; i < COSTUME_LIST_NUM; i++) {
-            char *name = chara_data->equip[convtbl[i]].GetName(1);
+            char *name = chara_data->equip[convtbl[i]].GetName(ITEM_NAME_TYPE_LEVEL);
 
             if (name != NULL) {
                 font.SetStr(name);
