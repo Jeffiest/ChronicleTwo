@@ -3407,7 +3407,7 @@ int _SET_DEAD_OFF(RS_STACKDATA *args, int argc) {
     experience = nowMonster->reward_exp;
     pickup_count = 0;
 
-    if (nowMonster->last_hit_attr & 0x800) {
+    if (nowMonster->last_hit_attr & WEAPON_SPECIAL_ABS_UP) {
         float bonus = 1.2f;
         experience = (int) ((float) experience * bonus);
     }
@@ -3826,7 +3826,7 @@ int _ESM_CREATE(RS_STACKDATA *stack, int argc) {
  */
 int _ESM_FINISH(RS_STACKDATA *stack, int argc) {
     int effect_id = nowMonster->chara_type;
-    return ActiveMonster->effect_man->SetScriptProgNo(300, effect_id, GetStackInt(stack));
+    return ActiveMonster->effect_man->SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, effect_id, GetStackInt(stack));
 }
 
 /**

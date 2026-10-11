@@ -181,6 +181,18 @@ enum ACTION_PROG {
 
 /**
  *
+ * Stages of the charging effect that the action script moves it through.
+ *
+ */
+enum ACCUME_EFFECT_MODE {
+    ACCUME_EFFECT_MODE_OFF = 0,     /**< Stops the charge and clears its state. */
+    ACCUME_EFFECT_MODE_START = 1,   /**< Starts the charge, clearing its state and setting its scale. */
+    ACCUME_EFFECT_MODE_END = 3,     /**< Ends the charge. */
+    ACCUME_EFFECT_MODE_END_ALT = 4, /**< Ends the charge; the action script uses both 3 and 4 to end it. */
+};
+
+/**
+ *
  * Charging effect that gathers on the player's weapon.
  *
  */
@@ -188,7 +200,7 @@ struct ACCUME_EFFECT {
     mgCFrame *frame; /**< Frame that the effect gathers on. */
     u8        unk_4[0x28C];
     int       clear[32];
-    int       mode; /**< Stage of the effect that the action script set. */
+    int       mode; /**< Stage of the effect that the action script set, an ACCUME_EFFECT_MODE value. */
     int       unk_314;
     int       unk_318;
     float     scale;

@@ -1025,7 +1025,7 @@ void CScene::StepVillager() {
                 show_a = model->SearchFrame("v_R");
                 show_b = model->SearchFrame("v_L");
 
-                if (villager->parts_mode == 1) {
+                if (villager->parts_mode == VLGR_PARTS_MODE_POSE) {
                     if (hide_a != NULL && hide_a->attr != NULL) {
                         hide_a->attr->draw = 0;
                     }
@@ -1043,7 +1043,7 @@ void CScene::StepVillager() {
                     }
                 }
 
-                if (villager->parts_mode == 2) {
+                if (villager->parts_mode == VLGR_PARTS_MODE_NORMAL) {
                     if (hide_a != NULL && hide_a->attr != NULL) {
                         hide_a->attr->draw = 1;
                     }
