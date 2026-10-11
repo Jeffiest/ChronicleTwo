@@ -29,6 +29,13 @@ set(MW_CC_DIR ${TOOLS_DIR}/compilers/mw/3.0-011126
     CACHE STRING "Directory holding mwccps2.exe")
 set(CC_FLAGS -O3,p -strings readonly -c -Cpp_exceptions off -RTTI off
     -pragma "divbyzerocheck on" -i ${INCLUDE_DIR})
+# Units built with other optimization settings than the rest of the game. Each
+# list is appended after CC_FLAGS, so its options override CC_FLAGS'.
+set(UNIT_CC_FLAGS_mg_shadow -O2,p)
+set(UNIT_CC_FLAGS_mg_tanime -O2,p)
+set(UNIT_CC_FLAGS_mg_texture -O2,p)
+set(UNIT_CC_FLAGS_password -O0)
+set(UNIT_CC_FLAGS_scriptinterpreter -inline off)
 set(CC_DEP_FLAGS -MD)
 
 # MWLD, run under wibo, links the executable from every object in
