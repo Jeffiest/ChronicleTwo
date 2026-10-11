@@ -906,18 +906,18 @@ void CSphida::Draw() {
     SV_CONFIG_OPTION  *config = DngSaveData->GetConfig();
 
     if (DngStatus.mode != DNG_STATUS_FIELD && minimap_flag == 1) {
-        if (config->map != 0) {
+        if (config->map != SV_CONFIG_MAP_OFF) {
             tex_man->ReloadTexture(0x66, (sceVif1Packet *) NULL);
             CCharacter2 *player = DngMainScene->GetCharacter(0);
 
-            if (config->map == 1) {
+            if (config->map == SV_CONFIG_MAP_SMALL) {
                 AutoMapGen.mini_map.x = 420;
                 AutoMapGen.mini_map.y = 160;
                 AutoMapGen.mini_map.w = 144;
                 AutoMapGen.mini_map.h = 144;
             }
 
-            if (config->map == 2) {
+            if (config->map == SV_CONFIG_MAP_LARGE) {
                 AutoMapGen.mini_map.x = 256;
                 AutoMapGen.mini_map.y = 230;
                 AutoMapGen.mini_map.w = 320;
@@ -967,8 +967,8 @@ void CSphida::Draw() {
         if (DngStatus.mode != DNG_STATUS_FIELD && GamePad__2.Down(PAD_SELECT)) {
             config->map++;
 
-            if (config->map > 2) {
-                config->map = 0;
+            if (config->map > SV_CONFIG_MAP_LARGE) {
+                config->map = SV_CONFIG_MAP_OFF;
             }
         }
 
@@ -976,13 +976,13 @@ void CSphida::Draw() {
     } else if (omake_mode == 1 && DngStatus.mode == DNG_STATUS_FIELD) {
         DNG_BATTLE_AREA *area = &DngMainScene->battle_area;
 
-        if (!area->script.running && !(area->pause_flag & DNG_PAUSE_MINIMAP) && config->map != 0) {
+        if (!area->script.running && !(area->pause_flag & DNG_PAUSE_MINIMAP) && config->map != SV_CONFIG_MAP_OFF) {
             float player_pos[4];
             tex_man->ReloadTexture(0x66, (sceVif1Packet *) NULL);
             CCharacter2 *player = DngMainScene->GetCharacter(0);
             player->GetPosition(player_pos);
 
-            if (config->map == 1) {
+            if (config->map == SV_CONFIG_MAP_SMALL) {
                 AutoMapGen.mini_map.large = 0;
                 AutoMapGen.mini_map.x = 436;
                 AutoMapGen.mini_map.y = 144;
@@ -990,7 +990,7 @@ void CSphida::Draw() {
                 AutoMapGen.mini_map.h = 112;
             }
 
-            if (config->map == 2) {
+            if (config->map == SV_CONFIG_MAP_LARGE) {
                 AutoMapGen.mini_map.x = 336;
                 AutoMapGen.mini_map.y = 212;
                 AutoMapGen.mini_map.w = 320;
