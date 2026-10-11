@@ -498,9 +498,15 @@ PORT_OVERRIDE void ChangeDir(char *dir) {
     }
 }
 
+// Host reads finish as they are queued, but a queued read must still read as pending to the first
+// ReadBGSync: MenuCostumeInit waits with `while (ReadBGSync() == 0)`, which retail leaves at once only
+// because the read it just queued is still in flight. The second sync reports it done.
+static unsigned char bg_pending[BG_READ_MAX];
+
 PORT_OVERRIDE void InitReadBG() {
     for (int i = 0; i < BG_READ_MAX; i++) {
         bg_read_info[i].busy = 0;
+        bg_pending[i] = 0;
     }
 }
 
@@ -549,7 +555,8 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
         info->busy = true;
         info->dev = FILE_DEV_CDROM;
         info->issued = true;
-        info->done = true;
+        info->done = false;
+        bg_pending[info - bg_read_info] = 1;
         info->buffer = buffer;
         info->size = static_cast<int>(file.size);
         info->sector = static_cast<int>(file.offset / cdvd::kSector);
@@ -579,7 +586,8 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     info->busy = true;
     info->dev = device;
     info->issued = true;
-    info->done = true;
+    info->done = false;
+    bg_pending[info - bg_read_info] = 1;
     info->buffer = buffer;
     info->size = loaded_size;
     info->fd = loaded_size;
@@ -616,7 +624,17 @@ PORT_OVERRIDE void StartReadBG() {
 }
 
 PORT_OVERRIDE void ReadBG() {
-    // Every host read finishes as it is queued, so there is never a sector left to fetch.
+    for (int i = 0; i < BG_READ_MAX; i++) {
+        BG_READ_INFO *info = &bg_read_info[i];
+
+        if (info->busy && info->issued && !info->done) {
+            if (bg_pending[i] != 0) {
+                bg_pending[i]--;
+            } else {
+                info->done = true;
+            }
+        }
+    }
 }
 
 PORT_OVERRIDE int ReadBGSync() {
