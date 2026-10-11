@@ -1766,7 +1766,7 @@ void MenuAreaBoardNameStep() {
 
             MenuTimeBrdForm->SetNumber("\x93\xFA\x8A\xD4", day);
 
-            if (MenuNowMapType == 5 || MenuNowMapType == 6) {
+            if (MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
                 MenuTimeBrdForm->SetPartDrawFlag("AM", false);
                 MenuTimeBrdForm->SetPartDrawFlag("PM", false);
                 MenuTimeBrdForm->SetPartDrawFlag("\x8E\x9E", false);
@@ -1868,7 +1868,7 @@ void DrawMenuTopic() {
     float       w;
     float       h;
 
-    if (MenuTopicType <= 0 || MenuNowMapType == 5 || MenuNowMapType == 6) {
+    if (MenuTopicType <= 0 || MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
         return;
     }
 
@@ -2254,7 +2254,7 @@ void CMenuInter::PushOk() {
         case MENU_MODE_OPTION:
             break;
         case MENU_MODE_WORLD_MOVE:
-            if (MenuNowMapType == 5 || MenuNowMapType == 6) {
+            if (MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
                 show_message = true;
                 message_no = 0x28;
 
