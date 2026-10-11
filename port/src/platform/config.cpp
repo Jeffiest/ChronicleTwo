@@ -10,6 +10,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <nlohmann/json.hpp>
 
@@ -17,7 +18,11 @@
 
 namespace {
 
-Config g_config;
+Config                        g_config;
+std::vector<ConfigChangeHook> g_change_hooks;
+// Whether config.json holds g_config, so a failed save is retried with the same settings.
+bool g_saved = false;
+bool g_changing = false;
 
 std::string_view Trim(std::string_view text) {
     constexpr std::string_view kSpace = " \t\r\n";
@@ -242,7 +247,43 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
         config.master_volume = std::clamp(volume, 0.0f, 1.0f);
         return true;
     }
+    if (name == "audio.sound") {
+        if (!value.is_string()) {
+            return false;
+        }
+        std::string sound = Lower(value.get<std::string>());
+        if (sound != "surround" && sound != "stereo" && sound != "mono") {
+            return false;
+        }
+        config.surround = sound == "surround";
+        return true;
+    }
+    // Written before audio.sound took "surround".
+    if (name == "audio.surround") {
+        return ReadBool(value, config.surround);
+    }
     return false;
+}
+
+bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
+    std::filesystem::path temp = path;
+    temp += ".tmp";
+    std::error_code error;
+    {
+        std::ofstream file(temp, std::ios::binary | std::ios::trunc);
+        file << text;
+        file.close();
+        if (!file) {
+            std::filesystem::remove(temp, error);
+            return false;
+        }
+    }
+    std::filesystem::rename(temp, path, error);
+    if (error) {
+        std::filesystem::remove(temp, error);
+        return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -307,6 +348,7 @@ std::string ConfigSerialize(const Config &config) {
     root["video"]["detail_distance"] = Shortest(config.detail_distance);
     root["video"]["shadow_distance"] = Shortest(config.shadow_distance);
     root["audio"]["master_volume"] = Shortest(config.master_volume);
+    root["audio"]["sound"] = config.surround ? "surround" : "stereo";
     root["input"]["mouse_sensitivity"] = Shortest(config.mouse_sensitivity);
     root["input"]["mouse_invert_y"] = config.mouse_invert_y;
     root["input"]["mouse_capture"] = config.mouse_capture;
@@ -319,21 +361,16 @@ bool ConfigSave() {
     std::filesystem::path path = PathsSaveRoot() / "config.json";
     std::error_code       error;
     std::filesystem::create_directories(path.parent_path(), error);
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
-    file << ConfigSerialize(g_config);
-    file.flush();
-    if (!file) {
-        std::fprintf(stderr, "config: could not save %s\n", path.string().c_str());
-        return false;
-    }
-    std::fprintf(stderr, "config: saved %s\n", path.string().c_str());
-    return true;
+    g_saved = WriteReplacing(path, ConfigSerialize(g_config));
+    std::fprintf(stderr, "config: %s %s\n", g_saved ? "saved" : "could not save", PathsDisplay(path).c_str());
+    return g_saved;
 }
 
 bool ConfigLoad() {
     std::filesystem::path path = PathsSaveRoot() / "config.json";
     std::ifstream         file(path, std::ios::binary);
-    if (!file) {
+    std::error_code       error;
+    if (!file || !std::filesystem::is_regular_file(path, error)) {
         g_config = Config{};
         if (std::filesystem::exists(PathsSaveRoot() / "config.ini")) {
             std::fprintf(stderr, "config.ini is no longer read: move its settings to config.json (docs/PC.md)\n");
@@ -344,6 +381,46 @@ bool ConfigLoad() {
     std::ostringstream text;
     text << file.rdbuf();
     g_config = ConfigParse(text.str());
-    std::fprintf(stderr, "config: loaded %s\n", path.string().c_str());
+    g_saved = true;
+    std::fprintf(stderr, "config: loaded %s\n", PathsDisplay(path).c_str());
     return true;
+}
+
+void ConfigAddChangeHook(ConfigChangeHook hook) {
+    if (std::ranges::find(g_change_hooks, hook) == g_change_hooks.end()) {
+        g_change_hooks.push_back(hook);
+    }
+}
+
+void ConfigRemoveChangeHook(ConfigChangeHook hook) {
+    std::erase(g_change_hooks, hook);
+}
+
+bool ConfigChange(const Config &config) {
+    if (g_changing) {
+        std::fprintf(stderr, "config: ignoring a change made while one is being applied\n");
+        return false;
+    }
+
+    struct Guard {
+        Guard() { g_changing = true; }
+
+        ~Guard() { g_changing = false; }
+    } guard;
+
+    Config after = ConfigParse(ConfigSerialize(config));
+    if (after == g_config) {
+        return g_saved || ConfigSave();
+    }
+    Config before = std::exchange(g_config, std::move(after));
+    ConfigSave();
+    const std::vector<ConfigChangeHook> hooks = g_change_hooks;
+    for (ConfigChangeHook hook : hooks) {
+        hook(before, g_config);
+    }
+    return g_saved;
+}
+
+bool ConfigAppliesOnRestart(std::string_view key) {
+    return key == "game.debug_mode";
 }

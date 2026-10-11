@@ -48,6 +48,15 @@ FetchContent_Declare(nlohmann_json
     FIND_PACKAGE_ARGS CONFIG)
 FetchContent_MakeAvailable(nlohmann_json)
 
+# platform/imagefile.cpp decodes PNGs with stb_image.h, at the commit DC1 pins. Kept beside the
+# build, fetched once, so no vendored copy is carried here.
+set(STB_IMAGE_DIR ${CMAKE_BINARY_DIR}/stb)
+if(NOT EXISTS ${STB_IMAGE_DIR}/stb_image.h)
+    file(DOWNLOAD https://raw.githubusercontent.com/nothings/stb/2c980bb59875b0d32144a71867fbdebb2f77cd20/stb_image.h
+        ${STB_IMAGE_DIR}/stb_image.h
+        EXPECTED_HASH SHA256=594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3)
+endif()
+
 set(PS2_DIR ${CMAKE_SOURCE_DIR}/ps2/src)
 set(PORT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB_RECURSE PS2_SOURCES CONFIGURE_DEPENDS RELATIVE ${PS2_DIR} ${PS2_DIR}/*.cpp)
@@ -149,7 +158,7 @@ foreach(shader IN LISTS SHADER_SOURCES)
 endforeach()
 
 add_library(dc_host OBJECT ${HOST_SOURCES} ${SHADER_HEADERS})
-target_include_directories(dc_host PRIVATE ${PORT_DIR} ${SHADER_HEADER_DIR})
+target_include_directories(dc_host PRIVATE ${PORT_DIR} ${SHADER_HEADER_DIR} ${STB_IMAGE_DIR})
 target_link_libraries(dc_host PRIVATE SDL3::SDL3 Vulkan::Vulkan nlohmann_json::nlohmann_json)
 target_compile_options(dc_host PRIVATE -Wall -ffunction-sections -fdata-sections)
 
