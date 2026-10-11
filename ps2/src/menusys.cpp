@@ -1952,8 +1952,12 @@ int CBaseMenuClass::IsSpectolFusion(int select_key, int push_button) {
 
     switch (step) {
         case 0:
+#ifdef PORT
             int choice;
             choice = message->YesNoCursor();
+#else
+            int choice = message->YesNoCursor();
+#endif
 
             switch (push_button) {
                 case MENU_PUSH_BUTTON_DECIDE:
@@ -6412,8 +6416,12 @@ int CMenuItemInfo::IsAskExtend(int select_key, int push_button) {
                     break;
                 }
                 case MENU_BUILD_UP_CONFIRM: {
-                    int choice;
+        #ifdef PORT
+            int choice;
             choice = message->YesNoCursor();
+#else
+            int choice = message->YesNoCursor();
+#endif
 
                     switch (push_button) {
                         case MENU_PUSH_BUTTON_DECIDE:
@@ -8048,7 +8056,10 @@ static void MenuItemDebugKey() {
 
             break;
 
-        case ITEM_MENU_PANEL_CHARA: {
+        case ITEM_MENU_PANEL_CHARA:
+#ifdef PORT
+        {
+#endif
             CHARA_DATA *chara;
             s32         change_maximum;
 
@@ -8132,6 +8143,9 @@ static void MenuItemDebugKey() {
             return;
         }
 
+#ifdef PORT
+        }
+#endif
         case ITEM_MENU_PANEL_WEAPON: {
             s32 change_maximum;
             s32 change_durability;
@@ -8710,7 +8724,9 @@ static void MenuItemDebugDraw() {
             font->SetStr("Change Abs");
             font->SetPos(236, 120);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
+#ifdef PORT
             int   i;
+#endif
             int   build_item[3];
             char *build_name[3];
 
@@ -12325,7 +12341,11 @@ int CItemSelect::KeyStep() {
         default: {
             int select_key = MenuCommonInfo->CheckSelectKey();
             int push_button = MenuCommonInfo->CheckPushButton();
+#ifdef PORT
             int max = (int) ((float) ITEM_SELECT_COLUMNS * line_num);
+#else
+            int max = (int) (ITEM_SELECT_COLUMNS * line_num);
+#endif
             int old_cursor = cursor;
 
             if (select_key & MENU_SELECT_KEY_UP) {
