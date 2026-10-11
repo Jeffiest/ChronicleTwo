@@ -260,7 +260,15 @@ target_compile_options(dc_port PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-la
 # link flags they need. The executable is position-independent on every
 # platform: the game's casts of pointers to 32-bit integers are all widened in
 # port/src, so nothing has to sit below 4 GiB.
-set(DC_LINK_OPTIONS -fuse-ld=lld -pie -Wl,-z,separate-code -Wl,--gc-sections -Wl,--error-limit=0)
+if(WIN32)
+    if(NOT MINGW OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "The Windows build requires clang/llvm-mingw")
+    endif()
+    # COFF has no -z or --defsym; the one alias the link needs is an /alternatename pragma, if any.
+    set(DC_LINK_OPTIONS -fuse-ld=lld -Wl,--gc-sections -Wl,--error-limit=0)
+else()
+    set(DC_LINK_OPTIONS -fuse-ld=lld -pie -Wl,-z,separate-code -Wl,--gc-sections -Wl,--error-limit=0)
+endif()
 
 function(dc_link_game target)
     target_sources(${target} PRIVATE $<TARGET_OBJECTS:dc_port> $<TARGET_OBJECTS:dc_host> $<TARGET_OBJECTS:dc_ps2>)
