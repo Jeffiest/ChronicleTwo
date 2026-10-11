@@ -1,57 +1,50 @@
-#include "mglib.hpp"
+#include "common.h"
 
-/**
- * The effect units' direct-draw seam, and the model-draw entry most units use.
- *
- * Retail's mgDrawDirect family termininates the frame's VIF1 packet, has the frame or visual
- * append its commands at the packet cursor and reserves the words it wrote; the GS alone could
- * read them. The host's visuals submit gfx draws when called (mg_sprite.cpp, mg_visual.cpp and
- * mg_shadow.cpp take no cursor), so the cursor here is a private scratch buffer that exists to
- * keep mgCFrame::Draw's pointer arithmetic defined; a visual that still builds ps2 packets (the
- * motion models until their CPU path lands) writes harmlessly into it and draws nothing.
- */
+#include "dataread.hpp"
+#include "effscript.hpp"
 
-namespace {
+// Retail keeps the load buffer's address in an int, and the second file's offset arithmetic runs
+// on that int: new (memory->Alloc()) CEffectScriptMan or not, on the host the high half of the
+// pointer is lost and the file read lands low. The two buffers stay pointers here; everything
+// else is the retail routine.
+int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) {
+    char path[0x80];
+    char pack[0x80];
+    int  path_size;
+    int  pack_size;
+    char *path_buffer;
+    char *pack_buffer;
 
-// One frame's packet, the size ps2/src/mglib.cpp's null packet keeps. Nothing reads the words
-// back; the buffer exists so an unreplaced packet writer cannot write outside it.
-u_int g_direct_cursor[0x2710];
-
-// Quadwords the mgDrawDirect2 run has written, retail's mglib.cpp file static.
-int g_direct_words;
-
-} // namespace
-
-int mgDrawDirect(mgCFrame *frame) {
-    if (frame == NULL) {
-        return 0;
+    for (int i = 0; i < EFF_SPT_BASE_MAX; i++) {
+        if (base[i] != 0 && base[i]->base_no == base_no) {
+            return 0;
+        }
     }
 
-    return frame->Draw(g_direct_cursor);
-}
+    path_buffer = (char *) load_buffer;
 
-int mgDrawDirect(mgCVisual *visual, float (*matrix)[4]) {
-    if (visual == NULL) {
-        return 0;
+    if (path_buffer == NULL) {
+        return -1;
     }
 
-    return visual->Draw(g_direct_cursor, matrix, NULL);
-}
-
-void mgDrawDirectStart() {
-    g_direct_words = 0;
-}
-
-int mgDrawDirect2(mgCFrame *frame) {
-    if (frame == NULL) {
-        return 0;
+    if (GetNeedFilePath(base_no, path, pack) == 0) {
+        return -1;
     }
 
-    int size = frame->Draw(g_direct_cursor + g_direct_words * 4);
-    g_direct_words += size;
-    return size;
-}
+    if (LoadFile2(path, path_buffer, &path_size, 0) == 0) {
+        path_size = 0;
+        pack_buffer = (char *) load_buffer;
+        path_buffer = NULL;
+    } else {
+        int rest = path_size & 0x3F;
+        int pad = rest != 0 ? 0x40 - rest : 0;
+        pack_buffer = (char *) ((u_char *) path_buffer + ((path_size + pad) & -0x10));
+    }
 
-void mgDrawDirectEnd() {
-    // The run went straight into the renderer's frame; there is no packet to claim.
+    if (LoadFile2(pack, pack_buffer, &pack_size, 0) == 0) {
+        return -1;
+    }
+
+    return BuildBase(base_no, (u_long128 *) path_buffer, path_size, (u_long128 *) pack_buffer, pack_size, memory,
+                     level);
 }
