@@ -1,3 +1,4 @@
+#include <optional>
 #include "mg_drawenv.hpp"
 
 #include <cmath>
@@ -51,12 +52,37 @@ DepthMap CurrentDepthMap() {
 // The game's GS screen is mgScreenWidth x mgScreenHeight centred at 2048,2048 in GS coordinates,
 // while the renderer's logical frame is always 640x480: a 512-wide screen stretches to 640 as a
 // PAL television's pixels do, a 640-wide one passes through.
+// An off-screen texture the game aims the frame buffer at has its own logical size, so a sprite's
+// coordinates scale to that rather than to the 640x480 of the main frame; otherwise a 512-wide target
+// is drawn into 1.25 times too wide.
+static void ActiveLogicalSize(float &width, float &height) {
+    width = gfx::LogicalWidth();
+    height = gfx::LogicalHeight();
+
+    gfx::TextureHandle target = gfx::CurrentRenderTarget();
+
+    if (target != gfx::kMainTarget) {
+        std::optional<gfx::TextureInfo> info = gfx::GetTextureInfo(target);
+
+        if (info && info->render_target && info->width > 0 && info->height > 0) {
+            width = static_cast<float>(info->width);
+            height = static_cast<float>(info->height);
+        }
+    }
+}
+
 float ScreenXScale() {
-    return mgScreenWidth > 0 ? gfx::LogicalWidth() / static_cast<float>(mgScreenWidth) : 1.0f;
+    float width;
+    float height;
+    ActiveLogicalSize(width, height);
+    return mgScreenWidth > 0 ? width / static_cast<float>(mgScreenWidth) : 1.0f;
 }
 
 float ScreenYScale() {
-    return mgScreenHeight > 0 ? gfx::LogicalHeight() / static_cast<float>(mgScreenHeight) : 1.0f;
+    float width;
+    float height;
+    ActiveLogicalSize(width, height);
+    return mgScreenHeight > 0 ? height / static_cast<float>(mgScreenHeight) : 1.0f;
 }
 
 float LogicalX(int gs_x) {
