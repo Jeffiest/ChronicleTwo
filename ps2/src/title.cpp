@@ -614,7 +614,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
 
     if (area != NULL) {
         area->battle_clear = 1;
-        area->battle_bgm_state = (int) DNG_BGM_MAP;
+        area->battle_bgm_state = DNG_BGM_MAP;
         area->battle_bgm_vol = 0.0f;
         area->camera_mode = DNG_CAMERA_FOLLOW;
         area->pause_flag = 0;
@@ -659,7 +659,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
     SetTextureTable(0x73, 0x60, &DataBuffer);
     DataBuffer.Align64();
     TitleInfo = new (DataBuffer.Alloc(0x1C)) TITLE_INFO;
-    GamePad__2.SetAutoRepeat((int) PAD_UP | (int) PAD_DOWN, 0xF, 4);
+    GamePad__2.SetAutoRepeat(PAD_UP | PAD_DOWN, 0xF, 4);
     GamePad__2.MenuModeOn(0x78);
 
     if (GameBootInit == 0) {
@@ -794,7 +794,7 @@ static void TitleBootInit() {
     sndWaitTransBd();
     LoadFile2("snd2/event/EV_600_000.snd", sound_buffer, &file_size, 0);
     sndInitPort(4);
-    TitleEventSound = sndLoadSound((int) SND_PORT_EVENT, (u_int *) sound_buffer, &snd_memory);
+    TitleEventSound = sndLoadSound(SND_PORT_EVENT, (u_int *) sound_buffer, &snd_memory);
     DataBuffer.Align64();
     int        read_capacity = DataBuffer.stGetRest();
     u_long128 *read_top = DataBuffer.stGetTop();
@@ -922,7 +922,7 @@ int TitleLoop() {
                     InitSaveData();
                     DebugGetItem(NULL, 1);
                     MenuArg.param[0] = 0;
-                    MenuArg.open_type = (int) MENU_OPEN_COSTUME;
+                    MenuArg.open_type = MENU_OPEN_COSTUME;
                     GetUserDataMan()->SetChrEquipDirect(1, 0x7F);
                     GetUserDataMan()->SetChrEquipDirect(1, 0x85);
                     GetUserDataMan()->SetChrEquipDirect(1, 0x10A);
@@ -936,11 +936,11 @@ int TitleLoop() {
                 }
 
                 if (result == TITLE_KEY_CONTINUE) {
-                    MenuArg.open_type = (int) MENU_OPEN_TITLE_SAVE;
+                    MenuArg.open_type = MENU_OPEN_TITLE_SAVE;
                 }
 
                 if (result == TITLE_KEY_OPTION) {
-                    MenuArg.open_type = (int) MENU_OPEN_OPTION;
+                    MenuArg.open_type = MENU_OPEN_OPTION;
                 }
 
                 result = 0;
@@ -954,7 +954,7 @@ int TitleLoop() {
             if (result == TITLE_KEY_OMAKE) {
                 MenuArg.param[0] = 0;
                 result = 0;
-                MenuArg.open_type = (int) MENU_OPEN_TITLE_SUBGAME_SAVE;
+                MenuArg.open_type = MENU_OPEN_TITLE_SUBGAME_SAVE;
                 TitleInfo->next_mode = TITLE_MODE_SUBGAME_MENU;
             }
 
@@ -1018,7 +1018,7 @@ int TitleLoop() {
 
     if (menu_closed != 0) {
         MenuMainExit();
-        GamePad__2.SetAutoRepeat((int) PAD_UP | (int) PAD_DOWN, 0xF, 4);
+        GamePad__2.SetAutoRepeat(PAD_UP | PAD_DOWN, 0xF, 4);
         GamePad__2.MenuModeOn(0x78);
     }
 
@@ -1029,7 +1029,7 @@ int TitleLoop() {
         arg.event_no = 0x3F2;
         arg.map_no = 0;
         arg.floor_no = 0x14;
-        NextLoop((int) LOOP_DUNGEON, arg);
+        NextLoop(LOOP_DUNGEON, arg);
         PlayTimeCount(1);
         memcpy(&GetSaveData()->config, &TitleInfo->config, sizeof(SV_CONFIG_OPTION));
         CUserDataManager *user = GetUserDataMan();
@@ -1466,7 +1466,7 @@ void TitleModeInit() {
         TitleRushWaitCountBoot = 1;
     }
 
-    TitleCameraPhase = (int) TITLE_CAMERA_APPROACH;
+    TitleCameraPhase = TITLE_CAMERA_APPROACH;
     TitleProjection = 480.0f;
 
     if (TitleCamera != NULL) {
@@ -2160,7 +2160,7 @@ void TitleMapDraw() {
 
             if (!(TitleCameraAddAngle < TWO_PI)) {
                 TitleCameraPhaseCounter = 0;
-                TitleCameraPhase = (int) TITLE_CAMERA_HOLD;
+                TitleCameraPhase = TITLE_CAMERA_HOLD;
                 TitleScene->active_camera = 0;
                 follow->FollowOn();
             }
@@ -3208,7 +3208,7 @@ void TitleLangSelInit(mgCMemory *memory) {
     int file_size;
     u8 *buffer;
 
-    GamePad__2.SetAutoRepeat((int) PAD_UP | (int) PAD_DOWN, 0xF, 4);
+    GamePad__2.SetAutoRepeat(PAD_UP | PAD_DOWN, 0xF, 4);
     GamePad__2.MenuModeOn(0x78);
     title_lang_select = 0;
     mgFrameRate = 1;
@@ -3217,7 +3217,7 @@ void TitleLangSelInit(mgCMemory *memory) {
     memory->Alloc(file_size / 16 + 1);
     mgTexManager.EnterIMGFile(buffer, 1, NULL, NULL);
     lang_tex = mgTexManager.GetTexture("lang_select", -1);
-    title_lang_phase = (int) TITLE_LANG_FADE_IN;
+    title_lang_phase = TITLE_LANG_FADE_IN;
     title_lang_curxy[0] = 100.0f;
     title_lang_fadealpha = 0x80;
     title_lang_curxy[1] = 100.0f;

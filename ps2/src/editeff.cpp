@@ -91,7 +91,7 @@ void EditInitPlaceEffect() {
     CPaintEffect *paint;
 
     for (i = 0; i < star_effect_count; i++) {
-        _StarEffect[i].state = (int) EDIT_EFFECT_STATE_FREE;
+        _StarEffect[i].state = EDIT_EFFECT_STATE_FREE;
     }
 
     EffectFlag = 0;
@@ -99,7 +99,7 @@ void EditInitPlaceEffect() {
     paint = PaintEffect;
 
     if (paint != NULL) {
-        paint->state = (int) EDIT_EFFECT_STATE_FREE;
+        paint->state = EDIT_EFFECT_STATE_FREE;
         paint->shape = 0;
     }
 }
@@ -110,7 +110,7 @@ int EditPlaceEffect(CEditParts *parts, float *position) {
     int          index = 0;
 
     for (; index < star_effect_count; ++index) {
-        if (_StarEffect[index].state == (int) EDIT_EFFECT_STATE_FREE) {
+        if (_StarEffect[index].state == EDIT_EFFECT_STATE_FREE) {
             effect = &_StarEffect[index];
             break;
         }
@@ -171,7 +171,7 @@ int EditPaintEffect(CEditParts *parts, float *position, float *color, int shape)
     paint = NULL;
 
     for (i = 0; i < paint_effect_count; i++) {
-        if (PaintEffect[i].state == (int) EDIT_EFFECT_STATE_FREE) {
+        if (PaintEffect[i].state == EDIT_EFFECT_STATE_FREE) {
             paint = &PaintEffect[i];
         }
     }
@@ -242,18 +242,18 @@ void EditPEffectDraw(int unused) {
 }
 
 int EditGetPEffectState() {
-    int result = (int) EDIT_EFFECT_STATE_FREE;
+    int result = EDIT_EFFECT_STATE_FREE;
     int i;
 
     for (i = 0; i < star_effect_count; i++) {
         int state = _StarEffect[i].state;
 
-        if (state != (int) EDIT_EFFECT_STATE_FREE) {
-            if (state != (int) EDIT_EFFECT_STATE_END) {
+        if (state != EDIT_EFFECT_STATE_FREE) {
+            if (state != EDIT_EFFECT_STATE_END) {
                 return 1;
             }
 
-            result = (int) EDIT_EFFECT_STATE_END;
+            result = EDIT_EFFECT_STATE_END;
         }
     }
 
@@ -276,7 +276,7 @@ void CStarEffect::ParamInit(float *spread, int count) {
     sceVu0FVECTOR p;
 
     sceVu0ScaleVector(spread, spread, 0.12f);
-    state = (int) EDIT_EFFECT_STATE_PLAY;
+    state = EDIT_EFFECT_STATE_PLAY;
 
     for (i = 0; i < particle_max; i++) {
         radius = 0.5f * spread[0] * (1.0f + mgRnd());
@@ -311,7 +311,7 @@ void CStarEffect::Step() {
     float current;
     float next;
 
-    if (state != (int) EDIT_EFFECT_STATE_FREE) {
+    if (state != EDIT_EFFECT_STATE_FREE) {
         current = scale[0];
         next = current + (10.0f - current) / 9.0f;
         scale[2] = next;
@@ -328,7 +328,7 @@ void CStarEffect::Step() {
 
             if (alpha < 0.0f) {
                 alpha = 0.0f;
-                state = (int) EDIT_EFFECT_STATE_END;
+                state = EDIT_EFFECT_STATE_END;
             }
         }
 
@@ -340,7 +340,7 @@ void CStarEffect::Step() {
 }
 
 int CStarEffect::Draw() {
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END) {
         return 0;
     }
 
@@ -400,7 +400,7 @@ int CStarEffect::Draw() {
 void CPaintEffect::ParamInit(float size) {
     int i;
 
-    state = (int) EDIT_EFFECT_STATE_PLAY;
+    state = EDIT_EFFECT_STATE_PLAY;
 
     for (i = 0; i < paint_particle_count; i++) {
         mgZeroVector(drop[i]);
@@ -419,7 +419,7 @@ void CPaintEffect::ParamInit(float size) {
 void CPaintEffect::Step() {
     int i;
 
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END) {
         return;
     }
 
@@ -429,7 +429,7 @@ void CPaintEffect::Step() {
         return;
     }
 
-    state = (int) EDIT_EFFECT_STATE_SCATTER;
+    state = EDIT_EFFECT_STATE_SCATTER;
 
     for (i = 0; i < paint_particle_count; i++) {
         drop_speed[i][1] -= 0.3f;
@@ -439,12 +439,12 @@ void CPaintEffect::Step() {
     alpha -= 0.05f;
 
     if (alpha < 0.0f) {
-        state = (int) EDIT_EFFECT_STATE_FREE;
+        state = EDIT_EFFECT_STATE_FREE;
     }
 }
 
 int CPaintEffect::Draw() {
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END || state == (int) EDIT_EFFECT_STATE_PLAY) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END || state == EDIT_EFFECT_STATE_PLAY) {
         return 0;
     }
 
@@ -498,8 +498,8 @@ void EditInitPlaceAnime() {
     int i;
 
     for (i = 0; i < place_anime_count; i++) {
-        PlaceAnime[i].state = (int) EDIT_EFFECT_STATE_FREE;
-        PlaceAnime[i].type = (int) EDIT_PLACE_ANIME_NONE;
+        PlaceAnime[i].state = EDIT_EFFECT_STATE_FREE;
+        PlaceAnime[i].type = EDIT_PLACE_ANIME_NONE;
         PlaceAnime[i].parts = NULL;
     }
 }
@@ -510,7 +510,7 @@ int EditNowPlaceAnime() {
     for (i = 0; i < place_anime_count; i++) {
         int state = PlaceAnime[i].state;
 
-        if (state != (int) EDIT_EFFECT_STATE_END && state != (int) EDIT_EFFECT_STATE_FREE) {
+        if (state != EDIT_EFFECT_STATE_END && state != EDIT_EFFECT_STATE_FREE) {
             return 1;
         }
     }
@@ -623,11 +623,11 @@ void CPlaceAnime::Step() {
     int   finished;
     float squash;
 
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END) {
         return;
     }
 
-    if (parts == NULL || type == (int) EDIT_PLACE_ANIME_NONE) {
+    if (parts == NULL || type == EDIT_PLACE_ANIME_NONE) {
         return;
     }
 
@@ -636,7 +636,7 @@ void CPlaceAnime::Step() {
     parts->GetScale(base_scale);
     finished = 0;
 
-    if (type == (int) EDIT_PLACE_ANIME_SWAY) {
+    if (type == EDIT_PLACE_ANIME_SWAY) {
         height_speed = height_speed - 1.2f;
         height += height_speed;
 
@@ -654,7 +654,7 @@ void CPlaceAnime::Step() {
         if (frame > 60) {
             finished = 1;
         }
-    } else if (type == (int) EDIT_PLACE_ANIME_SQUASH) {
+    } else if (type == EDIT_PLACE_ANIME_SQUASH) {
         switch (phase) {
             case 0:
                 height_speed = height_speed - 1.2f;
@@ -680,7 +680,7 @@ void CPlaceAnime::Step() {
 
                 break;
         }
-    } else if (type == (int) EDIT_PLACE_ANIME_REMOVE) {
+    } else if (type == EDIT_PLACE_ANIME_REMOVE) {
         height += 20.0f;
         scale[0] -= 0.1f;
         scale[2] -= 0.1f;
@@ -703,7 +703,7 @@ void CPlaceAnime::Step() {
     }
 
     if (finished != 0) {
-        state = (int) EDIT_EFFECT_STATE_FREE;
+        state = EDIT_EFFECT_STATE_FREE;
         return;
     }
 
@@ -714,11 +714,11 @@ void CPlaceAnime::Step() {
 }
 
 void CPlaceAnime::Step2() {
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END) {
         return;
     }
 
-    if (parts == NULL || type == (int) EDIT_PLACE_ANIME_NONE) {
+    if (parts == NULL || type == EDIT_PLACE_ANIME_NONE) {
         return;
     }
 
@@ -728,11 +728,11 @@ void CPlaceAnime::Step2() {
 }
 
 void CPlaceAnime::Draw() {
-    if (state == (int) EDIT_EFFECT_STATE_FREE || state == (int) EDIT_EFFECT_STATE_END) {
+    if (state == EDIT_EFFECT_STATE_FREE || state == EDIT_EFFECT_STATE_END) {
         return;
     }
 
-    if (parts == NULL || type != (int) EDIT_PLACE_ANIME_REMOVE) {
+    if (parts == NULL || type != EDIT_PLACE_ANIME_REMOVE) {
         return;
     }
 
@@ -740,18 +740,18 @@ void CPlaceAnime::Draw() {
 }
 
 int EditGetPlaceAnimeState() {
-    int result = (int) EDIT_EFFECT_STATE_FREE;
+    int result = EDIT_EFFECT_STATE_FREE;
     int i;
 
     for (i = 0; i < place_anime_count; i++) {
         int state = PlaceAnime[i].state;
 
-        if (state != (int) EDIT_EFFECT_STATE_FREE) {
-            if (state != (int) EDIT_EFFECT_STATE_END) {
+        if (state != EDIT_EFFECT_STATE_FREE) {
+            if (state != EDIT_EFFECT_STATE_END) {
                 return 1;
             }
 
-            result = (int) EDIT_EFFECT_STATE_END;
+            result = EDIT_EFFECT_STATE_END;
         }
     }
 

@@ -1135,7 +1135,7 @@ int RemoveMtnStep(CScene *scene) {
 
     if (RemoveMtnCnt == 3) {
         parts_index = edit_map->GetePlaceParts(RemoveMtnPos);
-        EditSetPlaceAnime((int) EDIT_PLACE_ANIME_REMOVE, (CMapParts *) edit_map->GetePlaceParts(parts_index));
+        EditSetPlaceAnime(EDIT_PLACE_ANIME_REMOVE, (CMapParts *) edit_map->GetePlaceParts(parts_index));
 
         if (RemoveEditParts(scene, parts_index, RemoveMtnPos) != 0) {
             sndSePlay(GetSystemSndID(), 0x17, 0);

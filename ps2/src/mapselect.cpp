@@ -517,12 +517,12 @@ int MapTypeSelect() {
     if (GamePad__2.Down(PAD_CIRCLE)) {
         if (SelectMapNum[select] > 0) {
             SelectMapType = select;
-            SelectMode = (int) MAP_SELECT_MODE_MAP;
+            SelectMode = MAP_SELECT_MODE_MAP;
         }
     }
 
     if (GamePad__2.Down(PAD_CROSS)) {
-        SelectMode = (int) MAP_SELECT_MODE_CANCEL;
+        SelectMode = MAP_SELECT_MODE_CANCEL;
     }
 
     cursor += sprintf(cursor, "\n\n");
@@ -659,12 +659,12 @@ int MapSelect() {
     GetDebugFont()->DrawDirect(text, 10, 10);
 
     if (GamePad__2.Down(PAD_CROSS)) {
-        SelectMode = (int) MAP_SELECT_MODE_TYPE;
+        SelectMode = MAP_SELECT_MODE_TYPE;
     }
 
     if (GamePad__2.Down(PAD_CIRCLE)) {
         strcpy(SelectMapName, SelectMapList[SelectMapType][*selected]);
-        SelectMode = (int) MAP_SELECT_MODE_DECIDE;
+        SelectMode = MAP_SELECT_MODE_DECIDE;
     }
 
     return 0;
@@ -673,7 +673,7 @@ int MapSelect() {
 int MapSelectLoop() {
     switch (SelectMode) {
         case MAP_SELECT_MODE_CANCEL:
-            return (int) MAP_SELECT_CANCEL;
+            return MAP_SELECT_CANCEL;
         case MAP_SELECT_MODE_TYPE:
             MapTypeSelect();
             break;
@@ -681,10 +681,10 @@ int MapSelectLoop() {
             MapSelect();
             break;
         case MAP_SELECT_MODE_DECIDE:
-            return (int) MAP_SELECT_DECIDE;
+            return MAP_SELECT_DECIDE;
     }
 
-    return (int) MAP_SELECT_CONTINUE;
+    return MAP_SELECT_CONTINUE;
 }
 
 void InitSaveDataEdit(mgCMemory *stack) {
@@ -963,9 +963,9 @@ int EventViewLoop() {
             loop_arg.event_no = chosen->event_no;
 
             if (chosen->dungeon != 0) {
-                NextLoop((int) LOOP_DUNGEON, loop_arg);
+                NextLoop(LOOP_DUNGEON, loop_arg);
             } else {
-                NextLoop((int) LOOP_EDIT, loop_arg);
+                NextLoop(LOOP_EDIT, loop_arg);
             }
 
             return 1;

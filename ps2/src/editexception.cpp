@@ -370,7 +370,7 @@ void InitFirePowder(int map_no, CScene *scene, int texb, mgCMemory *memory) {
         return;
     }
 
-    if (GetSaveData()->GetBitFlag((int) SAVE_FLAG_EDIT_BLOCKED) != 0) {
+    if (GetSaveData()->GetBitFlag(SAVE_FLAG_EDIT_BLOCKED) != 0) {
         return;
     }
 

@@ -1171,7 +1171,7 @@ int MenuGeoramaInit(mgCMemory *stack, int arg) {
     MenuGeoramaStack.stSetBuffer(stack->stGetTop(), rest);
     MenuCapture(MenuCommonInfo->tex_block[0], &MenuGeoramaStack, 1);
     MenuMainImageDataEnter(MenuCommonInfo->tex_block[1]);
-    MenuCommonInfo->now_mode = (int) MENU_MODE_GEORAMA;
+    MenuCommonInfo->now_mode = MENU_MODE_GEORAMA;
     MenuDataAnalyze(GetMenuMainPosCfgBuffer(&size), size, &MenuGeoramaStack);
     MenuDataAnalyze((char *) GetPackFile(MenuArg.pack, "geo.cfg", &size), size, &MenuGeoramaStack);
     InitDownLoadAnaunce(&MenuGeoramaStack);
@@ -1341,7 +1341,7 @@ int MenuGeoramaInit(mgCMemory *stack, int arg) {
                                  GeoRequestBoardCheckPoint, 4);
     CMenuGeoPt->UpdateGeoramaPartsList();
     MenuKeySelectCheck(0, &CMenuGeoPt->list_info[0].select, &CMenuGeoPt->list_info[0].top, 0,
-                       CMenuGeoPt->GetNowViewModeMax(0) + 1, GEORAMA_LIST_LINE_NUM, (int) MENU_CURSOR_LIMIT_CLAMP);
+                       CMenuGeoPt->GetNowViewModeMax(0) + 1, GEORAMA_LIST_LINE_NUM, MENU_CURSOR_LIMIT_CLAMP);
     CheckMenuLine(&CMenuGeoPt->list_info[0].select, &CMenuGeoPt->list_info[0].top, CMenuGeoPt->GetNowViewModeMax(0),
                   GEORAMA_LIST_LINE_NUM);
     CheckMenuLine(&CMenuGeoPt->list_info[1].select, &CMenuGeoPt->list_info[1].top, CMenuGeoPt->GetNowViewModeMax(1),
@@ -1750,7 +1750,7 @@ void MenuGeoramaListDraw(int &tex_block, float *pos, int page, int alpha) {
                     PrimQuad(prim, line_x, check_y, potti1);
                     int number_y = (int) (line_y - 16.0f);
                     PrimQuad(prim, 150.0f + line_x, number_y, times_tex);
-                    PrimDrawNumber(prim, CMenuGeoPt->stock_list[i].num, (int) MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), number_y, number_tex, -2, 0);
+                    PrimDrawNumber(prim, CMenuGeoPt->stock_list[i].num, MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), number_y, number_tex, -2, 0);
 
                     if (mgScreenHeight <= check_y) {
                         break;
@@ -1804,7 +1804,7 @@ void MenuGeoramaListDraw(int &tex_block, float *pos, int page, int alpha) {
 
                     if (0 < item->no && item->num > 1) {
                         PrimQuad(prim, 150.0f + line_x, line_y - 16.0f, times_tex);
-                        PrimDrawNumber(prim, item->num, (int) MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), (int) (line_y - 16.0f), number_tex, -2, 0);
+                        PrimDrawNumber(prim, item->num, MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), (int) (line_y - 16.0f), number_tex, -2, 0);
                     }
 
                     if (mgScreenHeight <= check_y) {
@@ -1841,7 +1841,7 @@ void MenuGeoramaListDraw(int &tex_block, float *pos, int page, int alpha) {
                         prim->Texture(Tex_Georama);
                         prim->Color(0x80, 0x80, 0x80, alpha);
                         PrimQuad(prim, 150.0f + line_x, line_y - 16.0f, times_tex);
-                        PrimDrawNumber(prim, GeoramaPenkiNum[i], (int) MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), (int) (line_y - 16.0f), number_tex, -2, 0);
+                        PrimDrawNumber(prim, GeoramaPenkiNum[i], MENU_NUMBER_ALIGN_CENTER, (int) (180.0f + line_x), (int) (line_y - 16.0f), number_tex, -2, 0);
                         prim->End();
                         prim->TextureMapEnable(0);
                         prim->Shading(0);
@@ -2307,7 +2307,7 @@ int StepDownLoadAnaunce(int confirm) {
     if (DownLoadMesMakeProgress == 3) {
         state = DownLoadActiveMes->State();
 
-        if (state == (int) CLSMES_SHOWN || state == (int) CLSMES_PAGE_WAIT) {
+        if (state == CLSMES_SHOWN || state == CLSMES_PAGE_WAIT) {
             DownLoadMesMakeProgress = 0;
             DownLoadActiveMes->push_button = 1;
         }
@@ -4343,7 +4343,7 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
 
     moved = 0;
 
-    if (MenuKeySelectCheck(step, &menu->view_mode, NULL, 0, 6, 6, (int) MENU_CURSOR_LIMIT_CLAMP) != 0) {
+    if (MenuKeySelectCheck(step, &menu->view_mode, NULL, 0, 6, 6, MENU_CURSOR_LIMIT_CLAMP) != 0) {
         MenuSePlay(SYSTEM_SE_CURSOR);
 
         for (i = 0; i < 6; i++) {
@@ -4503,7 +4503,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
             int prev_selected = menu->select;
             int prev_top = menu->top;
             MenuKeySelectCheck(key, &menu->select, &menu->top, 0,
-                               menu->GetNowViewModeMax(1), 8, (int) MENU_CURSOR_LIMIT_CLAMP);
+                               menu->GetNowViewModeMax(1), 8, MENU_CURSOR_LIMIT_CLAMP);
             menu->SetGeoListInfo(menu->view_mode, menu->select, menu->top);
 
             if (prev_top != menu->top) {
@@ -4789,7 +4789,7 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
             old_index = menu->select;
             old_selected = menu->top;
             MenuKeySelectCheck(step, &menu->select, &menu->top, 0,
-                               menu->GetNowViewModeMax(0), 8, (int) MENU_CURSOR_LIMIT_CLAMP);
+                               menu->GetNowViewModeMax(0), 8, MENU_CURSOR_LIMIT_CLAMP);
             menu->SetGeoListInfo(menu->view_mode, menu->select, menu->top);
 
             if (old_selected != menu->top) {
@@ -4968,7 +4968,7 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
             int old_select = menu->select;
             int old_top = menu->top;
             MenuKeySelectCheck(step, &menu->select, &menu->top, 0, menu->GetNowViewModeMax(GEORAMA_VIEW_CHECK_POINT),
-                               GEORAMA_LIST_LINE_NUM, (int) MENU_CURSOR_LIMIT_CLAMP);
+                               GEORAMA_LIST_LINE_NUM, MENU_CURSOR_LIMIT_CLAMP);
             menu->SetGeoListInfo(menu->view_mode, menu->select, menu->top);
 
             if (old_top != menu->top) {
@@ -5145,7 +5145,7 @@ int MenuGeoramaPaintSelect(CMenuGeorama *menu, int keys, int pushed) {
     }
 
     old_cursor = menu->paint_select;
-    MenuKeySelectCheck(step, &menu->paint_select, &menu->paint_top, 0, 9, 8, (int) MENU_CURSOR_LIMIT_CLAMP);
+    MenuKeySelectCheck(step, &menu->paint_select, &menu->paint_top, 0, 9, 8, MENU_CURSOR_LIMIT_CLAMP);
     menu->SetGeoListInfo(menu->view_mode, menu->paint_select, menu->paint_top);
 
     if (old_cursor != menu->paint_select) {
@@ -5475,7 +5475,7 @@ int CRemovalMenu::KeyStep() {
                             int move = georama_menu_local_key(select_key);
                             old_top = top;
 
-                            if (MenuKeySelectCheck(move, &select, &top, 0, npc_num, GEORAMA_LIST_LINE_NUM, (int) MENU_CURSOR_LIMIT_CLAMP) != 0) {
+                            if (MenuKeySelectCheck(move, &select, &top, 0, npc_num, GEORAMA_LIST_LINE_NUM, MENU_CURSOR_LIMIT_CLAMP) != 0) {
                                 model_wait = 0x10;
                                 reload = 1;
                                 MenuSePlay(SYSTEM_SE_CURSOR);
