@@ -240,6 +240,7 @@ enum CHARA_ENTRY_GROUP {
     CHARA_ENTRY_GROUP_TARGET = 0, /**< The point that lock-on, aiming and status displays use. */
     CHARA_ENTRY_GROUP_SHADOW = 1, /**< The point the drop shadow is cast from. */
     CHARA_ENTRY_GROUP_HIT = 2,    /**< Spheres that attacks hit with. */
+    CHARA_ENTRY_GROUP_DAMAGE = 3, /**< Frames a monster script spans a damage hit between. */
     CHARA_ENTRY_GROUP_BODY = 4,   /**< Spheres that make up the body. */
 };
 
