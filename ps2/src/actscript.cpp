@@ -559,7 +559,7 @@ int _GET_SHOT_TYPE(RS_STACKDATA *stack, int argc) {
         return false;
     }
 
-    int attack_type = GetBattleCharaInfo()->equip[1].GetAttackType();
+    int attack_type = GetBattleCharaInfo()->equip[CHARA_EQUIP_SUB].GetAttackType();
     SetStack(stack, attack_type);
     return true;
 }
@@ -1504,7 +1504,7 @@ void ShotMonicaMagic(float *position, float *direction, float scale) {
     char *effect_name;
     char *unused_name;
     int   effect_power;
-    GetBattleCharaInfo()->equip[1].GetEffectReadType(&effect_name, &unused_name, &effect_power);
+    GetBattleCharaInfo()->equip[CHARA_EQUIP_SUB].GetEffectReadType(&effect_name, &unused_name, &effect_power);
     action_info.chara->effect_man->CreateEffSpt(effect_name, 0, 0);
     action_info.chara->effect_man->SetScriptVect1(position, 0, -1);
     action_info.chara->effect_man->SetScriptVect2(direction, 0, -1);
@@ -2199,7 +2199,7 @@ int _GET_RING_COLOR(RS_STACKDATA *stack, int argc) {
         return false;
     }
 
-    int ring_type = GetBattleCharaInfo()->equip[1].GetEffectReadType(&effect_name, &unused_name, &effect_power);
+    int ring_type = GetBattleCharaInfo()->equip[CHARA_EQUIP_SUB].GetEffectReadType(&effect_name, &unused_name, &effect_power);
 
     if (ring_type < 0 || ring_type > 3) {
         return false;
