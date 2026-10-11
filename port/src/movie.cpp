@@ -314,7 +314,7 @@ PORT_OVERRIDE int CMovie::GetViBufTagSize() {
     return 0x1010;
 }
 
-PORT_OVERRIDE int CMovie::GetMpegWorkSize(int width, int height) {
+PORT_OVERRIDE int CMovie::GetMpegWorkSize(s32 width, s32 height) {
     return width * height * 9 / 2 + 0x1768;
 }
 
@@ -322,7 +322,7 @@ PORT_OVERRIDE int CMovie::GetReadBufSize() {
     return 0x50050;
 }
 
-PORT_OVERRIDE int CMovie::GetTagProgSize(int width, int height) {
+PORT_OVERRIDE int CMovie::GetTagProgSize(s32 width, s32 height) {
     int macroblocks = (width >> 4) * height;
     int groups = macroblocks >> 4;
     int bytes = ((groups * 6) + 0x6E) * 4 + 0x3F;
@@ -330,8 +330,8 @@ PORT_OVERRIDE int CMovie::GetTagProgSize(int width, int height) {
     return (bytes >> 6) << 8;
 }
 
-PORT_OVERRIDE int CMovie::videoDecCreate(VideoDec *dec, u_char *mpeg_buffer, int mpeg_size, u_long128 *data,
-                           u_long128 *tag, int sectors, TimeStamp *ts, int ts_count) {
+PORT_OVERRIDE int CMovie::videoDecCreate(VideoDec *dec, u8 *mpeg_buffer, int mpeg_size, u_long128 *data, u_long128 *tag,
+                                         int sectors, TimeStamp *ts, int ts_count) {
     (void) data;
     (void) tag;
     (void) sectors;
@@ -345,8 +345,7 @@ PORT_OVERRIDE int CMovie::videoDecCreate(VideoDec *dec, u_char *mpeg_buffer, int
     return sceMpegCreate(&dec->mpeg, mpeg_buffer, mpeg_size);
 }
 
-PORT_OVERRIDE int CMovie::videoDecSetStream(VideoDec *dec, int id, int param,
-                              int (*callback)(sceMpeg *, sceMpegCbData *, void *), void *user) {
+PORT_OVERRIDE int CMovie::videoDecSetStream(VideoDec *dec, int id, int param, sceMpegCallback callback, void *user) {
     sceMpegAddStrCallback(&dec->mpeg, (sceMpegStrType) (id & 0xFF), param, callback, user);
     return 1;
 }

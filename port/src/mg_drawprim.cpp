@@ -553,7 +553,7 @@ PORT_OVERRIDE void mgCDrawPrim::Vertex(float x, float y, float z) {
     Vertex(pos);
 }
 
-PORT_OVERRIDE void mgCDrawPrim::Vertex(float *pos) {
+void mgCDrawPrim::Vertex(float *pos) {
     Vertex4(Fixed4(pos[0]), Fixed4(pos[1]), static_cast<int>(pos[2]));
 }
 
@@ -582,7 +582,7 @@ PORT_OVERRIDE void mgCDrawPrim::Color(int r, int g, int b, int a) {
     state.color[3] = static_cast<u_char>(a);
 }
 
-PORT_OVERRIDE void mgCDrawPrim::Color(float *color) {
+void mgCDrawPrim::Color(float *color) {
     Color(static_cast<int>(color[0]), static_cast<int>(color[1]), static_cast<int>(color[2]),
           static_cast<int>(color[3]));
 }
