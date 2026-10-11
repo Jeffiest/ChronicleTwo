@@ -1,3 +1,7 @@
+#include <tuple>
+#include <set>
+#include <cstdio>
+#include <algorithm>
 #include "common.h"
 
 #include <libgraph.h>
@@ -264,6 +268,39 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
 
         gfx::TextureBinding binding;
         PortMgTextureBinding(entry != NULL ? entry->texture : NULL, binding);
+
+        // Diagnostic: DC_DUMP_DRAWS=1 prints each distinct material group once.
+        static const bool dump = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        static int        dumped;
+        static std::set<std::tuple<const void *, int, size_t, size_t>> seen;
+
+        if (dump && dumped < 600 && seen.insert({this, node->material, vertices.size(), indices.size()}).second) {
+            dumped++;
+            int   bad = 0;
+            float lo[3] = {1e30f, 1e30f, 1e30f};
+            float hi[3] = {-1e30f, -1e30f, -1e30f};
+
+            for (const gfx::Vertex3D &v : vertices) {
+                for (int k = 0; k < 3; k++) {
+                    if (!std::isfinite(v.position[k]) || !std::isfinite(v.normal[k])) {
+                        bad++;
+                        continue;
+                    }
+                    lo[k] = std::min(lo[k], v.position[k]);
+                    hi[k] = std::max(hi[k], v.position[k]);
+                }
+                if (!std::isfinite(v.uv[0]) || !std::isfinite(v.uv[1])) {
+                    bad++;
+                }
+            }
+            std::fprintf(stderr,
+                         "draw %p mat %d verts %zu idx %zu bad %d bbox [%.1f %.1f %.1f]..[%.1f %.1f %.1f] tex 0x%x "
+                         "pal 0x%x entry %d diff %.2f %.2f %.2f a %.2f lit %d colour %d\n",
+                         (const void *) this, node->material, vertices.size(), indices.size(), bad, lo[0], lo[1], lo[2],
+                         hi[0], hi[1], hi[2], binding.texture, binding.palette, entry != NULL, constants.diffuse[0],
+                         constants.diffuse[1], constants.diffuse[2], constants.diffuse[3], lit, has_colour);
+        }
+
         gfx::DrawMeshImmediate(vertices, indices, constants, binding, state, &transform);
     }
 
