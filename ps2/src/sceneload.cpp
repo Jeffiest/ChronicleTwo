@@ -14,8 +14,24 @@
 #include "sceneload.hpp"
 #include "scenesnd.hpp"
 
-static int         LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
+static int LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
+
+#ifdef PORT
+#include <chrono>
+
+// The EE's timer 0 register has no host counterpart; the load timings come from the host's steady
+// clock instead.
+static u_int timer0_now() {
+    static const auto start = std::chrono::steady_clock::now();
+    return (u_int) std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - start)
+        .count();
+}
+#else
 static const u_int timer0_count = 0x10000000;
+static u_int timer0_now() {
+    return *(volatile u_int *) timer0_count;
+}
+#endif
 
 /**
  *
@@ -355,7 +371,7 @@ int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_INFO2 *info) {
         CMap                        *map;
         SCN_LOADMAP_INFO2::MapFiles *files;
         int                          add_block_num;
-        *(volatile u_int *) timer0_count;
+        (void) timer0_now();
         map = GetMap(map_no);
         files = &info->files[0];
         add_files = NULL;
@@ -413,7 +429,7 @@ int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_INFO2 *info) {
     }
 
     if (step == SCN_LOADMAP_STEP_CREATE_MAP) {
-        start_count = *(volatile u_int *) timer0_count;
+        start_count = timer0_now();
         map = GetMap(map_no);
 
         if (info->place_parts_max > 0) {
@@ -421,7 +437,7 @@ int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_INFO2 *info) {
         }
 
         map->CreateMap(&mds_list_set, stack);
-        printf("5:%d\n", *(volatile u_int *) timer0_count - start_count);
+        printf("5:%d\n", timer0_now() - start_count);
         return SCN_LOADMAP_STEP_FUNC_POINT;
     }
 
