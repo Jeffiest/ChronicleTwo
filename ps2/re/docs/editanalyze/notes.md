@@ -63,3 +63,8 @@ templates:
 ## Unresolved
 - Names of the five towns behind the retail function names (enum uses the retail spellings).
 - `chara` value meanings in CheckLiveChara; CEditParts vtable slots 0x18 and 0x54.
+
+## Constants
+`AnalyzeEditMap` and the `CEditData::Analize` / `GetAnalyzeFlag` calls use `EditAnalyzeMap`. Part info IDs
+(`GetePlacePartsAtInfoID` arguments), villager numbers (`CheckLiveNPC`), condition slots and save bit flags stay
+numeric: their names are not established and their types belong to editparts / savedata.

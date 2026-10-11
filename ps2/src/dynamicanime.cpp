@@ -14,47 +14,65 @@
 #include "scriptinterpreter.hpp"
 
 /**
+ *
  * Dynamic animation receiving script commands.
+ *
  */
 static CDynamicAnime *dynNowDA;
 
 /**
+ *
  * Memory used by the current dynamic animation script.
+ *
  */
 static mgCMemory *dynStack;
 
 /**
+ *
  * Root frame used to resolve animation frame names.
+ *
  */
 static mgCFrame *dynTopFrame;
 
 /**
+ *
  * Number of animation frames read from the script.
+ *
  */
 static int dynFrameCount;
 
 /**
+ *
  * Number of animation vertices read from the script.
+ *
  */
 static int dynVertexCount;
 
 /**
+ *
  * Number of fixed vertices read from the script.
+ *
  */
 static int dynFixVertexCount;
 
 /**
+ *
  * Number of vertex bindings read from the script.
+ *
  */
 static int dynBindVertexCount;
 
 /**
+ *
  * Number of bounding boxes read from the script.
+ *
  */
 static int dynBBoxCount;
 
 /**
+ *
  * Number of collision shapes read from the script.
+ *
  */
 static int dynColCount;
 
@@ -76,7 +94,7 @@ static inline u_int align16_blocks(u_int size) {
  * Pulls two bound points toward their target separation.
  *
  */
-void BindPosition(float *a, float *b, float length, float rate) {
+static void BindPosition(float *a, float *b, float length, float rate) {
     float delta[4];
     float pull_a[4];
     float pull_b[4];
@@ -96,7 +114,7 @@ void CDynamicAnime::ResetPosition() {
     float matrix[4][4];
     int   i;
 
-    if (top_frame != 0) {
+    if (top_frame != NULL) {
         top_frame->GetLWMatrix(matrix);
         mgApplyMatrixN(now_vertex, matrix, init_vertex, vertex_num);
     }
@@ -107,6 +125,11 @@ void CDynamicAnime::ResetPosition() {
     }
 }
 
+/**
+ *
+ * Advances the wind's random sequence and gives its next value, between -1.0 and 1.0.
+ *
+ */
 static inline float WindRand(int *seed) {
     *seed = *seed * 0x10DCD + 1;
     return (float) *seed / -2147483648.0f;
@@ -194,7 +217,7 @@ void CDynamicAnime::Step() {
         }
 
         friction = 1.0f;
-        hit = 0;
+        hit = false;
 
         if (fixed->weight < 1.0f) {
             for (i = 0; i < collision_num; i++) {
@@ -209,12 +232,12 @@ void CDynamicAnime::Step() {
                 }
             }
 
-            if (hit != 0) {
+            if (hit) {
                 sceVu0ScaleVector(velocity[j], velocity[j], friction);
             }
         }
 
-        if (floor_enable != 0) {
+        if (floor_enable) {
             if (now_vertex[j][1] < floor_y) {
                 now_vertex[j][1] = floor_y;
                 sceVu0ScaleVector(velocity[j], velocity[j], 0.3f);
@@ -244,7 +267,7 @@ void CDynamicAnime::Step() {
     }
 }
 
-int CDACollision::CheckHit(float *position) { return 0; }
+int CDACollision::CheckHit(float *position) { return false; }
 
 void CDynamicAnime::SetWind(float power, float *direction) {
     wind_power = power;
@@ -256,12 +279,12 @@ void CDynamicAnime::ResetWind() {
 }
 
 void CDynamicAnime::SetFloor(float height) {
-    floor_enable = 1;
+    floor_enable = true;
     floor_y = height;
 }
 
 void CDynamicAnime::ResetFloor() {
-    floor_enable = 0;
+    floor_enable = false;
 }
 
 void CDynamicAnime::FramePose(mgCFrame *frame, DA_FRAME_POSE *pose) {
@@ -358,7 +381,7 @@ void CDynamicAnime::FramePose(mgCFrame *frame, DA_FRAME_POSE *pose) {
         sceVu0CopyVector(matrix[3], v0);
         matrix[3][3] = 1.0f;
 
-        if (pose->local != 0 && frame->parent != NULL) {
+        if (pose->local && frame->parent != NULL) {
             sceVu0FMATRIX parent_matrix;
 
             frame->parent->GetLWMatrix(parent_matrix);
@@ -389,55 +412,55 @@ void CDynamicAnime::PreCollision() {
 }
 
 void CDynamicAnime::Initialize() {
-    top_frame = 0;
+    top_frame = NULL;
     frame_num = 0;
-    frame = 0;
-    frame_pose = 0;
+    frame = NULL;
+    frame_pose = NULL;
     vertex_num = 0;
-    init_vertex = 0;
-    now_vertex = 0;
-    old_vertex = 0;
-    velocity = 0;
+    init_vertex = NULL;
+    now_vertex = NULL;
+    old_vertex = NULL;
+    velocity = NULL;
     fix_vertex_num = 0;
-    fix_vertex = 0;
+    fix_vertex = NULL;
     draw_frame_num = 0;
-    draw_frame = 0;
+    draw_frame = NULL;
     bind_vertex_num = 0;
-    bind_vertex = 0;
+    bind_vertex = NULL;
     bbox_num = 0;
-    bbox = 0;
+    bbox = NULL;
     collision_num = 0;
-    collision = 0;
+    collision = NULL;
     mgZeroVector(gravity);
     gravity[1] = -0.6f;
     k = 0.0f;
     wind_power = 0.0f;
     mgZeroVector(wind_dir);
     wind_seed = 0x1E69D;
-    wind_gust = 0;
+    wind_gust = 0.0f;
     wind_scale = 1.0f;
-    floor_enable = 0;
+    floor_enable = false;
     floor_y = -100000.0f;
 }
 
 void CDynamicAnime::NewFrameTable(int count, mgCMemory *memory) {
     frame_num = count;
-    frame = (mgCFrame **) memory->Alloc(align16_blocks(frame_num * 4));
-    frame_pose = (DA_FRAME_POSE *) memory->Alloc(align16_blocks(frame_num * 0x10));
+    frame = (mgCFrame **) memory->Alloc(align16_blocks(frame_num * sizeof(mgCFrame *)));
+    frame_pose = (DA_FRAME_POSE *) memory->Alloc(align16_blocks(frame_num * sizeof(DA_FRAME_POSE)));
 
     for (int i = 0; i < frame_num; i++) {
-        frame[i] = 0;
+        frame[i] = NULL;
         memset(&frame_pose[i], 0, sizeof(DA_FRAME_POSE));
     }
 }
 
 void CDynamicAnime::NewVertexTable(int count, mgCMemory *memory) {
     vertex_num = count;
-    init_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * 16));
-    now_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * 16));
-    old_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * 16));
-    velocity = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * 16));
-    world_init_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * 16));
+    init_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * sizeof(sceVu0FVECTOR)));
+    now_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * sizeof(sceVu0FVECTOR)));
+    old_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * sizeof(sceVu0FVECTOR)));
+    velocity = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * sizeof(sceVu0FVECTOR)));
+    world_init_vertex = (sceVu0FVECTOR *) memory->Alloc(align16_blocks(vertex_num * sizeof(sceVu0FVECTOR)));
 
     for (int i = 0; i < vertex_num; i++) {
         mgZeroVector(init_vertex[i]);
@@ -493,7 +516,7 @@ void CDynamicAnime::NewCollisionTable(int count, mgCMemory *memory) {
         align16_blocks(collision_num * sizeof(CDACollision *)));
 
     for (int i = 0; i < collision_num; i++) {
-        collision[i] = 0;
+        collision[i] = NULL;
     }
 }
 
@@ -507,7 +530,7 @@ void CDynamicAnime::SetFrame(int index, mgCFrame *new_frame) {
 
 mgCFrame *CDynamicAnime::GetFrame(int index) {
     if (index < 0 || index >= frame_num) {
-        return 0;
+        return NULL;
     }
 
     return frame[index];
@@ -515,7 +538,7 @@ mgCFrame *CDynamicAnime::GetFrame(int index) {
 
 DA_FRAME_POSE *CDynamicAnime::pGetFramePose(int index) {
     if (index < 0 || index >= frame_num) {
-        return 0;
+        return NULL;
     }
 
     return frame_pose + index;
@@ -523,39 +546,39 @@ DA_FRAME_POSE *CDynamicAnime::pGetFramePose(int index) {
 
 int CDynamicAnime::CheckVertexID(int index) {
     if (index < 0 || index >= vertex_num) {
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 void CDynamicAnime::SetInitVertex(int index, float *pos) {
-    if (CheckVertexID(index) != 0) {
+    if (CheckVertexID(index)) {
         *(u_long128 *) &init_vertex[index] = *(u_long128 *) pos;
     }
 }
 
 void CDynamicAnime::GetInitVertex(int index, float *pos) {
-    if (CheckVertexID(index) != 0) {
+    if (CheckVertexID(index)) {
         *(u_long128 *) pos = *(u_long128 *) &init_vertex[index];
     }
 }
 
 void CDynamicAnime::SetNowVertex(int index, float *pos) {
-    if (CheckVertexID(index) != 0) {
+    if (CheckVertexID(index)) {
         *(u_long128 *) &now_vertex[index] = *(u_long128 *) pos;
     }
 }
 
 void CDynamicAnime::SetOldVertex(int index, float *pos) {
-    if (CheckVertexID(index) != 0) {
+    if (CheckVertexID(index)) {
         *(u_long128 *) &old_vertex[index] = *(u_long128 *) pos;
     }
 }
 
 DA_FIX_VERTEX *CDynamicAnime::pGetFixVertex(int index) {
     if (index < 0 || index >= fix_vertex_num) {
-        return 0;
+        return NULL;
     }
 
     return fix_vertex + index;
@@ -571,7 +594,7 @@ void CDynamicAnime::SetDrawFrame(int index, int frame) {
 
 mgCFrame *CDynamicAnime::GetDrawFrame(int index) {
     if (index < 0 || index >= draw_frame_num) {
-        return 0;
+        return NULL;
     }
 
     return GetFrame(draw_frame[index]);
@@ -579,7 +602,7 @@ mgCFrame *CDynamicAnime::GetDrawFrame(int index) {
 
 DA_BIND_VERTEX *CDynamicAnime::pGetBindVertex(int index) {
     if (index < 0 || index >= bind_vertex_num) {
-        return 0;
+        return NULL;
     }
 
     return bind_vertex + index;
@@ -587,7 +610,7 @@ DA_BIND_VERTEX *CDynamicAnime::pGetBindVertex(int index) {
 
 DA_BOUNDING_BOX *CDynamicAnime::pGetBoundingBox(int index) {
     if (index < 0 || index >= bbox_num) {
-        return 0;
+        return NULL;
     }
 
     return bbox + index;
@@ -605,7 +628,7 @@ int CDynamicAnime::DrawSub(int direct) {
     int sum = 0;
 
     for (int i = 0; i < draw_frame_num; i++) {
-        if (direct != 0) {
+        if (direct) {
             sum += mgDrawDirect(GetDrawFrame(i));
         } else {
             sum += mgDraw(GetDrawFrame(i));
@@ -668,9 +691,9 @@ void CDynamicAnime::Copy(CDynamicAnime &destination, mgCFrame *root, mgCMemory *
  * Allocates the frame reference table for a dynamic animation.
  *
  */
-int dynFRAME_START(SPI_STACK *stack, int argc) {
+static int dynFRAME_START(SPI_STACK *stack, int argc) {
     dynNowDA->NewFrameTable(spiGetStackInt(stack), dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -678,14 +701,14 @@ int dynFRAME_START(SPI_STACK *stack, int argc) {
  * Adds a named model frame to the dynamic animation.
  *
  */
-int dynFRAME(SPI_STACK *stack, int argc) {
+static int dynFRAME(SPI_STACK *stack, int argc) {
     char     *name;
     mgCFrame *frame;
 
     name = spiGetStackString(stack);
 
     if (name == NULL) {
-        return 0;
+        return false;
     }
 
     frame = dynTopFrame->SearchFrame(name);
@@ -695,7 +718,7 @@ int dynFRAME(SPI_STACK *stack, int argc) {
     }
 
     dynNowDA->SetFrame(dynFrameCount++, frame);
-    return 1;
+    return true;
 }
 
 /**
@@ -703,8 +726,8 @@ int dynFRAME(SPI_STACK *stack, int argc) {
  * Accepts the end of the dynamic animation frame table.
  *
  */
-int dynFRAME_END(SPI_STACK *stack, int argc) {
-    return 1;
+static int dynFRAME_END(SPI_STACK *stack, int argc) {
+    return true;
 }
 
 /**
@@ -712,9 +735,9 @@ int dynFRAME_END(SPI_STACK *stack, int argc) {
  * Allocates the initial vertex table for a dynamic animation.
  *
  */
-int dynVERTEX_START(SPI_STACK *stack, int argc) {
+static int dynVERTEX_START(SPI_STACK *stack, int argc) {
     dynNowDA->NewVertexTable(spiGetStackInt(stack), dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -722,7 +745,7 @@ int dynVERTEX_START(SPI_STACK *stack, int argc) {
  * Adds an initial vertex offset from a frame world position.
  *
  */
-int dynVERTEX(SPI_STACK *stack, int argc) {
+static int dynVERTEX(SPI_STACK *stack, int argc) {
     float     offset[4];
     float     world[4];
     mgCFrame *frame;
@@ -741,7 +764,7 @@ int dynVERTEX(SPI_STACK *stack, int argc) {
         dynNowDA->SetInitVertex(dynVertexCount++, world);
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -749,7 +772,7 @@ int dynVERTEX(SPI_STACK *stack, int argc) {
  * Adds an initial vertex transformed from frame local coordinates.
  *
  */
-int dynVERTEX_L(SPI_STACK *stack, int argc) {
+static int dynVERTEX_L(SPI_STACK *stack, int argc) {
     float     local[4];
     float     world[4];
     int       frame_id;
@@ -769,7 +792,7 @@ int dynVERTEX_L(SPI_STACK *stack, int argc) {
         dynNowDA->SetInitVertex(vertex_index, world);
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -777,7 +800,7 @@ int dynVERTEX_L(SPI_STACK *stack, int argc) {
  * Copies initial vertices into the current and previous positions.
  *
  */
-int dynVERTEX_END(SPI_STACK *stack, int argc) {
+static int dynVERTEX_END(SPI_STACK *stack, int argc) {
     float vertex[4];
     int   i;
     int   count;
@@ -790,7 +813,7 @@ int dynVERTEX_END(SPI_STACK *stack, int argc) {
         dynNowDA->SetNowVertex(i, vertex);
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -798,10 +821,10 @@ int dynVERTEX_END(SPI_STACK *stack, int argc) {
  * Allocates the fixed vertex table for a dynamic animation.
  *
  */
-int dynFIX_VERTEX_START(SPI_STACK *stack, int argc) {
+static int dynFIX_VERTEX_START(SPI_STACK *stack, int argc) {
     spiGetStackInt(stack);
     dynNowDA->NewFixVertexTable(dynNowDA->vertex_num, dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -809,7 +832,7 @@ int dynFIX_VERTEX_START(SPI_STACK *stack, int argc) {
  * Finds and initializes a fixed vertex relative to its frame.
  *
  */
-DA_FIX_VERTEX *dynFixVertex(SPI_STACK *stack, int argc) {
+static DA_FIX_VERTEX *dynFixVertex(SPI_STACK *stack, int argc) {
     int            frame_id;
     int            vertex_index;
     DA_FIX_VERTEX *fix;
@@ -829,7 +852,7 @@ DA_FIX_VERTEX *dynFixVertex(SPI_STACK *stack, int argc) {
 
     frame = dynNowDA->GetFrame(fix->frame_id);
 
-    if (frame == NULL || dynNowDA->CheckVertexID(vertex_index) == 0) {
+    if (frame == NULL || !dynNowDA->CheckVertexID(vertex_index)) {
         fix->frame_id = -1;
         return NULL;
     }
@@ -850,14 +873,14 @@ DA_FIX_VERTEX *dynFixVertex(SPI_STACK *stack, int argc) {
  * Configures a fixed vertex without velocity transfer.
  *
  */
-int dynFIX_VERTEX(SPI_STACK *stack, int argc) {
+static int dynFIX_VERTEX(SPI_STACK *stack, int argc) {
     DA_FIX_VERTEX *fix;
 
     fix = dynFixVertex(stack, argc);
     stack += 2;
 
     if (fix == NULL) {
-        return 0;
+        return false;
     }
 
     if (argc >= 3) {
@@ -869,7 +892,7 @@ int dynFIX_VERTEX(SPI_STACK *stack, int argc) {
     }
 
     fix->velocity_rate = 0.0f;
-    return 1;
+    return true;
 }
 
 /**
@@ -877,14 +900,14 @@ int dynFIX_VERTEX(SPI_STACK *stack, int argc) {
  * Configures a fixed vertex with positive velocity transfer.
  *
  */
-int dynFIX_VERTEX_C(SPI_STACK *stack, int argc) {
+static int dynFIX_VERTEX_C(SPI_STACK *stack, int argc) {
     DA_FIX_VERTEX *fix;
 
     fix = dynFixVertex(stack, argc);
     stack += 2;
 
     if (fix == NULL) {
-        return 0;
+        return false;
     }
 
     if (argc >= 3) {
@@ -896,7 +919,7 @@ int dynFIX_VERTEX_C(SPI_STACK *stack, int argc) {
     }
 
     fix->velocity_rate = 1.0f;
-    return 1;
+    return true;
 }
 
 /**
@@ -904,14 +927,14 @@ int dynFIX_VERTEX_C(SPI_STACK *stack, int argc) {
  * Configures a fixed vertex with negative velocity transfer.
  *
  */
-int dynFIX_VERTEX_S(SPI_STACK *stack, int argc) {
+static int dynFIX_VERTEX_S(SPI_STACK *stack, int argc) {
     DA_FIX_VERTEX *fix;
 
     fix = dynFixVertex(stack, argc);
     stack += 2;
 
     if (fix == NULL) {
-        return 0;
+        return false;
     }
 
     if (argc >= 3) {
@@ -923,7 +946,7 @@ int dynFIX_VERTEX_S(SPI_STACK *stack, int argc) {
     }
 
     fix->velocity_rate = -1.0f;
-    return 1;
+    return true;
 }
 
 /**
@@ -931,8 +954,8 @@ int dynFIX_VERTEX_S(SPI_STACK *stack, int argc) {
  * Accepts the end of the fixed vertex table.
  *
  */
-int dynFIX_VERTEX_END(SPI_STACK *stack, int argc) {
-    return 1;
+static int dynFIX_VERTEX_END(SPI_STACK *stack, int argc) {
+    return true;
 }
 
 /**
@@ -940,7 +963,7 @@ int dynFIX_VERTEX_END(SPI_STACK *stack, int argc) {
  * Creates a frame pose from a type and four vertex references.
  *
  */
-DA_FRAME_POSE *FRAME_POSE_Sub(SPI_STACK *stack, int argc) {
+static DA_FRAME_POSE *FRAME_POSE_Sub(SPI_STACK *stack, int argc) {
     DA_FRAME_POSE *pose;
     char          *kind;
     int            i;
@@ -952,28 +975,28 @@ DA_FRAME_POSE *FRAME_POSE_Sub(SPI_STACK *stack, int argc) {
         return NULL;
     }
 
-    pose->type = 0;
+    pose->type = DA_FRAME_POSE_NONE;
 
     if (strcmp(kind, "bone") == 0) {
         if (argc < 6) {
             return NULL;
         }
 
-        pose->type = 1;
+        pose->type = DA_FRAME_POSE_BONE;
         pose->vertex_num = 4;
     } else if (strcmp(kind, "bone_yx") == 0) {
         if (argc < 6) {
             return NULL;
         }
 
-        pose->type = 2;
+        pose->type = DA_FRAME_POSE_BONE_YX;
         pose->vertex_num = 4;
     } else if (strcmp(kind, "b_cdlr") == 0) {
         if (argc < 6) {
             return NULL;
         }
 
-        pose->type = 3;
+        pose->type = DA_FRAME_POSE_B_CDLR;
         pose->vertex_num = 4;
     } else {
         return NULL;
@@ -984,9 +1007,9 @@ DA_FRAME_POSE *FRAME_POSE_Sub(SPI_STACK *stack, int argc) {
     for (i = 0; i < pose->vertex_num; i++) {
         pose->vertex_id[i] = spiGetStackInt(stack++);
 
-        if (dynNowDA->CheckVertexID(pose->vertex_id[i]) == 0) {
+        if (!dynNowDA->CheckVertexID(pose->vertex_id[i])) {
             printf("error vertex no %d!!\n", pose->vertex_id[i]);
-            pose->type = 0;
+            pose->type = DA_FRAME_POSE_NONE;
             return NULL;
         }
     }
@@ -999,19 +1022,19 @@ DA_FRAME_POSE *FRAME_POSE_Sub(SPI_STACK *stack, int argc) {
  * Marks a scripted frame pose as local to its frame.
  *
  */
-int dynFRAME_POSE_L(SPI_STACK *stack, int argc) {
+static int dynFRAME_POSE_L(SPI_STACK *stack, int argc) {
     DA_FRAME_POSE *pose;
     mgCFrame      *frame;
 
     pose = FRAME_POSE_Sub(stack, argc);
     frame = dynNowDA->GetFrame(spiGetStackInt(stack));
 
-    if ((pose == NULL) || (frame == NULL)) {
-        return 0;
+    if (pose == NULL || frame == NULL) {
+        return false;
     }
 
-    pose->local = 1;
-    return 1;
+    pose->local = true;
+    return true;
 }
 
 /**
@@ -1019,20 +1042,20 @@ int dynFRAME_POSE_L(SPI_STACK *stack, int argc) {
  * Marks a scripted frame pose as world-relative and detaches its frame.
  *
  */
-int dynFRAME_POSE(SPI_STACK *stack, int argc) {
+static int dynFRAME_POSE(SPI_STACK *stack, int argc) {
     mgCFrame      *frame;
     DA_FRAME_POSE *pose;
 
     pose = FRAME_POSE_Sub(stack, argc);
     frame = dynNowDA->GetFrame(spiGetStackInt(stack));
 
-    if ((pose == NULL) || (frame == NULL)) {
-        return 0;
+    if (pose == NULL || frame == NULL) {
+        return false;
     }
 
-    pose->local = 0;
+    pose->local = false;
     frame->DeleteParent();
-    return 1;
+    return true;
 }
 
 /**
@@ -1040,7 +1063,7 @@ int dynFRAME_POSE(SPI_STACK *stack, int argc) {
  * Sets the frames drawn by the dynamic animation.
  *
  */
-int dynDRAW_FRAME(SPI_STACK *stack, int argc) {
+static int dynDRAW_FRAME(SPI_STACK *stack, int argc) {
     int i;
 
     dynNowDA->NewDrawFrameTable(argc, dynStack);
@@ -1049,7 +1072,7 @@ int dynDRAW_FRAME(SPI_STACK *stack, int argc) {
         dynNowDA->SetDrawFrame(i, spiGetStackInt(stack++));
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -1057,9 +1080,9 @@ int dynDRAW_FRAME(SPI_STACK *stack, int argc) {
  * Allocates the vertex distance constraint table.
  *
  */
-int dynBIND_VERTEX_START(SPI_STACK *stack, int argc) {
+static int dynBIND_VERTEX_START(SPI_STACK *stack, int argc) {
     dynNowDA->NewBindVertexTable(spiGetStackInt(stack), dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -1067,7 +1090,7 @@ int dynBIND_VERTEX_START(SPI_STACK *stack, int argc) {
  * Connects two vertices with a weighted distance constraint.
  *
  */
-int dynBIND_VERTEX(SPI_STACK *stack, int argc) {
+static int dynBIND_VERTEX(SPI_STACK *stack, int argc) {
     DA_BIND_VERTEX *bind;
     int             vertex1;
     int             vertex2;
@@ -1078,15 +1101,15 @@ int dynBIND_VERTEX(SPI_STACK *stack, int argc) {
     bind = dynNowDA->pGetBindVertex(dynBindVertexCount++);
 
     if (bind == NULL) {
-        return 0;
+        return false;
     }
 
     vertex1 = spiGetStackInt(stack++);
     vertex2 = spiGetStackInt(stack++);
 
-    if (dynNowDA->CheckVertexID(vertex1) == 0 || dynNowDA->CheckVertexID(vertex2) == 0) {
+    if (!dynNowDA->CheckVertexID(vertex1) || !dynNowDA->CheckVertexID(vertex2)) {
         printf("error vertex no %d-%d!!!\n", vertex1, vertex2);
-        return 0;
+        return false;
     }
 
     bind->rate = 0.5f;
@@ -1105,7 +1128,7 @@ int dynBIND_VERTEX(SPI_STACK *stack, int argc) {
     dynNowDA->GetInitVertex(vertex1, pos1);
     dynNowDA->GetInitVertex(vertex2, pos2);
     bind->length = mgDistVector(pos1, pos2);
-    return 1;
+    return true;
 }
 
 /**
@@ -1113,8 +1136,8 @@ int dynBIND_VERTEX(SPI_STACK *stack, int argc) {
  * Accepts the end of the vertex constraint table.
  *
  */
-int dynBIND_VERTEX_END(SPI_STACK *stack, int argc) {
-    return 1;
+static int dynBIND_VERTEX_END(SPI_STACK *stack, int argc) {
+    return true;
 }
 
 /**
@@ -1122,9 +1145,9 @@ int dynBIND_VERTEX_END(SPI_STACK *stack, int argc) {
  * Allocates the dynamic animation bounding box table.
  *
  */
-int dynBOUNDING_BOX_START(SPI_STACK *stack, int argc) {
+static int dynBOUNDING_BOX_START(SPI_STACK *stack, int argc) {
     dynNowDA->NewBoundingBoxTable(spiGetStackInt(stack), dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -1132,13 +1155,13 @@ int dynBOUNDING_BOX_START(SPI_STACK *stack, int argc) {
  * Adds a frame-bound box with optional coordinate bounds.
  *
  */
-int dynBOUNDING_BOX(SPI_STACK *stack, int argc) {
+static int dynBOUNDING_BOX(SPI_STACK *stack, int argc) {
     DA_BOUNDING_BOX *box;
 
     box = dynNowDA->pGetBoundingBox(dynBBoxCount++);
 
     if (box == NULL) {
-        return 0;
+        return false;
     }
 
     box->frame_id = spiGetStackInt(stack++);
@@ -1153,7 +1176,7 @@ int dynBOUNDING_BOX(SPI_STACK *stack, int argc) {
         spiGetStackVector(box->max, stack);
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -1161,8 +1184,8 @@ int dynBOUNDING_BOX(SPI_STACK *stack, int argc) {
  * Accepts the end of the bounding box table.
  *
  */
-int dynBOUNDING_BOX_END(SPI_STACK *stack, int argc) {
-    return 1;
+static int dynBOUNDING_BOX_END(SPI_STACK *stack, int argc) {
+    return true;
 }
 
 /**
@@ -1170,9 +1193,9 @@ int dynBOUNDING_BOX_END(SPI_STACK *stack, int argc) {
  * Allocates the dynamic animation collision table.
  *
  */
-int dynCOLLISION_START(SPI_STACK *stack, int argc) {
+static int dynCOLLISION_START(SPI_STACK *stack, int argc) {
     dynNowDA->NewCollisionTable(spiGetStackInt(stack), dynStack);
-    return 1;
+    return true;
 }
 
 /**
@@ -1187,14 +1210,14 @@ static int dynCOLLISION(SPI_STACK *stack, int count) {
     kind = spiGetStackString(stack++);
 
     if (kind == NULL) {
-        return 0;
+        return false;
     }
 
     if (strcmp(kind, "pipe") == 0) {
         pipe = new (dynStack->Alloc(16)) CDAColPipe;
 
         if (pipe == NULL) {
-            return 0;
+            return false;
         }
 
         pipe->frame_id = spiGetStackInt(stack++);
@@ -1208,10 +1231,10 @@ static int dynCOLLISION(SPI_STACK *stack, int count) {
         }
 
         dynNowDA->SetCollision(dynColCount++, pipe);
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 void CDAColPipe::Initialize() {
@@ -1232,8 +1255,8 @@ void CDACollision::Initialize() {
  * Accepts the end of the dynamic animation collision table.
  *
  */
-int dynCOLLISION_END(SPI_STACK *stack, int argc) {
-    return 1;
+static int dynCOLLISION_END(SPI_STACK *stack, int argc) {
+    return true;
 }
 
 /**
@@ -1241,10 +1264,10 @@ int dynCOLLISION_END(SPI_STACK *stack, int argc) {
  * Sets the gravity vector for the dynamic animation.
  *
  */
-int dynGRAVITY(SPI_STACK *stack, int argc) {
+static int dynGRAVITY(SPI_STACK *stack, int argc) {
     spiGetStackVector(dynNowDA->gravity, stack);
     dynNowDA->gravity[3] = 0.0f;
-    return 1;
+    return true;
 }
 
 /**
@@ -1252,9 +1275,9 @@ int dynGRAVITY(SPI_STACK *stack, int argc) {
  * Sets the dynamic animation stiffness coefficient.
  *
  */
-int dynK(SPI_STACK *stack, int argc) {
+static int dynK(SPI_STACK *stack, int argc) {
     dynNowDA->k = spiGetStackFloat(stack);
-    return 1;
+    return true;
 }
 
 /**
@@ -1262,15 +1285,15 @@ int dynK(SPI_STACK *stack, int argc) {
  * Sets the wind response scale for the dynamic animation.
  *
  */
-int dynWind(SPI_STACK *stack, int argc) {
+static int dynWind(SPI_STACK *stack, int argc) {
     dynNowDA->wind_scale = spiGetStackFloat(stack);
-    return 1;
+    return true;
 }
 
-static int dynCOLLISION(SPI_STACK *stack, int count);
-
 /**
+ *
  * Script tags that define dynamic-animation geometry and forces.
+ *
  */
 static SPI_TAG_PARAM dynmc_tag[] = {
     {"FRAME_START",        dynFRAME_START       },
@@ -1319,7 +1342,7 @@ void CDynamicAnime::Load(char *name, int size, mgCFrame *frame, mgCMemory *memor
     dynBBoxCount = 0;
     dynColCount = 0;
 
-    if (frame != 0) {
+    if (frame != NULL) {
         top_frame = frame;
         dynTopFrame->GetPosition(position);
         dynTopFrame->GetRotation(rotation);
@@ -1350,17 +1373,17 @@ int CDAColPipe::CheckHit(float *point) {
     offset[2] /= radius[2];
 
     if (1.0f < offset[axis]) {
-        return 0;
+        return false;
     }
 
     if (!(-1.0f <= offset[axis])) {
-        return 0;
+        return false;
     }
 
     offset[axis] = 0.0f;
 
     if (!(mgDistVector(offset) < 1.0f)) {
-        return 0;
+        return false;
     }
 
     sceVu0Normalize(offset, offset);
@@ -1372,5 +1395,5 @@ int CDAColPipe::CheckHit(float *point) {
     local[axis] = saved;
     local[3] = 1.0f;
     sceVu0ApplyMatrix(point, lw_matrix, local);
-    return 1;
+    return true;
 }
