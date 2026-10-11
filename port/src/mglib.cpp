@@ -9,6 +9,7 @@
 #include "mglib.hpp"
 #pragma clang diagnostic pop
 
+#include "gfx/gfx.hpp"
 #include "platform/clock.hpp"
 
 // The VSync and timing group of ps2/src/mglib.cpp, moved onto the platform clock
@@ -436,6 +437,12 @@ void mgBeginFrame(mgCDrawManager *manager) {
         mgDrawManager.render_info = &mgRenderInfo;
     }
 
+    // Retail opened the frame's VIF1 packet here; the host counterpart is the renderer's display
+    // list, which collects every draw the tick makes until mgEndFrame renders and presents it.
+    if (!gfx::Recording() && !gfx::InFrame()) {
+        gfx::BeginRecording();
+    }
+
     // Retail sampled TIMER0 here to price the frame at its end and opened the frame's VIF1
     // packet; the frame's time comes from the clock now, and the packet has no host counterpart.
     int red = (int) mgBackColor[0];
@@ -555,6 +562,19 @@ void mgEndFrame(mgCDrawManager *manager) {
 
     mgSendPacket(NULL);
     g_display_buffer = !g_display_buffer;
+
+    // The tick is complete: its display list becomes the canonical image (what kPreviousFrame and
+    // the screenshot read) and is presented. Retail got this from the frame packet's DMA; the
+    // host renders the list in its place.
+    if (gfx::Recording()) {
+        gfx::DisplayListRef list = gfx::EndRecording();
+        if (list != nullptr) {
+            gfx::RenderOptions canonical;
+            canonical.canonical = true;
+            gfx::RenderList(*list, 1.0f, canonical);
+            gfx::PresentCanonical();
+        }
+    }
 }
 
 void mgWaitFrame() {
