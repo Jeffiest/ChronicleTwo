@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <algorithm>
 #include "mg_drawprim.hpp"
+#include "prespr.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -709,6 +710,29 @@ PORT_OVERRIDE void mgCDrawPrim::AlphaBlendEnable(int enable) {
 
 PORT_OVERRIDE void mgCDrawPrim::AlphaBlend(int mode) {
     draw_env.SetAlpha(mode);
+}
+
+// Sprite helpers change the active run's registers, after Begin sent draw_env.
+PORT_OVERRIDE void CPreSprite::SetAlphaBlend(int mode) {
+    switch (mode) {
+        case MG_ALPHA_BLEND_NORMAL:
+            Direct(SCE_GS_ALPHA_1, 0x44);
+            break;
+        case MG_ALPHA_BLEND_ADD:
+            Direct(SCE_GS_ALPHA_1, 0x48);
+            break;
+        case MG_ALPHA_BLEND_SUB:
+            Direct(SCE_GS_ALPHA_1, 0x42);
+            break;
+        case MG_ALPHA_BLEND_NONE:
+            Direct(SCE_GS_ALPHA_1, 0x800000002AULL);
+            break;
+    }
+}
+
+PORT_OVERRIDE void CPreSprite::SetScirror(int x, int y, int w, int h) {
+    Direct(SCE_GS_SCISSOR_1, static_cast<u_long>(x) | (static_cast<u_long>(x + w) << 16) |
+                               (static_cast<u_long>(y) << 32) | (static_cast<u_long>(y + h) << 48));
 }
 
 PORT_OVERRIDE void mgCDrawPrim::AlphaTestEnable(int enable) {

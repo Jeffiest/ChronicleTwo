@@ -2,12 +2,69 @@
 
 #include "charasetup.hpp"
 #include "character.hpp"
+#include "mg_texture.hpp"
+#include "mglib.hpp"
 
 // The CPU skinning of the motion models lives in dynamicanime.cpp beside the dynamic animation,
 // which poses the same models; the character's draw paths run it here just before the model is
 // drawn. On the PS2 the skinning happened in VU1 as each model was drawn, and this function only
 // remade the bounds.
 void PortMgSkinMotionTree(mgCFrame *frame);
+
+PORT_OVERRIDE void CCharacter2::DeleteExtMotion() {
+    for (int i = 1; i < CHARA_MOTION_SET_MAX; i++) {
+        motion[i].frame_info = NULL;
+        shadow_motion[i].frame_info = NULL;
+        key_list[i] = NULL;
+        key_num[i] = 0;
+        seq_list[i] = NULL;
+        CHRINFO_KEY_SET *first = GetKeyListIndexPtr(0, NULL);
+
+        if (first != NULL) {
+            SetMotion(first->name, CHARA_MOTION_RESTART);
+        }
+
+        if (next_key != NULL) {
+            posed_key = next_key;
+            frame = (float) next_key->start_frame;
+        }
+    }
+
+    mgCTextureManager *tex = &mgTexManager;
+    int group = tex_anime_group_start;
+
+    if (group > 0) {
+        for (; group < tex_anime_group_num; group++) {
+            tex->DeleteTexAnimeGroup(texture_block, group);
+        }
+    } else {
+        tex->DeleteTexAnime(texture_block);
+    }
+
+    // Retail's this + 0x2C4 + j * 4 names images[j] only in the PS2 layout.
+    for (int j = 1; j < CHARA_IMAGE_MAX; j++) {
+        mgIMG_FILE_HEADER *archive = images[j];
+
+        if (archive != NULL) {
+            mgIMG_HEADER *image = (mgIMG_HEADER *) (archive + 1);
+
+            for (u32 k = 0; k < archive->num3; k++) {
+                if ((u8) image->name[0] != '#') {
+                    tex->DeleteTexture(image->name, texture_block);
+                }
+
+                image++;
+            }
+
+            images[j] = NULL;
+        }
+    }
+
+    for (int i = 1; i < CHARA_MOTION_SET_MAX; i++) {
+        se_list[i] = NULL;
+        se_num[i] = 0;
+    }
+}
 
 PORT_OVERRIDE void CCharacter2::SetDeformMesh() {
     sceVu0FVECTOR max;
