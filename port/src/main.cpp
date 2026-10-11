@@ -1,3 +1,4 @@
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -23,7 +24,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
 #include "dataread.hpp"
-#include "mainloop.hpp"
+#include "mainloop_port.hpp"
 #pragma clang diagnostic pop
 
 /**
@@ -35,24 +36,14 @@
  * It is retail main's work without the hardware: parse the command line, set
  * up the platform layer and the renderer, open the data tree, and run the
  * game's own MainLoop. The parts of the boot that belong to a mode - the
- * debug start menu, the language, the save pick - are MainLoop's.
+ * debug start menu, the language, the save pick - are MainLoop's, and the
+ * loop's stop, frame budget and start mode are the seam in mainloop_port.hpp.
  *
  */
 
 namespace fs = std::filesystem;
 
 namespace {
-
-/**
- *
- * Raised by the pump hook when the run has to end: the frame budget is spent
- * or the window was closed. DC2's MainLoop owns its loop and has no stop seam
- * of its own yet (DC1's GameRequestStop), so unwinding it back to main is how
- * the driver stops the game. The throw happens inside ClockPump, at the tick
- * that ended the frame, so the frame's own work is already done.
- *
- */
-struct StopGame {};
 
 struct Options {
     bool         headless = false;
@@ -66,13 +57,6 @@ struct Options {
     bool         fast_load = false;
 };
 
-/**
- * Ticks of the game clock the run stops after; negative is no budget. One
- * tick is one VSync - the unit MainLoop waits in, mgFrameRate ticks a frame -
- * so the budget is exact until the loop grows a seam that counts frames.
- */
-std::int64_t g_frame_budget = -1;
-
 [[noreturn]] void Usage(const char *program) {
     std::fprintf(stderr,
                  "usage: %s [--data DIR] [--save DIR] [--headless] [--offscreen]\n"
@@ -85,15 +69,17 @@ std::int64_t g_frame_budget = -1;
                  "  --headless         render offscreen (SDL's offscreen driver, VK_EXT_headless_surface),\n"
                  "                     no audio output, the game clock unbounded\n"
                  "  --offscreen        --headless without a Vulkan surface: render to an image only\n"
-                 "  --frames N         stop after N ticks of the game clock (one tick is one VSync; the\n"
-                 "                     main loop runs mgFrameRate of them per frame)\n"
+                 "  --frames N         stop after N frames of the game's main loop (one frame is one\n"
+                 "                     mgEndFrame; the loop checks the budget between frames)\n"
                  "  --screenshot PATH  write the last tick's image to PATH as a PNG on exit\n"
                  "  --input FILE       drive pad 1 from a script (default: DC_INPUT); see\n"
-                 "                     platform/input_script.hpp. The script's frames are clock ticks.\n"
+                 "                     platform/input_script.hpp. The script's frames are main-loop frames.\n"
                  "  --width, --height  window size in pixels (default: config.json, then the monitor's)\n"
-                 "test hooks (the game-side seams have not landed; a value warns and is ignored):\n"
-                 "  --jump MODE[:MAP]  start in a mode, skipping the warm-up (DC_JUMP)\n"
-                 "  --fast-load        cut the loading screens' holds and fades (DC_FAST_LOAD=1)\n",
+                 "test hooks:\n"
+                 "  --jump MODE[:MAP]  start in title, menu, edit:<map> or dungeon:<map>, skipping the\n"
+                 "                     warm-up (DC_JUMP)\n"
+                 "  --fast-load        cut the loading screens' holds and fades (DC_FAST_LOAD=1); no\n"
+                 "                     loading-screen seam yet, a value warns and is ignored\n",
                  program);
     std::exit(kExitUsage);
 }
@@ -172,22 +158,60 @@ void RequireData() {
     }
 }
 
-[[noreturn]] void RequestStop() {
-    throw StopGame{};
-}
-
 // The clock's pump hook: the host side of every VSync the game waits on. A pump runs at most once
-// per elapsed tick and never from inside another pump, so this is where the driver can both feed
-// the platform and decide the run is over.
+// per elapsed tick and never from inside another pump, so this is where the driver feeds the
+// platform; the stop and the frame budget are the loop's own seam and need no help from here.
 void PumpHost() {
     if (!WindowPollEvents()) {
-        RequestStop();
+        GameRequestStop();
     }
     InputPoll();
-    InputScriptApply(ClockTickCount());
-    if (g_frame_budget >= 0 && ClockTickCount() >= g_frame_budget) {
-        RequestStop();
+    InputScriptApply(GameFrameCount());
+}
+
+/**
+ *
+ * The driver's --jump: MODE[:MAP] for the loop's start-mode seam. The mode runs its own LoopInit
+ * from the first frame with the boot's warm-up skipped; MAP is the mode's starting map, or -1
+ * (none, or the saved one) when absent. Only the debug menu needs its debug flag to be entered
+ * at all: the loop reroutes an unflagged menu to the title.
+ *
+ */
+bool SetJump(const char *spec) {
+    std::string_view text = spec;
+    std::string_view name = text;
+    int              map = -1;
+    if (auto colon = text.find(':'); colon != std::string_view::npos) {
+        name = text.substr(0, colon);
+        std::string digits(text.substr(colon + 1));
+        char       *end = nullptr;
+        long        parsed = std::strtol(digits.c_str(), &end, 10);
+        if (end == digits.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX) {
+            return false;
+        }
+        map = static_cast<int>(parsed);
     }
+    int loop_no;
+    int debug_flag = 0;
+    if (name == "title") {
+        loop_no = LOOP_TITLE;
+    } else if (name == "menu") {
+        loop_no = LOOP_MENU;
+        debug_flag = 1;
+    } else if (name == "edit") {
+        loop_no = LOOP_EDIT;
+    } else if (name == "dungeon") {
+        loop_no = LOOP_DUNGEON;
+    } else {
+        return false;
+    }
+    INIT_LOOP_ARG arg;
+    arg.map_no = map;
+    arg.floor_no = -1;
+    arg.event_no = -1;
+    arg.mc_load = 0;
+    GameSetStartMode(loop_no, arg, debug_flag, true);
+    return true;
 }
 
 void LoadInputScript(const char *path) {
@@ -263,10 +287,9 @@ int main(int argc, char **argv) {
     if (options.jump == nullptr) {
         options.jump = std::getenv("DC_JUMP");
     }
-    if (options.jump != nullptr && *options.jump != '\0') {
-        // The hook belongs to the loop: MainLoop picks its start mode itself and takes no start
-        // mode yet, so the option is reported rather than half-honoured.
-        std::fprintf(stderr, "--jump %s: no start-mode seam in this build; starting normally\n", options.jump);
+    if (options.jump != nullptr && *options.jump != '\0' && !SetJump(options.jump)) {
+        std::fprintf(stderr, "bad --jump: %s (title, menu, edit[:map], dungeon[:map])\n", options.jump);
+        std::exit(kExitUsage);
     }
     const char *fast_load = std::getenv("DC_FAST_LOAD");
     if (options.fast_load || (fast_load != nullptr && *fast_load != '\0' && *fast_load != '0')) {
@@ -306,15 +329,10 @@ int main(int argc, char **argv) {
     ClockSetTickRate(config.tick_rate);
     ClockSetUnbounded(options.headless);
     ClockAddPumpHook(PumpHost);
-    g_frame_budget = options.frames;
+    GameSetFrameBudget(options.frames);
 
     InitCDFile();
-    try {
-        MainLoop();
-    } catch (const StopGame &) {
-        // The frame budget ran out or the window closed; the loop is abandoned where the frame
-        // that was running ended, and the run finishes below.
-    }
+    MainLoop();
 
     int status = kExitOk;
     if (options.screenshot != nullptr) {
