@@ -8056,10 +8056,7 @@ static void MenuItemDebugKey() {
 
             break;
 
-        case ITEM_MENU_PANEL_CHARA:
-#ifdef PORT
-        {
-#endif
+        case ITEM_MENU_PANEL_CHARA: {
             CHARA_DATA *chara;
             s32         change_maximum;
 
@@ -8143,9 +8140,6 @@ static void MenuItemDebugKey() {
             return;
         }
 
-#ifdef PORT
-        }
-#endif
         case ITEM_MENU_PANEL_WEAPON: {
             s32 change_maximum;
             s32 change_durability;
@@ -8666,7 +8660,10 @@ static void MenuItemDebugDraw() {
 
             break;
         }
-        case ITEM_MENU_PANEL_CHARA: {
+        case ITEM_MENU_PANEL_CHARA:
+#ifdef PORT
+        {
+#endif
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 200.0f, 0x80, 0, 0, 0);
             font->SetStr("HP control");
             font->SetPos(236, 60);
@@ -8709,7 +8706,9 @@ static void MenuItemDebugDraw() {
             font->SetPos(236, 200);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
             break;
+#ifdef PORT
         }
+#endif
         case ITEM_MENU_PANEL_WEAPON: {
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 300.0f, 0x80, 0, 0, 0);
             font->SetStr("WHP control");
