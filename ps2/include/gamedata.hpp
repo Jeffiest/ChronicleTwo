@@ -198,7 +198,7 @@ enum ITEM_ACTION_FLAG {
     ITEM_ACTION_THROW = 0x2,       /**< The item is thrown. */
     ITEM_ACTION_THROW_ALT = 0x4,   /**< The item is thrown; no item in the tables has this bit. */
     ITEM_ACTION_DRINK_WATER = 0x8, /**< The item is drunk as water, with the eating effect. */
-    ITEM_ACTION_EAT = 0x10,        /**< The item is food, which a fallen or thirsty character cannot eat. */
+    ITEM_ACTION_EAT = 0x10,        /**< Food, unusable by a fallen character; thirst blocks it except for Plum Rice Ball. */
 };
 
 /**

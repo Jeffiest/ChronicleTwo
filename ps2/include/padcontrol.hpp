@@ -60,7 +60,7 @@ enum PadCtrlButton {
     PAD_BTN_ACTION_CANCEL      = 0x34, /**< Cancel button pressed for a field action. */
     PAD_BTN_L1_HELD_2          = 0x35, /**< L1 while held, second binding. */
     PAD_BTN_R1_HELD_2          = 0x36, /**< R1 while held, second binding. */
-    PAD_BTN_ACTION_HELD        = 0x38, /**< Circle while held for a field action. */
+    PAD_BTN_ACTION_HELD        = 0x38, /**< Confirm button held for a field action. */
     PAD_BTN_EDIT_TURN_DECREASE = 0x64, /**< R2: turns the selected Georama part one way. */
     PAD_BTN_EDIT_TURN_INCREASE = 0x65, /**< L2: turns the selected Georama part the other way. */
     PAD_BTN_EDIT_PLACE         = 0x66, /**< Confirm button: places a Georama part or selects a wall. */
