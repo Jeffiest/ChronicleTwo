@@ -53,6 +53,66 @@ enum DNGMAP_PATH_ORDER {
 
 /**
  *
+ * Kinds of passage between floors, as DNGMAP_ROOT_INFO::type holds them and
+ * CDngFloorManager::GetDngMapNextFloorID takes them.
+ *
+ */
+enum DNGMAP_ROOT_TYPE {
+    DNGMAP_ROOT_NORMAL = 0, /**< Ordinary passage to the next floor. */
+    DNGMAP_ROOT_SUN = 1,    /**< Passage unlocked with a sun key. */
+    DNGMAP_ROOT_MOON = 2,   /**< Passage unlocked with a moon key. */
+    DNGMAP_ROOT_STAR = 3,   /**< Passage unlocked with a star key. */
+};
+
+/**
+ *
+ * Neighbours of a passage cell that CDngFreeMap::DrawGlidCheck reports, as bits.
+ *
+ */
+// clang-format off
+enum DNGMAP_GLID_MARK {
+    DNGMAP_GLID_MARK_ROOM_UP       = 0x2,   /**< A room is linked directly above. */
+    DNGMAP_GLID_MARK_ROOM_LEFT     = 0x8,   /**< A room is linked directly to the left. */
+    DNGMAP_GLID_MARK_SPECIAL_UP    = 0x40,  /**< A visited side or boss floor is linked directly above. */
+    DNGMAP_GLID_MARK_SPECIAL_DOWN  = 0x80,  /**< A visited side or boss floor is linked directly below. */
+    DNGMAP_GLID_MARK_SPECIAL_LEFT  = 0x100, /**< A visited side or boss floor is linked directly to the left. */
+    DNGMAP_GLID_MARK_SPECIAL_RIGHT = 0x200, /**< A visited side or boss floor is linked directly to the right. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Message windows of the tree map's floor information, indexing CMenuTreeMap::mes.
+ *
+ */
+// clang-format off
+enum DNG_TREE_MAP_MES {
+    DNG_TREE_MAP_MES_TITLE        = 0, /**< Name of the floor. */
+    DNG_TREE_MAP_MES_FAST_DESTROY = 1, /**< Target or best time of the fast destroy challenge. */
+    DNG_TREE_MAP_MES_UNUSED       = 2, /**< Made from a message but kept off the screen. */
+    DNG_TREE_MAP_MES_FISHING      = 3, /**< Fishing record test. */
+    DNG_TREE_MAP_MES_SPHEDA       = 4, /**< Spheda challenge and its prize. */
+    DNG_TREE_MAP_MES_PRACTICE     = 5, /**< Practice condition and its prize. */
+    DNG_TREE_MAP_MES_KILL_COUNT   = 6, /**< Number of monsters defeated on the floor. */
+    DNG_TREE_MAP_MES_GEOSTONE     = 7, /**< Whether the floor's geostone has been found. */
+};
+
+// clang-format on
+
+/**
+ *
+ * What the tree map shows once a floor has been chosen.
+ *
+ */
+enum DNG_TREE_MAP_ASK {
+    DNG_TREE_MAP_ASK_NONE = 0, /**< No floor has been chosen. */
+    DNG_TREE_MAP_ASK_JUMP = 1, /**< The question about jumping to the floor is shown. */
+    DNG_TREE_MAP_ASK_INFO = 2, /**< Only the floor's information is shown: the dungeon menu chose a floor other than the entrance. */
+};
+
+/**
+ *
  * Sizes of the floor map's tables.
  *
  */
@@ -588,16 +648,32 @@ int DngTreeMapKey();
  */
 void DngTreeMapDraw();
 
-/** Non-zero while the tree map was opened from a save point and offers to save. */
+/**
+ *
+ * Non-zero while the tree map was opened from a save point and offers to save.
+ *
+ */
 extern u8 TreeMapSaveFlag;
 
-/** Saves made since the tree map was opened from a save point. */
+/**
+ *
+ * Saves made since the tree map was opened from a save point.
+ *
+ */
 extern s16 TreeMapSaveNum;
 
-/** Non-zero when the tree map was opened from the dungeon's sub map. */
+/**
+ *
+ * Non-zero when the tree map was opened from the dungeon's sub map.
+ *
+ */
 extern u8 TreeMapCallDungeonSubMap;
 
-/** Non-zero while the tree map is open over the world map. */
+/**
+ *
+ * Non-zero while the tree map is open over the world map.
+ *
+ */
 extern u8 TreeMapCalledWorldMap;
 
 /**

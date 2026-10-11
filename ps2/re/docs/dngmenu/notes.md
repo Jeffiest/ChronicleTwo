@@ -666,3 +666,14 @@ colourer takes the first free register of `v0 v1 a0-a3 t0-t9 s0-s7`):
   X displacement moves into a delay slot. `Initialize` needs the Satan's Fiddle
   evaluate-first row for binary32 286.0 (`0x438F0000`), restoring the early f15
   load. No other profile rows are needed in this unit.
+
+## Enums
+- `DNGMAP_ROOT_TYPE` (dngmenu.hpp) names `DNGMAP_ROOT_INFO::type` 0-3 (normal, sun, moon, star); `root_type_texturecrd_1216`
+  has a fifth row (type 4) whose meaning is not established.
+- `DNGMAP_GLID_MARK` names the bits `DrawGlidCheck` returns; `DrawRoot` reads only `DNGMAP_GLID_MARK_SPECIAL_LEFT`.
+- `DNG_TREE_MAP_MES` indexes `CMenuTreeMap::mes` / `MenuDngMes`: title, fast destroy, an unused window (message 0x97,
+  kept off the screen), fishing, spheda, practice, kill count, geostone.
+- `DNG_TREE_MAP_ASK` is the value of `DngAskMessageDrawFlag`.
+- Remaining literals: dungeon numbers (`dng_no` 0-6), passage shapes (`DNGMAP_ROOT_INFO::shape` 0-9), save bit flags
+  and `GetMapType` results; no enums exist for them on master (`GetMapType` 2/4/6 can use `MapType` once mapselect.hpp
+  defines it).
