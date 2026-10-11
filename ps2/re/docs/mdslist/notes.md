@@ -61,12 +61,16 @@ Stride 0x10 in CMdsListSet (`SearchMdsList` returns `this + i*0x10 + 0x10`).
 pack entries, warns `"over pcp %d\n"` above 0x1FF), 0x8 `CMdsInfo *list`, 0xC unk (DeleteMdsList
 and LoadPCPFile's free-slot test only touch 0..8).
 `LoadPCPFile` returns void (no v0 set after `Run`). `GetList(int)` bounds `0 <= i < num`.
+The per-pack entry limit is `MdsListLimit` / `MDS_PCP_ENTRY_MAX` (0x200) in `mdslist.hpp`: it sizes the
+`files` and `names` arrays and the `num >= MDS_PCP_ENTRY_MAX` warning test.
 
 ## CIMGList (0x8, asserted)
 Stride 8 in CMdsListSet. 0x0 `char *name`, 0x4 `mgCEnterIMGInfo *info`: LoadIMGFile allocates
 `Alloc(0x12)` (0x120 bytes) and placement-news 0x100 bytes, copying the caller's 0x100-byte
 `mgCEnterIMGInfo` (declared in mg_texture.hpp: `int start[32]` at 0, `int count[32]` at 0x80, as
 used by GetTextureBlockNo and mgCTextureManager::EnterIMGFile). Name alloc is `Alloc((len+1+15)/16)`.
+The allocation is written as `align16_blocks(sizeof(mgCEnterIMGInfo)) + 2`, and the copy is a single
+struct assignment. The member writes go through `this`; no local alias is needed.
 
 ## CMdsListSet (>= 0x114, size NOT asserted)
 | off | field | evidence |
@@ -128,7 +132,8 @@ indexed by material without a bound of 4.
 (`mgCFrame::GetMaterial`), 0xC int, 0x10..0x1C float colour[4] (sceVu0FVECTOR, lq/sq).
 
 ## CreateChara (static)
-`new(stack->Alloc(0x68)) CCharacter2` (0x660 bytes, ctor chain inlined), then
+`new(stack->Alloc(0x68)) CCharacter2` (0x660 bytes, ctor chain inlined; the allocation stays a literal, since
+`align16_blocks(sizeof(CCharacter2)) + 2` fails to compile with "placement has a non-expression inline callee body"), then
 `chara->vt+0x3C` (Initialize) and `vt+0x80(pack, "info.cfg", stack, stack, stack, -1, 0)`; returns
 the character or NULL. Its active C++ body uses typed placement construction.
 The scoped compiler conversion preserves retail's save of the allocation result

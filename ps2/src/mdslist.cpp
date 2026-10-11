@@ -24,42 +24,58 @@
 #include "scriptinterpreter.hpp"
 
 /**
+ *
  * Number of model entries read from the current pack.
+ *
  */
 static int now_mds_num;
 
 /**
+ *
  * Maximum number of model entries in the current pack.
+ *
  */
 static int max_mds_num;
 
 /**
+ *
  * Model-list owner receiving pack commands.
+ *
  */
 static CMdsList *pcpMdsList;
 
 /**
+ *
  * Model entries receiving pack commands.
+ *
  */
 static CMdsInfo *pcpMdsInfo;
 
 /**
+ *
  * Model entry receiving attribute commands.
+ *
  */
 static CMdsInfo *pcpNowMdsInfo;
 
 /**
+ *
  * Memory used to load the model pack.
+ *
  */
 static mgCMemory *pcpStack;
 
 /**
+ *
  * Packed file being interpreted.
+ *
  */
 static u_int *pcp_file;
 
 /**
+ *
  * Scissor setting applied to all model entries.
+ *
  */
 static int pcpAllScissor;
 
@@ -80,7 +96,7 @@ static inline u_int align16_blocks(u_int size) {
 
 int CMapPiece::AssignMds(CMdsInfo *info) {
     if (info == NULL) {
-        return 0;
+        return false;
     }
 
     name = info->name;
@@ -89,7 +105,7 @@ int CMapPiece::AssignMds(CMdsInfo *info) {
     frame = info->frame;
     far_dist = info->far_dist;
     fade = info->far_fade;
-    return 1;
+    return true;
 }
 
 int CMapPiece::GetPoly(int type, CCPoly *poly, mgVu0FBOX &box, int num) {
@@ -139,7 +155,7 @@ void CMapPiece::Step() {
 
 int CMapPiece::GetBoundBox(mgVu0FBOX *box) {
     if (frame == NULL) {
-        return 0;
+        return false;
     }
 
     UpDatePosition();
@@ -246,7 +262,7 @@ void CMapPiece::Initialize() {
     type = 0;
     chara = NULL;
     i = 0;
-    draw_enable = 1;
+    draw_enable = true;
     name = NULL;
     material_num = 0;
     col_type = 0;
@@ -256,8 +272,8 @@ void CMapPiece::Initialize() {
         memset(&material[i], 0, sizeof(PieceMaterial));
     }
 
-    time_end = 0;
-    time_start = 0;
+    time_end = 0.0f;
+    time_start = 0.0f;
 }
 
 void CMdsInfo::Initialize() {
@@ -316,7 +332,7 @@ CMdsInfo *CMdsListSet::SearchMDS(char *name) {
         i++;
     }
 
-    return 0;
+    return NULL;
 }
 
 int CMdsListSet::LoadPCPFile(char *name, u_int *pack, mgCMemory *memory, int type) {
@@ -325,11 +341,11 @@ int CMdsListSet::LoadPCPFile(char *name, u_int *pack, mgCMemory *memory, int typ
     int       is_free;
 
     if (name == NULL) {
-        return 0;
+        return false;
     }
 
     if (SearchMdsList(name) != NULL) {
-        return 0;
+        return false;
     }
 
     slot = NULL;
@@ -344,24 +360,24 @@ int CMdsListSet::LoadPCPFile(char *name, u_int *pack, mgCMemory *memory, int typ
     }
 
     if (slot == NULL) {
-        return 0;
+        return false;
     }
 
     slot->LoadPCPFile(name, pack, memory, type);
-    return 1;
+    return true;
 }
 
 int CMdsListSet::DeleteMdsList(char *name) {
     CMdsList *mds_list = SearchMdsList(name);
 
     if (mds_list == NULL) {
-        return 0;
+        return false;
     }
 
     mds_list->name = NULL;
     mds_list->num = 0;
     mds_list->list = NULL;
-    return 1;
+    return true;
 }
 
 int CMdsListSet::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memory) {
@@ -369,11 +385,11 @@ int CMdsListSet::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memor
     int       i;
 
     if (name == NULL) {
-        return 0;
+        return false;
     }
 
     if (SearchIMGList(name) != NULL) {
-        return 0;
+        return false;
     }
 
     slot = NULL;
@@ -386,11 +402,11 @@ int CMdsListSet::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memor
     }
 
     if (slot == NULL) {
-        return 0;
+        return false;
     }
 
-    (slot)->LoadIMGFile(name, info, memory);
-    return 1;
+    slot->LoadIMGFile(name, info, memory);
+    return true;
 }
 
 void CMdsListSet::DeleteIMG(char *name) {
@@ -541,49 +557,36 @@ CMdsInfo *CMdsList::GetList(char *name) {
     index = GetListID(name);
 
     if (index < 0) {
-        return 0;
+        return NULL;
     }
 
     return GetList(index);
 }
 
 int CIMGList::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memory) {
-    CIMGList        *slot;
     mgCEnterIMGInfo *copy;
     u_int            length;
     u_int            blocks;
 
-    slot = this;
-
     if (name == NULL) {
-        return 0;
+        return false;
     }
 
-    slot->name = NULL;
+    this->name = NULL;
     length = strlen(name) + 1;
     blocks = align16_blocks(length);
-    slot->name = (char *) memory->Alloc(blocks);
-    strcpy(slot->name, name);
-    slot->info = NULL;
+    this->name = (char *) memory->Alloc(blocks);
+    strcpy(this->name, name);
+    this->info = NULL;
 
     if (info != NULL) {
-        slot->info = new (memory->Alloc(0x12)) mgCEnterIMGInfo;
-        copy = slot->info;
+        this->info = new (memory->Alloc(align16_blocks(sizeof(mgCEnterIMGInfo)) + 2)) mgCEnterIMGInfo;
+        copy = this->info;
 
-        /**
-         *
-         * Copies the texture archive's block index tables.
-         *
-         */
-        struct Blocks {
-            int v[32]; /**< Thirty-two texture archive block entries. */
-        };
-
-        *(Blocks *) copy->block = *(Blocks *) info->block;
-        *(Blocks *) copy->block_num = *(Blocks *) info->block_num;
+        *copy = *info;
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -591,7 +594,7 @@ int CIMGList::LoadIMGFile(char *name, mgCEnterIMGInfo *info, mgCMemory *memory) 
  * Starts a model-pack entry and stores a copy of its scripted name.
  *
  */
-int pcpMDS(SPI_STACK *stack, int arg) {
+static int pcpMDS(SPI_STACK *stack, int argc) {
     char *name;
     char *copy;
     u_int length;
@@ -632,7 +635,7 @@ int pcpMDS(SPI_STACK *stack, int arg) {
  * Converts a scripted model-pack type to its stored model category.
  *
  */
-int pcpTYPE(SPI_STACK *stack, int argc) {
+static int pcpTYPE(SPI_STACK *stack, int argc) {
     int type;
 
     if (pcpNowMdsInfo == NULL) {
@@ -641,19 +644,20 @@ int pcpTYPE(SPI_STACK *stack, int argc) {
 
     type = spiGetStackInt(stack);
 
+    // Script types 0-4 map onto MdsType; 3 and 4 both load a character.
     switch (type) {
         case 0:
-            type = 0;
+            type = MDS_TYPE_MODEL;
             break;
         case 1:
-            type = 1;
+            type = MDS_TYPE_COLLISION;
             break;
         case 2:
-            type = 3;
+            type = MDS_TYPE_CAMERA_COLLISION;
             break;
         case 3:
         case 4:
-            type = 4;
+            type = MDS_TYPE_CHARA;
             break;
     }
 
@@ -666,7 +670,7 @@ int pcpTYPE(SPI_STACK *stack, int argc) {
  * Sets the current model-pack entry's far clipping distance and fade mode.
  *
  */
-int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
+static int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
     if (pcpNowMdsInfo == NULL) {
         return 0;
     }
@@ -681,7 +685,7 @@ int pcpFAR_CLIP(SPI_STACK *stack, int argc) {
  * Loads the current model-pack entry as a model, collision frame, or character.
  *
  */
-int pcpMDS_END(SPI_STACK *stack, int argc) {
+static int pcpMDS_END(SPI_STACK *stack, int argc) {
     int          size;
     u_int       *file;
     mgCFrame    *frame;
@@ -699,15 +703,15 @@ int pcpMDS_END(SPI_STACK *stack, int argc) {
     }
 
     switch (pcpNowMdsInfo->type) {
-        case 0:
+        case MDS_TYPE_MODEL:
             frame = mgLoadMDSFile((MDS_HEADER *) file, pcpStack, NULL, NULL);
             break;
 
-        case 3:
-        case 1:
+        case MDS_TYPE_CAMERA_COLLISION:
+        case MDS_TYPE_COLLISION:
             frame = LoadCollisionFile((MDS_HEADER *) file, pcpStack);
             break;
-        case 4:
+        case MDS_TYPE_CHARA:
             chara = CreateChara(file, "info.cfg", pcpStack);
             pcpNowMdsInfo->chara = chara;
 
@@ -719,7 +723,6 @@ int pcpMDS_END(SPI_STACK *stack, int argc) {
     }
 
     if (pcpAllScissor != 0 && frame != NULL) {
-
         mgCFrameAttr attr;
         attr.clip_enable = 1;
         frame->SetAttrParam(attr, 1, MG_FRAME_ATTR_CLIP);
@@ -730,7 +733,9 @@ int pcpMDS_END(SPI_STACK *stack, int argc) {
 }
 
 /**
+ *
  * Script tags that select models and configure pack entries.
+ *
  */
 static SPI_TAG_PARAM pcp_tag[] = {
     {"MDS",      pcpMDS     },
@@ -741,8 +746,8 @@ static SPI_TAG_PARAM pcp_tag[] = {
 };
 
 void CMdsList::LoadPCPFile(char *name, u_int *pack, mgCMemory *memory, int type) {
-    u_int *files[0x200];
-    char  *names[0x200];
+    u_int *files[MDS_PCP_ENTRY_MAX];
+    char  *names[MDS_PCP_ENTRY_MAX];
     char  *script;
     int    script_size;
     u_int  length;
@@ -751,10 +756,10 @@ void CMdsList::LoadPCPFile(char *name, u_int *pack, mgCMemory *memory, int type)
 
     pcpMdsList = this;
     GetPackFileNum(pack);
-    num = GetPackFileExt(pack, "mds", files, 0x200, NULL, names);
-    num += GetPackFileExt(pack, "chr", files, 0x200, NULL, names);
+    num = GetPackFileExt(pack, "mds", files, MDS_PCP_ENTRY_MAX, NULL, names);
+    num += GetPackFileExt(pack, "chr", files, MDS_PCP_ENTRY_MAX, NULL, names);
 
-    if (num >= 0x200) {
+    if (num >= MDS_PCP_ENTRY_MAX) {
         printf("over pcp %d\n", num);
     }
 

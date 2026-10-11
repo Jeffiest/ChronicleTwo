@@ -8,7 +8,7 @@ counterpart. The unit owns no class (`class_units.tsv` has no entry).
 ## Globals (all LOCAL in retail -> `static` in the .cpp, not in the header)
 | Symbol | Section/size | Type | Use |
 |---|---|---|---|
-| MenuChapterMode | .sbss 4 | int (MenuChapterModeID) | 0/1/2 switch in MenuChapterKey; Init sets 0 |
+| MenuChapterMode | .sbss 4 | MenuChapterModeID | 0/1/2 switch in MenuChapterKey; Init sets 0 |
 | MenuChapterInfo | .sbss 4 | MENU_CHAPTER_INFO* | `Alloc(2)` from MenuChapterStack (2 qwords = 0x20) |
 | MenuChapterBG | .sbss 4 | mgCTexture* | GetTexture("chapbg", -1) |
 | MenuChapter_Logo | .sbss 4 | mgCTexture* | GetTexture("chaplogo", -1) |
