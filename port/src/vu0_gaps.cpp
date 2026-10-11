@@ -316,6 +316,11 @@ static int LogDrawRect(const mgCFrame *frame, mgVu0FBOX *rect, int visible, int 
         printed++;
         sceVu0FMATRIX lw;
         const_cast<mgCFrame *>(frame)->GetLWMatrixTopBottom(lw);
+        std::fprintf(stderr, "  lw rot rows [%.2f %.2f %.2f] [%.2f %.2f %.2f] [%.2f %.2f %.2f] det3 %.2f\n", lw[0][0], lw[0][1],
+                     lw[0][2], lw[1][0], lw[1][1], lw[1][2], lw[2][0], lw[2][1], lw[2][2],
+                     lw[0][0] * (lw[1][1] * lw[2][2] - lw[1][2] * lw[2][1]) -
+                         lw[0][1] * (lw[1][0] * lw[2][2] - lw[1][2] * lw[2][0]) +
+                         lw[0][2] * (lw[1][0] * lw[2][1] - lw[1][1] * lw[2][0]));
         const mgCVisual *visual = frame->visual;
         std::fprintf(stderr,
                      "drawrect frame %p vis %d max [%.1f %.1f %.1f %.1f] min [%.1f %.1f %.1f %.1f] visual %p kind %d "
