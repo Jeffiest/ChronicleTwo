@@ -446,3 +446,18 @@ void mgCTextureManager::Initialize(int start, int end) {
         hash_num = 0;
     }
 }
+
+mgCTexture *mgCTextureManager::SearchHash(char *name, int mode) {
+    int             bucket = hash(name);
+    mgTEXTURE_HASH *node;
+
+    for (node = hash_table[bucket]; node != NULL; node = node->next) {
+        if (strcmp(name, node->texture->name) == 0) {
+            if (mode < 0 || node->texture->block == mode) {
+                return node->texture;
+            }
+        }
+    }
+
+    return NULL;
+}

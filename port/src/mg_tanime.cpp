@@ -639,3 +639,51 @@ void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
 
     last_block = index;
 }
+
+CList<mgCTexAnimeData> *mgCTextureAnime::NewTexAnimeGroupData(int group, mgCMemory *stack) {
+    if (group < 0 || group >= group_num) {
+        return NULL;
+    }
+
+    CList<mgCTexAnimeData> *node = NewTexAnimeData(stack);
+
+    if (node == NULL) {
+        return NULL;
+    }
+
+    if (node->pGetData() == NULL) {
+        return NULL;
+    }
+
+    node->Initialize();
+
+    CList<mgCTexAnimeData> **slot = (CList<mgCTexAnimeData> **) ((u_char *) this + 0x64 + group * 4);
+    CList<mgCTexAnimeData>  *p = *slot;
+    CList<mgCTexAnimeData>  *tail;
+    CList<mgCTexAnimeData>  *next;
+
+    if (p == NULL) {
+        *slot = node;
+        now[group] = *slot;
+    } else {
+        tail = p;
+
+        while (tail != NULL) {
+            next = tail->next;
+
+            if (next == NULL) {
+                break;
+            }
+
+            tail = next;
+        }
+
+        tail->next = node;
+
+        if (node != NULL) {
+            node->prev = tail;
+        }
+    }
+
+    return node;
+}
