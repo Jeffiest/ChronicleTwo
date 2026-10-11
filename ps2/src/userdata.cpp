@@ -6807,7 +6807,7 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
             manager->SetChrEquip(USER_CHARA_MAX, 2);
             manager->SetChrEquip(USER_CHARA_MAX, 0x17);
             manager->DeleteItem(ITEM_ID_CORE, 1);
-            manager->GetItem(0xF7, 1);
+            manager->GetItem(ITEM_ID_IMPROVED_CORE, 1);
             manager->monster_box.EnableChange(1);
             manager->monster_box.EnableChange(4);
         }
@@ -6821,7 +6821,7 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
 
             manager->SetChrEquip(USER_CHARA_MAX, attach);
             manager->DeleteItem(ITEM_ID_CORE, 1);
-            manager->GetItem(0xF7, 1);
+            manager->GetItem(ITEM_ID_IMPROVED_CORE, 1);
             manager->GetCharaDataPtr(USER_CHARA_MAX)->hp.now = 48.0f;
             manager->GetCharaDataPtr(USER_CHARA_MAX)->hp.max = 48.0f;
             manager->GetCharaDataPtr(USER_CHARA_MAX)->defence = 8;

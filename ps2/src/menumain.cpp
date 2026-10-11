@@ -1363,7 +1363,7 @@ int MenuMainExit() {
     leaving = (MenuArg.end_code == MENU_END_DNG_MOVE) | (MenuArg.end_code == MENU_END_WORLD_MOVE);
 
     if (active_chara == 0) {
-        if (MenuUserParam.chara[0]->equip[0].IsFishingRod() != 0) {
+        if (MenuUserParam.chara[0]->equip[CHARA_EQUIP_MELEE].IsFishingRod() != 0) {
             if (!leaving) {
                 MenuArg.end_code = MENU_END_FISHING;
                 MenuArg.result[0] = MenuUserDataManPtr->GetFishingRodNo();
