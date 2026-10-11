@@ -8507,7 +8507,7 @@ static void MenuItemDebugDraw() {
     switch (CMenuItemInfoPt->key_arg_no) {
         case ITEM_MENU_PANEL_BAG: {
             tex_manager->ReloadTexture(MenuCommonInfo->tex_block[1], (sceVif1Packet *) NULL);
-            SetSpriteEnv(&prim, 2);
+            SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR_AA);
             prim.Begin(MG_PRIM_SPRITE);
             prim.Color(0, 0, 0, 0x40);
             prim.Vertex(0, 0, 0);
@@ -8516,7 +8516,7 @@ static void MenuItemDebugDraw() {
             prim.Vertex(20, 60, 0);
             prim.Vertex(276, 316, 0);
             prim.End();
-            SetSpriteEnv(&prim, 0);
+            SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
             u8  color[4] = {0x80, 0x80, 0x80, 0x80};
             int page = (CMenuItemInfoPt->debug_item_no - 1) / 64;
 
@@ -8529,13 +8529,13 @@ static void MenuItemDebugDraw() {
                     if (item_no == CMenuItemInfoPt->debug_item_no) {
                         int x = col * 32 + 24;
                         int y = row * 32 + 60;
-                        SetSpriteEnv(&prim, 2);
+                        SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR_AA);
                         prim.Begin(MG_PRIM_SPRITE);
                         prim.Color(0x40, 0x40, 0x40, 0x94);
                         prim.Vertex(x, y, 0);
                         prim.Vertex(x + 32, y + 32, 0);
                         prim.End();
-                        SetSpriteEnv(&prim, 0);
+                        SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
                     }
 
                     DrawOneItem(&prim, mgRect<float>(col * 32 + 24, row * 32 + 60, 32.0f, 32.0f), item_no, 0, NULL, color, 0);
@@ -10372,7 +10372,7 @@ void MenuWeaponBuildUpDraw(int &tex_block) {
     int          y = top_y;
     int          height = 0;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_BuildUpBoard);
     prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -10528,7 +10528,7 @@ void MenuWeaponBuildUpDraw(int &tex_block) {
                 mos_rows[1] = 5;
             }
 
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_BuildUpBoard);
             prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -11587,7 +11587,7 @@ void MenuItemInfoCursorDraw(int &tex_block) {
     left_rect.Set(0x1A2, 0xC8, -0x16, 0x1E);
     put_rect.Set(0, 0, 0x1F, 0x29);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(texture);
@@ -12461,7 +12461,7 @@ void CItemSelect::Draw() {
     frame_rect.Set(1, 0, 0x110, 0xFE);
     mgRect<float> *list = &list_rect;
     SetMenuScissor(mgRect<int>(0, (int) (37.0f + list_rect.top), mgScreenWidth - 1, (int) (147.0f + list_rect.top)));
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     float scroll_top = 37.0f + list->top - 55.0f * top_line;
     item_rect.top += (scroll_top - item_rect.top) / 4.0f;
@@ -12562,7 +12562,7 @@ void CItemSelect::Draw() {
     ResetMenuScissor();
     float list_x = list->left;
     float list_y = list->top;
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Color(0x80, 0x80, 0x80, alpha);
