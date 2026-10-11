@@ -1306,7 +1306,7 @@ int _SET_TRG_ANGLE(RS_STACKDATA *stack, int argc) {
 
     if (target != NULL) {
         if (target->target_dist < (radius + radius) + target->GetBodyWidth()) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             action_info.chara->GetPosition(position);
             target_position[0] -= position[0];
             target_position[1] = 0.0f;
@@ -1455,7 +1455,7 @@ int _RELEASE_OBJ(RS_STACKDATA *stack, int argc) {
                             action_info.chara->target_no));
 
                         if (target != NULL) {
-                            target->GetEntryObjectPos(0, 0, target_pos);
+                            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
                             start_pos[3] = 1.0f;
                             target_pos[3] = 1.0f;
                             distance = mgDistVector(start_pos, target_pos);
