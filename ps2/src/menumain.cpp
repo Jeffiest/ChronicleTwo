@@ -842,8 +842,8 @@ int CheckStartChapter8(CSaveData *save_data) {
         return false;
     }
 
-    if (save_data->GetBitFlag(0x2E0) == 1) {
-        if (!save_data->GetBitFlag(0x320)) {
+    if (save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8) == 1) {
+        if (!save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8_STARTED)) {
             return true;
         }
     }
@@ -1038,8 +1038,8 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
     MenuNowTime = MenuMainScene->time;
     MakeMenuTopic();
 
-    if (CheckBitFlagMenu(0x68) == 0) {
-        if (CheckBitFlagMenu(4) == 1) {
+    if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_FORCED_OFF) == 0) {
+        if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_EVENING) == 1) {
             MenuNowTime = 18.25f;
             int event = CheckShortFlagMenu(5);
 
@@ -1055,11 +1055,11 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
                 MenuNowTime = 21.5f;
             }
         } else {
-            if (CheckBitFlagMenu(0x66) == 1) {
+            if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_MIDNIGHT) == 1) {
                 MenuNowTime = 0.0f;
             }
 
-            if (CheckBitFlagMenu(0x67) == 1) {
+            if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_1AM) == 1) {
                 MenuNowTime = 1.0f;
             }
         }
@@ -1959,7 +1959,7 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
 
     int early_game = true;
 
-    if (CheckBitFlagMenu(0x36) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_EARLY_GAME_DONE) != 0) {
         early_game = false;
     }
 
@@ -2258,8 +2258,8 @@ void CMenuInter::PushOk() {
                 show_message = true;
                 message_no = 0x28;
 
-                if (CheckBitFlagMenu(0x258) == 1) {
-                    if (CheckBitFlagMenu(0x2E0) == 0) {
+                if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_2) == 1) {
+                    if (CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8) == 0) {
                         message_no = 0x2E;
                     }
                 }
@@ -2527,11 +2527,11 @@ int MenuInternSelectKey() {
                 }
 
                 if (GamePad__2.Down(PAD_CROSS) != 0) {
-                    MenuActiveSaveData->SetBitFlag(0x36, 1);
+                    MenuActiveSaveData->SetBitFlag(SAVE_FLAG_EARLY_GAME_DONE, 1);
                 }
 
                 if (GamePad__2.Down(PAD_TRIANGLE) != 0) {
-                    MenuActiveSaveData->SetBitFlag(0x36, 1);
+                    MenuActiveSaveData->SetBitFlag(SAVE_FLAG_EARLY_GAME_DONE, 1);
                     MenuActiveSaveData->SetBitFlag(SAVE_FLAG_FISHING_CONTEST_UNLOCKED, 1);
                     MenuActiveSaveData->SetBitFlag(SAVE_FLAG_FINNY_FRENZY_UNLOCKED, 1);
                     MenuActiveSaveData->ForceBootTour(MenuActiveSaveData->day, 1);
