@@ -569,11 +569,11 @@ CCollisionMDT *CreateCollisionMDT(u_int *model, mgCMemory *memory) {
             return NULL;
         }
 
-        int face_num = words[1];
+        int vertex_num = words[1];
         words = (int *) &((FACES_ID *) words)->material;
         words++;
-        poly_count += face_num / 3;
-        words += face_num;
+        poly_count += vertex_num / 3;
+        words += vertex_num;
     }
 
     polys = (CCPoly *) memory->Alloc(poly_count * sizeof(CCPoly) / 16);

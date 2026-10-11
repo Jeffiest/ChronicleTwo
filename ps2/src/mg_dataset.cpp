@@ -1144,7 +1144,7 @@ void mgCMDTBuilder::BeginPrim(int type, int material) {
     prim = (FACES_ID *) index;
     index += 2;
     prim->type = type;
-    prim->face_num = 0;
+    prim->vertex_num = 0;
 
     face_index_num = 3;
 
@@ -1172,7 +1172,7 @@ void mgCMDTBuilder::AddFace(int vertex) {
 }
 
 void mgCMDTBuilder::EndPrim() {
-    prim->face_num = index_num / face_index_num;
+    prim->vertex_num = index_num / face_index_num;
     faces->prim_num++;
 }
 
