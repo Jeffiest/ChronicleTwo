@@ -1,41 +1,29 @@
 # mglib notes
 
-Round 3 from `80c270c` promotes `mgInit` at 0/652 words and migrates all
-initialized assembly data to C++. The complete object passes `0x4DA8` checked
-bytes and 1,146 resolved relocations; all 148 other objects and all ten linked
-file-backed sections remain byte-identical to baseline. The remaining three
-C++ BSS reservations, dither alternatives, and unapplied terminal-padding
-checker proposal are documented in [mglib-r3-20261008.md](mglib-r3-20261008.md).
+`mgInit` is native C++ with 0 differing words of 652, and all initialized data is C++ rather than
+assembly. The complete object passes `0x4DA8` checked bytes and 1,146 resolved relocations; all 148
+other objects and all ten linked file-backed sections are byte-identical to baseline. The three C++ BSS
+reservations, dither alternatives, and terminal-padding checker proposal are documented in
+[mglib-r3-20261008.md](mglib-r3-20261008.md).
 
 The pinned Satan’s Fiddle baseline and current matching status are in
-[matching-20261008.md](matching-20261008.md). The older isolated draft counts
-below describe earlier source/compiler states.
-The preceding pass from `0c33a7e`, including the retail-local `GetScreenSize`,
-frame-copy scopes and nested dither-table reconstruction, is documented in
+[matching-20261008.md](matching-20261008.md).
+The retail-local `GetScreenSize`, frame-copy scopes and nested dither-table reconstruction are documented in
 [mapmglib-midday-20261008.md](mapmglib-midday-20261008.md).
 
-Round 1 from integration `017d119` improves the guarded `mgInit` draft to
-18/652 words; its context copies and dither loops now agree. The remaining
-store scheduling, initialization hygiene, packet reservation park and acceptance
-receipts are documented in [mglib-r1-20261008.md](mglib-r1-20261008.md).
-
-Round 2 from `529fb83` resolves the background/FRAME store scheduling and
-retains a 0/652 guarded `mgInit` draft. Its register-cast review park is
-resolved by the round-3 coordinator ruling accepting the project's existing
-whole-register convention. The earlier typed-copy and intrinsic findings and
-baseline validation are in [mglib-r2-20261008.md](mglib-r2-20261008.md).
+The typed-copy and intrinsic findings and baseline validation are in [mglib-r2-20261008.md](mglib-r2-20261008.md).
+The `*(u_long *) &reg` whole-register convention is described under Typed access.
 
 The guarded frame-rotation draft uses the SDK's `sceGsDBuff::disp[2]`
-array. Naming its two elements `disp1` and `disp0` prevented the whole-unit
-draft compiler from running; using `disp[1]` and `disp[0]` restores that
-diagnostic build without changing the matching game build.
+array. Naming its two elements `disp1` and `disp0` prevents the whole-unit
+draft compiler from running; `disp[1]` and `disp[0]` keep that diagnostic build running
+without changing the matching game build.
 
 `mgGetFrameBuffer` and `mgGetFrameBackBuffer` use native `mgCTexture` assignment and match
 their 0xF8 and 0x138 retail bodies in objdiff. The matching mglib object has 0x4DB0 bytes
 and 1048 resolved relocations;
-`mg_texture` remains exact at 0x3674 bytes and 160 relocations. The linked build retains only
-the pre-existing 0x26-byte `nd_meswin` mismatch. The narrow
-`MGLIB_IMPLICIT_TEX0_ASSIGNMENT` header switch omits the custom SDK assignment operator
+`mg_texture` remains exact at 0x3674 bytes and 160 relocations. The narrow
+`MGLIB_IMPLICIT_TEX0_ASSIGNMENT` header switch (defined at the top of `mglib.cpp`, read by `sce/libgraph.h`) omits the custom SDK assignment operator
 declaration while compiling mglib, allowing MWCC to emit its retail implicit member copy.
 `mg_texture` keeps the custom operator needed by `ReloadTexture`. This gives the two translation
 units different member declarations for `sceGsTex0`; the layout and generated runtime behavior
@@ -69,17 +57,17 @@ explicit-operator copies 0x12C and 0x17C bytes; level 4 retains their baseline
 remaining TEX1/CLAMP base and copy-size differences, subject to preserving the
 matched `ReloadTexture` body during the shared SDK assignment cleanup.
 
-A private whole-unit trial removed the `sceGsTex0::operator=` declaration from
-an isolated SDK-header copy and compiled the existing native drafts of both
-buffer-copy functions at default inline depth. MWCC then generated the
+A private whole-unit trial omits the `sceGsTex0::operator=` declaration from
+an isolated SDK-header copy and compiles the existing native drafts of both
+buffer-copy functions at default inline depth. MWCC then generates the
 `mgCTexture` memberwise copies without a TEX0 operator call or the two extra
 TEX1/CLAMP base `addiu`s. The functions were exactly 0xF8 and 0x138 bytes, and
 the fixed-up mglib object passed at 0x4DB0 bytes with 1048 relocations. ObjDiff
 reported 100% for `mgGetFrameBuffer`; its 99.98718% for `mgGetFrameBackBuffer`
 was only the `mgDBuffID` GP relocation being named instead of represented as
-the retail numeric GP offset, which the resolved-object checker accepted. The accepted unit-local SDK declaration switch now retains this implicit
-copy while preserving `ReloadTexture`; the earlier header park is resolved. The
-back-buffer draft now reads `sceGsDBuff::draw0/draw1.frame1.FBP` through the
+the retail numeric GP offset, which the resolved-object checker accepted. The unit-local SDK declaration switch `MGLIB_IMPLICIT_TEX0_ASSIGNMENT` retains this implicit
+copy while preserving `ReloadTexture`. The
+back-buffer draft reads `sceGsDBuff::draw0/draw1.frame1.FBP` through the
 SDK type. The same source cleanup replaces the file's raw `mgDBuff` byte
 declaration and clear-colour offsets with typed SDK fields. With the existing
 SDK assignment and assembly fallbacks, the canonical mglib object remains
@@ -91,7 +79,7 @@ After 16-byte function alignment, the first oversized copy moves
 further 0x30 bytes. Their cumulative unit `.text` shift is 0x50 bytes. In the linked image the
 subsequent `mgCMemory` constructor and `CColFrame::Initialize` addresses were both 0x60 above
 retail, which changed the constructor pointer in `__sinit_mglib_cpp` and the collision vtable
-entry. Restoring the two retail gaps makes the complete mglib object pass `check_objects.py`.
+entry. Reproducing the two retail gaps makes the complete mglib object pass `check_objects.py`.
 
 MWCC emits the `.ctor` pointer to `__sinit_mglib_cpp` for the native global objects. Keeping
 the dumped `D_0037AFE8__DATA` entry alongside it adds a second pointer to the linked table.
@@ -102,9 +90,7 @@ slot. The same duplicate-entry pattern appeared in 21 other game units with nati
 
 The source has 100 exact functions and one guarded draft, `VSyncCallBack`
 (its `sync`/`ei` pair has no native compiler expression). The complete object
-passes `0x4D9C` checked bytes and 1,248 resolved relocations. The earlier
-43-exact/31-isolated/27-differing inventory describes initial source drafting
-rather than this merged state. Remaining draft measurements are in
+passes `0x4D9C` checked bytes and 1,248 resolved relocations. Remaining draft measurements are in
 [matching-20261008.md](matching-20261008.md).
 
 ## mgEndFrame source forms
@@ -146,8 +132,7 @@ rather than this merged state. Remaining draft measurements are in
   initialization guards) and `store_data` are native definitions at their retail
   `.sbss`/`.bss` positions (`count_580` … `init_587`, `store_data_614`, like
   `image_num_1535`/`init_1536` for `StoreImage`). Each guard spans its byte and
-  the following alignment padding. `store_data_614` stays global for the
-  library-data reference in `e_rem_pio2`.
+  the following alignment padding. The `store_data` buffer is a function-local static of `mgEndFrame`.
 
 ## mgSetPkFrameBuffer source forms
 
@@ -175,7 +160,7 @@ Header: `ps2/include/mglib.hpp`. No class is owned by mglib (`class_units.tsv`).
 structs `mgFOG_PARAM` (retail name, from `mgSetFogParam__FP11mgFOG_PARAM`) and `MG_PICKZ`
 (name taken from the first game's mglib.hpp; no retail symbol names it in this game); enums
 `mgSCREEN_MODE`, `mgVU_PROG_ID` (neutral names); 95 global function prototypes; externs for every
-GLOBAL datum. The `.cpp` now includes `mglib.hpp`. Header compiles; `draft.sh mglib` compiles.
+GLOBAL datum. The `.cpp` includes `mglib.hpp`. Header compiles; `draft.sh mglib` compiles.
 
 ## Symbol binding (retail ELF `rom/pal/extracted/iso/SCES_511.90`, `readelf -s`)
 The built ELF in `build/pal` marks everything GLOBAL; the retail ELF does not. Use the retail one.
@@ -198,11 +183,9 @@ The built ELF in `build/pal` marks everything GLOBAL; the retail ELF does not. U
   mgChangeLight 4, draw_performance_meter 4, mgTexManager 0x21C (slot 0x220), gs_simage 0x70
   (slot 0xA0), prog_adr 12 (3 pointers).
 
-Round 3 restores these private globals as typed file statics. The stable
-`dimx_281` file-static table replaces the compiler-ordinal local spelling.
-`store_data_614` retains external linkage because an existing generated
-library-data expression references that symbol. `gs_simage` and the
-function-local statics are native definitions.
+The private globals are typed file statics. The `dimx_281` file-static table replaces the
+compiler-ordinal local spelling `dimx$281`. `gs_simage` and the function-local statics are native
+definitions.
 
 ## Global types (evidence)
 - `DmaCH1/2/8` sceDmaChan* (sceDmaGetChan results; CH1 chcr.TTE set). DmaCH2 also used by movie,
