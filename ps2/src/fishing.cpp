@@ -79,8 +79,6 @@ enum FISHING_UKI_MODE {
     FISHING_UKI_MODE_BITE = 6,      /**< A fish has bitten the lure and the player can hook it. */
 };
 
-const int kFishCameraState = 1000;
-
 /**
  *
  * Logical buttons that the fishing code reads from its CPadControl.
@@ -2193,7 +2191,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
             sceVu0ApplyMatrix(cast_dir, matrix, cast_dir);
             can_cast = move_info.move_info.landed;
 
-            if (GetFishingMode() == 2 && LureNo < 0) {
+            if (GetFishingMode() == FISHING_MODE_LURE && LureNo < 0) {
                 can_cast = 0;
             }
 
@@ -3012,7 +3010,7 @@ int InitBattle(CScene *scene) {
 
     camera = (CCameraControl *) scene->GetCamera(scene->active_camera);
 
-    if (camera == NULL || camera->Iam() != kFishCameraState) {
+    if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
         return 0;
     }
 
@@ -3297,7 +3295,7 @@ int InitFalse(CScene *scene) {
 
     camera = scene->GetCamera(scene->active_camera);
 
-    if (camera == NULL || camera->Iam() != kFishCameraState) {
+    if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
         return 0;
     }
 
@@ -3353,7 +3351,7 @@ void FalseLoop(CScene *scene, CPadControl *pad) {
     }
 
     switch (camera->Iam()) {
-        case kFishCameraState:
+        case CAMERA_KIND_CONTROL:
             break;
         default:
             return;
@@ -3416,7 +3414,7 @@ int InitSuccess(CScene *scene) {
 
     mgCCamera *camera = scene->GetCamera(scene->active_camera);
 
-    if (camera == NULL || camera->Iam() != kFishCameraState) {
+    if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
         return 0;
     }
 
@@ -3532,7 +3530,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
     }
 
     switch (camera->Iam()) {
-        case kFishCameraState:
+        case CAMERA_KIND_CONTROL:
             break;
         default:
             return;
@@ -3989,7 +3987,7 @@ int GetUkiWaitTime(FISH_DATA *fish, CScene *scene, float *position, int rod_no, 
             pull_strength = param->pull_rate * (size / 80.0f * width_rate);
             fishing_point = (int) (width_rate * (param->fishing_point_rate * size));
 
-            if (GetFishingMode() == 2) {
+            if (GetFishingMode() == FISHING_MODE_LURE) {
                 fishing_point *= 2;
             }
         }
