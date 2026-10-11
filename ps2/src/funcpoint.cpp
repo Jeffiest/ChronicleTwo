@@ -749,7 +749,7 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
     count = 0;
     skip_unlit = 0;
 
-    if (mode & 1) {
+    if (mode & FUNC_POINT_LIGHT_CHARA) {
         skip_unlit = 1;
     }
 
@@ -785,7 +785,7 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
 
     GetEnd();
 
-    if ((mode & 3) == 3) {
+    if ((mode & (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) == (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) {
         GetStart(FUNC_POINT_FIRE);
         first = Get();
         point = first;
