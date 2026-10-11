@@ -13,11 +13,21 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
-file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*_test.cpp)
+# The cases here are the ones that build against this game; Kazarov's shared host cases are added
+# by kz_port_tests. The other *_test.cpp files here still include another game's headers.
+set(TEST_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/occlusion_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/platform_config_test.cpp)
 add_executable(darkcloud_tests ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${TEST_SOURCES})
 set_target_properties(darkcloud_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 target_include_directories(darkcloud_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 dc_link_game(darkcloud_tests)
+kz_port_tests(darkcloud_tests)
+# Written against another game's libmc declarations (a raw byte table for sceMcGetDir), which this
+# game's SDK headers type differently.
+get_target_property(test_sources darkcloud_tests SOURCES)
+list(FILTER test_sources EXCLUDE REGEX "/platform_mc_test\\.cpp$")
+set_property(TARGET darkcloud_tests PROPERTY SOURCES ${test_sources})
 target_link_libraries(darkcloud_tests PRIVATE GTest::gtest)
 
 # A case is a unit test: it finishes in milliseconds, and one that does not is cut off. The clock

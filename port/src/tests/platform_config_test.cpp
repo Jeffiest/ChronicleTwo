@@ -151,3 +151,30 @@ TEST(PlatformConfig, SerializeRoundTrips) {
     ASSERT_TRUE((again.key_bindings[0].keys == std::vector<std::string>{"Space", "Z"}));
     ASSERT_TRUE(again.key_bindings[1].keys.size() == 1 && again.key_bindings[1].keys[0] == "Return");
 }
+
+// The host layer reads the settings through SettingsGet: the stick and mouse defaults here are this
+// game's, in the host layer's units.
+TEST(PlatformConfig, HostViewKeepsTheGamesMouseAndBindingDefaults) {
+    const HostSettings &host = SettingsGet();
+    ASSERT_TRUE(host.tick_rate == 50.0 && host.stick_sensitivity == 1.0f);
+    ASSERT_TRUE(host.mouse_sensitivity > 0.229f && host.mouse_sensitivity < 0.2293f);
+    ASSERT_TRUE(host.key_bindings.size() == 4 && host.key_bindings[2].action == "rx");
+    ASSERT_TRUE((host.key_bindings[2].keys == std::vector<std::string>{"MouseX"}));
+    ASSERT_TRUE(ConfigGet().key_bindings.empty() && ConfigGet().mouse_sensitivity == 0.1f);
+}
+
+TEST(PlatformConfig, SettingsChangeWithTheViewUnchangedChangesNothing) {
+    char directory[] = "/tmp/dc_config_XXXXXX";
+    ASSERT_TRUE(mkdtemp(directory) != nullptr);
+    PathsSetSaveRoot(directory);
+    HostSettings same = SettingsGet();
+    ASSERT_TRUE(SettingsChange(same));
+    ASSERT_TRUE(ConfigGet().key_bindings.empty() && ConfigGet().mouse_sensitivity == 0.1f);
+    HostSettings changed = same;
+    changed.soundtrack = true;
+    changed.max_fps = 90.0;
+    ASSERT_TRUE(SettingsChange(changed));
+    ASSERT_TRUE(SettingsGet().soundtrack && ConfigGet().max_fps == 90.0);
+    ASSERT_TRUE(ConfigGet().key_bindings.empty());
+    std::filesystem::remove_all(directory);
+}
