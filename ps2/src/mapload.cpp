@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "automap.hpp"
 #include "collision.hpp"
 #include "funcpoint.hpp"
 #include "map.hpp"
@@ -89,122 +90,170 @@ int        cfgWATER_SURFACE_END(SPI_STACK *stack, int argc);
 int        cfgWATER_DRAW(SPI_STACK *stack, int argc);
 
 /**
+ *
  * Map the map script is loading into.
+ *
  */
 static CMap *mapMap;
 
 /**
+ *
  * Node of the map part the map script is building, or null outside a part.
+ *
  */
 static CList<CMapParts> *mapNowMapParts;
 
 /**
+ *
  * Node of the map piece the map script is building, or null outside a piece.
+ *
  */
 static CList<CMapPiece> *mapNowMapPiece;
 
 /**
+ *
  * Memory that everything the map script builds is taken from.
+ *
  */
 static mgCMemory *mapStack;
 
 /**
+ *
  * Far clipping distance of the placed map part, or negative for no clipping.
+ *
  */
 static float mapFarDist;
 
 /**
+ *
  * Far-distance fade mode of the placed map part.
+ *
  */
 static int mapFarAlpha;
 
 /**
+ *
  * Visibility setting of the placed map part.
+ *
  */
 static int mapShow;
 
 /**
+ *
  * Level of detail that the map script is giving pieces to.
+ *
  */
 static int mapLOD_ID;
 
 /**
+ *
  * Current fixed-camera information entry.
+ *
  */
 static int mapCameraInfoIdx;
 
 /**
+ *
  * Next rectangle of the current fixed-camera information entry.
+ *
  */
 static int mapCameraRectIdx;
 
 /**
+ *
  * Index of the function point being filled by script handlers.
+ *
  */
 static int mapFuncPointIdx;
 
 /**
+ *
  * Function point being filled by script handlers.
+ *
  */
 static CFuncPoint *mapNowFuncPoint;
 
 /**
+ *
  * Next entry of the current piece materials that the map script fills in.
+ *
  */
 static int mapMatIdx;
 
 /**
+ *
  * Non-zero while map-script function points belong to the current map part.
+ *
  */
 static int mapPtsFunc;
 
 /**
+ *
  * Non-zero when loading an additional map into the current map.
+ *
  */
 static int mapAddMode;
 
 /**
+ *
  * Non-zero when configuration function-point storage is reserved.
+ *
  */
 static int ReserveFuncFlag;
 
 /**
+ *
  * Next water-surface entry being filled by configuration handlers.
+ *
  */
 static int WaterIndex;
 
 /**
+ *
  * Water frame being filled by configuration handlers.
+ *
  */
 static CWaterFrame *cfgWater;
 
 /**
+ *
  * Instance name of the placed map part.
+ *
  */
 static char mapPlacePartsName[0x100];
 
 /**
+ *
  * Definition name of the map part to place.
+ *
  */
 static char mapMapPartsName[0x100];
 
 /**
+ *
  * Group name of the placed map part.
+ *
  */
 char mapMapPartsGroupName[0x100];
 
 /**
+ *
  * Position of the placed map part.
+ *
  */
 sceVu0FVECTOR mapPos;
 
 /**
+ *
  * Rotation of the placed map part.
+ *
  */
 sceVu0FVECTOR mapRot;
 
 /**
+ *
  * Scale of the placed map part.
+ *
  */
 sceVu0FVECTOR mapScale;
 
@@ -249,7 +298,7 @@ int CMap::GetNowTimeLightBand() {
         return 0;
     }
 
-    if (band_count == 4) {
+    if (band_count == MAP_TIME_BAND_NUM) {
         return GetNowTimeBand();
     }
 
@@ -275,28 +324,28 @@ void CMap::GetLightingRatio(float *ratio) {
     blend = 0.0f;
     ratio[3] = 0.0f;
     band = GetNowTimeBand();
-    next = (band + 1) % 4;
+    next = (band + 1) % MAP_TIME_BAND_NUM;
 
     switch (band) {
-        case 3:
+        case MAP_TIME_BAND_MORNING:
             if (time > 8.0f) {
                 blend = time - 8.0f;
             }
 
             break;
-        case 0:
+        case MAP_TIME_BAND_DAY:
             if (time > 16.0f) {
                 blend = time - 16.0f;
             }
 
             break;
-        case 1:
+        case MAP_TIME_BAND_EVENING:
             if (time > 20.0f) {
                 blend = time - 20.0f;
             }
 
             break;
-        case 2:
+        case MAP_TIME_BAND_NIGHT:
             if (time < 6.0f) {
                 if (time > 5.0f) {
                     blend = time - 5.0f;
@@ -344,7 +393,7 @@ int CMap::GetTimeLightingRatio(float *ratio) {
     int   band;
     int   next_band;
 
-    if (band_count == 4) {
+    if (band_count == MAP_TIME_BAND_NUM) {
         GetLightingRatio(ratio);
         return band_count;
     }
@@ -399,15 +448,15 @@ float CMap::GetLightNoTime(int index) {
         return -1.0f;
     }
 
-    if (band_count == 4) {
+    if (band_count == MAP_TIME_BAND_NUM) {
         switch (index) {
-            case 3:
+            case MAP_TIME_BAND_MORNING:
                 return 6.5f;
-            case 0:
+            case MAP_TIME_BAND_DAY:
                 return 9.5f;
-            case 1:
+            case MAP_TIME_BAND_EVENING:
                 return 17.5f;
-            case 2:
+            case MAP_TIME_BAND_NIGHT:
                 return 21.5f;
         }
 
@@ -497,8 +546,6 @@ CMapLightingInfo *CMap::GetLightingInfo(int no) {
 int CMap::GetActiveLightNo() {
     return map_info.GetActiveLightNo();
 }
-
-// Defined in mapinfo.hpp.
 
 void CMap::GetLightInfo(CMapLightingInfo *out_info, float *ratio, int num) {
     sceVu0FMATRIX     light_dir;
@@ -622,7 +669,6 @@ static int IsAddMode() {
     return mapAddMode;
 }
 
-// Defined in mapload.hpp.
 /**
  *
  * Starts a map part of the name of the first argument, which the tags up to PARTS_END build.
@@ -636,16 +682,10 @@ int mapPARTS(SPI_STACK *stack, int argument_count) {
     parts->SetName(name);
     parts->SetPartsName(name);
     mapLOD_ID = 0;
-    mapPtsFunc = 1;
+    mapPtsFunc = true;
     return 1;
 }
 
-// Defined in mg_tanime.hpp.
-// Defined in mg_tanime.hpp.
-// Defined in mg_tanime.hpp.
-
-// Defined in mg_frame.hpp.
-// Defined in mapload.hpp.
 unsigned int algn16_size(unsigned int size) {
     if ((size & 0xF) != 0) {
         return (size >> 4) + 1;
@@ -705,19 +745,19 @@ int mapMOVE_FLAG(SPI_STACK *stack, int argc) {
     parts->move_flag = 0;
 
     if (spiGetStackInt(stack++)) {
-        parts->move_flag |= 1;
+        parts->move_flag |= AUTOMAP_WALL_NEG_X;
     }
 
     if (spiGetStackInt(stack++)) {
-        parts->move_flag |= 2;
+        parts->move_flag |= AUTOMAP_WALL_NEG_Z;
     }
 
     if (spiGetStackInt(stack++)) {
-        parts->move_flag |= 4;
+        parts->move_flag |= AUTOMAP_WALL_POS_X;
     }
 
     if (spiGetStackInt(stack)) {
-        parts->move_flag |= 8;
+        parts->move_flag |= AUTOMAP_WALL_POS_Z;
     }
 
     return 1;
@@ -747,7 +787,6 @@ int mapLOD_START(SPI_STACK *stack, int argc) {
     return 1;
 }
 
-// Defined in mapparts.hpp.
 /**
  *
  * Sets whether the current map part blends between its levels of detail.
@@ -764,7 +803,6 @@ int mapLOD_BLEND(SPI_STACK *stack, int argc) {
     return 1;
 }
 
-// Defined in mapparts.hpp.
 /**
  *
  * Puts a piece of the current map part into a level of detail, hiding it until that level is reached.
@@ -782,19 +820,18 @@ int mapLOD_PIECE(SPI_STACK *stack, int argc) {
 
     if (piece != NULL) {
         if (reset_flag > 0) {
-            piece->show = 0;
+            piece->show = false;
             piece->fade_alpha = 0.0f;
         }
 
         if (parts->GetLODBlend() != 0) {
-            piece->fade = 1;
+            piece->fade = true;
         }
     }
 
     return 1;
 }
 
-// Defined in mapparts.hpp.
 /**
  *
  * Ends a level of detail, so that the next pieces go to the following level.
@@ -831,7 +868,7 @@ int mapPIECE(SPI_STACK *stack, int argument_count) {
         return 0;
     }
 
-    show = 1;
+    show = true;
 
     if (!(argument_count < 2)) {
         show = spiGetStackInt(show_arg);
@@ -863,13 +900,6 @@ int mapPIECE(SPI_STACK *stack, int argument_count) {
 
     return 1;
 }
-
-// Defined in mdslist.hpp.
-// Defined in mg_tanime.hpp.
-// Defined in mg_tanime.hpp.
-// Defined in mg_tanime.hpp.
-// Defined in mdslist.hpp.
-// Defined in object.hpp.
 
 /**
  *
@@ -994,7 +1024,6 @@ int mapPIECE_MATERIAL_START(SPI_STACK *stack, int argument_count) {
     return 1;
 }
 
-// Defined in mdslist.hpp.
 PieceMaterial::PieceMaterial() { Initialize(); }
 
 void PieceMaterial::Initialize() { memset(this, 0, sizeof(PieceMaterial)); }
@@ -1125,7 +1154,7 @@ int mapPARTS_END(SPI_STACK *stack, int argc) {
     }
 
     mapMap->AddParts(mapNowMapParts);
-    mapPtsFunc = 0;
+    mapPtsFunc = false;
     mapNowMapParts->pGetData()->CreateBoundBox();
     return 1;
 }
@@ -1151,7 +1180,7 @@ int mapMAP_PARTS(SPI_STACK *stack, int argc) {
     mapScale[3] = 0.0f;
     mapFarDist = -1.0f;
     mapScale[2] = 1.0f;
-    mapShow = 1;
+    mapShow = true;
     mapScale[1] = 1.0f;
     mapScale[0] = 1.0f;
     mapFarAlpha = 0;
@@ -1259,7 +1288,7 @@ int mapMAP_PARTS_END(SPI_STACK *stack, int argc) {
 
     parts->show = mapShow;
 
-    if ((s8) mapMapPartsGroupName[0] != 0) {
+    if (mapMapPartsGroupName[0] != 0) {
         parts->group_no = mapMap->AddPartsGroup(mapMapPartsGroupName, parts, mapStack);
     }
 
@@ -1366,7 +1395,7 @@ int mapFIX_CAMERA_POS2(SPI_STACK *stack, int argc) {
 
     index = spiGetStackInt(stack++);
 
-    if (index < 0 || index >= 8) {
+    if (index < 0 || index >= CAMERA_INFO_POS_MAX) {
         return 0;
     }
 
@@ -1539,24 +1568,24 @@ int mapFUNC_DATA(SPI_STACK *stack, int argc) {
     }
 
     if (strcmp(name, "effect") == 0) {
-        kind = 1;
+        kind = FUNC_POINT_EFFECT;
     } else if (strcmp(name, "fire") == 0) {
-        kind = 2;
+        kind = FUNC_POINT_FIRE;
     } else if (strcmp(name, "flare") == 0) {
-        kind = 3;
+        kind = FUNC_POINT_FLARE;
     } else if (strcmp(name, "plight") == 0) {
-        kind = 4;
+        kind = FUNC_POINT_PLIGHT;
     } else if (strcmp(name, "anime") == 0) {
-        kind = 5;
+        kind = FUNC_POINT_ANIME;
     } else if (strcmp(name, "invent") == 0) {
-        kind = 7;
+        kind = FUNC_POINT_INVENT;
     } else if (strcmp(name, "event") == 0) {
-        kind = 6;
-        mapMap->parts_event = 1;
+        kind = FUNC_POINT_EVENT;
+        mapMap->parts_event = true;
     } else if (strcmp(name, "sound") == 0) {
-        kind = 8;
+        kind = FUNC_POINT_SOUND;
     } else if (strcmp(name, "pos") == 0) {
-        kind = 9;
+        kind = FUNC_POINT_POS;
     } else {
         return 0;
     }
@@ -1586,7 +1615,7 @@ int mapFUNC_DATA(SPI_STACK *stack, int argc) {
  *
  */
 int mapFUNC_NAME(SPI_STACK *stack, int argc) {
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1612,7 +1641,7 @@ int mapFUNC_NAME(SPI_STACK *stack, int argc) {
  *
  */
 int mapFUNC_FLAG(SPI_STACK *stack, int argc) {
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1631,7 +1660,7 @@ int mapFUNC_FLAG(SPI_STACK *stack, int argc) {
 int mapFUNC_FIRE_DATA(SPI_STACK *stack, int argc) {
     float color[4];
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1671,7 +1700,7 @@ int mapFUNC_PLIGHT_DATA(SPI_STACK *stack, int argc) {
     float       largest;
     CFuncPoint *func_point;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1732,7 +1761,7 @@ int mapFUNC_PLIGHT_DATA(SPI_STACK *stack, int argc) {
 int mapFUNC_ANIME_DATA(SPI_STACK *stack, int argc) {
     CFuncPoint::AnimeData *anime;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1767,7 +1796,7 @@ int mapFUNC_ANIME_DATA(SPI_STACK *stack, int argc) {
 int mapFUNC_INVENT_DATA(SPI_STACK *stack, int argc) {
     CFuncPoint::InventData *invent = &mapNowFuncPoint->invent;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1794,7 +1823,7 @@ int mapFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
     char                  *target_name;
     CFuncPoint::EventData *event;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -1809,22 +1838,22 @@ int mapFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
 
     if (kind_name != NULL) {
         if (strcmp(kind_name, "door") == 0) {
-            kind = 0x10A;
+            kind = FUNC_EVENT_UNK_100 | FUNC_EVENT_DOOR | FUNC_EVENT_ACTION;
         } else if (strcmp(kind_name, "ed_door") == 0) {
-            kind = 0x11A;
+            kind = FUNC_EVENT_UNK_100 | FUNC_EVENT_ED_DOOR | FUNC_EVENT_DOOR | FUNC_EVENT_ACTION;
         } else if (strcmp(kind_name, "lddr_b") == 0) {
-            kind = 0x20;
+            kind = FUNC_EVENT_LADDER_BOTTOM;
             event->event_no = 1;
         } else if (strcmp(kind_name, "lddr_t") == 0) {
-            kind = 0x40;
+            kind = FUNC_EVENT_LADDER_TOP;
             event->event_no = 1;
         } else if (strcmp(kind_name, "close_door") == 0) {
-            kind = 0x8A;
+            kind = FUNC_EVENT_CLOSE_DOOR | FUNC_EVENT_DOOR | FUNC_EVENT_ACTION;
         } else if (strcmp(kind_name, "t_box") == 0) {
-            kind = 0x202;
+            kind = FUNC_EVENT_TREASURE_BOX | FUNC_EVENT_ACTION;
             event->event_no = 1;
         } else if (strcmp(kind_name, "book") == 0) {
-            kind = 0x402;
+            kind = FUNC_EVENT_BOOK | FUNC_EVENT_ACTION;
         }
     }
 
@@ -1834,9 +1863,9 @@ int mapFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
         target_name = spiGetStackString(stack++);
 
         if (target_name != NULL) {
-            if ((u32) strlen(target_name) >= 0x10) {
-                strncpy(event->target, target_name, 0xF);
-                event->target[0xF] = 0;
+            if (strlen(target_name) >= sizeof(event->target)) {
+                strncpy(event->target, target_name, sizeof(event->target) - 1);
+                event->target[sizeof(event->target) - 1] = 0;
             } else {
                 strcpy(event->target, target_name);
             }
@@ -1845,21 +1874,21 @@ int mapFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
 
     if (argc >= 8) {
         if (spiGetStackInt(stack++)) {
-            event->flag |= 2;
+            event->flag |= FUNC_EVENT_ACTION;
         }
     }
 
     if (argc >= 9) {
         if (spiGetStackInt(stack++)) {
-            event->flag |= 4;
+            event->flag |= FUNC_EVENT_ITEM;
         }
     }
 
     if (argc >= 10) {
         if (spiGetStackInt(stack)) {
-            event->flag |= 0x100;
+            event->flag |= FUNC_EVENT_UNK_100;
         } else {
-            event->flag &= ~0x100;
+            event->flag &= ~FUNC_EVENT_UNK_100;
         }
     }
 
@@ -1874,14 +1903,14 @@ int mapFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
 int mapFUNC_SOUND_DATA(SPI_STACK *stack, int argc) {
     CFuncPoint::SoundData *sound = &mapNowFuncPoint->sound;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
     sound->se_no = spiGetStackInt(stack++);
     sound->near_dist = spiGetStackFloat(stack++);
     sound->far_dist = spiGetStackFloat(stack++);
-    sound->unk_2c = (float) spiGetStackInt(stack++);
+    sound->unk_2c = spiGetStackInt(stack++);
     sound->shape = spiGetStackInt(stack++);
     spiGetStackVector(sound->start, stack);
     spiGetStackVector(sound->end, stack + 3);
@@ -1921,9 +1950,9 @@ int mapFUNC_EFFECT_NAME(SPI_STACK *stack, int argc) {
 
     if (effect_index >= 0) {
         mapNowFuncPoint->effect.index = effect_index;
-        mapNowFuncPoint->frame.SetBound(new (mapStack->Alloc(algn16_size(0xB0) + 2)) mgCFrame::BoundInfo);
+        mapNowFuncPoint->frame.SetBound(new (mapStack->Alloc(algn16_size(sizeof(mgCFrame::BoundInfo)) + 2)) mgCFrame::BoundInfo);
     } else {
-        mapNowFuncPoint->type = 0;
+        mapNowFuncPoint->type = FUNC_POINT_NONE;
     }
 
     return 1;
@@ -1964,16 +1993,16 @@ int mapFUNC_POS(SPI_STACK *stack, int argc) {
     mapNowFuncPoint->SetScale(scale);
     point = mapNowFuncPoint;
 
-    if (point->type == 6) {
+    if (point->type == FUNC_POINT_EVENT) {
         event = &point->event;
 
-        if ((event->flag & 0x40) != 0 || (event->flag & 0x20) != 0) {
+        if ((event->flag & FUNC_EVENT_LADDER_TOP) != 0 || (event->flag & FUNC_EVENT_LADDER_BOTTOM) != 0) {
             if (scale[0] <= 1.1f && scale[1] <= 1.1f && scale[2] <= 1.1f) {
                 scale[2] = 25.0f;
                 scale[1] = 25.0f;
                 scale[0] = 25.0f;
             }
-        } else if ((event->flag & 0x200) != 0) {
+        } else if ((event->flag & FUNC_EVENT_TREASURE_BOX) != 0) {
             scale[2] = 20.0f;
             scale[1] = 20.0f;
             scale[0] = 20.0f;
@@ -1992,7 +2021,7 @@ int mapFUNC_POS(SPI_STACK *stack, int argc) {
         point->SetScale(scale);
         mgZeroVector(offset);
 
-        if ((event->flag & 8) != 0) {
+        if ((event->flag & FUNC_EVENT_DOOR) != 0) {
             offset[0] = -2.0f;
             offset[2] = -12.0f;
         }
@@ -2028,7 +2057,7 @@ void CFuncPoint::SetPosition(float *pos) {
  *
  */
 int mapFUNC_DATA_END(SPI_STACK *stack, int argc) {
-    mapNowFuncPoint = 0;
+    mapNowFuncPoint = NULL;
     mapFuncPointIdx++;
     return 1;
 }
@@ -2155,13 +2184,13 @@ void CMap::LoadMapFile(char *script, int length, mgCMemory *memory, int add_mode
     mapStack = memory;
     mapAddMode = add_mode;
     mapMap = this;
-    mapNowMapParts = 0;
-    mapNowMapPiece = 0;
+    mapNowMapParts = NULL;
+    mapNowMapPiece = NULL;
     mapCameraInfoIdx = 0;
     mapCameraRectIdx = 0;
     mapFuncPointIdx = 0;
-    mapNowFuncPoint = 0;
-    mapPtsFunc = 0;
+    mapNowFuncPoint = NULL;
+    mapPtsFunc = false;
     SetPieceLoadSkip(0);
     CScriptInterpreter interpreter;
     interpreter.SetTag(map_tag);
@@ -2185,7 +2214,7 @@ int cfgDRAW_OFF_RECT(SPI_STACK *stack, int argc) {
     spiGetStackVector(first_box.max, stack + 3);
     spiGetStackVector(second_box.min, stack + 6);
     spiGetStackVector(second_box.max, stack + 9);
-    mapMap->CreateDrawRect(mapStack, &first_box, &second_box, 0);
+    mapMap->CreateDrawRect(mapStack, &first_box, &second_box, false);
     return 1;
 }
 
@@ -2218,7 +2247,7 @@ int cfgFUNC_DATA(SPI_STACK *stack, int argc) {
 
     if (ReserveFuncFlag == 0) {
         mapMap->func_point.Reserve(0x40, mapStack);
-        ReserveFuncFlag = 1;
+        ReserveFuncFlag = true;
     }
 
     kind_name = spiGetStackString(stack);
@@ -2228,13 +2257,13 @@ int cfgFUNC_DATA(SPI_STACK *stack, int argc) {
     }
 
     if (strcmp(kind_name, "event") == 0) {
-        mapMap->parts_event = 1;
+        mapMap->parts_event = true;
     } else {
         return 0;
     }
 
-    mapNowFuncPoint = mapMap->func_point.AddFromReserve(6);
-    return mapNowFuncPoint != 0;
+    mapNowFuncPoint = mapMap->func_point.AddFromReserve(FUNC_POINT_EVENT);
+    return mapNowFuncPoint != NULL;
 }
 
 /**
@@ -2245,7 +2274,7 @@ int cfgFUNC_DATA(SPI_STACK *stack, int argc) {
 int cfgFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
     char *mode_name;
 
-    if (mapNowFuncPoint == 0) {
+    if (mapNowFuncPoint == NULL) {
         return 0;
     }
 
@@ -2257,17 +2286,17 @@ int cfgFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
 
         if (mode_name != NULL) {
             if (strcmp(mode_name, "every") == 0) {
-                mapNowFuncPoint->event.flag = 1;
+                mapNowFuncPoint->event.flag = FUNC_EVENT_EVERY;
             } else if (strcmp(mode_name, "action") == 0) {
-                mapNowFuncPoint->event.flag = 2;
+                mapNowFuncPoint->event.flag = FUNC_EVENT_ACTION;
             } else if (strcmp(mode_name, "check") == 0) {
-                mapNowFuncPoint->event.flag = 2;
+                mapNowFuncPoint->event.flag = FUNC_EVENT_ACTION;
                 mapNowFuncPoint->event.event_no = 1;
             } else if (strcmp(mode_name, "item") == 0) {
-                mapNowFuncPoint->event.flag = 4;
+                mapNowFuncPoint->event.flag = FUNC_EVENT_ITEM;
                 mapNowFuncPoint->event.event_no = 1;
             } else if (strcmp(mode_name, "invent") == 0) {
-                mapNowFuncPoint->event.flag = 2;
+                mapNowFuncPoint->event.flag = FUNC_EVENT_ACTION;
                 mapNowFuncPoint->event.event_no = 2;
             } else {
                 return 0;
@@ -2284,7 +2313,7 @@ int cfgFUNC_EVENT_DATA(SPI_STACK *stack, int argc) {
  *
  */
 int cfgFUNC_DATA_END(SPI_STACK *stack, int argc) {
-    mapNowFuncPoint = 0;
+    mapNowFuncPoint = NULL;
     return 1;
 }
 
@@ -2300,7 +2329,7 @@ int cfgWATER_SURFACE_NUM(SPI_STACK *stack, int argc) {
 
     if (mapMap->water_surface_num > 0) {
         mapMap->water_surface =
-            new (mapStack->Alloc(algn16_size(mapMap->water_surface_num * 4) + 2)) CWaterFrame *[mapMap->water_surface_num];
+            new (mapStack->Alloc(algn16_size(mapMap->water_surface_num * sizeof(CWaterFrame *)) + 2)) CWaterFrame *[mapMap->water_surface_num];
 
         if (mapMap->water_surface == NULL) {
             mapMap->water_surface_num = 0;
@@ -2415,7 +2444,7 @@ int cfgWATER_DRAW_NUM(SPI_STACK *stack, int argument_count) {
 
     for (int index = 0; index < mapMap->water_num; index++) {
         mapMap->water[index].Initialize();
-        mapMap->water[index].parts_max = 16;
+        mapMap->water[index].parts_max = MAP_WATER_PARTS_MAX;
         mapMap->water[index].parts = new (
             mapStack->Alloc(algn16_size(mapMap->water[index].parts_max * sizeof(CMapParts *)) + 2))
             CMapParts *[mapMap->water[index].parts_max];
@@ -2509,7 +2538,7 @@ static SPI_TAG_PARAM cfg_tag[] = {
 void CMap::LoadCfgFile(char *script, int length, mgCMemory *memory) {
     mapMap = this;
     mapStack = memory;
-    ReserveFuncFlag = 0;
+    ReserveFuncFlag = false;
     WaterIndex = 0;
     cfgWater = NULL;
     CScriptInterpreter interpreter;
