@@ -1107,7 +1107,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            int weapon_type = chara->equip[0].item_type;
+            int weapon_type = chara->equip[CHARA_EQUIP_MELEE].item_type;
 
             if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & ITEM_ACTION_EAT)) {
                 if (((MenuUsedItemNo == ITEM_ID_POTATO_PIE && weapon_type == ITEM_DATA_MAX_MELEE) ||
@@ -1122,7 +1122,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                             chara->defence = 0x80;
                         }
 
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         used++;
                     }
                 }
@@ -1133,7 +1133,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     if (apply != 0) {
                         used++;
                         chara->hp.max += 8.0f;
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
 
                         if (255.0f < chara->hp.max) {
                             chara->hp.max = 255.0f;
@@ -1154,7 +1154,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         used++;
                         chara->hp.SetFillRate(1.0f);
                         chara->status_attr = 0;
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         battle->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
                     }
                 }
@@ -1187,7 +1187,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                             monica->hp.SetFillRate(1.0f);
                         }
 
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         battle->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
                     }
                 }
@@ -1198,7 +1198,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     if (apply != 0) {
                         used++;
                         chara->hp.AddPoint(item->data.attach.level);
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         battle->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
                     }
                 }
@@ -1212,7 +1212,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
                     if (apply != 0) {
                         chara->hp.AddPoint(effect.value[used]);
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         used++;
                         battle->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
                     }
@@ -1271,7 +1271,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         }
 
                         if (cured != 0) {
-                            sound = 10;
+                            sound = SYSTEM_SE_RECOVER;
                         }
                     }
 
@@ -1312,7 +1312,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     if (apply != 0) {
                         used++;
                         weapon->LevelUp();
-                        sound = 30;
+                        sound = SYSTEM_SE_PARAM_UP;
                     }
                 }
             } else if (MenuUsedItemNo == ITEM_ID_SHIELD_KIT) {
@@ -1348,7 +1348,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     count++;
 
                     if (apply != 0) {
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         weapon->data.weapon.abs.now = weapon->data.weapon.abs.max;
                         used++;
                     }
@@ -1378,7 +1378,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 count++;
 
                 if (apply != 0) {
-                    sound = 10;
+                    sound = SYSTEM_SE_RECOVER;
                     robo->hp.now = robo->hp.max;
                     used++;
                 }
@@ -1396,7 +1396,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
                     if (apply != 0) {
                         monica->hp.AddPoint(effect.value[used]);
-                        sound = 10;
+                        sound = SYSTEM_SE_RECOVER;
                         used++;
                     }
                 }
