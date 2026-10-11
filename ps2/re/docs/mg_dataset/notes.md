@@ -153,7 +153,7 @@ BeginPrim flags (0x10/0x100/0x200) meaning unresolved; EditInit uses 0x214.
   0x58/0x5C floats. Member types from SetMaterial's member-wise copy (lwc1 vs lw, 2-byte char loop of 0x20).
 - `MDT_FACES` (0x10): **name invented** (no retail symbol); +4 = 0x10, +8 prim count
   (mgCVisualMDT::DataAssignMDT reads `faces+8`, records from `faces+0x10`).
-- `FACES_ID`: retail name (mg_visual/mg_shadow `CreateFace(FACES_ID*, ...)`): type, face_num,
+- `FACES_ID`: retail name (mg_visual/mg_shadow `CreateFace(FACES_ID*, ...)`): type, vertex_num,
   material (+8, grouped by in CreateFace), indices from +0xC. Variable length.
 - `MDS_HEADER` (0x10): +8 object count, +0xC offset to first object (LoadCollisionFile assumes 0x10).
 - `MDTOBJ_HEADER` (0x70): +4 record size (loader strides by it; collision assumes 0x70), +8 name[32],
