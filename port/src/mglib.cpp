@@ -407,9 +407,7 @@ PORT_OVERRIDE void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_c
 
     gfx::LogicalRect frame = gfx::LogicalFrame();
     uint8_t          color[4] = {red, green, blue, alpha};
-    // The retail sprite is alpha-blended, so a clear sent with alpha 0 leaves the colour alone and only
-    // resets depth; menus use that to draw a model over their background.
-    gfx::Clear(alpha != 0, color, true, 0.0f, &frame);
+    gfx::Clear(true, color, true, 0.0f, &frame);
 }
 
 PORT_OVERRIDE void mgSetPkTextureRepeat(int mode) {
