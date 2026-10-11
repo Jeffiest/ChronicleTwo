@@ -29,11 +29,28 @@ int scePadInit(int mode) {
     return 1;
 }
 
-int scePadPortOpen(int port, int slot, void *buffer) {
+int scePadEnd(void) {
+    for (int port = 0; port < kInputPadCount; port++) {
+        InputSetRumble(port, {false, 0});
+    }
+    g_open = {};
+    return 1;
+}
+
+int scePadPortOpen(int port, int slot, unsigned char *buffer) {
     if (port < 0 || port >= kInputPadCount) {
         return 0;
     }
     g_open[port] = true;
+    return 1;
+}
+
+int scePadPortClose(int port, int slot) {
+    if (port < 0 || port >= kInputPadCount || !g_open[port]) {
+        return 0;
+    }
+    g_open[port] = false;
+    InputSetRumble(port, {false, 0});
     return 1;
 }
 
