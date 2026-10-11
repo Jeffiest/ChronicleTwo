@@ -2216,7 +2216,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                     } fields;
                 } event_data;
 
-                if (scene->GetMapEvent(event_pos, 0, &event_data.data) != 0) {
+                if (scene->GetMapEvent(event_pos, MAP_EVENT_CHECK_TOUCH, &event_data.data) != 0) {
                     scene->RunEvent(event_data.fields.event_no, &event_data.data);
                     ExitFishing(scene);
                 }
@@ -3589,7 +3589,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
             }
 
             message->abs_win.height = -1;
-            sndSePlay(GetSystemSndID(), 0x19, 0);
+            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
             FalseStep = 3;
 
             if (GetSaveData()->GetBitFlag(0x3C) == 0) {
@@ -3628,7 +3628,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
                     case 5:
                         if (confirm != 0) {
                             result_message->GoNextPage();
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
 
                             if (FishMesNo == 0x7D2) {
                                 sndSePlay(GetSystemSndID(), 0x12, 0);
@@ -3639,7 +3639,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
                     case 3:
                         if (confirm != 0) {
                             FalseStep2 += 1;
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                         }
 
                         break;
