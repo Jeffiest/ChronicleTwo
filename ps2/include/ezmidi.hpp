@@ -20,6 +20,15 @@ enum EzMidiCommandFlag {
 
 /**
  *
+ * SIF RPC server number of the EZMIDI IOP sound server.
+ *
+ */
+enum EzMidiRpcServer {
+    EZMIDI_RPC_SERVER = 0x12346 /**< Server that ezMidiInit binds and ezMidi calls. */
+};
+
+/**
+ *
  * Connects the EE client to the EZMIDI RPC server, waiting until the
  * server is bound.
  *

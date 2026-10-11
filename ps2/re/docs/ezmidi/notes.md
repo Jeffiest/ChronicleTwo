@@ -24,6 +24,9 @@ source-level code.
 The command numbers themselves (e.g. `0x8010`, `0x80F0`, `port + 0x20/0x30/0x40/0xA0/0xB0`,
 `port + 0x9050`) are built in `sound`; that unit should own an enum for them.
 
+`EzMidiRpcServer` (name not retail): `EZMIDI_RPC_SERVER` = `0x12346`, the SIF RPC server number
+bound by `ezMidiInit`. The `ezbgm` unit binds the neighbouring server `0x12345`.
+
 ## Data (all LOCAL in retail -> `static` in the .cpp, no `extern` in the header)
 | Symbol | Address | Size | Type |
 |---|---|---|---|
