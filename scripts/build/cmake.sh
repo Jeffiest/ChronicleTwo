@@ -22,7 +22,7 @@ cd "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 
 # One build of the tree at a time. The split rewrites thousands of files under
 # ps2/asm/ over several seconds, and a unit compiled against a half-written
-# split is wrong throughout; tools/mwccgap also writes its temporaries into the
+# split is wrong throughout; MWCC also writes its dependency map into the
 # working directory. Everything that builds takes this lock. It lives outside
 # build/ so that CLEAN cannot delete it from under a build holding it.
 BUILD_LOCK=.build.lock

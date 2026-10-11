@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools" / "mwccgap"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from mwccgap.elf import Elf, Symbol, Section, RelocationRecord, SHT_NOBITS, BssSection  # noqa: E402
+from mwccgap.elf import Elf, Symbol, Section, SHT_NOBITS, BssSection  # noqa: E402
 
 import layout  # noqa: E402
 import disassemble
@@ -1602,8 +1602,8 @@ def bind_suffixed_references(elf, unit):
         for index, symbol in enumerate(symbols):
             if symbol.name == 'VSyncCallBack__Fi':
                 remap[index] = defined['VSyncCallBack__Fi__2']
-                # mwccgap may already have pointed the unresolved declaration
-                # at the assembled section; only the suffixed name is exported.
+                # The unsuffixed declaration may still name the assembled section;
+                # only the suffixed name is exported.
                 symbol.st_shndx = 0
                 symbol.st_value = 0
     for record in elf.relocations:

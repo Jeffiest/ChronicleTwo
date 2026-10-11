@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Adapt mwccgap's wibo invocation to one Satan's Fiddle compilation."""
+"""Run one MWCC compilation through Satan's Fiddle with a private JSON profile."""
 
 import json
 import os
@@ -78,7 +78,7 @@ def main(arguments):
     validate_profile_units(profile)
     logical_unit = unit_name(os.environ.get("SATANSFIDDLE_TRANSLATION_UNIT", source.name))
 
-    # mwccgap supplies the complete flags for each pass; retain argument boundaries.
+    # The caller supplies the complete compiler flags; retain argument boundaries.
     profile["compiler_path"] = str(compiler)
     profile["compiler_options"] = shlex.join(options)
     profile["translation_units"] = [
@@ -99,7 +99,7 @@ def main(arguments):
             if unit_name(row["translation_unit"]) == logical_unit
         ]
 
-    # Each compiler pass runs in a fresh process with a private configuration.
+    # The compiler runs in a fresh process with a private configuration.
     with tempfile.TemporaryDirectory(prefix="chronicletwo-satansfiddle-") as directory:
         configuration = Path(directory) / "config.json"
         configuration.write_text(json.dumps(profile, indent=2) + "\n")
