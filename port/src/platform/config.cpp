@@ -292,11 +292,9 @@ void CarryUnsavedFields(Config &to, const HostSettings &from) {
 // degrees of mouse motion per count are config.json's stick deflection per pixel times this.
 constexpr float kMouseDegreesPerDeflection = 0.04f * 180.0f / 3.14159265f;
 
-// What a key press does when config.json binds nothing: the right stick follows the mouse, and
-// the layer's own defaults for these actions are another game's.
+// Empty on purpose: the shared input layer owns the defaults and config.json only overrides them.
 const std::vector<ConfigKeyBinding> &DefaultBindings() {
-    static const std::vector<ConfigKeyBinding> bindings = {
-        {"circle", {"F"}}, {"r1", {"Mouse2", "X"}}, {"rx", {"MouseX"}}, {"ry", {"-MouseY"}}};
+    static const std::vector<ConfigKeyBinding> bindings;
     return bindings;
 }
 
@@ -336,8 +334,6 @@ bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
 
 Config::Config() {
     tick_rate = 50.0;
-    // The raw stick: the shared layer's 1.33 scaling is tuned to another game's thresholds.
-    stick_sensitivity = 1.0f;
     mouse_release_keys = {"Escape"};
 }
 
