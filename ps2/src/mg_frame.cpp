@@ -95,6 +95,7 @@ static void QuatToMat(float *quaternion, float (*matrix)[4]) {
  * registers vf10-vf17, and gets the box around them.
  *
  */
+#ifndef PORT
 static asm void test1(float (*corners)[4], float (*screen)[4], float (*matrix)[4], float *out_max, float *out_min) {
     lqc2    vf11, 0(a1)
     lqc2    vf12, 16(a1)
@@ -178,6 +179,7 @@ static asm void test1(float (*corners)[4], float (*screen)[4], float (*matrix)[4
     jr      ra
     sqc2    vf19, 0(t0)
 }
+#endif
 
 /**
  *
@@ -185,6 +187,7 @@ static asm void test1(float (*corners)[4], float (*screen)[4], float (*matrix)[4
  * the screen-space box around them.
  *
  */
+#ifndef PORT
 static asm void test2(float *out_max, float *out_min) {
     vabs.w  vf20, vf10
     vabs.w  vf21, vf11
@@ -236,6 +239,7 @@ static asm void test2(float *out_max, float *out_min) {
     jr      ra
     sqc2    vf15, 0(a1)
 }
+#endif
 // clang-format on
 
 int mgInsideScreen(mgVu0FBOX *box) {
@@ -279,6 +283,7 @@ int mgInsideScreen(float (*corners)[4], float (*matrix)[4], float *out_max, floa
 
     // Each corner goes through the screen transform and is divided through by the magnitude
     // of its w, with each division overlapped with the next corner's transform.
+#ifndef PORT
     asm {
         lqc2    vf11, 0(screen)
         lqc2    vf12, 16(screen)
@@ -394,6 +399,7 @@ int mgInsideScreen(float (*corners)[4], float (*matrix)[4], float *out_max, floa
         sqc2    vf30, 0(hi)
         sqc2    vf31, 0(lo)
     }
+#endif
 
     return mgClipBoxW(out_max, out_min, render_info->screen_box_max, render_info->screen_box_min);
 }
@@ -765,6 +771,7 @@ void mgCFrame::GetLocalMatrix(float (*matrix)[4]) {
         source = trans_matrix;
         scale_vec = scale;
 
+#ifndef PORT
         asm {
             lqc2 vf10, 0(scale_vec)
             lqc2 vf1, 0(source)
@@ -780,6 +787,7 @@ void mgCFrame::GetLocalMatrix(float (*matrix)[4]) {
             sqc2 vf3, 32(destination)
             sqc2 vf4, 48(destination)
         }
+#endif
         sceVu0FVECTOR translation;
         if (rot_type & MG_FRAME_ROT_LOCAL_ORIGIN) {
             sceVu0CopyVector(translation, matrix[3]);
@@ -860,6 +868,7 @@ void mgCFrame::GetBBoardMatrix(int mode, float (*matrix)[4], mgRENDER_INFO *info
     }
 
     float *scale_vec = scale;
+#ifndef PORT
     asm {
         lqc2 vf10, 0(scale_vec)
         lqc2 vf1, 0x0(matrix)
@@ -875,6 +884,7 @@ void mgCFrame::GetBBoardMatrix(int mode, float (*matrix)[4], mgRENDER_INFO *info
         sqc2 vf3, 0x20(matrix)
         sqc2 vf4, 0x30(matrix)
     }
+#endif
     matrix[3][0] = position[0];
     matrix[3][1] = position[1];
     matrix[3][2] = position[2];
@@ -932,6 +942,7 @@ void mgCFrame::GetLWMatrix(float (*matrix)[4]) {
         a = parent_matrix;
         b = local_matrix;
         dst = lw_matrix;
+#ifndef PORT
         asm {
             lqc2 vf5, 0(b)
             lqc2 vf1, 0(a)
@@ -966,6 +977,7 @@ void mgCFrame::GetLWMatrix(float (*matrix)[4]) {
             sqc2 vf22, 0x20(matrix)
             sqc2 vf23, 0x30(matrix)
         }
+#endif
 
         changed = 0;
     }
@@ -1011,6 +1023,7 @@ void mgCFrame::GetLWMatrixTopBottom(float (*matrix)[4]) {
         a = parent_matrix;
         b = local_matrix;
         dst = lw_matrix;
+#ifndef PORT
         asm {
             lqc2 vf5, 0(b)
             lqc2 vf1, 0(a)
@@ -1045,6 +1058,7 @@ void mgCFrame::GetLWMatrixTopBottom(float (*matrix)[4]) {
             sqc2 vf22, 0x20(matrix)
             sqc2 vf23, 0x30(matrix)
         }
+#endif
     }
 
     changed = 0;
@@ -1594,6 +1608,7 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
 
         // Each corner goes through the screen transform and is divided through by the magnitude
         // of its w, and the box around the results is kept.
+#ifndef PORT
         asm {
             lqc2    vf10, 0(corners)
             lqc2    vf11, 16(corners)
@@ -1699,6 +1714,7 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
             sqc2    vf30, 0(hi)
             sqc2    vf31, 0(lo)
         }
+#endif
 
         // The box counts only when it overlaps the screen, whose coordinates are relative to its
         // centre, and does not lie behind the near plane; it is then moved to screen coordinates.
