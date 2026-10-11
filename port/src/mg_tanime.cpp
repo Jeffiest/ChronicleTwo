@@ -657,7 +657,9 @@ CList<mgCTexAnimeData> *mgCTextureAnime::NewTexAnimeGroupData(int group, mgCMemo
 
     node->Initialize();
 
-    CList<mgCTexAnimeData> **slot = (CList<mgCTexAnimeData> **) ((u_char *) this + 0x64 + group * 4);
+    // Retail indexes the list array at its PS2 offset with four-byte pointers; on the host the
+    // member itself is used, whose offset and stride follow the wider pointers.
+    CList<mgCTexAnimeData> **slot = &list[group];
     CList<mgCTexAnimeData>  *p = *slot;
     CList<mgCTexAnimeData>  *tail;
     CList<mgCTexAnimeData>  *next;
