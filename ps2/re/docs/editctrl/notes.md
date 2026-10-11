@@ -118,3 +118,12 @@ argument instructions differently.
 `CameraControl` passes the `CCameraControl *camera` directly to `EyeCamera`; `EditControl` sets
 `camera_pad = NULL` without a cast. The `(mgCCameraFollow *)`/`(CCameraControl *)` casts on
 `CScene::GetCamera` results in `ResetViewMode` and `CameraControl` are downcasts.
+
+## Enums and linkage
+`LadderStep` holds an `EditLadderStep` (value 6 is never used), `ViewMode` an `EditViewMode`, `CharaMotionMode`
+an `EditCharaMotionMode`, `LadderMode` an `EditLadderMode`. The edit map's other characters use scene slots
+`EDIT_CHARA_SLOT_OTHER` to `EDIT_CHARA_SLOT_OTHER_END`, plus four fixed slots from `EDIT_CHARA_SLOT_EXTRA`; slots of
+type `EDIT_CHARA_TYPE_EFFECT` are drawn in a pass of their own. `CameraControl`, `InitEyeCamera`, `EndLadder`,
+`GetUserData`, `CharaControl`, `EyeCamera`, `InitLadder` and `LadderControl` are local in retail (`static`).
+Pad button 6 (R2, eye view) and analog inputs 4/5 (second bindings of the left stick's Y/X) have no enumerator
+in padcontrol.hpp yet.

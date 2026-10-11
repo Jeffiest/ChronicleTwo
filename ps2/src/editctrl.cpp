@@ -1,17 +1,23 @@
 #include "common.h"
 
+#include <cmath>
 #include <cstring>
+#include <libvu0.h>
 
 #include "cameracontrol.hpp"
 #include "character.hpp"
 #include "dng_effect.hpp"
+#include "dng_event.hpp"
 #include "editctrl.hpp"
 #include "editexception.hpp"
 #include "editmap.hpp"
+#include "effscript.hpp"
 #include "gamepad.hpp"
+#include "gameutil.hpp"
 #include "helpmes.hpp"
 #include "inventmn.hpp"
 #include "mainloop.hpp"
+#include "mapload.hpp"
 #include "mg_math.hpp"
 #include "mg_texture.hpp"
 #include "mglib.hpp"
@@ -21,14 +27,9 @@
 #include "scene.hpp"
 #include "sceneevent.hpp"
 #include "scenesnd.hpp"
+#include "scenevillager.hpp"
 #include "sphida.hpp"
 #include "userdata.hpp"
-
-void CameraControl(CScene *scene, CPadControl *pad);
-
-const int kFirstEventChara = 8;
-const int kEventCharaEnd = 0x40;
-const int kCharaTypeEffect = 4;
 
 /**
  *
@@ -45,155 +46,216 @@ struct InitializedMoveCheckInfo : MoveCheckInfo {
 };
 
 /**
+ *
  * Persistent collision result for edit-mode movement.
+ *
  */
 InitializedMoveCheckInfo MoveInfo;
 
 /**
+ *
  * Map event that defines the ladder currently being climbed.
+ *
  */
 CSceneEventData LadderData;
-#include <libvu0.h>
-
-#include <cmath>
-
-#include "dng_event.hpp"
-#include "effscript.hpp"
-#include "gameutil.hpp"
-
 /**
+ *
  * End of the ladder the player entered.
+ *
  */
 static int LadderMode;
 /**
+ *
  * Stage of climbing the ladder.
+ *
  */
-static int LadderStep;
+static EditLadderStep LadderStep;
 /**
+ *
  * Special movement motion in progress.
+ *
  */
-static int CharaMotionMode;
+static EditCharaMotionMode CharaMotionMode;
 /**
+ *
  * Frames left in the landing motion.
+ *
  */
 static int CharaMotionModeCnt;
 /**
+ *
  * Consecutive frames without ground contact.
+ *
  */
 static int CharaFallFlag;
 /**
+ *
  * Whether a target heading is set.
+ *
  */
 static int CharaAngleTargetFlag;
 /**
- * Target heading state.
+ *
+ * Heading the character turns towards while CharaAngleTargetFlag is set.
+ *
  */
 static int CharaAngleTarget;
 /**
- * Fixed-camera mode for this frame.
+ *
+ * What the scene's fixed camera search gave this frame: zero for none, otherwise the kind of fixed camera found.
+ *
  */
 static int FixCameraFlag;
 /**
+ *
  * Frames since the fixed-camera position was sampled.
+ *
  */
 static int FixCameraChgCnt;
 /**
+ *
  * Rejects one request to enter eye view.
+ *
  */
 static int EyeViewCancelOnce;
 /**
+ *
  * Walking, eye-view or photo view.
+ *
  */
-static int ViewMode;
+static EditViewMode ViewMode;
 /**
+ *
  * Whether the saved follow-camera position is valid.
+ *
  */
 static int InitEyeViewFlag;
 /**
+ *
  * Photo shutter frame counter.
+ *
  */
 static int ShutterCnt;
 /**
- * Character movement state.
+ *
+ * Cleared when edit-mode control starts and not read otherwise.
+ *
  */
 static int move_chara;
 /**
+ *
  * First-person camera yaw.
+ *
  */
 static float viewAngleH;
 /**
+ *
  * First-person camera pitch.
+ *
  */
 static float viewAngleV;
 /**
+ *
  * First-person projection adjustment.
+ *
  */
 static float AddProj;
 /**
+ *
  * Camera used during ladder climbing.
+ *
  */
 static mgCCamera *LadderCamera;
 /**
+ *
  * Height of the next ladder rung.
+ *
  */
 static float LdrNext;
 /**
+ *
  * Heading toward the ladder.
+ *
  */
 static float LdrRot;
 /**
+ *
  * Motion ratio at the previous ladder step.
+ *
  */
 static float OldMtnRate;
 /**
+ *
  * Ladder footstep sound set.
+ *
  */
 static int LdrSound;
 /**
+ *
  * Footstep set at the ladder bottom.
+ *
  */
 static int LdrBtmFoot;
 /**
+ *
  * Footstep set at the ladder top.
+ *
  */
 static int LdrTopFoot;
 /**
+ *
  * Cached fixed-camera eye position.
+ *
  */
 static sceVu0FVECTOR OldFixCameraPos;
 /**
+ *
  * Follow-camera position saved before eye view.
+ *
  */
 static sceVu0FVECTOR OldCameraPos;
 /**
+ *
  * Origin of the ladder.
+ *
  */
 static sceVu0FVECTOR LdrPos;
 /**
+ *
  * Position where the player approaches the ladder.
+ *
  */
 static sceVu0FVECTOR StdPos;
 /**
+ *
  * Landing at the bottom of the ladder.
+ *
  */
 static sceVu0FVECTOR LdrBottomPos;
 /**
+ *
  * Landing at the top of the ladder.
+ *
  */
 static sceVu0FVECTOR LdrTopPos;
 /**
+ *
  * Walk-off position at the top of the ladder.
+ *
  */
 static sceVu0FVECTOR LdrTopWalk;
 /**
+ *
  * Camera eye position for ladder climbing.
+ *
  */
 static sceVu0FVECTOR LdrCamPos;
 
 static void LadderControl(CScene *scene, CPadControl *pad);
 static void CharaControl(CScene *scene, CPadControl *pad);
+static void CameraControl(CScene *scene, CPadControl *pad);
 static void EyeCamera(mgCCamera *camera, CCharacter2 *chara, int use_right_stick);
-void        InitEyeCamera(CCharacter2 *chara, CCameraControl *camera);
+static void InitEyeCamera(CCharacter2 *chara, CCameraControl *camera);
 static void InitLadder(int mode, CScene *scene, CSceneEventData *event);
 
 /**
@@ -215,32 +277,32 @@ static CUserDataManager *GetUserData() {
 
 int EditOnGround() {
     if (CharaFallFlag > 0) {
-        return 0;
+        return false;
     }
 
-    if (CharaMotionMode != 0) {
-        return 0;
+    if (CharaMotionMode != EDIT_CHARA_MOTION_FREE) {
+        return false;
     }
 
-    return (LadderMode != 0) ^ 1;
+    return (LadderMode != EDIT_LADDER_MODE_NONE) ^ 1;
 }
 
 int IsWalkMode() {
-    return ViewMode == 0;
+    return ViewMode == EDIT_VIEW_MODE_WALK;
 }
 
 void EditControlInit(CScene *scene) {
     CCameraControl *camera;
     memset(&MoveInfo, 0, sizeof(MoveInfo));
-    EyeViewCancelOnce = 0;
-    ViewMode = 0;
-    InitEyeViewFlag = 0;
+    EyeViewCancelOnce = false;
+    ViewMode = EDIT_VIEW_MODE_WALK;
+    InitEyeViewFlag = false;
     viewAngleH = 0;
     viewAngleV = 0;
     AddProj = 0;
     ShutterCnt = 0;
     move_chara = 0;
-    scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x10);
+    scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_HIDE);
     CharaAngleTarget = 0;
     CharaAngleTargetFlag = 0;
     FixCameraFlag = 0;
@@ -248,7 +310,7 @@ void EditControlInit(CScene *scene) {
     EditControlStatusInit(scene);
     camera = (CCameraControl *) scene->GetCamera(scene->active_camera);
 
-    if (camera != NULL && camera->Iam() != 1000) {
+    if (camera != NULL && camera->Iam() != CAMERA_KIND_CONTROL) {
         camera->CancelRotBack();
     }
 }
@@ -256,8 +318,8 @@ void EditControlInit(CScene *scene) {
 void EditControlStatusInit(CScene *scene) {
     CCharacter2 *chara;
 
-    LadderMode = 0;
-    CharaMotionMode = 0;
+    LadderMode = EDIT_LADDER_MODE_NONE;
+    CharaMotionMode = EDIT_CHARA_MOTION_FREE;
     CharaMotionModeCnt = 0;
     CharaFallFlag = 0;
     FixCameraChgCnt = 0;
@@ -276,12 +338,12 @@ int EditControl(CScene *scene, CPadControl *pad) {
 
     camera_pad = pad;
 
-    if (LadderMode != 0) {
+    if (LadderMode != EDIT_LADDER_MODE_NONE) {
         LadderControl(scene, pad);
     } else {
         CharaControl(scene, pad);
 
-        if (scene->event_run != 0) {
+        if (scene->event_run) {
             camera_pad = NULL;
         }
 
@@ -332,7 +394,7 @@ char *GetFootEffName(int index) {
     };
 
     if (index < 0 || index >= 30) {
-        return 0;
+        return NULL;
     }
 
     return name[name_id[index]];
@@ -412,9 +474,9 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
     remaining -= poly_count;
     next_poly += poly_count;
 
-    for (int chara_index = 0; chara_index < 56; chara_index++) {
-        if (scene->CheckDrawChara(chara_index + 8)) {
-            CCharacter2 *other = scene->GetCharacter(chara_index + 8);
+    for (int chara_index = 0; chara_index < EDIT_CHARA_SLOT_OTHER_END - EDIT_CHARA_SLOT_OTHER; chara_index++) {
+        if (scene->CheckDrawChara(chara_index + EDIT_CHARA_SLOT_OTHER)) {
+            CCharacter2 *other = scene->GetCharacter(chara_index + EDIT_CHARA_SLOT_OTHER);
 
             if (other != NULL && other->CheckDraw()) {
                 other->GetPosition(other_position);
@@ -463,7 +525,7 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
 
     if (info != NULL && info->polys != NULL) {
         for (int copy_index = 0; copy_index < info->poly_num; copy_index++) {
-            mgVec4 *source = (mgVec4 *) (info->polys + copy_index);
+            mgVec4 *source = (mgVec4 *) &info->polys[copy_index];
             mgVec4 *dest = (mgVec4 *) next_poly++;
 
             for (int row = 0; row < 5; row++) {
@@ -500,7 +562,7 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
         }
     }
 
-    hard_landing = 0;
+    hard_landing = false;
     character->sound_info.foot_sound_id = -1;
     MoveInfo.radius = 13.0f;
     MoveCheckInfo &move_info = MoveInfo;
@@ -508,7 +570,7 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
 
     if (MoveInfo.landed) {
         if (velocity[1] < -5.0f) {
-            hard_landing = 1;
+            hard_landing = true;
         }
 
         velocity[1] = 0.0f;
@@ -546,16 +608,18 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
     character->SetPosition(next_position);
     *(u_long128 *) character->velocity = *(u_long128 *) velocity;
     motion = character->GetNowMotionName();
-    running = 0;
+    running = false;
 
     if (motion != NULL && strstr(motion, "\x91\x96\x82\xE8") != NULL) {
-        running = 1;
+        running = true;
     }
 
     if (effects != NULL && IsWalkMode()) {
         character->GetPosition(effect_position);
         /**
+         *
          * Distance and time accumulated between water ripple effects.
+         *
          */
         static float HamonCnt = 0.0f;
         HamonCnt += 1.0f;
@@ -599,13 +663,14 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
 
 void EditCameraControl(CScene *scene, CPadControl *pad, float (*look_at)[4]) {
     /**
+     *
      * Follow-camera distance used when selecting the fixed reference.
+     *
      */
     static float    reference = 30.0f;
     int             debug_camera;
     int             fixed;
     CCharacter2    *character;
-    mgCCamera      *base_camera;
     CCameraControl *camera;
     sceVu0FVECTOR   position;
     sceVu0FVECTOR   rotation;
@@ -679,7 +744,7 @@ void EditCameraControl(CScene *scene, CPadControl *pad, float (*look_at)[4]) {
     }
 
     SV_CONFIG_OPTION &config = GetSaveData()->config;
-    camera->rot_reverse = !(bool) config.rot_normal;
+    camera->rot_reverse = !config.rot_normal;
     FixCameraFlag = fixed;
 
     if (!debug_camera && ViewMode == EDIT_VIEW_MODE_WALK) {
@@ -797,7 +862,9 @@ void EditCameraControl(CScene *scene, CPadControl *pad, float (*look_at)[4]) {
     }
 
     /**
+     *
      * Selected follow-camera distance preset.
+     *
      */
     static int camera_dist_mode = 0;
     float      camera_distances[3] = {30.0f, 130.0f, 250.0f};
@@ -885,10 +952,10 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
         }
     }
 
-    in_water = 0;
+    in_water = false;
 
     if (MoveInfo.in_water && !(MoveInfo.water_surface[1] - position[1] <= 10.0f)) {
-        in_water = 1;
+        in_water = true;
         speed_x *= 0.5f;
         speed_z *= 0.5f;
     }
@@ -986,11 +1053,11 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
     CSceneEventData event;
     event_check = 0;
 
-    if (pad->Btn(0)) {
+    if (pad->Btn(PAD_BTN_CONFIRM)) {
         event_check = 1;
     }
 
-    if (pad->Btn(0x33)) {
+    if (pad->Btn(PAD_BTN_ACTION_SQUARE)) {
         event_check = 2;
     }
 
@@ -998,26 +1065,26 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
         event_no = event.event.point_no;
         ResetViewMode(scene);
 
-        if (event.event.flag & 0x8) {
+        if (event.event.flag & FUNC_EVENT_DOOR) {
             atan2f(event.map_event.matrix[2][0], event.map_event.matrix[2][2]);
             event_no = 99999;
         }
 
-        if (event.event.flag & 0x20) {
+        if (event.event.flag & FUNC_EVENT_LADDER_BOTTOM) {
             InitLadder(EDIT_LADDER_MODE_BOTTOM, scene, &event);
             return;
         }
 
-        if (event.event.flag & 0x40) {
+        if (event.event.flag & FUNC_EVENT_LADDER_TOP) {
             InitLadder(EDIT_LADDER_MODE_TOP, scene, &event);
             return;
         }
 
-        if (event.event.flag & 0x200) {
+        if (event.event.flag & FUNC_EVENT_TREASURE_BOX) {
             event_no = 99999;
         }
 
-        if (event.event.flag & 0x400) {
+        if (event.event.flag & FUNC_EVENT_BOOK) {
             event_no = 99999;
         }
 
@@ -1026,7 +1093,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
 }
 
 void CancelEyeViewMode() {
-    EyeViewCancelOnce = 1;
+    EyeViewCancelOnce = true;
 }
 
 /**
@@ -1034,7 +1101,7 @@ void CancelEyeViewMode() {
  * Handles editor camera control, eye view, and photo input.
  *
  */
-void CameraControl(CScene *scene, CPadControl *pad) {
+static void CameraControl(CScene *scene, CPadControl *pad) {
     int              photo_locked;
     int              eye_pressed;
     int              photo_pressed;
@@ -1052,15 +1119,15 @@ void CameraControl(CScene *scene, CPadControl *pad) {
             switch (camera->Iam()) {
                 default:
                     return;
-                case 1000: {
-                    photo_locked = 0;
+                case CAMERA_KIND_CONTROL: {
+                    photo_locked = false;
 
-                    if (scene->event_run != 0) {
-                        photo_locked = 1;
+                    if (scene->event_run) {
+                        photo_locked = true;
                     }
 
-                    if (IsTakePhoto() == 0 && DebugInfo.chara_move == 0) {
-                        photo_locked = 1;
+                    if (!IsTakePhoto() && !DebugInfo.chara_move) {
+                        photo_locked = true;
                     }
 
                     chara->GetPosition(position);
@@ -1068,22 +1135,22 @@ void CameraControl(CScene *scene, CPadControl *pad) {
                     mgGetNowFrameRate();
 
                     if (pad != NULL) {
-                        if (ViewMode == 0) {
+                        if (ViewMode == EDIT_VIEW_MODE_WALK) {
                             eye_pressed = pad->Btn(6);
-                            photo_pressed = !photo_locked && pad->Btn(0x33) != 0;
+                            photo_pressed = !photo_locked && pad->Btn(PAD_BTN_ACTION_SQUARE);
 
-                            if (eye_pressed != 0) {
-                                photo_pressed = 0;
+                            if (eye_pressed) {
+                                photo_pressed = false;
                             }
 
-                            if (eye_pressed != 0 || photo_pressed != 0) {
-                                if (EyeViewCancelOnce != 0) {
+                            if (eye_pressed || photo_pressed) {
+                                if (EyeViewCancelOnce) {
                                     ShowErrorHelpMes(200, 40);
                                 } else {
-                                    ViewMode = 1;
+                                    ViewMode = EDIT_VIEW_MODE_EYE;
 
-                                    if (photo_pressed != 0) {
-                                        ViewMode = 2;
+                                    if (photo_pressed) {
+                                        ViewMode = EDIT_VIEW_MODE_PHOTO;
                                         StartTakePhoto();
                                     }
 
@@ -1092,20 +1159,20 @@ void CameraControl(CScene *scene, CPadControl *pad) {
                                     InitEyeCamera(chara, camera);
                                     EyeCamera(
                                         camera, chara, 0);
-                                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x10);
+                                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_HIDE);
                                     scene->EyeViewDrawOnOff(1);
                                     return;
                                 }
                             }
-                        } else if (ViewMode == 1 || ViewMode == 2) {
-                            if (pad->Btn(6) != 0 || pad->Btn(1) != 0) {
-                                if (ViewMode == 2) {
+                        } else if (ViewMode == EDIT_VIEW_MODE_EYE || ViewMode == EDIT_VIEW_MODE_PHOTO) {
+                            if (pad->Btn(6) || pad->Btn(PAD_BTN_CANCEL)) {
+                                if (ViewMode == EDIT_VIEW_MODE_PHOTO) {
                                     EndTakePhoto();
                                 }
 
                                 camera->FollowOn();
 
-                                if (DebugInfo.debug_camera == 0) {
+                                if (!DebugInfo.debug_camera) {
                                     camera->SetDistance(5.0f);
                                     camera->SetHeight(0.0f);
                                 } else {
@@ -1121,7 +1188,7 @@ void CameraControl(CScene *scene, CPadControl *pad) {
                                 EyeCamera(camera, chara, 0);
                                 user_data = NULL;
 
-                                if (GetUserData() != 0) {
+                                if (GetUserData() != NULL) {
                                     user_data = GetUserData()->GetInventUserData();
                                 }
 
@@ -1132,7 +1199,7 @@ void CameraControl(CScene *scene, CPadControl *pad) {
                     }
 
                     EditCameraControl(scene, pad, NULL);
-                    EyeViewCancelOnce = 0;
+                    EyeViewCancelOnce = false;
                 }
             }
         }
@@ -1144,10 +1211,10 @@ void CameraControl(CScene *scene, CPadControl *pad) {
  * Initializes editor eye view from the character facing angle.
  *
  */
-void InitEyeCamera(CCharacter2 *chara, CCameraControl *camera) {
+static void InitEyeCamera(CCharacter2 *chara, CCameraControl *camera) {
     float rotation[4];
     chara->GetRotation(rotation);
-    InitEyeViewFlag = 1;
+    InitEyeViewFlag = true;
     viewAngleV = 0;
     AddProj = 0;
     ShutterCnt = 0;
@@ -1157,20 +1224,20 @@ void InitEyeCamera(CCharacter2 *chara, CCameraControl *camera) {
 
 void ResetViewMode(CScene *scene) {
     mgCCameraFollow *camera;
-    ViewMode = 0;
+    ViewMode = EDIT_VIEW_MODE_WALK;
     camera = (mgCCameraFollow *) scene->GetCamera(scene->active_camera);
 
-    if (InitEyeViewFlag != 0) {
+    if (InitEyeViewFlag) {
         camera->SetPos(OldCameraPos);
     }
 
-    InitEyeViewFlag = 0;
+    InitEyeViewFlag = false;
 
     if (camera != NULL) {
         camera->Step(-1);
     }
 
-    scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x10);
+    scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_CHARA_HIDE);
     EndTakePhoto();
 }
 
@@ -1192,7 +1259,7 @@ static void EyeCamera(mgCCamera *camera, CCharacter2 *chara, int use_right_stick
     float unit[4][4];
     mgSetAllScissorFlag(1);
 
-    if (use_right_stick != 0) {
+    if (use_right_stick) {
         stick_x = 0.0f;
         stick_y = GamePad__2.GetRYf();
     } else {
@@ -1202,7 +1269,7 @@ static void EyeCamera(mgCCamera *camera, CCharacter2 *chara, int use_right_stick
 
     options = &GetSaveData()->config;
 
-    if (options->eye_reverse == 0) {
+    if (!options->eye_reverse) {
         stick_y = -stick_y;
     }
 
@@ -1267,7 +1334,7 @@ static void InitLadder(int mode, CScene *scene, CSceneEventData *event) {
     character = scene->GetCharacter(scene->player_chara);
     LadderMode = mode;
     LadderData = *event;
-    LadderStep = 0;
+    LadderStep = EDIT_LADDER_STEP_START;
     *(u_long128 *) LdrPos = *(u_long128 *) event->map_event.matrix[3];
     LdrPos[3] = 1.0f;
     mgZeroVector(top_offset);
@@ -1321,8 +1388,8 @@ static void InitLadder(int mode, CScene *scene, CSceneEventData *event) {
  * Clears the active ladder movement state.
  *
  */
-void EndLadder() {
-    LadderMode = 0;
+static void EndLadder() {
+    LadderMode = EDIT_LADDER_MODE_NONE;
 }
 
 /**
@@ -1353,24 +1420,24 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
     LadderCamera->SetNextRef(foot_position);
 
     switch (LadderStep) {
-        case 0:
-            LadderStep = 1;
+        case EDIT_LADDER_STEP_START:
+            LadderStep = EDIT_LADDER_STEP_APPROACH;
 
             if (!FixCameraFlag) {
                 LadderCamera->SetPos(LdrCamPos);
             }
             // The first frame also approaches the ladder.
-        case 1:
+        case EDIT_LADDER_STEP_APPROACH:
             mgVectorInterpolate(position, position, StdPos, 1.0f, 0);
             rotation[1] = mgAngleInterpolate(rotation[1], LdrRot, 0.1f, 0);
 
             if (mgDistVector(position, StdPos) < 0.1f && mgAngleCmp(rotation[1], LdrRot, 0.01f) == 0) {
                 if (LadderMode == EDIT_LADDER_MODE_BOTTOM) {
-                    LadderStep = 2;
+                    LadderStep = EDIT_LADDER_STEP_MOUNT_BOTTOM;
                     character->SetMotion("\x82\xCC\x82\xDA\x82\xE9", CHARA_MOTION_RESTART);
                     *(u_long128 *) position = *(u_long128 *) LdrPos;
                 } else {
-                    LadderStep = 4;
+                    LadderStep = EDIT_LADDER_STEP_MOUNT_TOP;
                     *(u_long128 *) position = *(u_long128 *) LdrPos;
                     position[1] -= 14.0f;
                     character->SetMotion("\x8D\x7E\x82\xE8\x82\xE9", CHARA_MOTION_RESTART);
@@ -1380,7 +1447,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             }
 
             break;
-        case 2:
+        case EDIT_LADDER_STEP_MOUNT_BOTTOM:
             character->SetMotion("\x82\xCC\x82\xDA\x82\xE9", CHARA_MOTION_HOLD);
 
             if (!(character->GetNowFrameWait() <= 0.6f)) {
@@ -1388,35 +1455,35 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             }
 
             if (character->CheckMotionEnd()) {
-                LadderStep = 3;
+                LadderStep = EDIT_LADDER_STEP_MOUNTED_BOTTOM;
             }
 
             break;
-        case 4:
+        case EDIT_LADDER_STEP_MOUNT_TOP:
             character->SetMotion("\x8D\x7E\x82\xE8\x82\xE9", CHARA_MOTION_HOLD);
             character->sound_info.foot_sound_id = LdrSound;
 
             if (character->CheckMotionEnd()) {
-                LadderStep = 5;
+                LadderStep = EDIT_LADDER_STEP_MOUNTED_TOP;
             }
 
             break;
-        case 3:
+        case EDIT_LADDER_STEP_MOUNTED_BOTTOM:
             position[1] += 14.0f;
             character->SetMotion("\x82\xCC\x82\xDA\x82\xE8\x92\xE2\x8E\x7E", CHARA_MOTION_RESTART);
-            LadderStep = 7;
+            LadderStep = EDIT_LADDER_STEP_HOLD;
             break;
-        case 5:
+        case EDIT_LADDER_STEP_MOUNTED_TOP:
             character->SetMotion("\x8D\x7E\x82\xE8\x92\xE2\x8E\x7E", CHARA_MOTION_RESTART);
-            LadderStep = 7;
+            LadderStep = EDIT_LADDER_STEP_HOLD;
             break;
-        case 7:
+        case EDIT_LADDER_STEP_HOLD:
             if (pad->Analog(4) < -0.1f) {
-                LadderStep = 8;
-                change_motion = 1;
+                LadderStep = EDIT_LADDER_STEP_CLIMB_UP;
+                change_motion = true;
 
                 if (strcmp(character->GetNowMotionName(), "\x82\xCC\x82\xDA\x82\xE8\x92\xE2\x8E\x7E") == 0) {
-                    change_motion = 0;
+                    change_motion = false;
                 }
 
                 character->SetMotion("\x82\xCC\x82\xDA\x82\xE8L", CHARA_MOTION_HOLD);
@@ -1429,11 +1496,11 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
                 character->SetStep(0.0f);
                 LdrNext = 14.0f + position[1];
             } else if (!(pad->Analog(4) <= 0.1f)) {
-                LadderStep = 9;
-                change_motion = 1;
+                LadderStep = EDIT_LADDER_STEP_CLIMB_DOWN;
+                change_motion = true;
 
                 if (strcmp(character->GetNowMotionName(), "\x8D\x7E\x82\xE8\x92\xE2\x8E\x7E") == 0) {
-                    change_motion = 0;
+                    change_motion = false;
                 }
 
                 character->SetMotion("\x8D\x7E\x82\xE8L", CHARA_MOTION_HOLD);
@@ -1447,14 +1514,14 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             }
 
             break;
-        case 8:
+        case EDIT_LADDER_STEP_CLIMB_UP:
             if (character->GetMotionStatus() != CHARA_MOTION_STATUS_BLEND) {
                 character->SetStep(0.5f);
                 position[1] += 0.7f;
                 top_height = LdrTopPos[1] - 14.0f;
 
                 if (top_height < (float) (int) position[1]) {
-                    LadderStep = 11;
+                    LadderStep = EDIT_LADDER_STEP_GET_OFF_TOP;
                     position[1] = top_height;
                     character->SetMotion("\x82\xCC\x82\xDA\x82\xE8\x8A\xAE\x97\xB9", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                 } else {
@@ -1465,7 +1532,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
                             character->SetMotion("\x82\xCC\x82\xDA\x82\xE8L", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                             LdrNext = 14.0f + position[1];
                         } else {
-                            LadderStep = 7;
+                            LadderStep = EDIT_LADDER_STEP_HOLD;
                             character->SetMotion("\x82\xCC\x82\xDA\x82\xE8\x92\xE2\x8E\x7E", 0);
                             character->blend_speed = 1.0f;
                             character->blend = 1.0f;
@@ -1488,13 +1555,13 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             }
 
             break;
-        case 9:
+        case EDIT_LADDER_STEP_CLIMB_DOWN:
             if (character->GetMotionStatus() != CHARA_MOTION_STATUS_BLEND) {
                 character->SetStep(0.5f);
                 position[1] -= 0.7f;
 
                 if (!(14.0f + LdrBottomPos[1] < position[1])) {
-                    LadderStep = 10;
+                    LadderStep = EDIT_LADDER_STEP_GET_OFF_BOTTOM;
                     position[1] = LdrBottomPos[1];
                     character->SetMotion("\x8D\x7E\x82\xE8\x8A\xAE\x97\xB9", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                 } else {
@@ -1505,7 +1572,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
                             character->SetMotion("\x8D\x7E\x82\xE8L", CHARA_MOTION_RESTART | CHARA_MOTION_HOLD);
                             LdrNext = position[1] - 14.0f;
                         } else {
-                            LadderStep = 7;
+                            LadderStep = EDIT_LADDER_STEP_HOLD;
                             character->SetMotion("\x8D\x7E\x82\xE8\x92\xE2\x8E\x7E", 0);
                             character->blend_speed = 1.0f;
                             character->blend = 1.0f;
@@ -1528,7 +1595,7 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             }
 
             break;
-        case 10:
+        case EDIT_LADDER_STEP_GET_OFF_BOTTOM:
             if (!(character->GetNowFrameWait() <= 0.4f)) {
                 character->sound_info.foot_sound_id = LdrBtmFoot;
             }
@@ -1536,11 +1603,11 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             if (character->CheckMotionEnd()) {
                 *(u_long128 *) position = *(u_long128 *) LdrBottomPos;
                 character->SetMotion("\x97\xA7\x82\xBF", CHARA_MOTION_RESTART);
-                LadderStep = 13;
+                LadderStep = EDIT_LADDER_STEP_END;
             }
 
             break;
-        case 11:
+        case EDIT_LADDER_STEP_GET_OFF_TOP:
             if (!(character->GetNowFrameWait() <= 0.6f)) {
                 character->sound_info.foot_sound_id = LdrTopFoot;
             }
@@ -1548,23 +1615,23 @@ static void LadderControl(CScene *scene, CPadControl *pad) {
             if (character->CheckMotionEnd()) {
                 *(u_long128 *) position = *(u_long128 *) LdrTopPos;
                 character->SetMotion("\x97\xA7\x82\xBF", CHARA_MOTION_RESTART);
-                LadderStep = 12;
+                LadderStep = EDIT_LADDER_STEP_WALK_OFF_TOP;
             }
 
             break;
-        case 12:
+        case EDIT_LADDER_STEP_WALK_OFF_TOP:
             character->sound_info.foot_sound_id = LdrTopFoot;
             mgVectorInterpolate(position, position, LdrTopWalk, 1.0f, 0);
 
             if (mgDistVector(position, LdrTopWalk) < 0.1f) {
                 *(u_long128 *) position = *(u_long128 *) LdrTopWalk;
-                LadderStep = 13;
+                LadderStep = EDIT_LADDER_STEP_END;
             } else {
                 character->SetMotion("\x95\xE0\x82\xAB", 0);
             }
 
             break;
-        case 13:
+        case EDIT_LADDER_STEP_END:
         default:
             EndLadder();
             break;
@@ -1580,14 +1647,14 @@ void EditStepChara(CScene *scene) {
 
     scene->StepChara(scene->player_chara);
 
-    for (slot = 8; slot < 64; slot++) {
+    for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
         scene->StepChara(slot);
     }
 
-    scene->StepChara(120);
-    scene->StepChara(121);
-    scene->StepChara(122);
-    scene->StepChara(123);
+    scene->StepChara(EDIT_CHARA_SLOT_EXTRA);
+    scene->StepChara(EDIT_CHARA_SLOT_EXTRA + 1);
+    scene->StepChara(EDIT_CHARA_SLOT_EXTRA + 2);
+    scene->StepChara(EDIT_CHARA_SLOT_EXTRA + 3);
 }
 
 void EditDrawShadowChara(CScene *scene) {
@@ -1595,7 +1662,7 @@ void EditDrawShadowChara(CScene *scene) {
 
     scene->DrawCharaShadow(scene->player_chara);
 
-    for (slot = 8; slot < 64; slot++) {
+    for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
         scene->DrawCharaShadow(slot);
     }
 }
@@ -1605,8 +1672,8 @@ void EditDrawChara(CScene *scene) {
 
     scene->DrawChara(scene->player_chara, 0);
 
-    for (slot = 8; slot < 64; slot++) {
-        if (scene->GetType(SCENE_DATA_CHARA, slot) != 4) {
+    for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
+        if (scene->GetType(SCENE_DATA_CHARA, slot) != EDIT_CHARA_TYPE_EFFECT) {
             scene->DrawChara(slot, 1);
         }
     }
@@ -1615,8 +1682,8 @@ void EditDrawChara(CScene *scene) {
 void EditDrawEffectChara(CScene *scene) {
     int slot;
 
-    for (slot = 8; slot < 64; slot++) {
-        if (scene->GetType(SCENE_DATA_CHARA, slot) == 4) {
+    for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
+        if (scene->GetType(SCENE_DATA_CHARA, slot) == EDIT_CHARA_TYPE_EFFECT) {
             scene->DrawChara(slot, 2);
         }
     }

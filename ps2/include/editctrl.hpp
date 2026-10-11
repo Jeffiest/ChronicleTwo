@@ -69,6 +69,50 @@ enum EditFootEffect {
 
 /**
  *
+ * Stages of getting on, climbing and getting off a ladder, as the unit's ladder step holds them.
+ *
+ */
+// clang-format off
+enum EditLadderStep {
+    EDIT_LADDER_STEP_START          = 0,  /**< First frame: places the ladder camera, then approaches as EDIT_LADDER_STEP_APPROACH. */
+    EDIT_LADDER_STEP_APPROACH       = 1,  /**< Walks and turns the character onto the spot in front of the ladder. */
+    EDIT_LADDER_STEP_MOUNT_BOTTOM   = 2,  /**< Plays the motion of getting on at the bottom. */
+    EDIT_LADDER_STEP_MOUNTED_BOTTOM = 3,  /**< Has got on at the bottom; switches to the holding motion. */
+    EDIT_LADDER_STEP_MOUNT_TOP      = 4,  /**< Plays the motion of getting on at the top. */
+    EDIT_LADDER_STEP_MOUNTED_TOP    = 5,  /**< Has got on at the top; switches to the holding motion. */
+    EDIT_LADDER_STEP_HOLD           = 7,  /**< Holds on, waiting for the stick to climb up or down. */
+    EDIT_LADDER_STEP_CLIMB_UP       = 8,  /**< Climbs up a rung at a time. */
+    EDIT_LADDER_STEP_CLIMB_DOWN     = 9,  /**< Climbs down a rung at a time. */
+    EDIT_LADDER_STEP_GET_OFF_BOTTOM = 10, /**< Plays the motion of getting off at the bottom. */
+    EDIT_LADDER_STEP_GET_OFF_TOP    = 11, /**< Plays the motion of getting off at the top. */
+    EDIT_LADDER_STEP_WALK_OFF_TOP   = 12, /**< Walks away from the top of the ladder. */
+    EDIT_LADDER_STEP_END            = 13, /**< Leaves the ladder. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Character slots of the scene that the edit map fills.
+ *
+ */
+enum EditCharaSlot {
+    EDIT_CHARA_SLOT_OTHER = 8,      /**< First slot of the edit map's other characters. */
+    EDIT_CHARA_SLOT_OTHER_END = 64, /**< End of the edit map's other character slots. */
+    EDIT_CHARA_SLOT_EXTRA = 120,    /**< First of the four fixed extra character slots. */
+};
+
+/**
+ *
+ * Type of a scene character slot, as CScene::GetType gives it, that the edit map draws apart.
+ *
+ */
+enum EditCharaType {
+    EDIT_CHARA_TYPE_EFFECT = 4, /**< The slot holds an effect character, drawn in a pass of its own. */
+};
+
+/**
+ *
  * Extra collision polygons handed to EditMoveChara, and what the move ran into.
  *
  */
