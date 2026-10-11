@@ -513,6 +513,20 @@ static MONSTER_REACT react_tbl[14] = {
     {-1,                        0,                                0, 0}
 };
 
+
+/**
+ *
+ * Reactions that CheckDamage picks for a hit on a monster.
+ *
+ */
+enum MONSTER_HIT_REACTION {
+    MONSTER_HIT_NONE = 1,   /**< The hit leaves the monster as it is. */
+    MONSTER_HIT_DAMAGE = 2, /**< The hit is guarded or may stagger the monster. */
+    MONSTER_HIT_STATUS = 3, /**< The hit lands while the monster is greyed out, or greys it out. */
+    MONSTER_HIT_KNOCK = 4,  /**< The hit knocks the monster over. */
+    MONSTER_HIT_DEAD = 6    /**< The hit kills the monster. */
+};
+
 static int _MONSTER_NAME(SPI_STACK *stack, int argument_count);
 
 /**
