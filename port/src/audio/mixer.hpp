@@ -29,6 +29,8 @@ public:
 
     void Reset();
 
+    // Makes bank the port's selected bank, adding it to the port's list if new. Voices already
+    // sounding keep playing: each holds the bank it started in.
     void BindBank(int port, std::shared_ptr<const Bank> bank);
 
     void SetSequence(int port, std::shared_ptr<const SqFile> file);
@@ -66,8 +68,9 @@ public:
     // A short MIDI message packed status first, little-endian, as libmodmsin queues them.
     void ShortMessage(int port, std::uint32_t message);
 
-    // A hardware-synth extended message: F9 sets the effect volume or pan the next key-on takes,
-    // FD keys an effect on or off or changes the volume or pan of one already sounding.
+    // A hardware-synth extended message: F9 sets the effect volume, pan or pitch the next key-on
+    // takes, FD keys an effect on or off or changes the volume, pan or pitch of one already
+    // sounding.
     void HsMessage(int port, std::span<const std::uint8_t> message);
 
     int ActiveVoices() const;
@@ -88,15 +91,19 @@ private:
     };
 
     struct Port final : MidiSink {
-        Mixer                         *mixer = nullptr;
-        int                            index = 0;
-        std::shared_ptr<const Bank>    bank;
-        Sequencer                      sequencer;
-        std::array<Channel, kChannels> channels;
-        int                            volume = 0;
-        int                            attribute = 0;
-        int                            effect_volume = 127;
-        int                            effect_pan = 64;
+        Mixer                                   *mixer = nullptr;
+        int                                      index = 0;
+        // Every bank bound to the port since its last Stop, the selected one named by bank_index.
+        // A voice holds its own bank reference, so switching the selection never stops it.
+        std::vector<std::shared_ptr<const Bank>> banks;
+        int                                      bank_index = -1;
+        Sequencer                                sequencer;
+        std::array<Channel, kChannels>           channels;
+        int                                      volume = 0;
+        int                                      attribute = 0;
+        int                                      effect_volume = 127;
+        int                                      effect_pan = 64;
+        int                                      effect_pitch = 8192;
 
         void ChannelMessage(std::uint8_t status, std::uint8_t data1, std::uint8_t data2) override;
     };
@@ -105,6 +112,8 @@ private:
     static constexpr int kBlock = 256;
 
     void Message(Port &port, std::uint8_t status, std::uint8_t data1, std::uint8_t data2);
+
+    const std::shared_ptr<const Bank> &SelectedBank(const Port &port) const;
 
     void Controller(Port &port, int channel, int controller, int value);
 
@@ -116,6 +125,10 @@ private:
 
     template <class Match, class Action>
     void ForVoices(Match match, Action action);
+
+    // Releases the bank reference of every voice that ended, so a bank the game dropped does not
+    // stay pinned until the voice is reused.
+    void DropIdleBanks();
 
     void ReleaseVoice(Voice &voice);
 

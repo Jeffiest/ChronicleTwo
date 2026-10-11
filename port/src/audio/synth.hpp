@@ -2,10 +2,14 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 
 #include "vag.hpp"
 
 namespace audio {
+
+// Defined in hdbank.hpp; a voice only holds it to keep the decoded bank data alive.
+class Bank;
 
 // The SPU2 runs its envelopes and its pitch reference at 48 kHz whatever the output rate.
 constexpr int    kSpuRate = 48000;
@@ -75,14 +79,17 @@ struct Voice {
     int  effect_no = 0;
     int  effect_volume = 127;
     int  effect_pan = 64;
+    int  effect_pitch = 8192;
     bool held = false;
     bool released = false;
 
     std::uint64_t serial = 0;
 
-    const VagSample *sample = nullptr;
-    double           position = 0.0;
-    int              rate = 0;
+    const VagSample            *sample = nullptr;
+    // The bank the sample was decoded from, so a rebind or teardown cannot free it mid-voice.
+    std::shared_ptr<const Bank> bank;
+    double                      position = 0.0;
+    int                         rate = 0;
 
     // Fixed at key-on from the bank: pitch offset in semitones from the note, gain and pan.
     double base_pitch = 0.0;
