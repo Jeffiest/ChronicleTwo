@@ -1922,7 +1922,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     npc_chara->Show(1, 1);
                 }
 
-                MenuSePlay(2);
+                MenuSePlay(SYSTEM_SE_PAGE);
                 key_arg_no = CHR_CNG_PAGE_NPC;
                 star_stop_wait = 20;
                 step = CHR_CNG_NPC_STEP_COMMAND;
@@ -1987,7 +1987,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             int attr = MenuUserDataManPtr->GetCharaStatusAttirbute(active_chara);
 
-            if (attr & CHARA_STATUS_UNK_8 || attr & CHARA_STATUS_UNK_20) {
+            if (attr & CHARA_STATUS_STOP || attr & CHARA_STATUS_STONE) {
                 open_wait = 1;
                 ExeScript("Change_ERR");
                 cmd_mes->MakeMsg(select + 0x1A5);
@@ -2031,7 +2031,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                 attr = MenuUserDataManPtr->GetCharaStatusAttirbute(select);
 
-                if (attr & CHARA_STATUS_UNK_8 || attr & CHARA_STATUS_UNK_20) {
+                if (attr & CHARA_STATUS_STOP || attr & CHARA_STATUS_STONE) {
                     MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
                 }
@@ -2163,7 +2163,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             MenuSePlay(SYSTEM_SE_DECIDE);
             break;
         case CHR_CNG_ACTION_NPC_PAGE_END:
-            MenuSePlay(2);
+            MenuSePlay(SYSTEM_SE_PAGE);
             ExeScript("RETURN_CHANGESELECT");
 
             if (npc_chara != NULL) {
@@ -2921,7 +2921,7 @@ int CMenuChrCngMenu::MenuLocalLoop() {
         default:
             if (MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE && !MenuGetPartySeFlag && fade_done != 0) {
                 MenuGetPartySeFlag = true;
-                MenuSePlay(0x11);
+                MenuSePlay(SYSTEM_SE_JOIN);
             }
 
             CheckBGNPCModel();
@@ -4545,7 +4545,7 @@ int CMenuMosSelect::KeyStep() {
                                 effect.Initialize(NULL);
                                 step = MOS_SELECT_STEP_CLASS_DONE;
                                 ExeScript("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57\x8F\x49\x97\xB9MSG");
-                                MenuSePlay(0x1E);
+                                MenuSePlay(SYSTEM_SE_PARAM_UP);
                                 char *grown[1] = {NULL};
                                 grown[0] = GetMonsterName(level_monster[select_monster_save]);
                                 info->SetMsgItemNo(grown, 1);
@@ -4725,7 +4725,7 @@ int CMenuMosSelect::KeyStep() {
 
                                     int attr = MenuUserDataManPtr->GetCharaStatusAttirbute(MenuUserDataManPtr->active_chr_no);
 
-                                    if (((attr & CHARA_STATUS_UNK_4) || (attr & CHARA_STATUS_UNK_8) || (attr & CHARA_STATUS_UNK_20)) && row >= 0 && row < MES_LINE_MAX) {
+                                    if (((attr & CHARA_STATUS_CURSE) || (attr & CHARA_STATUS_STOP) || (attr & CHARA_STATUS_STONE)) && row >= 0 && row < MES_LINE_MAX) {
                                         command->line_color[row] = MES_COLOR_DARK;
                                     }
                                 }
@@ -4798,7 +4798,7 @@ int CMenuMosSelect::KeyStep() {
                     load_monster = -1;
                     MenuUserDataManPtr->SetActiveChrNo(USER_CHARA_MONSTER);
                     MenuUserDataManPtr->monster_id = monster_no;
-                    MenuSePlay(0x10);
+                    MenuSePlay(SYSTEM_SE_TRANSFORM);
                     break;
                 }
                 case MOS_SELECT_ACTION_CANNOT_TRANSFORM:
@@ -4815,7 +4815,7 @@ int CMenuMosSelect::KeyStep() {
                     }
 
                     model_side = 1;
-                    MenuSePlay(2);
+                    MenuSePlay(SYSTEM_SE_PAGE);
                     break;
                 case MOS_SELECT_ACTION_CLASS_CHANGE: {
                     BuildUpWeaponInfo.monster_mode = 1;
@@ -6301,7 +6301,7 @@ int ReadMainCharaBG() {
 
     if ((NowMainCharaChngStatusBit & 2) == 0) {
         if (MenuCommonInfo->CheckPushButton()) {
-            MenuSePlay(5);
+            MenuSePlay(SYSTEM_SE_CANCEL);
             NowReadMainCharaNo = -1;
             NowMainCharaChngTexMoveX = 600;
             NowMainCharaChngTexMovePhase = 2;
@@ -6725,7 +6725,7 @@ int CMenuCostumeSel::KeyStep() {
                         show_help = 1;
                         step++;
                         cursor_show = 1;
-                        MenuSePlay(1);
+                        MenuSePlay(SYSTEM_SE_DECIDE);
                     }
 
                     break;
@@ -6826,7 +6826,7 @@ int CMenuCostumeSel::KeyStep() {
                     }
 
                     if (move_y || move_x) {
-                        MenuSePlay(0);
+                        MenuSePlay(SYSTEM_SE_CURSOR);
                     }
 
                     for (int i = 0; i < COSTUME_LIST_NUM; i++) {
@@ -6843,7 +6843,7 @@ int CMenuCostumeSel::KeyStep() {
                         MenuArg.end_code = 0;
                         MenuCommonInfo->key_enable = 0;
                         FadeOutMenu(40, 0.0f);
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (buttons & MENU_PUSH_BUTTON_DECIDE) {
                         if (select == 3) {
                             step++;
@@ -6858,7 +6858,7 @@ int CMenuCostumeSel::KeyStep() {
                             }
 
                             ask->SetMsgCursor(1);
-                            MenuSePlay(1);
+                            MenuSePlay(SYSTEM_SE_DECIDE);
                         }
 
                         if (select == 4) {
@@ -6868,7 +6868,7 @@ int CMenuCostumeSel::KeyStep() {
                             ask->ClsMes::mes_no = -1;
                             ask->MakeMsg(0x11FD);
                             ask->SetMsgCursor(1);
-                            MenuSePlay(1);
+                            MenuSePlay(SYSTEM_SE_DECIDE);
                         }
                     }
 
@@ -6888,7 +6888,7 @@ int CMenuCostumeSel::KeyStep() {
                             MenuArg.end_code = 12;
                             MenuCommonInfo->key_enable = 0;
                             FadeOutMenu(40, 0.0f);
-                            MenuSePlay(1);
+                            MenuSePlay(SYSTEM_SE_DECIDE);
                             break;
                         }
 
@@ -6916,7 +6916,7 @@ int CMenuCostumeSel::KeyStep() {
                             MenuArg.end_code = 12;
                             MenuCommonInfo->key_enable = 0;
                             FadeOutMenu(40, 0.0f);
-                            MenuSePlay(1);
+                            MenuSePlay(SYSTEM_SE_DECIDE);
                         }
                     }
 
@@ -6924,7 +6924,7 @@ int CMenuCostumeSel::KeyStep() {
                         step = 0;
                         wait_load = 0;
                         cursor_show = 1;
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     }
 
                     break;

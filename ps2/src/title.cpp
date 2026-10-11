@@ -2808,7 +2808,7 @@ int TitleHDDInstallKey() {
             if (status <= 0) {
                 HDDINFO.result = status;
                 next_phase = HDD_PHASE_RESULT;
-                MenuSePlay(0x1F);
+                MenuSePlay(SYSTEM_SE_COMPLETE);
             } else if (push & 2) {
                 next_phase = HDD_PHASE_CANCEL_ASK;
                 MenuSePlay(SYSTEM_SE_CANCEL);

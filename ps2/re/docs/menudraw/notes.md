@@ -338,7 +338,7 @@ complete unit's bytes, data extents and resolved relocations.
 ## Item needs (NowUseNeedItemCheck)
 `MENU_ITEM_NEED` bits: 0x10 and 0x40 are always set and never tested (`UNUSED_10`/`UNUSED_40`); 0x20 is
 `MONICA_IN_PARTY` (cleared when party bit `1 << USER_CHARA_MONICA` is clear; item 0x185 is highlighted
-only with it); 0x400/0x800/0x2000/0x4000 mirror `CHARA_STATUS_UNK_4/8/20/40` and pair with the
-`ITEM_USE_FLAG_CURE_STATUS_UNK_*` flags in `Func_MenuIconDrawPrepare`; 0x1000 mirrors `CHARA_STATUS_POWER`
+only with it); 0x400/0x800/0x2000/0x4000 mirror `CHARA_STATUS_CURSE/8/20/40` and pair with the
+`ITEM_USE_FLAG_CURE_*` flags in `Func_MenuIconDrawPrepare`; 0x1000 mirrors `CHARA_STATUS_POWER`
 and is never tested. On floors with `DNG_FLOOR_DISABLE_ITEMS` the health/status bits (`MENU_ITEM_NEED_RECOVERY`,
 0x6F01) are cleared. Items 0x128 and 0x184 are always highlighted; 0x1A7 needs `RIDEPOD_SHIELD_KIT`.

@@ -2856,7 +2856,7 @@ void IsEventRun() {
         }
     }
 
-    if (info->GetAttr() & (CHARA_STATUS_UNK_8 | CHARA_STATUS_UNK_20)) {
+    if (info->GetAttr() & (CHARA_STATUS_STOP | CHARA_STATUS_STONE)) {
         return;
     }
 
@@ -3114,11 +3114,11 @@ void CheckStatusError() {
             MainChara__2->pallet[0].SetAnim(0xA0, 0x40, 0xA0, 1, 45, 0);
         }
 
-        if (attr & CHARA_STATUS_UNK_8) {
+        if (attr & CHARA_STATUS_STOP) {
             MainChara__2->pallet[0].SetAnim(0x80, 0x40, 0, 1, 45, 0);
         }
 
-        if (attr & CHARA_STATUS_UNK_20) {
+        if (attr & CHARA_STATUS_STONE) {
             MainChara__2->pallet[0].SetAnim(0x20, 0x20, 0x20, 1, 45, 0);
         }
     }

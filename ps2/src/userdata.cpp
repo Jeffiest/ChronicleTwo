@@ -3069,7 +3069,7 @@ int CUserDataManager::CheckEnableCharaChange(int chara_no, int *out) {
 
         int status = GetCharaStatusAttirbute(chara_no);
 
-        if ((status & CHARA_STATUS_UNK_8) != 0 || (status & CHARA_STATUS_UNK_20) != 0) {
+        if ((status & CHARA_STATUS_STOP) != 0 || (status & CHARA_STATUS_STONE) != 0) {
             able = false;
         }
     }
@@ -3194,7 +3194,7 @@ int CUserDataManager::CheckQuickChange(int chara_no, int *out) {
 
     int status = GetCharaStatusAttirbute(active_chr_no);
 
-    if ((status & CHARA_STATUS_UNK_8) != 0 || (status & CHARA_STATUS_UNK_20) != 0) {
+    if ((status & CHARA_STATUS_STOP) != 0 || (status & CHARA_STATUS_STONE) != 0) {
         state &= ~QUICK_CHANGE_STATE_ENABLED;
     }
 
@@ -3316,11 +3316,11 @@ int CUserDataManager::SetCharaStatusAttirbuteVol(int chara_no, unsigned int attr
             chara->status_time[1] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_8) {
+        if (attr & CHARA_STATUS_STOP) {
             chara->status_time[2] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_20) {
+        if (attr & CHARA_STATUS_STONE) {
             chara->status_time[3] = value;
         }
     }
@@ -3332,11 +3332,11 @@ int CUserDataManager::SetCharaStatusAttirbuteVol(int chara_no, unsigned int attr
             robot->status_time[0] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_8) {
+        if (attr & CHARA_STATUS_STOP) {
             robot->status_time[1] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_20) {
+        if (attr & CHARA_STATUS_STONE) {
             robot->status_time[2] = value;
         }
     }
@@ -5711,28 +5711,28 @@ int CBattleCharaInfo::StatusParamStep(int *poison_damage) {
         }
     }
 
-    if (attr & CHARA_STATUS_UNK_8) {
+    if (attr & CHARA_STATUS_STOP) {
         if (chara_type == BATTLE_CHARA_HUMAN) {
             chara_data.human->status_time[2]--;
 
             if (chara_data.human->status_time[2] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_8, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STOP, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         } else if (chara_type == BATTLE_CHARA_ROBO) {
             chara_data.robo->status_time[1]--;
 
             if (chara_data.robo->status_time[1] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_8, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STOP, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         }
     }
 
-    if (attr & CHARA_STATUS_UNK_20) {
+    if (attr & CHARA_STATUS_STONE) {
         if (chara_type == BATTLE_CHARA_HUMAN) {
             chara_data.human->status_time[3]--;
 
             if (chara_data.human->status_time[3] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_20, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STONE, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         }
     }
@@ -5825,11 +5825,11 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
     }
 
     if (attr & ITEM_USE_FLAG_ADD_CURSE) {
-        add_attr |= CHARA_STATUS_UNK_4;
+        add_attr |= CHARA_STATUS_CURSE;
     }
 
     if (attr & ITEM_USE_FLAG_ADD_STOP) {
-        add_attr |= CHARA_STATUS_UNK_8;
+        add_attr |= CHARA_STATUS_STOP;
     }
 
     if (attr & ITEM_USE_FLAG_ADD_POWER) {
@@ -5837,11 +5837,11 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
     }
 
     if (attr & ITEM_USE_FLAG_ADD_STONE) {
-        add_attr |= CHARA_STATUS_UNK_20;
+        add_attr |= CHARA_STATUS_STONE;
     }
 
     if (attr & ITEM_USE_FLAG_ADD_DRY) {
-        add_attr |= CHARA_STATUS_UNK_40;
+        add_attr |= CHARA_STATUS_DRY;
     }
 
     if (attr & ITEM_USE_FLAG_CURE_POISON) {
@@ -5853,19 +5853,19 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
     }
 
     if (attr & ITEM_USE_FLAG_CURE_CURSE) {
-        cure_attr |= CHARA_STATUS_UNK_4;
+        cure_attr |= CHARA_STATUS_CURSE;
     }
 
     if (attr & ITEM_USE_FLAG_CURE_STOP) {
-        cure_attr |= CHARA_STATUS_UNK_8;
+        cure_attr |= CHARA_STATUS_STOP;
     }
 
     if (attr & ITEM_USE_FLAG_CURE_STONE) {
-        cure_attr |= CHARA_STATUS_UNK_20;
+        cure_attr |= CHARA_STATUS_STONE;
     }
 
     if (attr & ITEM_USE_FLAG_CURE_DRY) {
-        cure_attr |= CHARA_STATUS_UNK_40;
+        cure_attr |= CHARA_STATUS_DRY;
     }
 
     if (add != NULL) {
@@ -5879,8 +5879,8 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
 
 int CheckBadStatus(int attr) {
     if ((attr & CHARA_STATUS_POISON) || (attr & CHARA_STATUS_SLOW) ||
-        (attr & CHARA_STATUS_UNK_4) || (attr & CHARA_STATUS_UNK_8) ||
-        (attr & CHARA_STATUS_UNK_20) || (attr & CHARA_STATUS_UNK_40)) {
+        (attr & CHARA_STATUS_CURSE) || (attr & CHARA_STATUS_STOP) ||
+        (attr & CHARA_STATUS_STONE) || (attr & CHARA_STATUS_DRY)) {
         return true;
     }
 

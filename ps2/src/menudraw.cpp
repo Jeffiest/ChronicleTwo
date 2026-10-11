@@ -5543,24 +5543,24 @@ int NowUseNeedItemCheck(CUserDataManager *manager) {
                 needs |= MENU_ITEM_NEED_CURE_SLOW;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_UNK_4) != 0) {
-                needs |= MENU_ITEM_NEED_CURE_STATUS_UNK_4;
+            if ((chara->status_attr & CHARA_STATUS_CURSE) != 0) {
+                needs |= MENU_ITEM_NEED_CURE_CURSE;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_UNK_8) != 0) {
-                needs |= MENU_ITEM_NEED_CURE_STATUS_UNK_8;
+            if ((chara->status_attr & CHARA_STATUS_STOP) != 0) {
+                needs |= MENU_ITEM_NEED_CURE_STOP;
             }
 
             if ((chara->status_attr & CHARA_STATUS_POWER) != 0) {
                 needs |= MENU_ITEM_NEED_POWER;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_UNK_20) != 0) {
-                needs |= MENU_ITEM_NEED_CURE_STATUS_UNK_20;
+            if ((chara->status_attr & CHARA_STATUS_STONE) != 0) {
+                needs |= MENU_ITEM_NEED_CURE_STONE;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_UNK_40) != 0) {
-                needs |= MENU_ITEM_NEED_CURE_STATUS_UNK_40;
+            if ((chara->status_attr & CHARA_STATUS_DRY) != 0) {
+                needs |= MENU_ITEM_NEED_CURE_DRY;
             }
         }
 
@@ -5625,11 +5625,11 @@ void Func_MenuIconDrawPrepare(MENUFORMPARTS_TYPE *part, CGameDataUsed *item, int
                     if ((flags & ITEM_USE_FLAG_RESTORE_HP) != 0 && (need_item & MENU_ITEM_NEED_RESTORE_HP) != 0) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
                     } else if (((flags & ITEM_USE_FLAG_CURE_POISON) != 0 && (need_item & MENU_ITEM_NEED_CURE_POISON) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_CURSE) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_4) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STOP) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_8) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_CURSE) != 0 && (need_item & MENU_ITEM_NEED_CURE_CURSE) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_STOP) != 0 && (need_item & MENU_ITEM_NEED_CURE_STOP) != 0) ||
                                ((flags & ITEM_USE_FLAG_CURE_SLOW) != 0 && (need_item & MENU_ITEM_NEED_CURE_SLOW) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STONE) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_20) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_DRY) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_40) != 0)) {
+                               ((flags & ITEM_USE_FLAG_CURE_STONE) != 0 && (need_item & MENU_ITEM_NEED_CURE_STONE) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_DRY) != 0 && (need_item & MENU_ITEM_NEED_CURE_DRY) != 0)) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
                     } else if ((flags & ITEM_USE_FLAG_REPAIR) != 0 &&
                                ((item_no == ITEM_ID_MELEE_REPAIR &&

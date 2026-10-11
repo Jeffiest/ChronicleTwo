@@ -1052,15 +1052,15 @@ int CBaseMenuClass::MenuItemCommandSelect(int select_key, int push_button) {
                             int attribute = MenuUserDataManPtr->GetCharaStatusAttirbute(MenuItemCmdRet.chara);
 
                             // detail picks the script that names the status preventing the change: 1 curse, 2 stop, 3 stone.
-                            if (attribute & CHARA_STATUS_UNK_8) {
+                            if (attribute & CHARA_STATUS_STOP) {
                                 MenuItemCmdRet.detail = 2;
                             }
 
-                            if (attribute & CHARA_STATUS_UNK_20) {
+                            if (attribute & CHARA_STATUS_STONE) {
                                 MenuItemCmdRet.detail = 3;
                             }
 
-                            if (attribute & CHARA_STATUS_UNK_4) {
+                            if (attribute & CHARA_STATUS_CURSE) {
                                 MenuItemCmdRet.detail = 1;
                             }
 
@@ -1615,7 +1615,7 @@ int MenuHowMuchNumSelect(int key, CGameDataUsed *item, int limit) {
     changed = false;
 
     if (before != MenuHowHaveMuchNum) {
-        MenuSePlay(0x1D);
+        MenuSePlay(SYSTEM_SE_NUMBER);
         MenuCommonInfo->down_arrow_cnt = 0;
         MenuCommonInfo->up_arrow_cnt = 0;
 
@@ -1646,7 +1646,7 @@ void CBaseMenuClass::MenuItemAskMode_HowMuch(int select_key, int push_button) {
             switch (ask_mode) {
                 case MENU_ASK_MODE_HOW_MUCH:
                     MenuCommonInfo->MenuSwapItem(ask_para.item, &swap_info, MenuHowHaveMuchNum, true);
-                    MenuSePlay(3);
+                    MenuSePlay(SYSTEM_SE_ITEM_MOVE);
                     break;
             }
 
@@ -2409,7 +2409,7 @@ int CBaseMenuClass::SelectMakeObject(int select_key) {
         }
 
         if (old_num != make_num) {
-            MenuSePlay(29);
+            MenuSePlay(SYSTEM_SE_NUMBER);
         }
     }
 
@@ -3572,17 +3572,17 @@ int CMenuKeyFunc::EnableSwapNowPos(MENU_SWAPITEM_INFO *swap) {
                 break;
             }
 
-            if (chara->status_attr & CHARA_STATUS_UNK_4) {
+            if (chara->status_attr & CHARA_STATUS_CURSE) {
                 result = MENU_SWAP_CHECK_STATUS;
                 break;
             }
 
-            if (chara->status_attr & CHARA_STATUS_UNK_8) {
+            if (chara->status_attr & CHARA_STATUS_STOP) {
                 result = MENU_SWAP_CHECK_STATUS;
                 break;
             }
 
-            if (chara->status_attr & CHARA_STATUS_UNK_20) {
+            if (chara->status_attr & CHARA_STATUS_STONE) {
                 result = MENU_SWAP_CHECK_STATUS;
                 break;
             }
@@ -5386,9 +5386,9 @@ int CMenuItemInfo::IsCancelLoadItem() {
                 }
 
                 ModelReadStart(view_mode, 0, 1);
-                MenuSePlay(8);
+                MenuSePlay(SYSTEM_SE_EQUIP);
             } else {
-                MenuSePlay(4);
+                MenuSePlay(SYSTEM_SE_ITEM_RETURN);
             }
 
             int equipped = false;
@@ -5549,7 +5549,7 @@ int CMenuItemInfo::EquipDirect(int chara, CGameDataUsed *item, int &slot) {
     who = IsItemtypeWhoisEquip(item_no, &slot);
     status = MenuUserDataManPtr->GetCharaStatusAttirbute(chara);
 
-    if ((status & CHARA_STATUS_UNK_4) || (status & CHARA_STATUS_UNK_8) || (status & CHARA_STATUS_UNK_20)) {
+    if ((status & CHARA_STATUS_CURSE) || (status & CHARA_STATUS_STOP) || (status & CHARA_STATUS_STONE)) {
         return 0;
     }
 
@@ -7790,7 +7790,7 @@ static void MenuItemDebugKey() {
      * Character-status flags offered by the debug preview.
      *
      */
-    static u32 table[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_UNK_4, CHARA_STATUS_UNK_8, CHARA_STATUS_POWER, CHARA_STATUS_UNK_20, CHARA_STATUS_UNK_40};
+    static u32 table[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_CURSE, CHARA_STATUS_STOP, CHARA_STATUS_POWER, CHARA_STATUS_STONE, CHARA_STATUS_DRY};
 
     /**
      *
@@ -9216,7 +9216,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                                 MenuSePlay(SYSTEM_SE_DECIDE);
                                 break;
                             case MENU_SWAP_CHECK_NO_CAPACITY:
-                                MenuSePlay(0x1C);
+                                MenuSePlay(SYSTEM_SE_DENIED);
                                 break;
                             case MENU_SWAP_CHECK_USE_ITEM:
                                 if (MenuItemUse.CheckItemUseEnable(held_item, 1, target) != 0) {
@@ -9282,9 +9282,9 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                             equip_slot = -1;
 
                             if (this->EquipDirect(this->sub_view, held_item, equip_slot) == 0) {
-                                MenuSePlay(0x1C);
+                                MenuSePlay(SYSTEM_SE_DENIED);
                             } else {
-                                MenuSePlay(8);
+                                MenuSePlay(SYSTEM_SE_EQUIP);
                                 this->CheckLoadInfo(this->sub_view);
                                 MenuLoadInfo.request_phase =
                                     ConvertCharaLoadDataPhase(this->sub_view, equip_slot);
@@ -9352,10 +9352,10 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                             robo_equip_slot = -1;
 
                             if (this->EquipDirect(USER_CHARA_ROBO, held_item, robo_equip_slot) == 0) {
-                                MenuSePlay(0x1C);
+                                MenuSePlay(SYSTEM_SE_DENIED);
                             } else {
                                 this->CheckLoadInfo(USER_CHARA_ROBO);
-                                MenuSePlay(8);
+                                MenuSePlay(SYSTEM_SE_EQUIP);
                                 MenuLoadInfo.request_phase =
                                     ConvertCharaLoadDataPhase(this->load_item_no, robo_equip_slot);
                                 MenuLoadInfo.load_all = 0;
@@ -9626,7 +9626,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                     int answer = MenuDCMsg[7]->YesNoCursor2(0);
 
                     if (answer == 1) {
-                        MenuSePlay(0x1E);
+                        MenuSePlay(SYSTEM_SE_PARAM_UP);
                         this->viewing_weapon = false;
                         this->mode = MENU_ASK_MODE_NONE;
                         this->ExeScript("RET_FPMODE");
@@ -11467,7 +11467,7 @@ void MenuCharaStatusDraw(int &tex_block) {
      * Character-status masks controlling the displayed icons.
      *
      */
-    static u32 status_table[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_UNK_4, CHARA_STATUS_UNK_8, CHARA_STATUS_POWER, CHARA_STATUS_UNK_20, CHARA_STATUS_UNK_40};
+    static u32 status_table[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_CURSE, CHARA_STATUS_STOP, CHARA_STATUS_POWER, CHARA_STATUS_STONE, CHARA_STATUS_DRY};
 
     /**
      *

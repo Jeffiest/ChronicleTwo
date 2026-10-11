@@ -272,7 +272,7 @@ void AddExpWeaponParam(float amount, int weapon_owner, int kind) {
 
     if (leveled_up != 0) {
         LevelupInfo.SetLevelUpInfo(0x100, mgScreenHeight / 2, slot, 0);
-        sndSePlay(SystemSND_ID, 30, 0);
+        sndSePlay(SystemSND_ID, SYSTEM_SE_PARAM_UP, 0);
     }
 }
 

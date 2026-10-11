@@ -10444,10 +10444,10 @@ static int _LOAD_MES_MONS_TALK(RS_STACKDATA *stack, int argc) {
 static int _MES_SE_PLAY(RS_STACKDATA *stack, int argc) {
     switch (GetStackInt(stack)) {
         case 0:
-            sndSePlay(SystemSND_ID, 0x19, 0);
+            sndSePlay(SystemSND_ID, SYSTEM_SE_MESSAGE, 0);
             return true;
         case 1:
-            sndSePlay(SystemSND_ID, 0x19, 0);
+            sndSePlay(SystemSND_ID, SYSTEM_SE_MESSAGE, 0);
             return true;
         case 2:
             sndSePlay(SystemSND_ID, SYSTEM_SE_CURSOR, 0);

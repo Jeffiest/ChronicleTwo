@@ -1052,8 +1052,8 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
      *
      */
     static u32 st_bittable[7] = {
-        CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_UNK_4, CHARA_STATUS_UNK_8,
-        CHARA_STATUS_POWER, CHARA_STATUS_UNK_20, CHARA_STATUS_UNK_40};
+        CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_CURSE, CHARA_STATUS_STOP,
+        CHARA_STATUS_POWER, CHARA_STATUS_STONE, CHARA_STATUS_DRY};
 
     if (item == NULL || target == NULL) {
         return 0;
@@ -1109,7 +1109,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
 
             int weapon_type = chara->equip[0].item_type;
 
-            if (!(chara->status_attr & CHARA_STATUS_UNK_40) || !(effect.action_flags & 0x10)) {
+            if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & 0x10)) {
                 if (((MenuUsedItemNo == 0x184 && weapon_type == ITEM_DATA_MAX_MELEE) ||
                      (MenuUsedItemNo == 0x185 && weapon_type == ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
@@ -1162,7 +1162,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_UNK_40) && (effect.action_flags & 0x10) && item->item_no != 0x110) {
+            if ((chara->status_attr & CHARA_STATUS_DRY) && (effect.action_flags & 0x10) && item->item_no != 0x110) {
                 MenuUsedNotErrorCode = true;
                 break;
             }
@@ -1243,11 +1243,11 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                                         chara->status_time[1] = 750;
                                     }
 
-                                    if (st_bittable[i] & CHARA_STATUS_UNK_8) {
+                                    if (st_bittable[i] & CHARA_STATUS_STOP) {
                                         chara->status_time[2] = 750;
                                     }
 
-                                    if (st_bittable[i] & CHARA_STATUS_UNK_20) {
+                                    if (st_bittable[i] & CHARA_STATUS_STONE) {
                                         chara->status_time[2] = 750;
                                     }
                                 }

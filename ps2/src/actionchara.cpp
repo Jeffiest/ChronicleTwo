@@ -1476,7 +1476,7 @@ void CActionChara::RockOn() {
     if (PadCtrl.Btn(PAD_BTN_ACTION_CANCEL) != 0) {
         if (lock_on != 0) {
             if (target_dot < -0.2f) {
-                sndSePlay(SystemSND_ID, 0x1B, 0);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_OFF, 0);
                 lock_on = false;
                 return;
             }
@@ -1501,7 +1501,7 @@ void CActionChara::RockOn() {
             if (target != NULL) {
                 if (ActiveMonster->GetPriorityLevelIndex(
                         target->priority + 1, &priority_index) != NULL) {
-                    sndSePlay(SystemSND_ID, 0x1A, 0);
+                    sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_ON, 0);
                     target_no = priority_index;
                     return;
                 }
@@ -1509,7 +1509,7 @@ void CActionChara::RockOn() {
                 target_no = MONSTER_ACTIVE_MAX;
             }
         } else if (target_no != -1) {
-            sndSePlay(SystemSND_ID, 0x1A, 0);
+            sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_ON, 0);
             lock_on = true;
         }
     }
@@ -2979,7 +2979,7 @@ int CActionChara::CheckDamage() {
         immobilized = false;
         attributes = battle->GetAttr();
 
-        if ((attributes & (CHARA_STATUS_UNK_8 | CHARA_STATUS_UNK_20)) != 0) {
+        if ((attributes & (CHARA_STATUS_STOP | CHARA_STATUS_STONE)) != 0) {
             immobilized = true;
         }
 
@@ -3049,27 +3049,27 @@ int CActionChara::CheckDamage() {
             }
 
             if ((hit->status & WEAPON_SPECIAL_STONE) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_20) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_PETRIFY_AMULET) == 0) {
-                battle->SetAttrVol(CHARA_STATUS_UNK_20, 900);
+                (attributes & CHARA_STATUS_STONE) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_PETRIFY_AMULET) == 0) {
+                battle->SetAttrVol(CHARA_STATUS_STONE, 900);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x53, 0);
             }
 
             if ((hit->status & WEAPON_SPECIAL_STOP) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_8) == 0 && CheckAmuletAvoid(ITEM_ID_NON_STOP_AMULET) == 0) {
-                battle->SetAttrVol(CHARA_STATUS_UNK_8, 300);
+                (attributes & CHARA_STATUS_STOP) == 0 && CheckAmuletAvoid(ITEM_ID_NON_STOP_AMULET) == 0) {
+                battle->SetAttrVol(CHARA_STATUS_STOP, 300);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x54, 0);
             }
 
             if ((hit->status & WEAPON_SPECIAL_CURSE) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_4) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_CURSE_AMULET) == 0) {
-                battle->SetAttr(CHARA_STATUS_UNK_4, 0);
+                (attributes & CHARA_STATUS_CURSE) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_CURSE_AMULET) == 0) {
+                battle->SetAttr(CHARA_STATUS_CURSE, 0);
                 sndSePlay(battle_sound, 0x55, 0);
             }
 
             if ((hit->status & WEAPON_SPECIAL_DRY) != 0 && iRand(100) < 50) {
-                battle->SetAttr(CHARA_STATUS_UNK_40, 0);
+                battle->SetAttr(CHARA_STATUS_DRY, 0);
                 sndSePlay(battle_sound, 0x52, 0);
             }
         }
@@ -3101,7 +3101,7 @@ int CActionChara::CheckDamage() {
                 effect_man->CreateEffSpt("\x92\xCA\x8F\xED\x89\xF1\x95\x9C", 0, 0);
                 effect_man->SetScriptTargetId(0, -1, -1);
                 effect_man->SetValue(0, 0, 0, -1);
-                sndSePlay(SystemSND_ID, 0xA, 0);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_REVIVE, 0);
             }
         }
 
