@@ -17,9 +17,10 @@
 // file, never a disc address, and a streamed read is complete when it returns, as every host
 // read is.
 //
-// The plain sector calls (sceCdRead and its poll group) once served the drive; the only bodies
-// left that call them are the weak ps2/src/dataread.cpp definitions the port replaced, so they
-// report success without fetching anything.
+// sceCdRead is the plain sector read the drive once served. Every ps2/src/dataread.cpp body that
+// called it is replaced by port/src/dataread.cpp (which reads through cdvd::ReadAt), so nothing on
+// the host reaches it; it aborts rather than pretend a fetch that never happened. The CD streaming
+// group below is the read path the port actually uses.
 
 namespace {
 
@@ -114,7 +115,11 @@ int sceCdSeek(u_int lsn) {
 }
 
 int sceCdRead(u_int lsn, u_int sectors, void *buffer, sceCdRMode *mode) {
-    return 1;
+    (void) lsn;
+    (void) sectors;
+    (void) buffer;
+    (void) mode;
+    PS2_UNIMPLEMENTED();
 }
 
 int sceCdSync(int mode) {
