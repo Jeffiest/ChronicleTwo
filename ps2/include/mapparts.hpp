@@ -26,7 +26,12 @@
  * Number of material colours that one map part can override.
  *
  */
-#define MAP_PARTS_COLOR_MAX 4
+// clang-format off
+enum {
+    MAP_PARTS_COLOR_MAX = 4, /**< Material colours one map part can override. */
+};
+
+// clang-format on
 
 /**
  *
@@ -72,7 +77,7 @@ public:
     CFuncPointMngr    func_point_mngr;            /**< Function points that come with the part. */
     s32               no_light;                   /**< Non-zero draws the part with the scene's lights cleared, lit only by its own light points. */
     s32               no_plight;                  /**< Non-zero draws the part with point lights turned off. */
-    u32               move_flag;                  /**< Four flags that the map's MOVE_FLAG command sets, read by the automap. */
+    u32               move_flag;                  /**< Sides of the part's automap cell that walls close, AUTOMAP_WALL bits set by the map's MOVE_FLAG command. */
     CList<CObjAnime> *anime_list;                 /**< First node of the list of animations the function points drive. */
     s32               group_no;                   /**< Group of parts the placement belongs to, or -1. */
     s32               in_screen;                  /**< Non-zero while the part is on screen this frame. */
