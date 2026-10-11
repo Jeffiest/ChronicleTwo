@@ -37,19 +37,22 @@ void Mixer::Reset() {
         voice.envelope.Kill();
     }
     for (Port &port : ports_) {
-        port.bank.reset();
+        port.banks.clear();
+        port.bank_index = -1;
         port.sequencer.SetSequence(nullptr);
         port.channels = {};
         port.volume = 0;
         port.attribute = 0;
         port.effect_volume = 127;
         port.effect_pan = 64;
+        port.effect_pitch = 8192;
     }
     for (Reverb &reverb : reverbs_) {
         reverb.SetMode(0);
         reverb.SetDepth(0.0f);
     }
     stereo_ = true;
+    DropIdleBanks();
 }
 
 void Mixer::BindBank(int port, std::shared_ptr<const Bank> bank) {
@@ -57,16 +60,30 @@ void Mixer::BindBank(int port, std::shared_ptr<const Bank> bank) {
         return;
     }
     std::lock_guard lock(mutex_);
-    // A voice reads its bank's decoded samples; rebinding must not leave one pointing into a
-    // bank about to be freed.
-    for (Voice &voice : synth_.Voices()) {
-        if (voice.active && voice.port == port) {
-            voice.active = false;
-            voice.envelope.Kill();
-        }
+    Port          &state = ports_[port];
+    if (bank == nullptr) {
+        state.bank_index = -1;
+        return;
     }
-    ports_[port].bank = std::move(bank);
-    ports_[port].channels = {};
+    DropIdleBanks();
+    // A bank the port already holds is only reselected. The switch never stops sounding voices:
+    // each voice holds the bank its sample came from, and a key-on resolves against the selection
+    // the game bound just before it.
+    auto found = std::find(state.banks.begin(), state.banks.end(), bank);
+    if (found != state.banks.end()) {
+        state.bank_index = static_cast<int>(found - state.banks.begin());
+        return;
+    }
+    state.banks.push_back(std::move(bank));
+    state.bank_index = static_cast<int>(state.banks.size()) - 1;
+}
+
+const std::shared_ptr<const Bank> &Mixer::SelectedBank(const Port &port) const {
+    static const std::shared_ptr<const Bank> none;
+    if (port.bank_index < 0 || port.bank_index >= static_cast<int>(port.banks.size())) {
+        return none;
+    }
+    return port.banks[port.bank_index];
 }
 
 void Mixer::SetSequence(int port, std::shared_ptr<const SqFile> file) {
@@ -100,8 +117,21 @@ void Mixer::Stop(int port) {
         return;
     }
     std::lock_guard lock(mutex_);
-    ports_[port].sequencer.Stop();
+    Port          &state = ports_[port];
+    state.sequencer.Stop();
     ForVoices([&](const Voice &v) { return v.port == port; }, [&](Voice &v) { ReleaseVoice(v); });
+    // Keep only the selected bank: the game's loaders drop their own references after a Stop and
+    // bind again whenever they want a bank, and voices in release still hold theirs.
+    if (state.bank_index >= 0 && state.bank_index < static_cast<int>(state.banks.size())) {
+        std::shared_ptr<const Bank> selected = std::move(state.banks[state.bank_index]);
+        state.banks.clear();
+        state.banks.push_back(std::move(selected));
+        state.bank_index = 0;
+    } else {
+        state.banks.clear();
+        state.bank_index = -1;
+    }
+    DropIdleBanks();
 }
 
 bool Mixer::IsPlaying(int port) const {
@@ -198,6 +228,8 @@ void Mixer::HsMessage(int port, std::span<const std::uint8_t> message) {
             p.effect_volume = message[3] & 0x7F;
         } else if (message[1] == 1) {
             p.effect_pan = message[3] & 0x7F;
+        } else if (message[1] == 2 && message.size() >= 5) {
+            p.effect_pitch = (message[3] & 0x7F) | ((message[4] & 0x7F) << 7);
         }
         return;
     }
@@ -225,6 +257,12 @@ void Mixer::HsMessage(int port, std::span<const std::uint8_t> message) {
         case 0x01:
             ForVoices(match, [&](Voice &v) { v.effect_pan = value; });
             break;
+        case 0x02: {
+            // A 14-bit bend, centred at 8192, as the seseq player sends it (sndCSeSeq::SendPitch).
+            const int pitch = value | ((message.size() > 6 ? message[6] & 0x7F : 0) << 7);
+            ForVoices(match, [&](Voice &v) { v.effect_pitch = pitch; });
+            break;
+        }
         default:
             break;
     }
@@ -240,6 +278,14 @@ void Mixer::ForVoices(Match match, Action action) {
     for (Voice &voice : synth_.Voices()) {
         if (voice.active && match(voice)) {
             action(voice);
+        }
+    }
+}
+
+void Mixer::DropIdleBanks() {
+    for (Voice &voice : synth_.Voices()) {
+        if (!voice.active) {
+            voice.bank.reset();
         }
     }
 }
@@ -299,6 +345,10 @@ void Mixer::Controller(Port &port, int channel, int controller, int value) {
     Channel &state = port.channels[channel];
     auto     on_channel = [&](const Voice &v) { return v.port == port.index && !v.effect && v.channel == channel; };
     switch (controller) {
+        case 0:
+            // Bank select. The port's bank comes from BindBank, which the game's effect path sends
+            // before every key-on (sound.cpp's PrepareEffectPort), so nothing selects here.
+            break;
         case 6:
             if (state.rpn == 0) {
                 state.bend_range = value;
@@ -350,13 +400,14 @@ void Mixer::Controller(Port &port, int channel, int controller, int value) {
 }
 
 void Mixer::NoteOn(Port &port, int channel, int note, int velocity) {
-    if (port.bank == nullptr) {
+    const std::shared_ptr<const Bank> &bank = SelectedBank(port);
+    if (bank == nullptr) {
         return;
     }
     ForVoices([&](const Voice &v) { return v.port == port.index && !v.effect && v.channel == channel && v.note == note; },
               [&](Voice &v) { ReleaseVoice(v); });
     std::array<Layer, kMaxLayers> layers;
-    const int                     count = port.bank->Resolve(port.channels[channel].program, note, velocity, layers);
+    const int                     count = bank->Resolve(port.channels[channel].program, note, velocity, layers);
     if (count == 0) {
         Trace("  program %d note %d velocity %d: no layer", port.channels[channel].program, note, velocity);
     }
@@ -377,14 +428,15 @@ void Mixer::EffectOn(Port &port, int id, int number, int velocity) {
     const int program = port.channels[0].program;
     ForVoices([&](const Voice &v) { return v.port == port.index && v.effect && v.program == program && v.effect_id == id && v.effect_no == number; },
               [&](Voice &v) { ReleaseVoice(v); });
-    if (port.bank == nullptr) {
+    const std::shared_ptr<const Bank> &bank = SelectedBank(port);
+    if (bank == nullptr) {
         return;
     }
     std::array<Layer, kMaxLayers> layers;
     int                           note = id;
-    int                           count = port.bank->Resolve(program, id, velocity, layers);
+    int                           count = bank->Resolve(program, id, velocity, layers);
     if (count == 0) {
-        count = port.bank->ResolveSplit(program, id, velocity, layers);
+        count = bank->ResolveSplit(program, id, velocity, layers);
         note = -1;
     }
     Voice prototype;
@@ -395,15 +447,17 @@ void Mixer::EffectOn(Port &port, int id, int number, int velocity) {
     prototype.effect_no = number;
     prototype.effect_volume = port.effect_volume;
     prototype.effect_pan = port.effect_pan;
+    prototype.effect_pitch = port.effect_pitch;
     for (int i = 0; i < count; i++) {
         StartLayer(port, layers[i], note < 0 ? layers[i].sample->base_note : note, velocity, prototype);
     }
 }
 
 void Mixer::StartLayer(Port &port, const Layer &layer, int note, int velocity, Voice &prototype) {
-    const HdProgram &program = *port.bank->Program(prototype.program);
-    const HdSplit   &split = *layer.split;
-    const HdSample  &sample = *layer.sample;
+    const std::shared_ptr<const Bank> &bank = SelectedBank(port);
+    const HdProgram                   &program = *bank->Program(prototype.program);
+    const HdSplit                     &split = *layer.split;
+    const HdSample                    &sample = *layer.sample;
 
     // Bits 4 and 5 of the sample's attribute pin it to core 0 or 1; neither or both let the synth
     // take the core with more free voices.
@@ -419,6 +473,8 @@ void Mixer::StartLayer(Port &port, const Layer &layer, int note, int velocity, V
             break;
     }
     prototype.mix = sample.spu_attr & kMixAll;
+    // The voice holds the bank so the decoded samples it plays cannot be freed under it.
+    prototype.bank = bank;
     Voice &voice = synth_.Allocate(prototype.Core());
     voice = prototype;
     voice.note = note;
@@ -433,7 +489,7 @@ void Mixer::StartLayer(Port &port, const Layer &layer, int note, int velocity, V
     voice.bend_high = split.bend_high;
     if (TraceEnabled()) {
         Trace("  program %d note %d -> sample %d (vag %d, %d Hz, base %d%s): %+.2f st, gain %.3f, core %d",
-              prototype.program, note, static_cast<int>(&sample - port.bank->Header().samples.data()),
+              prototype.program, note, static_cast<int>(&sample - bank->Header().samples.data()),
               sample.vag, layer.rate, sample.base_note, layer.vag->loops ? ", loops" : "", voice.base_pitch,
               voice.base_gain, voice.core);
     }
@@ -453,6 +509,9 @@ void Mixer::UpdateVoices() {
         if (voice.effect) {
             gain *= voice.effect_volume * kVolumeUnit;
             pan += voice.effect_pan;
+            // The FD 2 bend is the driver's 14-bit effect pitch, centred at 8192. Its range is not
+            // recorded anywhere host-side; two semitones matches the banks' default split range.
+            pitch += (voice.effect_pitch - 8192) / 8192.0 * 2.0;
         } else {
             const Channel &channel = port.channels[voice.channel];
             gain *= channel.volume * kVolumeUnit * channel.expression * kVolumeUnit;
