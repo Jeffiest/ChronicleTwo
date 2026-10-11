@@ -2,10 +2,22 @@
 
 #include <cstdint>
 #include <cstring>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 #include "visualmotion.hpp"
+
+namespace {
+
+// A motion model's face indices, kept per model. They cannot go back into the model's arena: that is
+// sized for retail's layout, the copy overran it, and CreateFace does not check Alloc for failure.
+// Loading a model again at the same address replaces its set, so the store stays bounded.
+std::unordered_map<const void *, std::vector<std::unique_ptr<int[]>>> kept_indices;
+
+} // namespace
 
 // Retail keeps the packet buffer's address in an int and hands the truncated value straight back
 // in as the packet pointer; on the host that address lands low. The address stays a pointer here;
@@ -27,6 +39,7 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
 
     work->stack_used = 0;
     work->lock = 0;
+    kept_indices[this].clear();
 
     if (textures == NULL) {
         textures = &mgTexManager;
@@ -73,12 +86,11 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
         // Retail rebuilds each part's indices in scratch and drops them once the packet exists; the host
         // draws from them later, by which time the next part and the skin weights have overwritten scratch.
         if (packet->index_num > 0) {
-            u_long128 *keep = memory->Alloc(packet->index_num / 4 + 1);
+            auto keep = std::make_unique<int[]>(packet->index_num);
 
-            if (keep != NULL) {
-                std::memcpy(keep, packet->index, (size_t) packet->index_num * sizeof(int));
-                packet->index = (int *) keep;
-            }
+            std::memcpy(keep.get(), packet->index, (size_t) packet->index_num * sizeof(int));
+            packet->index = keep.get();
+            kept_indices[this].push_back(std::move(keep));
         }
     }
 
