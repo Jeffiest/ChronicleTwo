@@ -25,7 +25,7 @@
 
 ## Matching source
 - `nget` matches as a plain `for (int i = 0; i < 12; i++) { seed = seed * 0x5D588B65 + 1;
-  sum += seed / 4294967296.0f; }` with `seed` as `u32`; promoted.
+  sum += seed / 4294967296.0f; }` with `seed` as `u32`.
 - `abs(float)`: `return value < 0.0f ? -value : value;` matches the retail code exactly.
   MWCC leaves the branch delay slot empty and moves the selected value to the return register
   in the `jr` delay slot. The equivalent `if` form moves it earlier and does not match.

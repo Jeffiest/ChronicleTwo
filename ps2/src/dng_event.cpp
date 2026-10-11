@@ -1281,11 +1281,11 @@ int SearchMapFlatPosition(sceVu0FVECTOR out_pos, CAutoMapGen *map_gen) {
             for (int i = 0; i < hit_num; i++) {
                 short area_kind = polys[hit_polys[i]].area_kind;
 
-                if (area_kind == 0xB) {
+                if (area_kind == COL_AREA_NO_PLACE) {
                     break;
                 }
 
-                if (area_kind == 5) {
+                if (area_kind == COL_AREA_FLAT) {
                     sceVu0CopyVector(from, hit_points[i]);
                     sceVu0CopyVector(to, hit_points[i]);
                     from[1] += 10.0f;

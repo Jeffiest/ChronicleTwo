@@ -506,24 +506,11 @@ static MONSTER_REACT react_tbl[14] = {
     {DAMAGE_KIND_ITEM,          DNG_PRACTICE_ACTION_ITEM,         1, 0},
     {DAMAGE_KIND_RIDEPOD_PUNCH, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_RIDEPOD_SWORD, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
-    {14,                        DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
+    {DAMAGE_KIND_RIDEPOD_OTHER, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_RIDEPOD_GUN,   DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_MONSTER,       DNG_PRACTICE_ACTION_MONSTER,      1, 0},
-    {21,                        DNG_PRACTICE_ACTION_MONSTER,      1, 0},
+    {DAMAGE_KIND_MONSTER_OTHER, DNG_PRACTICE_ACTION_MONSTER,      1, 0},
     {-1,                        0,                                0, 0}
-};
-
-/**
- *
- * Reactions that CheckDamage picks for a hit on a monster.
- *
- */
-enum MONSTER_HIT_REACTION {
-    MONSTER_HIT_NONE = 1,   /**< The hit leaves the monster as it is. */
-    MONSTER_HIT_DAMAGE = 2, /**< The hit is guarded or may stagger the monster. */
-    MONSTER_HIT_STATUS = 3, /**< The hit lands while the monster is greyed out, or greys it out. */
-    MONSTER_HIT_KNOCK = 4,  /**< The hit knocks the monster over. */
-    MONSTER_HIT_DEAD = 6    /**< The hit kills the monster. */
 };
 
 static int _MONSTER_NAME(SPI_STACK *stack, int argument_count);
@@ -2216,7 +2203,7 @@ void CMonsterMan::CheckDamage() {
 
             switch (prim->param->kind) {
                 case DAMAGE_KIND_MONSTER:
-                case 21:
+                case DAMAGE_KIND_MONSTER_OTHER:
                 case DAMAGE_KIND_ITEM:
                 case DAMAGE_KIND_MAX_MELEE:
                     se_no = 0x1C;
@@ -2231,7 +2218,7 @@ void CMonsterMan::CheckDamage() {
                 case DAMAGE_KIND_RIDEPOD_PUNCH:
                     se_no = 0x19;
                     break;
-                case 14:
+                case DAMAGE_KIND_RIDEPOD_OTHER:
                 case DAMAGE_KIND_RIDEPOD_GUN:
                 case DAMAGE_KIND_MONICA_MAGIC:
                 case DAMAGE_KIND_LASER_GUN:

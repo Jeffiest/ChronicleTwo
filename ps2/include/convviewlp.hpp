@@ -61,6 +61,16 @@ enum SAVEDATA_CONVERT_TYPE {
 
 /**
  *
+ * Sizes of the directory listings that the conversion reads.
+ *
+ */
+enum SAVEDATA_CONVERT_SIZE {
+    SAVEDATA_CONVERT_FILE_MAX = 32, /**< Source save directories that the file list holds. */
+    SAVEDATA_CONVERT_DIR_MAX = 64,  /**< Directory entries that one listing of the memory card reads. */
+};
+
+/**
+ *
  * Work allocation holding one save image during directory conversion.
  *
  */
