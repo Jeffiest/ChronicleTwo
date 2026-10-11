@@ -93,7 +93,7 @@ These rows were accepted through the canonical object comparison. They establish
 the listed functions' bytes and resolved relocations, not whole-unit matching
 when other source or data-layout failures remain.
 
-`mg_shadow`, `mg_tanime` and `mg_texture` are compiled with `-O2,p`, `password` with `-O0` and
+`mg_dataset`, `mg_shadow`, `mg_tanime` and `mg_texture` are compiled with `-O2,p`, `password` with `-O0` and
 `scriptinterpreter` with `-inline off` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`). Each
 setting reproduces the whole unit's object without the pragmas it replaces; the other `mg_*`
 units differ at level 2.
