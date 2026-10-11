@@ -35,7 +35,6 @@ static EditVector at_1837__2 = {
 };
 
 const int kRiverPolyFlag = 0x10;
-const int kEditPartsPolyFlag = 0x1000;
 const int kMaxInfoId = 0x100;
 const int kInfoFixedFlag = 0x1;
 const int kInfoRiverRelatedFlag = 0x80000;
@@ -317,7 +316,7 @@ int CEditMap::GetPoly(int mode, CCPoly *polys, mgVu0FBOX &box, int max) {
         count = part->GetPoly(mode, polys, box, max);
 
         for (j = 0; j < count; j++, polys++) {
-            polys->parts_no = ((s16) (u16) i) | kEditPartsPolyFlag;
+            polys->parts_no = ((s16) (u16) i) | CCPOLY_PARTS_EDIT;
         }
 
         max -= count;

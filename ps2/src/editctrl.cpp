@@ -552,8 +552,8 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
         if (GetFootPoly(ground_query, 80.0f, &ground_poly, ground_position, polys, poly_count, 0)) {
             sceVu0Normalize(ground_normal, ground_poly.normal);
 
-            if (!(ground_normal[1] <= 0.6f) && (ground_poly.parts_no & 0x1000)) {
-                parts = edit_map->GetePlaceParts(ground_poly.parts_no & 0xFFF);
+            if (!(ground_normal[1] <= 0.6f) && (ground_poly.parts_no & CCPOLY_PARTS_EDIT)) {
+                parts = edit_map->GetePlaceParts(ground_poly.parts_no & CCPOLY_PARTS_SLOT_MASK);
 
                 if (parts != NULL && parts->info != NULL && (parts->info->attr & 0x800)) {
                     ignore_mask = 0x10;
