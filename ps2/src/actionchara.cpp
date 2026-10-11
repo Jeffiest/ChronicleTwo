@@ -3693,7 +3693,7 @@ void CActionChara::Step() {
 
         if (lock_on != 0 && dir_gun != 0) {
             monster_index = target_no - MONSTER_ACTIVE_MAX;
-            ActiveMonster->active[monster_index]->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, target_pos);
+            ActiveMonster->active[monster_index]->GetEntryObjectPos(0, target_pos);
             sceVu0SubVector(gun_pos, target_pos, gun_pos);
             sceVu0CopyVector(target_pos, gun_pos);
             target_pos[3] = 1.0f;
