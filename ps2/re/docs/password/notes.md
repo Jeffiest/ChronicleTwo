@@ -80,15 +80,13 @@ No corresponding `password` unit was found in Dark Cloud 1.
 - ConvertBin/TxtToBin copy bytes between the `unsigned long` and the byte buffer through the
   value's address (`((u8*)&value)[i]`), little-endian.
 
-## Compiler flag cleanup
+## Compiler flags
 
-The two local `divbyzerocheck on`/`reset` pairs around `EncodeBinData` and
-`DecodeBinData` are redundant now that the PS2 compiler command enables the
-check for the whole unit. Removing both pairs leaves every section and symbol
-in the unit's object diff unchanged; both functions remain exact matches.
+The PS2 compiler command enables `divbyzerocheck` for the whole unit, so `EncodeBinData` and
+`DecodeBinData` need no local `divbyzerocheck` pragmas; both functions match with the unit-level setting.
 
 ## Compiler options
 
-The unit is compiled with `-O0` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
-of the game's `-O3,p`. With that option and none of its former `optimization_level 0` / `schedule off` pragmas the object is
-byte-identical to the build that used them.
+The unit is compiled with `-O0` (`UNIT_CC_FLAGS_password` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. The source has no optimization or scheduling pragmas; with that option alone the
+object is byte-identical to one built with `optimization_level 0` and `schedule off` pragmas.
