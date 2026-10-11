@@ -51,9 +51,10 @@ profile evaluates binary32 positive zero first within
 source-level double-to-float casts.
 
 ### Control (nested struct, size 0xC)
-MoveCamera(CPadControl*) builds it on the stack: +0 `rot` (analog 6 * -0.05, or +/-0.05
-from buttons 3/2, negated by rot_reverse), +4 `height` (analog 7 * -2.0), +8 `rot_back`
-(button 4, or PAD_BTN_CANCEL). With pad == NULL all zero.
+MoveCamera(CPadControl*) builds it on the stack: +0 `rot` (PAD_ANALOG_RIGHT_X_2 * -0.05, or
++/-0.05 from PAD_BTN_L1_HELD/PAD_BTN_R1_HELD, negated by rot_reverse), +4 `height`
+(PAD_ANALOG_RIGHT_Y_2 * -2.0), +8 `rot_back` (PAD_BTN_L2, or PAD_BTN_CANCEL). With pad == NULL
+all zero.
 
 ### Behaviour notes for MoveCamera(Control*)
 - next_ref = follow + follow_offset; horizontal delta to next_pos is pushed in/out to
