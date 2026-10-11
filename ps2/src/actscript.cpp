@@ -1185,11 +1185,11 @@ int _SET_ACCUME_FLAG(RS_STACKDATA *stack, int argc) {
     int mode = GetStackInt(stack);
 
     switch (mode) {
-        case 1: {
+        case ACCUME_EFFECT_MODE_START: {
             int            i;
             ACCUME_EFFECT *effect = action_info.chara->accume_effect;
             effect->frame = action_info.chara->accume.frame;
-            effect->mode = 1;
+            effect->mode = ACCUME_EFFECT_MODE_START;
             effect->unk_314 = 0;
             effect->unk_318 = 0;
             effect->unk_320 = 0;
@@ -1207,7 +1207,7 @@ int _SET_ACCUME_FLAG(RS_STACKDATA *stack, int argc) {
             action_info.chara->accume.active = true;
             break;
         }
-        case 0:
+        case ACCUME_EFFECT_MODE_OFF:
             action_info.chara->accume_effect->mode = mode;
             action_info.chara->acumu_pad = 0;
             action_info.chara->accume.active = false;
@@ -1215,7 +1215,7 @@ int _SET_ACCUME_FLAG(RS_STACKDATA *stack, int argc) {
         default:
             action_info.chara->accume_effect->mode = mode;
 
-            if (mode == 3 || mode == 4) {
+            if (mode == ACCUME_EFFECT_MODE_END || mode == ACCUME_EFFECT_MODE_END_ALT) {
                 action_info.chara->accume.active = false;
             }
 

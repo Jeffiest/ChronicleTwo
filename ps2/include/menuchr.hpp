@@ -1677,12 +1677,12 @@ void MonsterBookDraw();
  *
  */
 struct MENU_LOAD_INFO {
-    s8 mode;            /**< Where the loaded models go. @see MENU_LOAD_MODE */
-    s8 alternate_model; /**< Non-zero to load the town model of Max or Monica instead of the dungeon one. */
-    s8 load_all;        /**< Non-zero to read every slot at once rather than one slot a frame. */
-    s8 chara_no;        /**< Character being loaded. */
-    s8 request_phase;   /**< Slot asked for, or below zero for each slot in turn. */
-    s8 load_phase;      /**< Slot being read when the slots are read in turn. @see MENU_CHARA_SLOT */
+    s8 mode;          /**< Where the loaded models go. @see MENU_LOAD_MODE */
+    s8 town_model;    /**< Non-zero to load the town model of Max or Monica instead of the dungeon one. */
+    s8 load_all;      /**< Non-zero to read every slot at once rather than one slot a frame. */
+    s8 chara_no;      /**< Character being loaded. */
+    s8 request_phase; /**< Slot asked for, or below zero for each slot in turn. */
+    s8 load_phase;    /**< Slot being read when the slots are read in turn. @see MENU_CHARA_SLOT */
     s8 target_flags;
     s8 update_scene; /**< Non-zero when loading also updates the main scene's characters and stacks. */
 };

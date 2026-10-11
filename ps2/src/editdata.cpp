@@ -526,18 +526,18 @@ int CEditMap::CultureAnalyzeParts(int no, int cpoint_no) {
     }
 
     switch (parts->info->cpoint[0]) {
-        case 6:
+        case EDIT_CULTURE_KIND_ALONE:
             return GetCulturePoint(parts, cpoint_no);
         default:
             return 0;
-        case 1: {
+        case EDIT_CULTURE_KIND_MAIN: {
             int total = GetCulturePoint(parts, cpoint_no);
             int count = GetTerritoryParts(no, related, 0x200);
 
             for (int i = 0; i < count; i++) {
                 CEditParts *other = GetePlaceParts(related[i]);
 
-                if (other != NULL && other->info != NULL && other->info->cpoint[0] == 2) {
+                if (other != NULL && other->info != NULL && other->info->cpoint[0] == EDIT_CULTURE_KIND_TERRITORY) {
                     total += GetCulturePoint(other, cpoint_no);
                 }
             }
@@ -549,8 +549,8 @@ int CEditMap::CultureAnalyzeParts(int no, int cpoint_no) {
 
                 if (other != NULL && other->info != NULL) {
                     switch (other->info->cpoint[0]) {
-                        case 3:
-                        case 4:
+                        case EDIT_CULTURE_KIND_CHILD:
+                        case EDIT_CULTURE_KIND_CHILD_2:
                             total += GetCulturePoint(other, cpoint_no);
                             break;
                     }

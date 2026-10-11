@@ -322,7 +322,7 @@ grows to 0x538 with 118 differences. The direct scissor rectangle yields retail'
 ## Common-board constants
 
 CommonBoardDraw's integer casts convert floating positions, blink values
-and dimensions. SetSpriteEnv's 0/1 mode has no established shared enum;
+and dimensions. SetSpriteEnv's mode uses MENU_SPRITE_ENV;
 line->kind indexes the two-entry on/off board table. Other literals are
 screen/texture coordinates and color channels. Its declared retail body
 is 0xDD8 at 0x224F10.

@@ -117,7 +117,7 @@ by the compiler.
 - CreateFacePacket: GIF tag is a stack `sceGifTag` cleared by `sq $0`, then EOP=1, PRE=1 set BEFORE the
   `type & 7 == 3` test; then PRIM 0x5D (TRIFAN, IIP, TME, ABE), NREG 2, REGS RGBAQ/XYZF2. Word 11 of
   each batch header is never written. `vertex_num` of a shadow mgCFace is the triangle count
-  (face_num / 3), each "vertex" holding 3 position indices (source stride 9 ints per triangle).
+  (vertex_num / 3), each "vertex" holding 3 position indices (source stride 9 ints per triangle).
 - CreateFace allocates `Alloc(5)` for the 0x30 mgCFace and `Alloc(0x12)` for the 0x20 mgFACE_GROUP
   (larger than mgCVisualMDT's 3 / 4); group `vu_program = 1` (MG_VU_PROG_SHADOW, written as a literal
   because mglib.hpp cannot be included with mg_drawenv.hpp: duplicate mgFOG_PARAM, see fixlist).

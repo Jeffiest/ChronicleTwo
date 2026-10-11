@@ -906,7 +906,7 @@ void CSphida::Draw() {
     SV_CONFIG_OPTION  *config = DngSaveData->GetConfig();
 
     if (DngStatus.mode != DNG_STATUS_FIELD && minimap_flag == 1) {
-        if (config->map != 0) {
+        if (config->map != SV_CONFIG_MAP_OFF) {
             tex_man->ReloadTexture(0x66, (sceVif1Packet *) NULL);
             CCharacter2 *player = DngMainScene->GetCharacter(0);
 
@@ -976,7 +976,7 @@ void CSphida::Draw() {
     } else if (omake_mode == 1 && DngStatus.mode == DNG_STATUS_FIELD) {
         DNG_BATTLE_AREA *area = &DngMainScene->battle_area;
 
-        if (!area->script.running && !(area->pause_flag & DNG_PAUSE_MINIMAP) && config->map != 0) {
+        if (!area->script.running && !(area->pause_flag & DNG_PAUSE_MINIMAP) && config->map != SV_CONFIG_MAP_OFF) {
             float player_pos[4];
             tex_man->ReloadTexture(0x66, (sceVif1Packet *) NULL);
             CCharacter2 *player = DngMainScene->GetCharacter(0);

@@ -2091,7 +2091,7 @@ int CBaseMenuClass::IsTrush(int select_key, int push_button) {
 
                     MenuCommonInfo->InitHaveData();
                     ask_para.item->DeleteNum(MenuTrushNum);
-                    MenuSePlay(7);
+                    MenuSePlay(SYSTEM_SE_ITEM_DISCARD);
                     CheckEnableHaveItemNum();
                     step += 1;
                     return 2;
@@ -7666,10 +7666,10 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
         CMenuItemInfoPt->equipped_model_no = MenuUserParam.chara[chara_no]->equip[0].GetModelNo();
     }
 
-    MenuLoadInfo.alternate_model = false;
+    MenuLoadInfo.town_model = false;
 
     if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-        MenuLoadInfo.alternate_model = true;
+        MenuLoadInfo.town_model = true;
         CMenuItemInfoPt->equipped_model_no = -1;
     }
 
@@ -12074,10 +12074,10 @@ int MenuItemKey() {
                 MenuLoadInfo.load_all = false;
                 MenuLoadInfo.load_phase = 0;
                 MenuLoadInfo.request_phase = -1;
-                MenuLoadInfo.alternate_model = false;
+                MenuLoadInfo.town_model = false;
 
                 if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-                    MenuLoadInfo.alternate_model = true;
+                    MenuLoadInfo.town_model = true;
                 }
 
                 {

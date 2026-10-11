@@ -246,31 +246,6 @@ struct aqua_param_icon {
 
 /**
  *
- * Short save flags of the fish race and the fishing tournament.
- *
- */
-enum GYORACE_SHORT_FLAG {
-    GYORACE_SHORT_FLAG_TOUR_COUNT = 0x15,  /**< Fishing tournaments held, which picks the prize group of the next. */
-    GYORACE_SHORT_FLAG_WINS_CLASS0 = 0x16, /**< Wins, up to two, in the first race class, which pick its prize group. */
-    GYORACE_SHORT_FLAG_WINS_CLASS1 = 0x17, /**< Wins, up to two, in the second race class. */
-    GYORACE_SHORT_FLAG_WINS_CLASS2 = 0x18, /**< Wins, up to two, in the third race class. */
-    GYORACE_SHORT_FLAG_WINS_CLASS3 = 0x19, /**< Wins, up to two, in the fourth race class. */
-};
-
-/**
- *
- * Bits of a fish's flags marking the race classes that it has won.
- *
- */
-enum GYORACE_FISH_FLAG {
-    GYORACE_FISH_FLAG_WON_CLASS0 = 0x04, /**< Won the first race class. */
-    GYORACE_FISH_FLAG_WON_CLASS1 = 0x08, /**< Won the second race class. */
-    GYORACE_FISH_FLAG_WON_CLASS2 = 0x10, /**< Won the third race class. */
-    GYORACE_FISH_FLAG_WON_CLASS3 = 0x20, /**< Won the fourth race class. */
-};
-
-/**
- *
  * Bits of the race classes that the chosen fish may enter, as MenuGyoraceFishSelKey reports them in MenuArg.result[1].
  *
  */
@@ -6828,15 +6803,15 @@ int MenuGyoraceFishSelKey() {
                 selected = &fish[MenuArg.result[0]];
 
                 if (selected != NULL) {
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS0)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_0)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_0;
                     }
 
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS1)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_1)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_1;
                     }
 
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS2)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_2)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_2;
                     }
 
@@ -6960,25 +6935,25 @@ void SetGyoRaceRanking(int rank) {
     }
 
     if (rank == 0 && fish != NULL) {
-        flag_no = GYORACE_SHORT_FLAG_WINS_CLASS0;
+        flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS0;
 
         if (race_class == 0) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS0;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_0;
         }
 
         if (race_class == 1) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS1;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS1;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_1;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS1;
         }
 
         if (race_class == 2) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS2;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS2;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_2;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS2;
         }
 
         if (race_class == 3) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS3;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS3;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_3;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS3;
         }
 
         wins = save_data->GetShortFlag(flag_no) + 1;
@@ -7228,7 +7203,7 @@ int RefreshFishPrize() {
     save_data = GetSaveData();
 
     if (FishTournamentGoodsType == 0) {
-        for (race_class = 0, flag_no = GYORACE_SHORT_FLAG_WINS_CLASS0; race_class < 4; race_class++) {
+        for (race_class = 0, flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS0; race_class < 4; race_class++) {
             s16 wins = save_data->GetShortFlag(flag_no);
             group = FishTournamentGoods + race_class * 3 + wins;
             flag_no++;
@@ -7247,7 +7222,7 @@ int RefreshFishPrize() {
         return 0;
     }
 
-    group = &FishTournamentGoods[save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT)];
+    group = &FishTournamentGoods[save_data->GetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT)];
     save_fish_prize_list = group->prizes;
     fish_save_present[0][0] = save_fish_prize_list->rank[0];
     fish_save_present[0][1] = save_fish_prize_list->rank[1];
@@ -7295,7 +7270,7 @@ void TuriTourCount() {
         return;
     }
 
-    count = save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT) + 1;
+    count = save_data->GetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT) + 1;
     last_tour = 9;
 
     if (save_data->GetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED) != 0) {
@@ -7307,7 +7282,7 @@ void TuriTourCount() {
         save_data->SetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED, count);
     }
 
-    save_data->SetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT, count);
+    save_data->SetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT, count);
 }
 
 /**

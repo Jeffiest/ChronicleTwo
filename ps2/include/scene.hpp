@@ -73,7 +73,7 @@ enum SCENE_DATA_KIND {
 /**
  *
  * Status flags of a scene data slot shared by every kind of slot; the
- * higher bits are given meanings by the code that uses each kind.
+ * higher bits are given meanings by the code that uses each kind (SCENE_CHARA_STATUS for characters).
  *
  */
 enum SCENE_DATA_STATUS {

@@ -200,6 +200,10 @@ enum BREEDFISH_SEX {
 enum BREEDFISH_FLAGS {
     BREEDFISH_FLAG_RAISED = 0x1,              /**< Marks a fish fed or bred in the aquarium; its weight is shown and the fishing tournament refuses it. */
     BREEDFISH_FLAG_ELECTRIC = 0x2,            /**< Marks an electric fish, which is never rubbish. */
+    BREEDFISH_FLAG_WON_CLASS_0 = 0x04,        /**< Marks a fish that has won the first race class. */
+    BREEDFISH_FLAG_WON_CLASS_1 = 0x08,        /**< Marks a fish that has won the second race class. */
+    BREEDFISH_FLAG_WON_CLASS_2 = 0x10,        /**< Marks a fish that has won the third race class. */
+    BREEDFISH_FLAG_WON_CLASS_3 = 0x20,        /**< Marks a fish that has won the fourth race class. */
     BREEDFISH_FLAG_FEED_LIMIT_REACHED = 0x80, /**< Marks a fish that has used up its feedings and no longer eats. */
 };
 

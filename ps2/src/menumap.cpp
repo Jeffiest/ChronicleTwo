@@ -804,7 +804,7 @@ int CWorldMapMenu::KeyStep() {
                                 MenuArg.result[2] = select_pos->floor;
                             }
                         } else {
-                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(0x2BC) != 0) {
+                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_S12_REDIRECT) != 0) {
                                 WorldMap_MapNo = SearchMapNo("s34");
                             }
 
