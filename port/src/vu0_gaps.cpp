@@ -297,11 +297,11 @@ int mgInsideScreen(float (*corners)[4], float (*matrix)[4], float *out_max, floa
     return mgClipBoxW(out_max, out_min, render_info->screen_box_max, render_info->screen_box_min);
 }
 
-// Diagnostic: DC_DUMP_DRAWS=1 prints the rectangle each top-level GetDrawRect returns.
+// Diagnostic: DC2_DUMP_DRAWS=1 prints the rectangle each top-level GetDrawRect returns.
 static int LogDrawRect(const mgCFrame *frame, mgVu0FBOX *rect, int visible, int depth) {
-    // Diagnostic: DC_WIDE_DRAWRECT=1 grows every top-level rectangle by 60 pixels, to see whether the outline
+    // Diagnostic: DC2_WIDE_DRAWRECT=1 grows every top-level rectangle by 60 pixels, to see whether the outline
     // composite is cutting parts off.
-    static const bool widen = std::getenv("DC_WIDE_DRAWRECT") != nullptr;
+    static const bool widen = std::getenv("DC2_WIDE_DRAWRECT") != nullptr;
     if (widen && depth == 1 && visible) {
         for (int k = 0; k < 2; k++) {
             rect->max[k] += 60.0f;
@@ -309,7 +309,7 @@ static int LogDrawRect(const mgCFrame *frame, mgVu0FBOX *rect, int visible, int 
         }
     }
 
-    static const bool dump = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    static const bool dump = std::getenv("DC2_DUMP_DRAWS") != nullptr;
     static int        printed;
 
     if (dump && depth == 1 && printed < 600) {

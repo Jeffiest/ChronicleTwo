@@ -30,7 +30,8 @@ It retains fork-master ancestry and does not rewrite master.
   duplicate-symbol suppression in the Windows link.
 - Game-specific rendering, scheduler, SDK, controller, config and storage implementations
   remain native extensions. The SDK ownership list explicitly prevents duplicate shared
-  definitions. Existing save paths and environment names remain compatible.
+  definitions. Original upstream identity and naming are restored: `chronicletwo`,
+  `DC2_*` runtime environment variables, and `CT_*` CMake options/targets.
 
 ## Enforcement and validation
 
@@ -46,9 +47,20 @@ with five prerequisite skips and zero failures. All 26 full and 25 headless nati
 compatibility cases pass, along with eight Python audit/gate fixtures and the checked
 script/menu/photo transformations. The actual PAL loader verifies all 294 stored names.
 Evidence: `E:/Chronicle-Two/logs/redo-{configure,build,compatibility,ctest,local-pal}.log`.
-The executable SHA256 is `5BC5CE2BD9C26CE8C877689635052C5D8FC2FEC1368887270B5976ECD4AB5798`.
-The full and headless compatibility targets use `ct_` names; existing `dc_` aliases
-remain supported by CI and documented commands. `CT_BUILD_TESTS` enables GoogleTest.
+The initial redo executable SHA256 was `5BC5CE2BD9C26CE8C877689635052C5D8FC2FEC1368887270B5976ECD4AB5798`.
+The full and headless compatibility targets use `ct_` names consistently in CI and
+documented commands. `CT_BUILD_TESTS` enables GoogleTest; `CT_TEST_TIMEOUT` controls
+the per-case timeout, including upstream CI's `-DCT_TEST_TIMEOUT=60` setting.
+
+`docs/PC.md`, `port/src/identity.cpp` and the test entry point match upstream exactly.
+The naming review examined removed/replaced upstream lines first; remaining deletions
+replace hardware/bootstrap behavior and leave upstream's general names intact. Current
+implementation status belongs in this integration report and the workspace state files;
+the original PC guide is preserved verbatim. Naming validation: Windows game/GTest build,
+25 headless compatibility cases, eight Python fixtures and CTest (56 passed, five
+prerequisite skips) pass; `CT_TEST_TIMEOUT=60` is used in the configured CTest cases.
+Logs: `naming-{configure,build,ctest}.log`. Current executable SHA256:
+`795BBDC25DE32F4E794C2C1CF66553FCD4218EF7EEDAAC78ECDE4F648E5106A8`.
 
 Items model-memory failure, combat attacks, recording-time capture and voice playback
 remain open. Integration checks do not establish gameplay correctness. No game was

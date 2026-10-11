@@ -5,7 +5,7 @@
 #include "platform/window.hpp"
 
 void GameSetIdentity() {
-    SettingsSetEnvPrefix("DC");
-    PathsConfigure({.app_dir = "chronicle-two", .env_data = "DC_DATA", .env_save = "DC_SAVE"});
-    WindowSetIdentity({.title = "Dark Chronicle", .app_id = "dcdecomp.darkchronicle"});
+    SettingsSetEnvPrefix("DC2");
+    PathsConfigure({.app_dir = "chronicletwo", .env_data = "DC2_DATA", .env_save = "DC2_SAVE"});
+    WindowSetIdentity({.title = "Dark Chronicle", .app_id = "chronicletwo"});
 }

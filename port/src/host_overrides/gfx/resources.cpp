@@ -15,11 +15,11 @@
 
 namespace gfx {
 
-// DC_TRACE_TEXTURES=1: one numbered stderr line per texture create, destroy, slot free, slot reuse and
+// DC2_TRACE_TEXTURES=1: one numbered stderr line per texture create, destroy, slot free, slot reuse and
 // upload retire, shared with the game glue so a dead handle can be traced to whoever released it.
 bool TraceTextures() {
     static const bool on = [] {
-        const char *value = std::getenv("DC_TRACE_TEXTURES");
+        const char *value = std::getenv("DC2_TRACE_TEXTURES");
         return value != nullptr && *value != '\0' && *value != '0';
     }();
     return on;

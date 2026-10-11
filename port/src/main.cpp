@@ -29,7 +29,7 @@
 #include "mainloop_port.hpp"
 #pragma clang diagnostic pop
 
-// DC_CRASH_TRACE=1 installs a handler (crash_trace.cpp) that writes a backtrace on a fault. It lives
+// DC2_CRASH_TRACE=1 installs a handler (crash_trace.cpp) that writes a backtrace on a fault. It lives
 // in its own unit because Windows' headers clash with the game's (macros B/R, struct RECT).
 void InstallCrashTrace();
 
@@ -67,9 +67,9 @@ struct Options {
                  "usage: %s [--data DIR] [--save DIR] [--headless] [--offscreen]\n"
                  "          [--frames N] [--screenshot PATH] [--input FILE]\n"
                  "          [--width W] [--height H] [--jump MODE[:MAP]] [--fast-load]\n"
-                 "  --data DIR         the extracted game data (default: DC_DATA, then ./data, then data/\n"
+                 "  --data DIR         the extracted game data (default: DC2_DATA, then ./data, then data/\n"
                  "                     beside the executable)\n"
-                 "  --save DIR         saves, config.json and the pipeline cache (default: DC_SAVE, then\n"
+                 "  --save DIR         saves, config.json and the pipeline cache (default: DC2_SAVE, then\n"
                  "                     ./save, then save/ beside the executable)\n"
                  "  --headless         render offscreen (SDL's offscreen driver, VK_EXT_headless_surface),\n"
                  "                     no audio output, the game clock unbounded\n"
@@ -77,13 +77,13 @@ struct Options {
                  "  --frames N         stop after N frames of the game's main loop (one frame is one\n"
                  "                     mgEndFrame; the loop checks the budget between frames)\n"
                  "  --screenshot PATH  write the last tick's image to PATH as a PNG on exit\n"
-                 "  --input FILE       drive pad 1 from a script (default: DC_INPUT); see\n"
+                 "  --input FILE       drive pad 1 from a script (default: DC2_INPUT); see\n"
                  "                     platform/input_script.hpp. The script's frames are main-loop frames.\n"
                  "  --width, --height  window size in pixels (default: config.json, then the monitor's)\n"
                  "test hooks:\n"
                  "  --jump MODE[:MAP]  start in title, menu, edit:<map> or dungeon:<map>, skipping the\n"
-                 "                     warm-up (DC_JUMP)\n"
-                 "  --fast-load        cut the loading screens' holds and fades (DC_FAST_LOAD=1); no\n"
+                 "                     warm-up (DC2_JUMP)\n"
+                 "  --fast-load        cut the loading screens' holds and fades (DC2_FAST_LOAD=1); no\n"
                  "                     loading-screen seam yet, a value warns and is ignored\n",
                  program);
     std::exit(kExitUsage);
@@ -156,7 +156,7 @@ void RequireData() {
     }
     if (why != nullptr) {
         std::fprintf(stderr,
-                     "no game data: %s %s; point --data (or DC_DATA) at the extracted disc, the "
+                     "no game data: %s %s; point --data (or DC2_DATA) at the extracted disc, the "
                      "directory holding DATA.HD4 and DATA.DAT\n",
                      root.string().c_str(), why);
         std::exit(kExitNoData);
@@ -221,7 +221,7 @@ bool SetJump(const char *spec) {
 
 void LoadInputScript(const char *path) {
     if (path == nullptr) {
-        path = std::getenv("DC_INPUT");
+        path = std::getenv("DC2_INPUT");
     }
     if (path == nullptr || *path == '\0') {
         return;
@@ -276,16 +276,16 @@ int Screenshot(const char *path) {
 }
 
 // The sound manager starts the output device itself (CSound::Init, sound.cpp), so the driver's
-// only lever is the setting it reads. A headless run wants no device; an explicit DC_AUDIO or
-// DC_AUDIO_WAV from the caller wins.
+// only lever is the setting it reads. A headless run wants no device; an explicit DC2_AUDIO or
+// DC2_AUDIO_WAV from the caller wins.
 void DisableAudioForHeadless() {
-    if (std::getenv("DC_AUDIO") != nullptr || std::getenv("DC_AUDIO_WAV") != nullptr) {
+    if (std::getenv("DC2_AUDIO") != nullptr || std::getenv("DC2_AUDIO_WAV") != nullptr) {
         return;
     }
 #if defined(_WIN32)
-    _putenv_s("DC_AUDIO", "off");
+    _putenv_s("DC2_AUDIO", "off");
 #else
-    setenv("DC_AUDIO", "off", 0);
+    setenv("DC2_AUDIO", "off", 0);
 #endif
 }
 
@@ -299,13 +299,13 @@ PORT_OVERRIDE int main(int argc, char **argv) {
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);
     if (options.jump == nullptr) {
-        options.jump = std::getenv("DC_JUMP");
+        options.jump = std::getenv("DC2_JUMP");
     }
     if (options.jump != nullptr && *options.jump != '\0' && !SetJump(options.jump)) {
         std::fprintf(stderr, "bad --jump: %s (title, menu, edit[:map], dungeon[:map])\n", options.jump);
         std::exit(kExitUsage);
     }
-    const char *fast_load = std::getenv("DC_FAST_LOAD");
+    const char *fast_load = std::getenv("DC2_FAST_LOAD");
     if (options.fast_load || (fast_load != nullptr && *fast_load != '\0' && *fast_load != '0')) {
         std::fprintf(stderr, "--fast-load: no loading-screen seam in this build; holds unchanged\n");
     }

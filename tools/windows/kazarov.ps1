@@ -159,10 +159,10 @@ if ($have -ne $want) {
     exit 1
 }
 
-# Without explicit paths the game would use %LOCALAPPDATA%\chronicle, which the first game's port shares.
+# Keep launch data and saves in the checkout unless explicit paths are provided.
 $gameArgs = @($rest)
-if (-not $env:DC_DATA -and -not @($rest | Where-Object { $_ -like '--data*' })) { $gameArgs += @('--data', $data) }
-if (-not $env:DC_SAVE -and -not @($rest | Where-Object { $_ -like '--save*' })) { $gameArgs += @('--save', (Join-Path $state 'save')) }
+if (-not $env:DC2_DATA -and -not @($rest | Where-Object { $_ -like '--data*' })) { $gameArgs += @('--data', $data) }
+if (-not $env:DC2_SAVE -and -not @($rest | Where-Object { $_ -like '--save*' })) { $gameArgs += @('--save', (Join-Path $state 'save')) }
 
 Push-Location $checkout
 & (Join-Path $build 'darkchronicle.exe') @gameArgs

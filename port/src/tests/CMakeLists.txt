@@ -22,7 +22,7 @@ set(TEST_SOURCES
 add_executable(darkchronicle_tests ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${TEST_SOURCES})
 set_target_properties(darkchronicle_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 target_include_directories(darkchronicle_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-dc_link_game(darkchronicle_tests)
+ct_link_game(darkchronicle_tests)
 kz_port_tests(darkchronicle_tests)
 # Written against another game's libmc declarations (a raw byte table for sceMcGetDir), which this
 # game's SDK headers type differently.
@@ -33,12 +33,12 @@ target_link_libraries(darkchronicle_tests PRIVATE GTest::gtest)
 
 # A case is a unit test: it finishes in milliseconds, and one that does not is cut off. The clock
 # cases measure short sleeps, which the parallel gfx cases skew, so they run on their own.
-set(DC_TEST_TIMEOUT 5 CACHE STRING "Seconds a test case may run before it is cut off")
+set(CT_TEST_TIMEOUT 5 CACHE STRING "Seconds a test case may run before it is cut off")
 gtest_discover_tests(darkchronicle_tests
     DISCOVERY_MODE PRE_TEST
     TEST_FILTER -PlatformClock.*
-    PROPERTIES TIMEOUT ${DC_TEST_TIMEOUT})
+    PROPERTIES TIMEOUT ${CT_TEST_TIMEOUT})
 gtest_discover_tests(darkchronicle_tests
     DISCOVERY_MODE PRE_TEST
     TEST_FILTER PlatformClock.*
-    PROPERTIES TIMEOUT ${DC_TEST_TIMEOUT} RUN_SERIAL TRUE)
+    PROPERTIES TIMEOUT ${CT_TEST_TIMEOUT} RUN_SERIAL TRUE)

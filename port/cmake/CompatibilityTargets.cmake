@@ -87,7 +87,3 @@ function(ct_add_compatibility_suite target headless)
 endfunction()
 ct_add_compatibility_suite(ct_compatibility_tests FALSE)
 ct_add_compatibility_suite(ct_compatibility_tests_headless TRUE)
-
-# Existing scripts and CI can keep their compatibility target names.
-add_custom_target(dc_compatibility_tests DEPENDS ct_compatibility_tests)
-add_custom_target(dc_compatibility_tests_headless DEPENDS ct_compatibility_tests_headless)

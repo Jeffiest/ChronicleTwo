@@ -198,7 +198,6 @@ add_custom_command(OUTPUT ${PORT_OVERRIDES_CHECKED}
 # The game was written for MWCC, which accepts what clang rejects by default: pointers truncated to
 # 32-bit integers, narrowing in braced initialisers and the register keyword.
 add_library(ct_options INTERFACE)
-add_library(dc_options ALIAS ct_options)
 target_compile_definitions(ct_options INTERFACE ${PORT_DEFINITIONS})
 target_include_directories(ct_options INTERFACE
     ${CMAKE_SOURCE_DIR}/port/include ${KZ_ROOT}/include ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_DIR}/sce)
@@ -265,7 +264,6 @@ if(TARGET ct_win_headers)
 endif()
 target_include_directories(ct_port PRIVATE ${PORT_DIR})
 target_include_directories(ct_port BEFORE PRIVATE ${PORT_DIR}/host_overrides)
-target_include_directories(ct_port BEFORE PRIVATE ${PORT_DIR}/host_overrides)
 target_compile_options(ct_port PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
     -Wno-overloaded-virtual -Wno-unused-function)
 
@@ -286,15 +284,9 @@ function(ct_link_game target)
     target_link_libraries(${target} PRIVATE ct_options kz_port_headers SDL3::SDL3 Vulkan::Vulkan)
     target_include_directories(${target} PRIVATE ${PORT_DIR})
     target_include_directories(${target} BEFORE PRIVATE ${PORT_DIR}/host_overrides)
-    target_include_directories(${target} BEFORE PRIVATE ${PORT_DIR}/host_overrides)
     target_compile_options(${target} PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
         -Wno-overloaded-virtual -Wno-unused-function)
     target_link_options(${target} PRIVATE ${CT_LINK_OPTIONS})
-endfunction()
-
-# Kept for the upstream GoogleTest subdirectory, whose target setup predates ct_* naming.
-function(dc_link_game target)
-    ct_link_game(${target})
 endfunction()
 
 add_executable(darkchronicle ${PORT_DIR}/main.cpp)

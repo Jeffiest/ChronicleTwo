@@ -25,10 +25,10 @@ Normal builds also run `check_host_pointer_arrays.py` on the actual generated ga
 Run the native regressions with the configured build:
 
 ```powershell
-cmake --build E:/Chronicle-Two/win/build-rel --target dc_compatibility_tests
+cmake --build E:/Chronicle-Two/win/build-rel --target ct_compatibility_tests
 ```
 
-On a runner without a Vulkan device, use `dc_compatibility_tests_headless`. It runs the
+On a runner without a Vulkan device, use `ct_compatibility_tests_headless`. It runs the
 same source checks and 25 native cases, skipping only the color/menu capture fixture.
 
 This target runs eight audit/gate fixtures and 26 native cases: script buffer separation and failures, arena bounds/growth/reset/alignment/owner diagnostics, all 24 monster buffers, controller edges and A/B/R2 action bindings, menu mode/language bindings, real Vulkan color/menu capture, common multi-file menu loading with the real allocator, Options choices/conditions, villager schedule/output pointers and photo-name ownership/sizing/required failures. The Options fixture extracts unchanged method bodies from the production generated host unit, preserving its private form guard. Fixtures use minimal initialization or file callbacks where permitted; a callback fixture does not verify the filesystem backend. Assertions stay enabled in optimized builds. Shared capture coverage and remaining limits are in `INPUT_CAPTURE_COVERAGE.md`.
@@ -36,7 +36,7 @@ This target runs eight audit/gate fixtures and 26 native cases: script buffer se
 Optional component check with local PAL assets, without gameplay or graphics:
 
 ```powershell
-E:/Chronicle-Two/win/build-rel/dc_photo_name_storage_test.exe local-pal E:/Chronicle-Two/win/ChronicleTwo/rom/pal/extracted/iso
+E:/Chronicle-Two/win/build-rel/ct_photo_name_storage_test.exe local-pal E:/Chronicle-Two/win/ChronicleTwo/rom/pal/extracted/iso
 ```
 
 This executes the production photo-name loader and validates all 294 names and public lookups against persistent host storage. It does not redistribute assets. The unrelated Items model-capacity/write-before-reserve failure remains open; see `MODEL_MEMORY_CONTRACT.md`.

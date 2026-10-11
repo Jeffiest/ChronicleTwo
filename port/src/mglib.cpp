@@ -423,7 +423,7 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     gfx::TextureBinding binding;
 
     if (target == NULL && fbp != default_frame->FBP) {
-        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        static const bool trace = std::getenv("DC2_DUMP_DRAWS") != nullptr;
         static int        reported;
         if (trace && reported++ < 8) {
             std::fprintf(stderr, "frame buffer fbp %d (default %d) has no render-target texture\n", fbp,
@@ -445,7 +445,7 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
         g_frame_tex.height = target->height;
         g_frame_tex.bpp = target->bpp;
 
-        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        static const bool trace = std::getenv("DC2_DUMP_DRAWS") != nullptr;
         if (trace) {
             std::fprintf(stderr, "frame buffer -> texture '%s' %p fbp %d %dx%d target %#x\n", target->name,
                          (const void *) target, fbp, target->width, target->height, binding.texture);
@@ -454,7 +454,7 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
         gfx::SetRenderTarget(gfx::kMainTarget);
         g_frame_redirected = false;
 
-        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        static const bool trace = std::getenv("DC2_DUMP_DRAWS") != nullptr;
         if (trace) {
             std::fprintf(stderr, "frame buffer -> main (fbp %d)\n", fbp);
         }

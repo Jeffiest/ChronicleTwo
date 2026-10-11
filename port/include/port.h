@@ -64,7 +64,7 @@ template <class T> T &Ps2Lvalue(T &&value) {
 
 // The layouts STATIC_ASSERT checks are the PS2's: 32-bit pointers and longs as
 // MWCC lays them out. Once common.h is in, it checks nothing, unless the build asks
-// for them (DC_STATIC_ASSERT): every struct holding a pointer then fails by design,
+// for them (PORT_STATIC_ASSERT): every struct holding a pointer then fails by design,
 // so that is a way to audit integer widths, not a default.
 #include "common.h"
 #ifndef PORT_STATIC_ASSERT
