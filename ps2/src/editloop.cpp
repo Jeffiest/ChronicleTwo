@@ -2528,7 +2528,7 @@ int EditDraw() {
                 idea_no = subject->invent.neta_no;
             }
 
-            if (idea_no == 196 && MainScene->GetMainMapNo() == 2) {
+            if (idea_no == 196 && MainScene->GetMainMapNo() == EDIT_ANALYZE_MAP_BENIETIO) {
                 idea_no = 2006;
             }
 
@@ -2639,7 +2639,7 @@ int BurnEditParts() {
         return 0;
     }
 
-    if (MainScene->GetMainMapNo() == 3) {
+    if (MainScene->GetMainMapNo() == EDIT_ANALYZE_MAP_HEIM) {
         map = (CEditMap *) MainScene->GetMap(MainScene->active_map);
 
         if (map != NULL) {

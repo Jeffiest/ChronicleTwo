@@ -167,7 +167,7 @@ static int CheckSaku(CEditMap *map, int parts_no) {
         return false;
     }
 
-    return parts->GetPartsType() == 8;
+    return parts->GetPartsType() == EDIT_PARTS_TYPE_FENCE;
 }
 
 /**

@@ -6,6 +6,7 @@
 #include "cameracontrol.hpp"
 #include "character.hpp"
 #include "dataread.hpp"
+#include "editanalyze.hpp"
 #include "editevent.hpp"
 #include "editloop.hpp"
 #include "editmap.hpp"
@@ -360,7 +361,7 @@ int CEditEvent::Step(CScene *scene) {
                     info = parts->GetInfoID();
                 }
 
-                if (MenuInfo->end_code == MENU_END_RESIDENT_CHANGE && info == 0x49) {
+                if (MenuInfo->end_code == MENU_END_RESIDENT_CHANGE && info == EDIT_GEO_NPC_PARTS_ID) {
                     scene->fade.FadeOut(0x12, 0.0f, 0.0f, 0.0f);
                     reload_geo_npc = 1;
                 } else {
@@ -693,7 +694,7 @@ int LoadGeoNPC(GeoFuncParam *param, int mode) {
     float        parts_rotation[4];
     float        matrix[4][4];
 
-    if (scene->GetMainMapNo() != 1) {
+    if (scene->GetMainMapNo() != EDIT_ANALYZE_MAP_STERA) {
         return 0;
     }
 
@@ -707,7 +708,7 @@ int LoadGeoNPC(GeoFuncParam *param, int mode) {
         scene->DeleteVillager();
     }
 
-    if (map->GetePlacePartsAtInfoID(0x49, &parts_index, 1) <= 0) {
+    if (map->GetePlacePartsAtInfoID(EDIT_GEO_NPC_PARTS_ID, &parts_index, 1) <= 0) {
         return 0;
     }
 
@@ -776,10 +777,10 @@ void GeoUpdateNpcPos(CScene *scene) {
     float        parts_rotation[4];
     float        matrix[4][4];
 
-    if (scene->GetMainMapNo() == 1) {
+    if (scene->GetMainMapNo() == EDIT_ANALYZE_MAP_STERA) {
         map = (CEditMap *) scene->GetMap(scene->active_map);
 
-        if (map != NULL && map->GetePlacePartsAtInfoID(0x49, &parts_index, 1) > 0) {
+        if (map != NULL && map->GetePlacePartsAtInfoID(EDIT_GEO_NPC_PARTS_ID, &parts_index, 1) > 0) {
             parts = map->GetePlaceParts(parts_index);
 
             if (parts != NULL) {

@@ -10,6 +10,7 @@
 #include "drawwin.hpp"
 #include "editanalyze.hpp"
 #include "editdata.hpp"
+#include "editevent.hpp"
 #include "editmap.hpp"
 #include "editmenu.hpp"
 #include "editparts.hpp"
@@ -5809,7 +5810,7 @@ void MenuRemovalInit(mgCMemory *stack, int *arg) {
         if (RemovalMenuPtr->parts != NULL) {
             RemovalMenuPtr->parts_info = RemovalMenuPtr->parts->info;
 
-            if (RemovalMenuPtr->parts_info->id == 0x49) {
+            if (RemovalMenuPtr->parts_info->id == EDIT_GEO_NPC_PARTS_ID) {
                 RemovalMenuPtr->special_house = 1;
             }
         }
