@@ -52,30 +52,6 @@ class Context:
                 for name, lo, hi in self.layout.sections(unit) if name not in p.CODE}
 
 
-def drop_sections(elf, removed):
-    """Remove data sections and make their references undefined, never code."""
-    if any(elf.sections[index].sh_flags & p.SHF_EXECINSTR for index in removed):
-        raise ValueError('Cannot remove executable comparison sections')
-    removed = set(removed) | {index for index, section in enumerate(elf.sections)
-                             if isinstance(section, RelocationRecord) and section.sh_info in removed}
-    keep = [index for index in range(len(elf.sections)) if index not in removed]
-    remap = {old: new for new, old in enumerate(keep)}
-    elf.sections = [elf.sections[index] for index in keep]
-    elf.relocations = [record for record in elf.relocations if record in elf.sections]
-    elf.e_shstrndx = remap[elf.e_shstrndx]
-    elf.symtab_index = remap[elf.symtab_index]
-    for symbol in elf.symtab.symbols:
-        if symbol.st_shndx in removed:
-            symbol.st_shndx = symbol.st_value = symbol.st_size = 0
-        elif symbol.st_shndx in remap:
-            symbol.st_shndx = remap[symbol.st_shndx]
-    for section in elf.sections:
-        if section.sh_link in remap:
-            section.sh_link = remap[section.sh_link]
-    for record in elf.relocations:
-        record.sh_info = remap[record.sh_info]
-
-
 def code_snapshot(elf):
     """Capture bytes, function metadata and serialized code relocation fields."""
     code = {index for index, section in enumerate(elf.sections)
