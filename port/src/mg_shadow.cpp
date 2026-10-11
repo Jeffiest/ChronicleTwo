@@ -24,6 +24,7 @@
 int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
                        std::vector<gfx::Vertex3D> &vertices, std::vector<uint32_t> &indices, bool *has_colour);
 gfx::DrawState PortMgDrawStateFromEnv(const mgCDrawEnv &env);
+bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
 namespace {
 
@@ -117,4 +118,89 @@ int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRE
     (void) matrix;
     (void) info;
     return 0;
+}
+
+// ---- The offscreen shadow pass ------------------------------------------------------------------
+// mgBeginDrawShadow and mgEndDrawShadow live in mglib.cpp, but they bracket the character drop
+// shadows (dng_main.cpp, editloop.cpp), so the shadow unit owns their host side. Retail switches
+// the GS frame buffer to the "work"/"shadow_work" texture, fills it black and draws the flattened
+// models into it; the host draws the same models through the renderer into the texture's render
+// target (mg_texture.cpp registers one under the texture's name), then stamps it back over the
+// screen with the TEXA alpha the ps2 pass reads out of the 24-bit image.
+
+namespace {
+
+// The render target mg_texture.cpp builds for a texture with no image of its own, or kNullTexture
+// when the texture is an ordinary image.
+gfx::TextureHandle ShadowTarget(const mgCTexture *shadow) {
+    if (shadow == nullptr) {
+        return gfx::kNullTexture;
+    }
+
+    gfx::TextureBinding binding;
+    if (!PortMgTextureBinding(shadow, binding)) {
+        return gfx::kNullTexture;
+    }
+
+    return gfx::FindNamedRenderTarget(shadow->name);
+}
+
+} // namespace
+
+void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
+    (void) unused;
+
+    gfx::TextureHandle target = ShadowTarget(shadow);
+    if (target == gfx::kNullTexture) {
+        return;
+    }
+
+    gfx::SetRenderTarget(target);
+    // The pass opens on black: retail fills the frame buffer with an unblended RGBAQ(0,0,0,0)
+    // sprite, which for the 32-bit target is exactly a clear.
+    const uint8_t black[4] = {0, 0, 0, 0};
+    gfx::Clear(true, black, false, 0.0f);
+}
+
+void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
+    (void) unused;
+
+    gfx::SetRenderTarget(gfx::kMainTarget);
+
+    gfx::TextureBinding binding;
+    if (shadow == nullptr || !PortMgTextureBinding(shadow, binding)) {
+        return;
+    }
+
+    // Retail reads the image as PSMCT24, so the alpha that darkens the screen is TEXA's: zero
+    // where the fill left black, TA0 where a shadow was drawn.
+    binding.ignore_alpha = true;
+    binding.filter = gfx::Filter::Linear;
+
+    gfx::DrawState state;
+    state.blend = true;
+    state.alpha = gfx::GsBlend{2, 1, 0, 1, 64};
+    state.alpha_test = true;
+    state.alpha_func = gfx::AlphaFunc::GEqual;
+    state.alpha_ref = 1;
+    state.texa_aem = true;
+    state.texa_ta0 = 48;
+
+    const float texture_width = static_cast<float>(shadow->width);
+    const float texture_height = static_cast<float>(shadow->height);
+
+    gfx::Vertex2D quad[4] = {};
+    quad[0] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f};
+    quad[1] = {gfx::kLogicalWidth, 0.0f, 0.0f, texture_width - 1.0f, 1.0f};
+    quad[2] = {gfx::kLogicalWidth, gfx::kLogicalHeight, 0.0f, texture_width - 1.0f, texture_height - 1.0f};
+    quad[3] = {0.0f, gfx::kLogicalHeight, 0.0f, 1.0f, texture_height - 1.0f};
+
+    for (gfx::Vertex2D &vertex : quad) {
+        vertex.color[0] = 128;
+        vertex.color[1] = 128;
+        vertex.color[2] = 128;
+        vertex.color[3] = 128;
+    }
+
+    gfx::Draw2D(gfx::Primitive::Quads, quad, binding, state);
 }
