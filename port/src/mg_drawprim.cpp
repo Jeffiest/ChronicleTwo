@@ -24,8 +24,8 @@
  * (which groups exist).
  */
 
-// What mg_drawenv.cpp provides: the GS units in the renderer's logical space, the draw state the
-// registers describe, and the texture resolver whose strong definition belongs to mg_texture.cpp.
+// What mg_drawenv.cpp provides: the GS units in the renderer's logical space and the draw state
+// the registers describe. The manager's textures resolve through mg_texture.cpp's own binding.
 namespace mgport {
 float LogicalX(int gs_x);
 float LogicalY(int gs_y);
@@ -34,9 +34,9 @@ gfx::LogicalRect ScissorRect(unsigned long scissor);
 gfx::DrawState DrawStateOf(const sceGsTest &test, const sceGsZbuf &zbuf, const sceGsAlpha &alpha,
                            const sceGsPrim &prim, bool texa_aem, u_char texa_ta0,
                            const gfx::LogicalRect *scissor);
-bool ResolveTexture(const mgCTexture &texture, gfx::TextureBinding &binding, float &u_scale,
-                    float &v_scale);
 } // namespace mgport
+
+bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
 namespace {
 
@@ -60,8 +60,12 @@ struct GsRegisters {
     bool             scissor_seen = false;
     gfx::LogicalRect scissor{0.0f, 0.0f, gfx::kLogicalWidth, gfx::kLogicalHeight};
 
+    // The image-transfer registers the last Direct writes assembled; TRXDIR runs the transfer.
+    u_long transfer_bitbltbuf = 0;
+    u_long transfer_trxpos = 0;
+    u_long transfer_trxreg = 0;
+
     bool                texture_resolved = false;
-    mgCTexture          texture{};
     gfx::TextureBinding binding{};
     float               u_scale = 1.0f;
     float               v_scale = 1.0f;
@@ -78,6 +82,11 @@ struct PrimState {
     int                 role_count = 0;
     int                 role_index = 0;
     std::vector<gfx::Vertex2D> vertices;
+    // Packed-mode words whose values are not yet known when they are queued: Data's quad is
+    // recorded as it arrives, and DirectData hands the caller memory it only fills afterwards.
+    // Both are fed through the role cycle when the run closes, in the order the caller wrote.
+    std::vector<u_long128> raw_quads;
+    std::vector<int>       raw_roles;
     bool                sprite_have_first = false;
     gfx::Vertex2D       sprite_first{};
     float               u = 0.0f;
@@ -174,6 +183,8 @@ void OpenRun(PrimState &state, int type, bool packed, int unit_count, u_int data
     state.role_index = 0;
     state.role_count = 0;
     state.vertices.clear();
+    state.raw_quads.clear();
+    state.raw_roles.clear();
     state.sprite_have_first = false;
 
     if (!packed) {
@@ -222,9 +233,103 @@ void FeedRole(PrimState &state, int role, const int *words) {
     }
 }
 
+// Records one packed-mode quad whose register role the run's cycle names.
+void EnqueueRaw(PrimState &state, int role, const int *words) {
+    u_long128 quad = 0;
+    std::memcpy(&quad, words, sizeof(quad));
+    state.raw_quads.push_back(quad);
+    state.raw_roles.push_back(role);
+}
+
+// Feeds the run's queued quads through its register cycle; the run closes only after the caller
+// has written the memory DirectData handed out.
+void FlushRawStream(PrimState &state) {
+    for (size_t index = 0; index < state.raw_quads.size(); index++) {
+        int words[4];
+        std::memcpy(words, &state.raw_quads[index], sizeof(words));
+        FeedRole(state, state.raw_roles[index], words);
+    }
+
+    state.raw_quads.clear();
+    state.raw_roles.clear();
+}
+
+// The manager's texture placed at a TBP0, or NULL when none is. The engine's other units still
+// speak in these GS placements, which is what a transfer register carries.
+mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp) {
+    if (manager == NULL || manager->blocks == NULL) {
+        return NULL;
+    }
+
+    for (int block = 0; block < manager->block_max; block++) {
+        for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
+             texture = texture->next) {
+            if ((texture->tex0.value & 0x3FFF) == tbp) {
+                return texture;
+            }
+        }
+    }
+
+    for (mgCTexture *texture = manager->fix_block.texture; texture != NULL; texture = texture->next) {
+        if ((texture->tex0.value & 0x3FFF) == tbp) {
+            return texture;
+        }
+    }
+
+    return NULL;
+}
+
+// The GS's VRAM-to-VRAM image copy, the only transfer direction the game asks for (the item icon
+// moved between rectangles of one texture in menudraw.cpp): the registers decode to one
+// gfx::CopyTexture over the two textures TBP0 names.
+void StartImageTransfer(u_int direction) {
+    switch (direction & 0x3) {
+        case 3:
+            // Deactivates the transfer.
+            return;
+        case SCE_GS_LOCAL_LOCAL:
+            break;
+        default:
+            // The host-to-local and local-to-host directions moved pixel data through the packet
+            // stream, which the port replaced with the texture manager's own decode.
+            PS2_UNIMPLEMENTED();
+    }
+
+    mgCTextureManager *manager =
+        mgDrawManager.texture_manager != NULL ? mgDrawManager.texture_manager : &mgTexManager;
+    const u_int source_base = static_cast<u_int>(g_regs.transfer_bitbltbuf & 0x3FFF);
+    const u_int dest_base = static_cast<u_int>((g_regs.transfer_bitbltbuf >> 32) & 0x3FFF);
+    mgCTexture *source = FindVramTexture(manager, source_base);
+    mgCTexture *dest = FindVramTexture(manager, dest_base);
+
+    if (source == NULL || dest == NULL) {
+        PS2_UNIMPLEMENTED();
+    }
+
+    gfx::TextureBinding source_binding;
+    gfx::TextureBinding dest_binding;
+
+    if (!PortMgTextureBinding(source, source_binding) || !PortMgTextureBinding(dest, dest_binding)) {
+        PS2_UNIMPLEMENTED();
+    }
+
+    const int source_x = static_cast<int>(g_regs.transfer_trxpos & 0x7FF);
+    const int source_y = static_cast<int>((g_regs.transfer_trxpos >> 16) & 0x7FF);
+    const int dest_x = static_cast<int>((g_regs.transfer_trxpos >> 32) & 0x7FF);
+    const int dest_y = static_cast<int>((g_regs.transfer_trxpos >> 48) & 0x7FF);
+    const int width = static_cast<int>(g_regs.transfer_trxreg & 0xFFF);
+    const int height = static_cast<int>((g_regs.transfer_trxreg >> 32) & 0xFFF);
+
+    if (!gfx::CopyTexture(source_binding.texture, {source_x, source_y, width, height},
+                          dest_binding.texture, dest_x, dest_y)) {
+        PS2_UNIMPLEMENTED();
+    }
+}
+
 void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
     state.open = false;
     state.sprite_have_first = false;
+    FlushRawStream(state);
 
     if (state.vertices.empty()) {
         return;
@@ -413,15 +518,30 @@ void mgCDrawPrim::Data(int *data) {
         PS2_UNIMPLEMENTED();
     }
 
-    FeedRole(state, state.roles[state.role_index], data);
+    EnqueueRaw(state, state.roles[state.role_index], data);
     state.role_index = (state.role_index + 1) % state.role_count;
 }
 
 u_long128 *mgCDrawPrim::DirectData(int count) {
-    // Retail hands out a stretch of packet memory for raw GIF tags (outline.cpp); the port has no
-    // packet to write into.
-    (void) count;
-    PS2_UNIMPLEMENTED();
+    PrimState &state = State(this);
+
+    if (!state.open || !state.packed || state.role_count == 0 || count <= 0) {
+        // Raw quads only make sense inside a packed run, whose register cycle names what each one
+        // means; nothing outside outline.cpp's chunked sprites hands out packet memory.
+        PS2_UNIMPLEMENTED();
+    }
+
+    // The caller writes the quads here and the run feeds them through the role cycle when it
+    // closes (FlushRawStream); the roles reserved are the ones the next quads would have taken.
+    const size_t base = state.raw_quads.size();
+    state.raw_quads.resize(base + static_cast<size_t>(count));
+
+    for (int i = 0; i < count; i++) {
+        state.raw_roles.push_back(state.roles[state.role_index]);
+        state.role_index = (state.role_index + 1) % state.role_count;
+    }
+
+    return state.raw_quads.data() + base;
 }
 
 void mgCDrawPrim::Vertex(int x, int y, int z) {
@@ -511,12 +631,17 @@ void mgCDrawPrim::Direct(unsigned long reg, unsigned long data) {
             g_regs.scissor_seen = true;
             break;
         case SCE_GS_BITBLTBUF:
+            g_regs.transfer_bitbltbuf = data;
+            break;
         case SCE_GS_TRXPOS:
+            g_regs.transfer_trxpos = data;
+            break;
         case SCE_GS_TRXREG:
+            g_regs.transfer_trxreg = data;
+            break;
         case SCE_GS_TRXDIR:
-            // A GS image-to-image copy between VRAM textures; the host equivalent needs the
-            // texture unit's TBP registry and gfx::CopyTexture (see the report).
-            PS2_UNIMPLEMENTED();
+            StartImageTransfer(static_cast<u_int>(data));
+            break;
         default:
             PS2_UNIMPLEMENTED();
     }
@@ -529,11 +654,16 @@ void mgCDrawPrim::Texture(mgCTexture *source) {
         memcpy(&this->texture, source, sizeof(mgCTexture));
         this->texture.Bilinear(bilinear);
 
-        memcpy(&g_regs.texture, &this->texture, sizeof(mgCTexture));
         g_regs.u_scale = 1.0f;
         g_regs.v_scale = 1.0f;
-        g_regs.texture_resolved =
-            mgport::ResolveTexture(g_regs.texture, g_regs.binding, g_regs.u_scale, g_regs.v_scale);
+        // The manager's registry is keyed by the texture the game hands around, so the binding
+        // resolves from the source; the copy above stays the retail-shaped record.
+        g_regs.texture_resolved = PortMgTextureBinding(source, g_regs.binding);
+        // Bilinear() lands on the copy's TEX1, never the source's, and the packet sent that copy;
+        // the renderer's filter follows the same MMAG bit the resolver reads, so the override
+        // still chooses it.
+        g_regs.binding.filter =
+            (this->texture.tex1_bits >> 5) & 1 ? gfx::Filter::Linear : gfx::Filter::Nearest;
     }
 }
 
@@ -708,11 +838,24 @@ void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
 }
 
 void mgCDrawManager::AddPacket(int group, u_long128 *common, u_long128 *packet, int vu_program) {
-    // Retail's visual units hand VU1 packets to the manager; their port replacements draw
-    // gfx meshes directly, so a register from a retail-shaped path is a path nobody has ported.
-    (void) group;
+    // Retail registered the packet in its texture group's sort list and the frame's DMA chain
+    // called it on the GS. A VU1 program has no host executor, and the units that built these
+    // packets (the visual ones) draw through the renderer directly now, so registration keeps the
+    // only decision retail's callers could observe: a packet for a group this pass does not draw
+    // is dropped, one for a drawn group is accepted with nothing left to run.
     (void) common;
     (void) packet;
     (void) vu_program;
-    PS2_UNIMPLEMENTED();
+
+    if (group >= group_max) {
+        return;
+    }
+
+    if (order_index != 0) {
+        const int index = group < 0 ? order_index[*draw_order] : order_index[group];
+
+        if (index < 0) {
+            return;
+        }
+    }
 }
