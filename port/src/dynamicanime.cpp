@@ -209,6 +209,12 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
  * Skins every motion model in a frame's subtree, leaving the other visuals alone. A frame's own
  * matrix is the draw matrix A7's mg_visual.cpp will hand the visual.
  */
+// A model loaded again into the same memory with the same vertex count would otherwise be skinned from
+// the previous model's base pose, which is what an outfit change does.
+void PortMgForgetMotionBase(const void *vertex) {
+    g_motion_bases.erase(vertex);
+}
+
 void PortMgSkinMotionTree(mgCFrame *frame) {
     if (frame == NULL) {
         return;

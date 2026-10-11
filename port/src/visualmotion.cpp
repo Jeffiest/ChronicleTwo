@@ -10,6 +10,8 @@
 #include "mglib.hpp"
 #include "visualmotion.hpp"
 
+void PortMgForgetMotionBase(const void *vertex);
+
 namespace {
 
 // A motion model's face indices, kept per model. They cannot go back into the model's arena: that is
@@ -47,6 +49,7 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
 
     texture_manager = textures;
     CopyMDTDataPointer(header, memory);
+    PortMgForgetMotionBase(vertex);
     frame = data->frame;
     base_matrix = data->base_matrix;
     frame_id = data->frame_id;
