@@ -277,6 +277,35 @@ u_int mgCVisualFixMDT::CreatePacket(mgCDrawManager *draw_manager) {
     return 0;
 }
 
+// The PS2 FixMDT loader packs each face into a GS packet and lets the index array it builds die
+// on the stack: the DMA tag carried the geometry afterwards. The host collects from face->index,
+// so the arrays have to live in the model arena instead, as the plain MDT path's do. The packet
+// the retail loop built has no host counterpart (CreateFacePacket is the no-op above), so the
+// loop is only the face build.
+int mgCVisualFixMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
+                                   mgCTextureManager *textures) {
+    if (header == NULL) {
+        return 0;
+    }
+
+    if (textures == NULL) {
+        textures = &mgTexManager;
+    }
+
+    texture_manager = textures;
+    CopyMDTDataPointer(header, memory);
+    face_group = 0;
+    MDT_FACES *faces = (MDT_FACES *) ((u_char *) header + header->faces_ofs);
+    int        count = faces->prim_num;
+    FACES_ID  *cursor = (FACES_ID *) (faces + 1);
+
+    for (int i = 0; i < count; i++) {
+        cursor = CreateFace(cursor, memory, memory, NULL);
+    }
+
+    return 1;
+}
+
 int mgCVisualMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
     (void) packet;
     (void) face;
