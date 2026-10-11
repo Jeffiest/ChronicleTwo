@@ -315,7 +315,7 @@ int _WMAP_POS(SPI_STACK *stack, int argument_count) {
 
     pos->type = spiGetStackInt(stack);
 
-    if (pos->type == WMAP_POS_TYPE_GEORAMA && CheckBitFlagMenu(0x2E0) != 0) {
+    if (pos->type == WMAP_POS_TYPE_GEORAMA && CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8) != 0) {
         pos->enable = false;
     }
 
@@ -373,12 +373,12 @@ int _WMAP_AREA(SPI_STACK *stack, int argument_count) {
     }
 
     if (area->area_no == 8) {
-        if (CheckBitFlagMenu(0x268) != 0) {
+        if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_4) != 0) {
             area->enable = false;
         }
     }
 
-    if (CheckBitFlagMenu(0x320) != 0 && (area->area_no == 6 || area->area_no == 7)) {
+    if (CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8_STARTED) != 0 && (area->area_no == 6 || area->area_no == 7)) {
         area->enable = false;
     }
 
@@ -804,7 +804,7 @@ int CWorldMapMenu::KeyStep() {
                                 MenuArg.result[2] = select_pos->floor;
                             }
                         } else {
-                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(0x2BC) != 0) {
+                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_S12_REDIRECT) != 0) {
                                 WorldMap_MapNo = SearchMapNo("s34");
                             }
 
@@ -1310,15 +1310,15 @@ int WorldMoveInit(mgCMemory *stack, int *tex_block, int open_type) {
     WorldMapPtr->capture_tex = mgTexManager.GetTexture("menuwork2", -1);
     buffer = WorldMapStack.stGetTop();
 
-    if (CheckBitFlagMenu(0x258) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_2) != 0) {
         WorldMapPtr->map_type = 2;
     }
 
-    if (CheckBitFlagMenu(0x268) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_4) != 0) {
         WorldMapPtr->map_type = 4;
     }
 
-    if (CheckBitFlagMenu(0x280) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_3) != 0) {
         WorldMapPtr->map_type = 3;
     }
 
