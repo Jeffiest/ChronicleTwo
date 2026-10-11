@@ -94,7 +94,8 @@ void BuildSkinMatrices(const mgCVisualMotionMDT *visual, mgCFrame *frame, int sl
         mgMulMatrix(slot_matrix, root_local, slot_matrix);
         mgInversMatrix(slot_inverse, slot_matrix);
         mgMulMatrix(frame_matrix, inverse_world, frame_matrix);
-        mgMulMatrix(skin_matrix[slot], frame_matrix, slot_inverse);
+        // Weights index the palette by position in the bone list, as retail writes it, not by frame number.
+        mgMulMatrix(skin_matrix[i], frame_matrix, slot_inverse);
     }
 }
 
