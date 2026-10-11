@@ -33,8 +33,8 @@ struct AlbumFile {
  * Number of costumes tracked by the persistent costume flags.
  *
  */
-enum {
-    MC_COSTUME_COUNT = 34
+enum MemcardCostumeCount {
+    MC_COSTUME_COUNT = 34, /**< Entries in the costume table and in the costume-bit lookup. */
 };
 
 /**
