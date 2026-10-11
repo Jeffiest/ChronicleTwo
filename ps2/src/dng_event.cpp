@@ -2100,7 +2100,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     area->battle_clear = true;
     area->battle_bgm_state = DNG_BGM_MAP;
     area->battle_bgm_vol = 0.0f;
-    area->camera_mode = 0;
+    area->camera_mode = DNG_CAMERA_FOLLOW;
     area->pause_flag = 0;
     area->timer = 0;
     area->minimap_reveal = 0;
@@ -2110,7 +2110,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     area->practice_actions = 0;
     area->floor_status = 0;
     area->weather = DNG_WEATHER_NORMAL;
-    area->lock_on_mode = 0;
+    area->lock_on_mode = DNG_LOCK_ON_NEAREST;
     area->pause_flag |= DNG_PAUSE_PLAYER_STATUS;
     CheckItemDngKey();
     mgInitLighting();

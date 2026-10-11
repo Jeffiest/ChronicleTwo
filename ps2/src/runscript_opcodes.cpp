@@ -3476,7 +3476,7 @@ int _SET_SHROW_END(RS_STACKDATA *stack, int argument_count) {
         return 0;
     }
 
-    nowMonster->catch_state = 0;
+    nowMonster->catch_state = ACTION_CATCH_NONE;
     return 1;
 }
 
@@ -3826,7 +3826,7 @@ int _ESM_CREATE(RS_STACKDATA *stack, int argc) {
  */
 int _ESM_FINISH(RS_STACKDATA *stack, int argc) {
     int effect_id = nowMonster->chara_type;
-    return ActiveMonster->effect_man->SetScriptProgNo(300, effect_id, GetStackInt(stack));
+    return ActiveMonster->effect_man->SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, effect_id, GetStackInt(stack));
 }
 
 /**

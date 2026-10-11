@@ -573,7 +573,7 @@ void CActiveMonster::CheckStatusAttr() {
                 damage = old_life - life;
 
                 if (damage > 0) {
-                    GetEntryObjectPos(0, 0, pos);
+                    GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, pos);
                     pos[1] += body_height;
                     HitScoreSet(pos, HIT_SCORE_DAMAGE, damage);
                 }
@@ -1328,7 +1328,7 @@ void CMonsterMan::DrawLifeGage(int view, int mode) {
                 monster->life_gage.SetView(false);
             }
 
-            active[i]->GetEntryObjectPos(0, 0, pos);
+            active[i]->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, pos);
             pos[1] += active[i]->body_height;
             monster = active[i];
 
@@ -1519,7 +1519,7 @@ int CMonsterMan::CheckPhoto(CScene::InScreenCharaInfo *info) {
         }
 
         active[index]->GetRotation(rotation);
-        CHARA_ENTRY_OBJECT *entry = active[index]->GetEntryObjectPos(0, 0, position);
+        CHARA_ENTRY_OBJECT *entry = active[index]->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, position);
         radius = 5.0f * entry->size;
         mgGetDirFromCamera(direction, position);
         distance = mgDistVector(direction);
@@ -2694,7 +2694,7 @@ void CMonsterMan::ThinkHost() {
             continue;
         }
 
-        monster->GetEntryObjectPos(0, 0, monster->center_pos);
+        monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, monster->center_pos);
         monster->scoop.ok = false;
         MONSTER_SCOOP *scoop = &monster->scoop;
 

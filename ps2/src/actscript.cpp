@@ -1306,7 +1306,7 @@ int _SET_TRG_ANGLE(RS_STACKDATA *stack, int argc) {
 
     if (target != NULL) {
         if (target->target_dist < (radius + radius) + target->GetBodyWidth()) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             action_info.chara->GetPosition(position);
             target_position[0] -= position[0];
             target_position[1] = 0.0f;
@@ -1455,7 +1455,7 @@ int _RELEASE_OBJ(RS_STACKDATA *stack, int argc) {
                             action_info.chara->target_no));
 
                         if (target != NULL) {
-                            target->GetEntryObjectPos(0, 0, target_pos);
+                            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
                             start_pos[3] = 1.0f;
                             target_pos[3] = 1.0f;
                             distance = mgDistVector(start_pos, target_pos);
@@ -1758,7 +1758,7 @@ int _SET_SHOT(RS_STACKDATA *stack, int argc) {
         attack_type = equip[1].GetAttackType();
 
         if (whp[0] > 0) {
-            if (attack_type == 0 || attack_type == 11) {
+            if (attack_type == WEAPON_ATTACK_GUN || attack_type == WEAPON_ATTACK_GUN_2) {
                 if (action_info.chara->shot_wait > 0) {
                     return true;
                 }
@@ -1767,27 +1767,27 @@ int _SET_SHOT(RS_STACKDATA *stack, int argc) {
                 ShotNormalGun(position, direction);
             }
 
-            if (attack_type == 30) {
+            if (attack_type == WEAPON_ATTACK_MACHINE_GUN) {
                 ShotMachineGun(position, direction, "\x82x\x83}\x83V\x83\x93\x83K\x83\x93", 300.0f);
             }
 
-            if (attack_type == 10) {
+            if (attack_type == WEAPON_ATTACK_LAUNCHER) {
                 ShotGrenadGun(position, direction);
             }
 
-            if (attack_type == 20) {
-                laser_type = 0;
+            if (attack_type == WEAPON_ATTACK_LASER) {
+                laser_type = LASER_VISUAL_GREEN;
 
                 if (equip[1].item_no == 0x1F) {
-                    laser_type = 0;
+                    laser_type = LASER_VISUAL_GREEN;
                 }
 
                 if (equip[1].item_no == 0x20) {
-                    laser_type = 1;
+                    laser_type = LASER_VISUAL_BLUE;
                 }
 
                 if (equip[1].item_no == 0x22) {
-                    laser_type = 2;
+                    laser_type = LASER_VISUAL_PURPLE;
                 }
 
                 ShotLaserGun(position, direction, laser_type);
@@ -1892,8 +1892,8 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
     mgCFrame  *muzzle;
     mgCFrame  *barrel;
 
-    if (attack_type != 40) {
-        if (attack_type == 90) {
+    if (attack_type != WEAPON_ATTACK_RIDEPOD_LASER) {
+        if (attack_type == WEAPON_ATTACK_BEAM) {
             if (left != 0) {
                 muzzle = action_info.chara->SearchObject("dcol01");
             } else {
@@ -1945,7 +1945,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
     info->GetNowWhp(1, whp);
 
     if (whp[0] > 0) {
-        if (attack_type == 10) {
+        if (attack_type == WEAPON_ATTACK_LAUNCHER) {
             sceVu0ScaleVector(rocket_target, direction, 500.0f);
             sceVu0AddVector(rocket_target, position, rocket_target);
             CRocketLauncher *launcher = RocketLauncher.Get();
@@ -1972,7 +1972,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             }
         }
 
-        if (attack_type == 30) {
+        if (attack_type == WEAPON_ATTACK_MACHINE_GUN) {
             ShotMachineGun(position, direction, "\x83\x8D\x83{\x83}\x83V\x83\x93\x83K\x83\x93", 500.0f);
             static int cnt = 0;
             cnt++;
@@ -1987,7 +1987,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             }
         }
 
-        if (attack_type == 70) {
+        if (attack_type == WEAPON_ATTACK_MISSILE) {
             sceVu0ScaleVector(missile_target, direction, 500.0f);
             sceVu0AddVector(missile_target, position, missile_target);
             direction[0] += direction[2] * (fRand(1.0f) - 0.5f);
@@ -2014,7 +2014,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             }
         }
 
-        if (attack_type == 40) {
+        if (attack_type == WEAPON_ATTACK_RIDEPOD_LASER) {
             sceVu0ScaleVector(laser_target, direction, 500.0f);
             sceVu0AddVector(laser_target, position, laser_target);
             sceVu0SubVector(direction, target_pos, position);
@@ -2024,7 +2024,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             if (laser != NULL) {
                 laser->SetPos(position, laser_target, direction);
                 laser->target_chara = action_info.chara->target_no;
-                laser->SetVisualCode(3);
+                laser->SetVisualCode(LASER_VISUAL_CYAN);
                 CColPrim *prim = ColPrimMan.GetPrim();
                 int       col_prim_id = -1;
 
@@ -2051,7 +2051,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             }
         }
 
-        if (attack_type == 90) {
+        if (attack_type == WEAPON_ATTACK_BEAM) {
             sceVu0ScaleVector(beam_target, direction, 500.0f);
             sceVu0AddVector(beam_target, position, beam_target);
             sceVu0ScaleVector(beam_offset, direction, 20.0f);
@@ -2061,7 +2061,7 @@ int _SHOT(RS_STACKDATA *stack, int argc) {
             if (laser != NULL) {
                 laser->SetPos(position, beam_target, direction);
                 laser->target_chara = action_info.chara->target_no;
-                laser->SetVisualCode(4);
+                laser->SetVisualCode(LASER_VISUAL_ORANGE);
                 CColPrim *prim = ColPrimMan.GetPrim();
                 int       col_prim_id = -1;
 
@@ -2545,7 +2545,7 @@ static int _ESM_FINISH(RS_STACKDATA *stack, int argc) {
         return false;
     }
 
-    effect_script->SetScriptProgNo(0x12C, 0, effect_id);
+    effect_script->SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, 0, effect_id);
     return true;
 }
 
