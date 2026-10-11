@@ -20,7 +20,7 @@ checked with temporary `offsetof` asserts against MWCC.
 - `thn_uv` (.data, 0x60, static): 6 rows of `{u, v, du, dv}` floats for CThunder::Draw.
 - `at_1214__2`/`at_1215__2`/`at_1216__3`: 0x10 vector literals in CThunder::Draw.
 - `at_3214` (.data, 0x20): 4 pairs of ints (texture coords) in CWeaponElement::Draw_Thunder.
-- `at_1107__2` "br = %.2f\n" (CTornado::SetPos printf), `at_2882` "effect02" (texture name used by
+- `at_2882` "effect02" (texture name used by
   every CWeaponElement::Draw_*), `at_1981` (0x1C, CDeadEffect::Draw jump table).
 
 ## Global instances (owned by dng_main / dng_event / event_func, NOT declared here)
@@ -53,6 +53,7 @@ whoever decompiles them should give them inline bodies.
   AllocEffect kind (BATTLE_EFFECT_KIND): 0 hit (prims 0xA0 qwords each = 0x20 prims, spark_max 0x20),
   1 flush, 2 power (0x64 qwords = 0x14 prims), 3 dead (0xF0 qwords = 0x30 prims, memset 0x37, radius/height
   10.0, size 1.0), 4 chara. Returns 1/0. `CommonClassInit` only allocates kinds 0..3 (4,4,8,4).
+  The pool sizes are the defines `HIT_EFFECT_SPARK_MAX` (32), `POWER_LINE_PRIM_MAX` (20) and `DEAD_EFFECT_PRIM_MAX` (48); the sparc pattern and mini-sprite tint values are the enums `SPARC_EFFECT_PATTERN` and `MINI_EFF_PRIM_COLOR`.
   The prim blocks are `new u_long128[]`-style arrays (no ctor); `BattleEffectPrim` and `BattleEffectChara`
   are neutral names -- no retail name known.
 - **BattleEffectPrim (0x50)**: shared by hit/power/dead blocks. 0x0 kind (dead only: 0 cloud, 1 glitter --
@@ -160,7 +161,7 @@ whoever decompiles them should give them inline bodies.
 
 ## Native draw constructors
 
-`CChillAfterHit`, `CSparcEffect`, `CSwordLuminous`, `CSWordAfterImage`, `CFlushEffect`, `CPowerLine`, and the cold, wind and fire weapon-element draws construct their sprite or frame-attribute locals through native C++ declarations. The local must be declared at the original constructor execution point, and later temporary arrays must follow it in declaration order to retain their stack slots. For `CSparcEffect`, the `sx` and `sz` values also follow the attribute in the active branch. Direct native placement-array new was tested for `CMapEffectsManeger::Init_LightBoll` but changed code generation; the runtime array helper remains declared in `mw_runtime.h`.
+`CChillAfterHit`, `CSparcEffect`, `CSwordLuminous`, `CSWordAfterImage`, `CFlushEffect`, `CPowerLine`, and the cold, wind and fire weapon-element draws construct their sprite or frame-attribute locals through native C++ declarations. The local must be declared at the original constructor execution point, and later temporary arrays must follow it in declaration order to retain their stack slots. For `CSparcEffect`, the `sx` and `sz` values also follow the attribute in the active branch. Placement-array new (`new (memory->Alloc(...)) T[n]`) matches for the plain-data pools `BattleEffectChara`, `BattleEffectPrim` (hit, power and dead prims). It changes code generation for `CMapEffectsManeger::Init_LightBoll` and for the `CFlushEffect` and `CDeadEffect` pools, which have no user-declared constructor; those keep the runtime array helper declared in `mw_runtime.h`.
 
 ## Division-check pragma
 
