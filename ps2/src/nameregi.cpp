@@ -1172,7 +1172,7 @@ void NameRegistInit(mgCMemory *stack, int *tex_block, int open_type) {
                         case USED_ITEM_TYPE_ROBO_PART:
                         case USED_ITEM_TYPE_FISH:
                             message_no = 1;
-                            item_names.name[0] = Nameregi_Target.item->GetName(0);
+                            item_names.name[0] = Nameregi_Target.item->GetName(ITEM_NAME_TYPE_PLAIN);
                             break;
                     }
                 }
@@ -2002,7 +2002,7 @@ s32 CNameRegiMenu::KeyStep() {
                 }
 
                 if (CheckDeleteNameRegisteItem(Nameregi_Target.item) != 0) {
-                    GetUserDataMan()->DeleteItem(0x180, 1);
+                    GetUserDataMan()->DeleteItem(ITEM_ID_NAME_CHANGE_TICKET, 1);
                 }
 
                 if (LanguageCode > 0) {
@@ -2060,7 +2060,7 @@ s32 CNameRegiMenu::KeyStep() {
                     ConvertShitJiss2Ascii(name, password);
                     PasswordKey key = {{0}};
                     password[0x16] = 0;
-                    strcpy((char *) key.bytes, Nameregi_Target.item->GetName(0));
+                    strcpy((char *) key.bytes, Nameregi_Target.item->GetName(ITEM_NAME_TYPE_PLAIN));
                     key_text = key.bytes;
                     password_valid = DecodePassword(password, (u8 *) decoded, 0x10, (u8 *) key_text, 0x14);
                     memcpy(header, decoded, sizeof(header));
@@ -2161,7 +2161,7 @@ s32 CNameRegiMenu::KeyStep() {
             if (Nameregi_Target.target == NAMEREGI_TARGET_KEYWORD) {
                 message_type = 0xA;
                 message_open = 1;
-                MenuArg.end_code = 0;
+                MenuArg.end_code = MENU_END_NONE;
                 message->MsgPreset(0xB);
                 message->SetAbsPos(5);
                 message->SetMsgCursor(1);
@@ -2685,7 +2685,7 @@ void CNameRegiMenu::DrawSelectedWord() {
     int          box_width = NameRegistMax * 0xC + 0x3E;
     int          box_left = (mgScreenWidth - box_width) >> 1;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(NameRegiTex1);
     prim->Color(0, 0, 0, 0x33);
@@ -2696,7 +2696,7 @@ void CNameRegiMenu::DrawSelectedWord() {
     Menu3DivideTextureDraw(prim, frame, gettbl0_2012, 1);
     prim->End();
     int underscore_x = box_left + 0x20;
-    SetSpriteEnv(prim, 2);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR_AA);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Color(0xFA, 0xFA, 0xFA, 0x40);
     int i = 0;
@@ -2731,7 +2731,7 @@ void CNameRegiMenu::DrawSelectedWord() {
 void CNameRegiMenu::DrawMessage() {
     MenuReloadTexture(OldReloadTexNumber, MenuDCMsg[6]->texture_block);
     mgCDrawPrim prim;
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     RGBAQ_TYPE color = {0x80, 0x80, 0x80, 0x80, 0x3F800000};
     DrawVersatileWin_1(&prim, waku, &color, 0x80);
     (MenuDCMsg[6])->DrawMsg();

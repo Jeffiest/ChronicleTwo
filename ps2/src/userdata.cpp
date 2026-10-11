@@ -472,11 +472,11 @@ int CGameDataUsed::IsWhoEquip() {
     if (this->used_type == USED_ITEM_TYPE_WEAPON) {
         item_type = this->item_type;
 
-        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == 5 || item_type == 6 || item_type == 7) {
+        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == ITEM_DATA_MAX_CLOTHES || item_type == ITEM_DATA_MAX_HAT || item_type == ITEM_DATA_MAX_SHOES) {
             return USER_CHARA_MAX;
         }
 
-        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == 8 || item_type == 9 || item_type == 0xA) {
+        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == ITEM_DATA_MONICA_CLOTHES || item_type == ITEM_DATA_MONICA_ACCESSORY || item_type == ITEM_DATA_MONICA_BOOTS) {
             return USER_CHARA_MONICA;
         }
 
@@ -679,7 +679,7 @@ int CGameDataUsed::Boiled() {
     fish->data.boiled.value = value + 0x14;
     fish->item_type = ITEM_DATA_BOILED;
     fish->used_type = USED_ITEM_TYPE_BOILED;
-    fish->item_no = 0x1AA;
+    fish->item_no = ITEM_ID_BOILED_FISH;
     return true;
 }
 
@@ -2441,7 +2441,7 @@ int GetShiledKitLimmit(int item_no) {
     // Gives the shield kit limit for each ridepod core.
     static unsigned char use_limmit_table[7] = {3, 6, 9, 12, 15, 18, 21};
 
-    int index = item_no - 0xF6;
+    int index = item_no - ITEM_ID_CORE;
 
     if (index < 0) {
         index = 0;
@@ -2898,7 +2898,7 @@ float CUserDataManager::AddHp_Rate(int chara_no, float rate) {
 
 COMMON_GAGE *CUserDataManager::GetWHpGage(int group, int member) {
     if (group == USER_CHARA_ROBO) {
-        return &robo_data.parts[0].data.robopart.whp;
+        return &robo_data.parts[ROBO_PART_ARM].data.robopart.whp;
     }
 
     if (group == USER_CHARA_MONSTER) {
@@ -3027,7 +3027,7 @@ int CUserDataManager::GetNowPartyMember() {
     int mask = party_member;
     int result = mask;
 
-    if (SearchItemOnItemBrd(0x134, ITEM_BOARD_MAIN) != NULL) {
+    if (SearchItemOnItemBrd(ITEM_ID_BADGE_BOX, ITEM_BOARD_MAIN) != NULL) {
         result = mask | (1 << USER_CHARA_MONSTER);
     }
 
@@ -3151,7 +3151,7 @@ int CUserDataManager::CheckQuickChange(int chara_no, int *out) {
     }
 
     if (chara_no == USER_CHARA_MONSTER) {
-        CGameDataUsed *badge_item = SearchItemOnItemBrd(0x134, ITEM_BOARD_MAIN);
+        CGameDataUsed *badge_item = SearchItemOnItemBrd(ITEM_ID_BADGE_BOX, ITEM_BOARD_MAIN);
         state = 0;
         int          changeable;
         int          i;
@@ -3693,7 +3693,7 @@ void CUserDataManager::AllWeaponRepair() {
         }
     }
 
-    robo_data.parts[0].Repair(999);
+    robo_data.parts[ROBO_PART_ARM].Repair(999);
     robo_data.AddPoint(999.0f);
 }
 
@@ -4347,7 +4347,7 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
     }
 
     if (item_no == ITEM_ID_CORE) {
-        int robo_part_no[4] = {0x87, 0x91, 0x9B, 0xA5};
+        int robo_part_no[4] = {ITEM_ID_DRUM_CAN_BODY, ITEM_ID_CANNONBALL_ARM, ITEM_ID_IRON_LEG, ITEM_ID_ENERGY_PACK};
 
         for (int i = 0; i < 4; i++) {
             CGameDataUsed *part = SearchItemOnItemBrd(robo_part_no[i], ITEM_BOARD_ALL);
@@ -5969,9 +5969,9 @@ int KillMonsterCount(int monster, int amount) {
 int SearchEquipType(int category, int slot) {
     // Gives the item type accepted by each human or ridepod equipment slot.
     static signed char equip_type_tbl[3][5] = {
-        {1,  2,  6,  7,  5},
-        {3,  4,  9,  10, 8},
-        {13, 12, 15, 14, 0},
+        {ITEM_DATA_MAX_MELEE, ITEM_DATA_MAX_GUN, ITEM_DATA_MAX_HAT, ITEM_DATA_MAX_SHOES, ITEM_DATA_MAX_CLOTHES},
+        {ITEM_DATA_MONICA_MELEE, ITEM_DATA_MONICA_MAGIC, ITEM_DATA_MONICA_ACCESSORY, ITEM_DATA_MONICA_BOOTS, ITEM_DATA_MONICA_CLOTHES},
+        {ITEM_DATA_ROBO_ARM, ITEM_DATA_ROBO_BODY, ITEM_DATA_ROBO_ENERGY_PACK, ITEM_DATA_ROBO_LEG, ITEM_DATA_NONE},
     };
 
     if (category < USER_CHARA_MAX || category > USER_CHARA_ROBO) {
@@ -6799,14 +6799,14 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
         if (mode == 0) {
             manager->monster_box.EnableChange(1);
             manager->monster_box.EnableChange(4);
-            manager->DeleteItem(0xF6, 1);
+            manager->DeleteItem(ITEM_ID_CORE, 1);
             MenuSeiton(manager->GetUsedDataPtr(0), 0x90);
         }
 
         if (mode == 4) {
             manager->SetChrEquip(USER_CHARA_MAX, 2);
             manager->SetChrEquip(USER_CHARA_MAX, 0x17);
-            manager->DeleteItem(0xF6, 1);
+            manager->DeleteItem(ITEM_ID_CORE, 1);
             manager->GetItem(0xF7, 1);
             manager->monster_box.EnableChange(1);
             manager->monster_box.EnableChange(4);
@@ -6820,7 +6820,7 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
             }
 
             manager->SetChrEquip(USER_CHARA_MAX, attach);
-            manager->DeleteItem(0xF6, 1);
+            manager->DeleteItem(ITEM_ID_CORE, 1);
             manager->GetItem(0xF7, 1);
             manager->GetCharaDataPtr(USER_CHARA_MAX)->hp.now = 48.0f;
             manager->GetCharaDataPtr(USER_CHARA_MAX)->hp.max = 48.0f;
