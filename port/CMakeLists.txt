@@ -75,6 +75,27 @@ if(NOT menucls1_current STREQUAL menucls1_patched)
     file(WRITE ${MENUCLS1_COPY} "${menucls1_patched}")
 endif()
 
+# Windows' long is 32 bits where the PS2's is 64: scripts/port/llp64.py rewrites the literal
+# longs that hold 64-bit values in the copies of the units, and in a mirror of ps2/include that
+# the compiler is pointed at instead of ps2/include (a header found beside the one including it
+# would win over any other directory, so the mirror holds all of them).
+set(LLP64_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/llp64.py)
+set(LLP64_UNITS "")
+set(PS2_INCLUDE ${CMAKE_SOURCE_DIR}/ps2/include)
+if(WIN32)
+    execute_process(COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} units
+        OUTPUT_VARIABLE LLP64_UNITS OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+    set(PS2_INCLUDE ${CMAKE_BINARY_DIR}/ps2_include)
+    file(GLOB_RECURSE PS2_HEADERS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/ps2/include/*)
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/ps2_include.stamp
+        COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} headers ${CMAKE_SOURCE_DIR}/ps2/include ${PS2_INCLUDE}
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/ps2_include.stamp
+        DEPENDS ${PS2_HEADERS} ${LLP64_SCRIPT}
+        COMMENT "Mirroring ps2/include with the 64-bit longs spelled out"
+        VERBATIM)
+    add_custom_target(dc_ps2_include DEPENDS ${CMAKE_BINARY_DIR}/ps2_include.stamp)
+endif()
+
 set(PS2_UNITS "")
 # What both halves are compiled with (dc_options below). PORT leaves out the
 # functions ps2/src writes in MIPS assembly.
@@ -115,10 +136,15 @@ foreach(unit IN LISTS PS2_SOURCES)
         set(stubs "")
         set(header "")
     endif()
+    set(llp64 "")
+    if(unit IN_LIST LLP64_UNITS)
+        set(llp64 COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} unit ${original} ${copy})
+    endif()
     add_custom_command(OUTPUT ${copy}
         COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
             ${port_override_defines} ${original} ${copy}
-        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${header}
+        ${llp64}
+        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${LLP64_SCRIPT} ${header}
         COMMENT "Removing overridden definitions from ps2/src/${unit}"
         VERBATIM)
     list(APPEND PS2_UNITS ${copy})
@@ -145,7 +171,13 @@ add_custom_command(OUTPUT ${PORT_OVERRIDES_CHECKED}
 add_library(dc_options INTERFACE)
 target_compile_definitions(dc_options INTERFACE ${PORT_DEFINITIONS})
 target_include_directories(dc_options INTERFACE
-    ${CMAKE_SOURCE_DIR}/port/include ${KZ_ROOT}/include ${CMAKE_SOURCE_DIR}/ps2/include ${CMAKE_SOURCE_DIR}/ps2/include/sce)
+    ${CMAKE_SOURCE_DIR}/port/include ${KZ_ROOT}/include ${PS2_INCLUDE} ${PS2_INCLUDE}/sce)
+# The struct sizes STATIC_ASSERT checks are the PS2's, so every struct holding a pointer fails:
+# the option is for auditing integer widths, not for a working build.
+option(DC_STATIC_ASSERT "Make the game's STATIC_ASSERTs check" OFF)
+if(DC_STATIC_ASSERT)
+    target_compile_definitions(dc_options INTERFACE PORT_STATIC_ASSERT)
+endif()
 target_compile_options(dc_options INTERFACE
     "SHELL:-include ${CMAKE_SOURCE_DIR}/port/include/port.h"
     -fms-extensions -ffunction-sections -fdata-sections
@@ -156,6 +188,9 @@ target_compile_options(dc_options INTERFACE -ffp-contract=off)
 
 add_library(dc_ps2 OBJECT ${PS2_UNITS} ${PORT_OVERRIDES_CHECKED})
 target_link_libraries(dc_ps2 PRIVATE dc_options)
+if(WIN32)
+    add_dependencies(dc_ps2 dc_ps2_include)
+endif()
 # Retail's code reads locals it never set and falls off the end of functions
 # that return a value, and ps2/src keeps both because the match depends on
 # them. MWCC gave each a defined if arbitrary result; these flags give the port
@@ -212,7 +247,10 @@ foreach(index RANGE 0 ${override_last} 2)
 endforeach()
 
 add_library(dc_port OBJECT ${PORT_LIB_SOURCES})
-target_link_libraries(dc_port PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan kz_port_headers)
+target_link_libraries(dc_port PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan nlohmann_json::nlohmann_json kz_port_headers)
+if(WIN32)
+    add_dependencies(dc_port dc_ps2_include)
+endif()
 target_include_directories(dc_port BEFORE PRIVATE ${PORT_DIR}/host_overrides)
 target_include_directories(dc_port PRIVATE ${PORT_DIR})
 target_compile_options(dc_port PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
@@ -226,7 +264,10 @@ set(DC_LINK_OPTIONS -fuse-ld=lld -pie -Wl,-z,separate-code -Wl,--gc-sections -Wl
 
 function(dc_link_game target)
     target_sources(${target} PRIVATE $<TARGET_OBJECTS:dc_port> $<TARGET_OBJECTS:dc_host> $<TARGET_OBJECTS:dc_ps2>)
-    target_link_libraries(${target} PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan kz_port_headers)
+    target_link_libraries(${target} PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan nlohmann_json::nlohmann_json kz_port_headers)
+    if(WIN32)
+        add_dependencies(${target} dc_ps2_include)
+    endif()
     target_include_directories(${target} BEFORE PRIVATE ${PORT_DIR}/host_overrides)
     target_include_directories(${target} PRIVATE ${PORT_DIR})
     target_compile_options(${target} PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label

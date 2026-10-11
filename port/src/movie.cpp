@@ -516,8 +516,8 @@ int sceMpegDemuxPssRing(sceMpeg *mp, u_char *start, int size, u_char *buf_start,
 
         const u_char *header = p + 6;
         std::size_t   payload = 0;
-        long          pts = -1;
-        long          dts = -1;
+        std::int64_t  pts = -1;
+        std::int64_t  dts = -1;
         int           kind = -1;
 
         if (code >= 0xE0 && code <= 0xEF) {
@@ -536,11 +536,11 @@ int sceMpegDemuxPssRing(sceMpeg *mp, u_char *start, int size, u_char *buf_start,
             unsigned flags = (header[1] >> 6) & 0x3;
 
             if (flags >= 2) {
-                pts = (long) movie_port::PtsAt(header + 3);
+                pts = movie_port::PtsAt(header + 3);
             }
 
             if (flags == 3 && header_data >= 10) {
-                dts = (long) movie_port::PtsAt(header + 8);
+                dts = movie_port::PtsAt(header + 8);
             }
 
             payload = 3 + header_data;

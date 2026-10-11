@@ -80,7 +80,7 @@ constexpr InverseLut kInverseLut;
 
 // Where Conv8to32 puts the 8-bit texel (x, y) of a width x height image, or -1 where its
 // page-sized work buffers drop it (images narrower than a block).
-long SwizzledOffset(int width, int height, int x, int y) {
+std::int64_t SwizzledOffset(int width, int height, int x, int y) {
     int pages_x = ((width - 1) >> 7) + 1;
     int pages_y = ((height - 1) >> 6) + 1;
     int page_width = pages_x == 1 ? width : 128;
@@ -100,14 +100,14 @@ long SwizzledOffset(int width, int height, int x, int y) {
     if (page_row >= row_count || page_column >= row_bytes) {
         return -1;
     }
-    return static_cast<long>(page_y) * pages_x * row_bytes * row_count + static_cast<long>(row_bytes) * page_x +
-           static_cast<long>(page_row) * row_bytes * pages_x + page_column;
+    return static_cast<std::int64_t>(page_y) * pages_x * row_bytes * row_count + static_cast<std::int64_t>(row_bytes) * page_x +
+           static_cast<std::int64_t>(page_row) * row_bytes * pages_x + page_column;
 }
 
 void Unswizzle8(int width, int height, const u_char *swizzled, u_char *linear) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            long offset = SwizzledOffset(width, height, x, y);
+            std::int64_t offset = SwizzledOffset(width, height, x, y);
             linear[static_cast<size_t>(y) * width + x] = offset < 0 ? 0 : swizzled[offset];
         }
     }

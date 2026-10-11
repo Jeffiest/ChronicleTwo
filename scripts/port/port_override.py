@@ -214,10 +214,13 @@ def parameter_type(parameter):
         if named:
             parameter = declarator[1] + declarator[3]
     words = [word for word in re.findall(r"[A-Za-z_]\w*|\S", parameter) if word != "register"]
-    return "".join(
+    spelled = "".join(
         (" " if i and re.match(r"\w", word) and re.match(r"\w", words[i - 1][-1]) else "") + word
         for i, word in enumerate(words)
     )
+    # u_long is unsigned long where the PS2 and Linux have it and a 64-bit type on Windows, where
+    # llp64.py rewrites ps2/src's spelling: the port's definition has to be able to use either.
+    return re.sub(r"\bunsigned long\b(?! long)", "u_long", spelled)
 
 
 def parameter_types(parameters):

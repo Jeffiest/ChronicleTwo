@@ -29,7 +29,7 @@ uint8_t ColourValue(float value) {
 // VU1 took texture coordinates scaled by the texture's power-of-two size (TEX0 TW/TH); the
 // renderer samples in texels of the image it was given, which only differs for a non-power-of-two
 // texture.
-float UvScale(unsigned long tex0, const mgCTexture *texture, int axis) {
+float UvScale(u_long tex0, const mgCTexture *texture, int axis) {
     if (texture == nullptr || texture->width <= 0 || texture->height <= 0) {
         return 1.0f;
     }
@@ -64,7 +64,7 @@ int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
     }
 
     const mgCTexture *texture = nullptr;
-    unsigned long     tex0 = 0;
+    u_long            tex0 = 0;
 
     if (visual->material != nullptr) {
         texture = (visual->material + group->material)->texture;

@@ -185,7 +185,7 @@ bool SetJump(const char *spec) {
         name = text.substr(0, colon);
         std::string digits(text.substr(colon + 1));
         char       *end = nullptr;
-        long        parsed = std::strtol(digits.c_str(), &end, 10);
+        long long   parsed = std::strtoll(digits.c_str(), &end, 10);
         if (end == digits.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX) {
             return false;
         }

@@ -30,7 +30,7 @@ namespace mgport {
 float LogicalX(int gs_x);
 float LogicalY(int gs_y);
 float Depth(unsigned gs_z);
-gfx::LogicalRect ScissorRect(unsigned long scissor);
+gfx::LogicalRect ScissorRect(u_long scissor);
 gfx::DrawState DrawStateOf(const sceGsTest &test, const sceGsZbuf &zbuf, const sceGsAlpha &alpha,
                            const sceGsPrim &prim, bool texa_aem, u_char texa_ta0,
                            const gfx::LogicalRect *scissor);
@@ -598,7 +598,7 @@ PORT_OVERRIDE void mgCDrawPrim::TextureCrd(int u, int v) {
     TextureCrd4(u << 4, v << 4);
 }
 
-PORT_OVERRIDE void mgCDrawPrim::Direct(unsigned long reg, unsigned long data) {
+PORT_OVERRIDE void mgCDrawPrim::Direct(u_long reg, u_long data) {
     switch (reg) {
         case SCE_GS_TEXFLUSH:
             // The GS's sampler had a cache; the renderer samples the live image.

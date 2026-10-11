@@ -82,7 +82,7 @@ float Depth(unsigned gs_z) {
 
 // A SCISSOR register value (SCAX0, SCAX1, SCAY0, SCAY1: screen pixels, both edges kept) as the
 // logical rectangle the renderer scissors to.
-gfx::LogicalRect ScissorRect(unsigned long scissor) {
+gfx::LogicalRect ScissorRect(u_long scissor) {
     const int left = static_cast<int>(scissor & 0xFFFFu);
     const int right = static_cast<int>((scissor >> 16) & 0xFFFFu);
     const int top = static_cast<int>((scissor >> 32) & 0xFFFFu);
