@@ -628,17 +628,17 @@ int CActionChara::UsedItemAction() {
     info = GetItemInfoData(item_no);
 
     if (info != NULL) {
-        if (info->status_flags & 6) {
+        if (info->action_flags & (ITEM_ACTION_THROW | ITEM_ACTION_THROW_ALT)) {
             EntryThrowItem();
             return ACTION_ITEM_THROW;
         }
 
-        if (info->status_flags & 0x19) {
+        if (info->action_flags & (ITEM_ACTION_USE | ITEM_ACTION_DRINK_WATER | ITEM_ACTION_EAT)) {
             if (battle_info->UseActiveItem(item) != 0) {
-                if (info->status_flags & 0x18) {
+                if (info->action_flags & (ITEM_ACTION_DRINK_WATER | ITEM_ACTION_EAT)) {
                     effect_kind = 0;
 
-                    if (item_no == 0x112) {
+                    if (item_no == ITEM_ID_STAMINA_DRINK) {
                         effect_kind = 1;
                     }
 
@@ -706,7 +706,7 @@ void CActionChara::EntryThrowItem() {
             effect_man->SetTexb(action_info.env->texb, 0, throw_effect);
             index = 0;
 
-            if (item_no == 0x130) {
+            if (item_no == ITEM_ID_GIFT_CAPSULE) {
                 do {
                     effect_man->SetValue(index + 2, item->GetGiftBoxItemNo(index), 0,
                                          throw_effect);
@@ -2998,7 +2998,7 @@ int CActionChara::CheckDamage() {
 
         damage += 1.0f + fRand(2.0f);
 
-        if ((hit->status & 0x1000) != 0) {
+        if ((hit->status & WEAPON_SPECIAL_RATIO_DAMAGE) != 0) {
             damage = (int) (max_hp * (0.01f * hit->damage));
 
             if (now_hp - damage < 0.0f) {
@@ -3006,7 +3006,7 @@ int CActionChara::CheckDamage() {
             }
         }
 
-        if ((hit->status & 0x2000) != 0) {
+        if ((hit->status & WEAPON_SPECIAL_HALF_HP) != 0) {
             damage = now_hp / 2;
 
             if (damage <= 1.0f) {
@@ -3037,38 +3037,38 @@ int CActionChara::CheckDamage() {
 
         if ((damage_points = (int) damage) > 0) {
             if ((hit->status & WEAPON_SPECIAL_POISON) != 0 && iRand(100) < 30 &&
-                (attributes & CHARA_STATUS_POISON) == 0 && CheckAmuletAvoid(0x101) == 0) {
+                (attributes & CHARA_STATUS_POISON) == 0 && CheckAmuletAvoid(ITEM_ID_ANTIDOTE_AMULET) == 0) {
                 battle->SetAttr(CHARA_STATUS_POISON, 0);
                 sndSePlay(battle_sound, 0x18, 0);
             }
 
-            if ((hit->status & 0x10000) != 0 && battle_area->weather != DNG_WEATHER_RAIN && iRand(100) < 30 &&
-                (attributes & CHARA_STATUS_SLOW) == 0 && CheckAmuletAvoid(0x100) == 0) {
+            if ((hit->status & WEAPON_SPECIAL_SLOW) != 0 && battle_area->weather != DNG_WEATHER_RAIN && iRand(100) < 30 &&
+                (attributes & CHARA_STATUS_SLOW) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_GOO_AMULET) == 0) {
                 battle->SetAttrVol(CHARA_STATUS_SLOW, 3600);
                 sndSePlay(battle_sound, 0x52, 0);
             }
 
-            if ((hit->status & 0x8000) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_20) == 0 && CheckAmuletAvoid(0xFD) == 0) {
+            if ((hit->status & WEAPON_SPECIAL_STONE) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_UNK_20) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_PETRIFY_AMULET) == 0) {
                 battle->SetAttrVol(CHARA_STATUS_UNK_20, 900);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x53, 0);
             }
 
-            if ((hit->status & 0x8) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_8) == 0 && CheckAmuletAvoid(0xFE) == 0) {
+            if ((hit->status & WEAPON_SPECIAL_STOP) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_UNK_8) == 0 && CheckAmuletAvoid(ITEM_ID_NON_STOP_AMULET) == 0) {
                 battle->SetAttrVol(CHARA_STATUS_UNK_8, 300);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x54, 0);
             }
 
-            if ((hit->status & 0x20000) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_4) == 0 && CheckAmuletAvoid(0xFF) == 0) {
+            if ((hit->status & WEAPON_SPECIAL_CURSE) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_UNK_4) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_CURSE_AMULET) == 0) {
                 battle->SetAttr(CHARA_STATUS_UNK_4, 0);
                 sndSePlay(battle_sound, 0x55, 0);
             }
 
-            if ((hit->status & 0x100000) != 0 && iRand(100) < 50) {
+            if ((hit->status & WEAPON_SPECIAL_DRY) != 0 && iRand(100) < 50) {
                 battle->SetAttr(CHARA_STATUS_UNK_40, 0);
                 sndSePlay(battle_sound, 0x52, 0);
             }

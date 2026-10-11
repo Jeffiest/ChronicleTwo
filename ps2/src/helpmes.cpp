@@ -23,7 +23,7 @@ static int InitFlag;
  * Window style selected for the current help message.
  *
  */
-static int WindowMode;
+static MesWindowMode WindowMode;
 
 /**
  *
@@ -59,14 +59,14 @@ void LoadHelpMes(u_long128 *scratch) {
 
     sprintf(path, "etc/help%d.mes", LanguageCode);
 
-    if (LoadFile2(path, scratch, &size, 0) != 0) {
+    if (LoadFile2(path, scratch, &size, LOAD_FILE_READ) != 0) {
         if (size > 0x1000) {
-            printf("HMes Buffer Over!!(%d/%dbyte)", size, 0x1000);
+            printf("HMes Buffer Over!!(%d/%dbyte)", size, sizeof(HelpMesBuff));
             return;
         }
 
         memcpy(HelpMesBuff, scratch, size);
-        InitFlag = 1;
+        InitFlag = true;
     }
 }
 
@@ -79,7 +79,7 @@ static HELP_MES_INFO *GetHepMesInfo() {
     return &HelpMesInfo;
 }
 
-void CreateHelpMes(int message_id) {
+void CreateHelpMes(int texture_block) {
     if (InitFlag != 0) {
         HelpMes.npc_name_mode = 0;
         HelpMes.char_num = 0;
@@ -181,18 +181,18 @@ void CreateHelpMes(int message_id) {
             HelpMes.delta_y[i] = 0;
         }
 
-        HelpMes.Preset(4);
-        HelpMes.SetWindowMode(0);
+        HelpMes.Preset(MES_PRESET_WINDOW);
+        HelpMes.SetWindowMode(MES_WIN_NONE);
         HelpMes.SetBuff((short *) HelpMesBuff);
-        HelpMes.texture_block = message_id;
-        ShowOffOnce = 0;
+        HelpMes.texture_block = texture_block;
+        ShowOffOnce = false;
         HelpMesInfo.time = 0;
         HelpMesInfo.mes_no = -1;
         HelpMesInfo.fukidashi_pos = -1;
-        HelpMesInfo.show = 0;
+        HelpMesInfo.show = false;
         HelpMesInfo.y = 0;
         HelpMesInfo.x = 0;
-        HelpMesInfo.created = 0;
+        HelpMesInfo.created = false;
     }
 }
 
@@ -211,7 +211,7 @@ void StepHelpMes() {
     }
 
     if (!info->created) {
-        message->Preset(4);
+        message->Preset(MES_PRESET_WINDOW);
         message->SetWindowMode(WindowMode);
         message->MakeMesWin(info->mes_no);
         message->fade_speed = 1.0f;
@@ -223,7 +223,7 @@ void StepHelpMes() {
             message->fukidashi_pos = info->fukidashi_pos;
         }
 
-        info->created = 1;
+        info->created = true;
     }
 
     message->Step();
@@ -234,17 +234,17 @@ void StepHelpMes() {
         if (info->time == 0) {
             info->time = 0;
             info->mes_no = -1;
-            info->show = 0;
+            info->show = false;
             info->y = 0;
             info->x = 0;
-            info->created = 0;
+            info->created = false;
             info->fukidashi_pos = -1;
         }
     }
 }
 
 void ShowOffOnceHelpMes() {
-    ShowOffOnce = 1;
+    ShowOffOnce = true;
 }
 
 void DrawHelpMes() {
@@ -266,7 +266,7 @@ void DrawHelpMes() {
     }
 
     if (ShowOffOnce != 0) {
-        ShowOffOnce = 0;
+        ShowOffOnce = false;
         return;
     }
 
@@ -284,20 +284,20 @@ void ShowHelpMes(int mes_no, int time) {
     if (info->mes_no != mes_no) {
         info->time = 0;
         info->mes_no = -1;
-        info->show = 0;
+        info->show = false;
         info->y = 0;
         info->x = 0;
-        info->created = 0;
+        info->created = false;
         info->fukidashi_pos = -1;
     }
 
-    info->show = 1;
+    info->show = true;
     info->mes_no = mes_no;
     info->time = time > 0 ? time + 1 : time;
     info->x = 18;
     info->y = mgScreenHeight - 31;
     info->fukidashi_pos = -1;
-    WindowMode = 0;
+    WindowMode = MES_WIN_NONE;
 }
 
 void ShowErrorHelpMes(int mes_no, int time) {
@@ -310,17 +310,17 @@ void ShowErrorHelpMes(int mes_no, int time) {
     if (info->mes_no != mes_no) {
         info->time = 0;
         info->mes_no = -1;
-        info->show = 0;
+        info->show = false;
         info->y = 0;
         info->x = 0;
-        info->created = 0;
+        info->created = false;
         info->fukidashi_pos = -1;
     }
 
-    info->show = 1;
+    info->show = true;
     info->mes_no = mes_no;
     info->time = time > 0 ? time + 1 : time;
     info->fukidashi_pos = 8;
-    WindowMode = 4;
+    WindowMode = MES_WIN_VERSATILE_1;
     sndSePlay(GetSystemSndID(), 28, 0);
 }

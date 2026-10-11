@@ -37,15 +37,15 @@ returns it (`lw 0($this)`).
 ## Tables (all static; element counts from .bss sizes)
 | symbol | size | element | count |
 |---|---|---|---|
-| local_com_itemdata | 0x4A40 | CDataCommon 0x2C | 432 (InitItemMes loops 0x1B0) |
+| local_com_itemdata | 0x4A40 | CDataCommon 0x2C | 432 (`ITEM_COMMON_DATA_MAX`; InitItemMes loops over it) |
 | local_itemdata | 0xA20 | CDataItem 0x10 | 162 (`__sinit` construct_array 0xA2) |
 | local_weapondata | 0x2270 | CDataWeapon 0x4C | 116 (0x74) |
 | local_attachdata | 0x390 | CDataAttach 0x18 | 38 (0x26) |
 | local_robodata | 0x990 | CDataRoboPart 0x24 | 68 (no ctor, no construct_array) |
 | local_fishdata | 0x190 | CDataBreedFish 0x14 | 20 (0x14) |
 | local_guarddata | 0x46 | s16 | 35 (stride 2 in GetGuardData); its 0x50-byte piece ends in 14 zero alignment bytes, not five more entries |
-| local_itemdatano_converttable | 0x400 | s16 | 512: item_no -> index into com table, -1 empty |
-`GetCommonData` accepts 0 < item_no < 0x200. Family getters then index the family table with
+| local_itemdatano_converttable | 0x400 | s16 | `ITEM_NO_MAX` (512): item_no -> index into com table, -1 empty |
+`GetCommonData` accepts 0 < item_no < `ITEM_NO_MAX`. Family getters then index the family table with
 `CDataCommon::list_no` (< `<x>_num`) after checking `ConvertUsedItemType(type)`: weapon 3,
 item 1/7/8, attach 2, fish 6; robo and guard do not check type.
 
@@ -55,9 +55,22 @@ list_no, +0x1C u8, +0x1E s16, +0xA u16 (clamped to 0x90 when weapon family and >
 +6 s16, +8 s16, +0xC char[16] (strcpy of string arg), +0x24 u32, +0x28 zeroed (name ptr).
 - +6 icon_no (`GetItemIconNo`), +8 message_no (`GetItemMessageNo` adds its function-local
   static `msg_offsettbl[k]` = {0, 10000, 0}, retail `msg_offsettbl_1363`), +0xC file_name (`GetItemFileName`), +0x24 attribute (`GetItemDataAttribute`;
-  bit1 `IsTrush`, bit2 `IsSpectolTrans`), +0x28 name (`GetItemMessage`, `SearchItemByName`).
+  ITEM_ATTRIBUTE_TRUSH (0x1, `IsTrush`), ITEM_ATTRIBUTE_SPECTOL_TRANS (0x2, `IsSpectolTrans`)), +0x28 name (`GetItemMessage`, `SearchItemByName`).
 - +0xA max_num: `CGameDataUsed::AddNum` clamps counts to it. +0x1E stack_num:
   `CheckStackRemain` = it - GetNum. +0x1C active_set: `IsActiveSet` returns it. +0x20 unknown.
+
+## Names and flag enums
+- `ITEM_ID`, `ITEM_DATA_TYPE` and `ITEM_ATTRIBUTE` names come from `menu/cfg7/comdat.cfg` (COM
+  item_no, type, list_no, active_set, stack_num, max_num, icon_tex, icon_no, message_no, "file",
+  attribute) and `menu/cfg7/comdatmes1.cfg` (English MES_SYS item_no, "name").
+- `ITEM_ACTION_FLAG` (`CDataItem::action_flags`, `USEITEM_EFFECT::action_flags`) values from
+  itemdat.cfg: 0x1 use, 0x2 thrown, 0x8 Tasty Water, 0x10 food.
+- `ITEM_TARGET_FLAG` (`target_flags`): 0x2 Max, 0x4 Monica, 0x8 ridepod, 0x20 weapon, 0x40 monsters.
+  Bit 0x10 has no name: set on most food and remedies, and `MenuUseItemCheckFunc` tests it with 0x6
+  for a character target.
+- Renamed fields: `CDataItem::status_flags` and `USEITEM_EFFECT::status_flags` are now
+  `action_flags`; `BASE_MONSTER_TBL` `unk_98` is `lift_flags` (`MONSTER_LIFT_FLAG`) and `unk_b4` is
+  `share_model`.
 
 ## Item type (CDataCommon::type) -> ConvertUsedItemType
 1..4 -> 3 weapon; 5..10 -> 4 (unknown; path `mainchr/` like weapons); 0xB and >=0x14 -> 1 item;
@@ -68,12 +81,12 @@ list_no, +0x1C u8, +0x1E s16, +0xA u16 (clamped to 0x90 when weapon family and >
 (0xD/0xE robo parts with joints, 0x11 special count in GetNum, 0x1A dungeon key).
 
 ## CDataItem (0x10)
-Ctor: sw 0, sw 4, sh 0xA/0xC/0xE (0x8 NOT cleared). `_DATAITEM` args: [1] -> +4 (if bit 0x800000
-set it becomes `(v & ~0x800000) | 0x142A8000`), [2] -> +0, [3] -> +8, [4..6] -> +0xA/+0xC/+0xE.
+Ctor: sw 0, sw 4, sh 0xA/0xC/0xE (0x8 NOT cleared). `_DATAITEM` args: [1] -> +4 (if bit `ITEM_USE_FLAG_CURE_ALL` (0x800000)
+set it becomes `(v & ~ITEM_USE_FLAG_CURE_ALL) | 0x142A8000`, the six cure flags), [2] -> +0, [3] -> +8, [4..6] -> +0xA/+0xC/+0xE.
 `GetUsedItemAfterEffect` copies to USEITEM_EFFECT: +4 -> e+0, +0 -> e+4, +8 -> e+8 (u16),
 +0xA/+0xC/+0xE sign-extended -> e+0xC/+0x10/+0x14. In `MenuUseItemCheckFunc` e+0 is the
 "MenuUsedItemType" flag word (0x100, 0x400, 0x1000 tested), e+4 tested for 0x10 on a dead chara,
-e+8 tested per target kind (6/0x10 chara, 0x20 item, 8 robo) -> names use/status/target flags are
+e+8 tested per target kind (6/0x10 chara, 0x20 item, 8 robo) -> names the use, action and target flags are
 from that usage; e+0xC.. read as an int array indexed by count of effects applied.
 ## USEITEM_EFFECT
 `Init_USEITEM_EFFECT` (static) clears +0..+0x1B. Size not asserted: caller stack has next local at
@@ -89,7 +102,7 @@ float), +0x46, +0x47, +0x39, +0x2C (u32), +0x48 (argc>5), +0x49 (argc>6); `_DATA
 - +4/+6 -> used+0x22/+0x24; +8/+0xA are their caps in `CheckParamLimmit`. +0xC[8] -> used
   +0x26..+0x34, capped by +0x1C[8]. `IsBuildUp` compares target weapon's +4 and +0xC[8] (x0.9)
   with used +0x22 and +0x26.. -- +4 is very likely attack, kept as `status[0]`.
-- +0x2C -> used+0x38 special bits (OR'd like CDataAttach+0x14). +0x30..0x37 never touched here.
+- +0x2C -> used+0x38 WEAPON_SPECIAL_FLAG bits (OR'd like CDataAttach+0x14). +0x30..0x37 never touched here.
 - +0x38 -> used+0x3C (u16). +0x39 `AddFusionPoint` in LevelUp. +0x3A[3] build-up weapon item
   numbers (`IsBuildUp`). +0x40[3] monsters, `CheckBuildUpMonsterCondition` -> `KillMonsterCount`.
 - +0x46 `GetPalletColor`, +0x48 `GetAttackType`, +0x49 `GetModelNo` (retail function names).
@@ -141,11 +154,11 @@ Static functions: all `_DATA*`/`_MES_SYS*` tags, `LoadGameDataAnalyze`, `ItemCmd
 `Init_USEITEM_EFFECT`.
 
 ## Misc
-- `GetItemFileName(no, ext)`: types 5 and 8 append "t" when save bit flag 799 is set; ext==1
+- `GetItemFileName(no, ext)`: types ITEM_DATA_MAX_CLOTHES (5) and ITEM_DATA_MONICA_CLOTHES (8) append "t" when save bit flag 799 is set; ext==1
   appends ".chr". Uses `GetSaveData`/`CSaveData::GetBitFlag`.
 - `GetItemFilePath(no, alt)`: dir `dungeon/robo/` (family 5), `mainchr/` (3,4), else `item/`;
   alt==1: weapons -> `wep_t/%s_item.chr`, types 0xD/0xE -> `wep_t/%s.chr`.
-- `CheckItemEquip(chara, item)`: 0x12A only chara 0, 0x160 only chara 1, 0x171 only chara 0.
+- `CheckItemEquip(chara, item)`: ITEM_ID_GUN_REPAIR only chara 0, ITEM_ID_MAGIC_REPAIR only chara 1, ITEM_ID_CAMERA only chara 0.
 - `GetItemMessageNo` second argument indexes `msg_offsettbl`.
 - `ATTACH_USED` is a userdata struct (CGameDataUsed+0x10); only forward-declared here.
 - Return types: `GetDataType` lbu -> u8; `GetItemIconNo`/`GetDataTypeStartListNo`/

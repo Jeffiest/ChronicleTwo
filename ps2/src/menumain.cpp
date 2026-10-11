@@ -2004,13 +2004,13 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
     MenuPosData->AttachCommonTexInfo();
     HatumeiMenuOkFlag = false;
 
-    if (0 < MenuUserDataManPtr->GetNumSameItem(0x171)) {
+    if (0 < MenuUserDataManPtr->GetNumSameItem(ITEM_ID_CAMERA)) {
         HatumeiMenuOkFlag = true;
     }
 
     ManualMenuOkFlag = false;
 
-    if (0 < MenuUserDataManPtr->GetNumSameItem(0x167)) {
+    if (0 < MenuUserDataManPtr->GetNumSameItem(ITEM_ID_HELP_RECEIVER)) {
         ManualMenuOkFlag = true;
     }
 

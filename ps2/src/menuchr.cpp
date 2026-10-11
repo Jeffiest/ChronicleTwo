@@ -4714,7 +4714,7 @@ int CMenuMosSelect::KeyStep() {
                                     int badge_index = select;
                                     reward.item_no = 0x17F;
                                     reward.used_type = USED_ITEM_TYPE_ATTACH;
-                                    reward.item_type = ITEM_DATA_UNK_22;
+                                    reward.item_type = ITEM_DATA_MONSTER_DROP;
                                     reward.data.attach.spectol_value = select_badge->class_level + 1;
                                     s16 *param = reward.data.attach.status;
 
@@ -7496,8 +7496,8 @@ void CMosBookMenu::SetMonsterInfo(BASE_MONSTER_TBL *monster) {
         item_count = 0;
 
         for (i = 0; i < 3; i++) {
-            if (0 < monster->drop_items[i]) {
-                message = GetItemMessage(monster->drop_items[i]);
+            if (0 < monster->drop_item[i]) {
+                message = GetItemMessage(monster->drop_item[i]);
 
                 if (message != NULL) {
                     strcpy(this->drop_item[item_count], message);
