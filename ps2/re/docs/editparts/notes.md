@@ -16,7 +16,7 @@ editor (`editpartsinfo.hpp`, `editpartsdata.hpp`) is a different, grid-based des
 `CFuncPointCheck` 8 bytes); every size/offset assert below holds.
 
 ## CEditPartsInfo (size 0x280, no vtable)
-- `GetPartsType` checks the 0x40 attribute first (returning type 1), then the river attribute
+- `GetPartsType` checks `EDIT_PARTS_ATR_TYPE_ONE` (0x40) first (returning type 1), then the river attribute
   (returning type 11), and otherwise returns the stored `parts_type`.
 - Size: `CEditMap::LoadEditInfo` and `emapEDIT_PARTS_NUM` use `__construct_new_array(..., __ct__14CEditPartsInfoFv,
   0, 0x280, n)` (no destructor). Ctor `__ct__14CEditPartsInfoFv` (0x1B6790, emitted in editmap) constructs five
@@ -24,9 +24,10 @@ editor (`editpartsinfo.hpp`, `editpartsdata.hpp`) is a different, grid-based des
 - Field evidence (setters are the `emap*` script commands in editinfo, LoadEditInfo in editmap):
   - 0x00 `id` (`emapID`; Initialize -999; `GetInfoID`; RemoveInfo indexes < 0x100)
   - 0x04 `attr` (`emapPARTS_ATR` ORs; `GROUND_PARTS` |7, `BLOCK_PARTS` |0x30, `FENCE_PARTS` |0x130,
-    `RIVER_PARTS` |0x80). Other bits seen: 0x1 (RemoveEditParts refuses removal in one mode), 0x2 (LoadData
-    skips BuildEditParts), 0x40 (GetPartsType -> 1), 0x100 (LoadEditInfo flattens area3_box to a line, place_anime 0),
-    0x200 (place_anime 0), 0x1000 (IsBurn), 0x10000 (bury_depth computed), 0x80000 (RemoveEditParts re-checks
+    `RIVER_PARTS` |0x80). Other bits seen: `EDIT_PARTS_ATR_NO_REMOVE` (0x1; RemoveEditParts refuses removal in one mode),
+    0x2 (LoadData skips BuildEditParts), `EDIT_PARTS_ATR_TYPE_ONE` (0x40; GetPartsType -> 1), `EDIT_PARTS_ATR_LINE`
+    (0x100; LoadEditInfo flattens area3_box to a line, place_anime 0), `EDIT_PARTS_ATR_WALL` (0x200; place_anime 0),
+    `EDIT_PARTS_ATR_BURN` (0x1000; IsBurn), `EDIT_PARTS_ATR_ANY_HEIGHT` (0x10000; bury_depth computed), 0x80000 (RemoveEditParts re-checks
     river placement), mask 0xAC2 (CheckTerritory ignores the other part). IsFence = `(attr & 0x130) == 0x130`.
   - 0x08/0x0C `cpoint[2]` (`emapCPOINT`; editdata `CultureAnalyzeParts` reads [0], `GetCulturePoint` reads [1])
   - 0x10 `weight` (`emapWEIGHT`; `GroundBalance` sums it per ground part)

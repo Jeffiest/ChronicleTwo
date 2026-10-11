@@ -15,7 +15,8 @@ Unit: the town's Georama menu (`CMenuGeorama`, `MenuGeorama*`), the villager rem
 
 ## CBaseMenuClass (menusys) as seen from here
 - ctor `__ct__14CBaseMenuClassFv` stores vptr at 0x10C, memsets 0x110 bytes. Fields used here:
-  0x0 s16 state (0 keys active, 1 fading in, 2 closing, 6 materials board), 0x2 s16 step,
+  0x0 s16 mode (`MENU_ASK_MODE`: 0 `MENU_ASK_MODE_NONE` keys active, 1 `MENU_ASK_MODE_OPEN` fading in, 2
+  `MENU_ASK_MODE_CLOSE` closing, 6 `MENU_ASK_MODE_MAKE` materials board), 0x2 s16 step,
   0x4 u8 (InitEnd done), 0x8 pack file ptr / 0xC its size, 0x10 s32 fade value (0x80), 0x14 s16
   sub state (= open page + 1; indexes `MenuGeoramaPushFunc`), 0xFC s32 part id being built,
   0x100 s32 build count, 0x108 s8 board cursor, 0x10A s16 max buildable.
@@ -52,7 +53,7 @@ with IsMakeObject, InitEnd, ExitEnd overridden. Constructor is inlined in MenuGe
 - Four lists, each `s32 num` + `GEORAMA_PARTS_LIST_ITEM[0x180]` (0x38 stride, memset 0x5400):
   placed 0x67B4 (mode 6, GetPartsIDListNum gives num+1), stock 0xBBB8 (mode 1; no = part def id,
   num = CSaveData::GetBuildPartsNum), make 0x10FBC (mode 0; no = definition index, num =
-  info->polyn[0], skipped when in PartsMakeOkTable or attr & 0x8000), house 0x163C0 (mode 4;
+  info->polyn[0], skipped when in PartsMakeOkTable or attr & 0x8000 (`EDIT_PARTS_ATR_NO_REFUND`)), house 0x163C0 (mode 4;
   placed parts with state 1 and GetPartsType()==1). Item names are not retail.
 - 0x1B7C4 MENUFORM_MAKEBRD_INFO (CalcMakeBrd/MakeMsgPartsItemInfo): 4 x {u8 used, u8 enough,
   s16 need, s16 lack} at 0x0..0x18, s32 material count 0x18, s32 build count 0x1C, s32 cursor
