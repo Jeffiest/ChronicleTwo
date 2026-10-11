@@ -135,6 +135,14 @@ int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
                                  normal ? index[1] : -1, visual->normal_num, -1, visual->uv_num, -1,
                                  visual->colour_num);
                 }
+                if (reported <= 3) {
+                    std::fprintf(stderr, "mg:   type=0x%x stride=%d index_num=%d vertex_num=%d raw:", face->type, stride,
+                                 face->index_num, face->vertex_num);
+                    for (int k = 0; k < 18 && k < face->index_num; k++) {
+                        std::fprintf(stderr, " %x", (unsigned) face->index[k]);
+                    }
+                    std::fprintf(stderr, "\n");
+                }
                 vertices.resize(offset);
                 stale = true;
                 break;
