@@ -80,7 +80,8 @@ with neither, the run stops and says where to put the image.
 The game is started with `--data rom\pal\extracted\iso --save .kazarov\save`
 unless the arguments already name `--data` or `--save`, or `DC_DATA` or
 `DC_SAVE` is set. Without those, the game would read and write
-`%LOCALAPPDATA%\chronicle`, the directory the first game's port also uses.
+`%LOCALAPPDATA%\chronicle-two`, a directory of its own: the first game's port keeps its
+config, saves and pipeline cache in `%LOCALAPPDATA%\chronicle`, and the two games must not share them.
 
 To extract by hand:
 
