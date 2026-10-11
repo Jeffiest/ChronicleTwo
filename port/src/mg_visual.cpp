@@ -212,6 +212,13 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
     SetDrawEnvGifTag(reinterpret_cast<u_long128 *>(&merged), info, environment);
 
     gfx::DrawState state = PortMgDrawStateFromEnv(merged);
+
+    // Diagnostic: DC_RTT_NODEPTH=1 ignores depth for models drawn into an off-screen texture.
+    static const bool rtt_no_depth = std::getenv("DC_RTT_NODEPTH") != nullptr;
+    if (rtt_no_depth && gfx::CurrentRenderTarget() != gfx::kMainTarget) {
+        state.depth_test = gfx::DepthTest::Always;
+    }
+
     gfx::MeshConstants constants = {};
     std::memcpy(constants.mvp, model_to_clip, sizeof(model_to_clip));
 
