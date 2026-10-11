@@ -20,7 +20,6 @@
 
 static const float kFenceChainDistance = 5.0f;
 static const int   kBalanceLimit = 4;
-static const u32   kFuncPointHasSound = 0x80;
 static const int   kPartsTypeRiver = 0xB;
 static const int   kNpcLiveLength = 7;
 static const int   kChildIdMax = 0x200;
@@ -931,7 +930,7 @@ int CEditMap::GetSeSrcVolPan(int *se_no, float *vol, float *pan, int max) {
     vol += added;
 
     for (; i < edit_parts_max; i++, part++) {
-        if (CheckNormalPlaceParts(part) && (*(u32 *) &part->func_point_mngr & kFuncPointHasSound)) {
+        if (CheckNormalPlaceParts(part) && (part->func_point_mngr.flag & FUNC_POINT_MNGR_SOUND)) {
             part->GetLWMatrix(matrix);
 
             if (max <= 0) {
