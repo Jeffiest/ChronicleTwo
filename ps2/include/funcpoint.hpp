@@ -187,8 +187,8 @@ void CList<CFuncPoint>::Initialize();
  *
  */
 enum FUNC_POINT_LIGHT_MODE {
-    FUNC_POINT_LIGHT_CHARA = 0x1, /**< Lights a character. */
-    FUNC_POINT_LIGHT_PARTS = 0x2, /**< Includes the lights of placed parts. */
+    FUNC_POINT_LIGHT_CHARA = 0x1, /**< Collects the point lights that light characters rather than the map. */
+    FUNC_POINT_LIGHT_FIRE = 0x2,  /**< With FUNC_POINT_LIGHT_CHARA, also collects fire points that cast light. */
 };
 
 /**

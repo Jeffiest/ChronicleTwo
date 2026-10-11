@@ -785,7 +785,7 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
 
     GetEnd();
 
-    if ((mode & (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) == (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_PARTS)) {
+    if ((mode & (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_FIRE)) == (FUNC_POINT_LIGHT_CHARA | FUNC_POINT_LIGHT_FIRE)) {
         GetStart(FUNC_POINT_FIRE);
         first = Get();
         point = first;

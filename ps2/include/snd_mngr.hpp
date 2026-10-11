@@ -31,7 +31,7 @@ enum SYSTEM_SE {
     SYSTEM_SE_ITEM_RETURN = 4,  /**< Puts a carried item back. */
     SYSTEM_SE_CANCEL = 5,       /**< Cancels or rejects the current menu selection. */
     SYSTEM_SE_EQUIP = 8,        /**< Changes a character's equipment. */
-    SYSTEM_SE_REVIVE = 0xA,     /**< A fallen character is revived. */
+    SYSTEM_SE_RECOVER = 0xA,    /**< Restores health, a condition or a gauge. */
     SYSTEM_SE_IDEA = 0xE,       /**< Announces that a photo has captured an idea. */
     SYSTEM_SE_TRANSFORM = 0x10, /**< Monica transforms into a monster. */
     SYSTEM_SE_JOIN = 0x11,      /**< A townsperson joins the party. */
@@ -103,9 +103,14 @@ enum sndSQ_STATE {
     SND_SQ_STATE_PORT_PAUSE = 3, /**< The sequence was paused through its port. */
 };
 
+/**
+ *
+ * States of a sound stream, as CSound::StreamGetState returns them.
+ *
+ */
 enum sndSTREAM_STATE {
-    SND_STREAM_STATE_PLAYING = 0x1000,
-    SND_STREAM_STATE_END = 0x8000, /**< The stream has finished playing. */
+    SND_STREAM_STATE_PLAYING = 0x1000, /**< The stream is playing. */
+    SND_STREAM_STATE_END = 0x8000,     /**< The stream has finished playing. */
 };
 
 /**

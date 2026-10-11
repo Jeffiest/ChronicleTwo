@@ -45,6 +45,7 @@ enum WEAPON_STAT {
  */
 enum WEAPON_SPECIAL_FLAG {
     WEAPON_SPECIAL_WEALTH = 0x1,          /**< More money from defeated monsters (Wealth Coin). */
+    WEAPON_SPECIAL_LESS_MONEY = 0x2,      /**< Less money from defeated monsters. */
     WEAPON_SPECIAL_POISON = 0x4,          /**< The hit can poison. */
     WEAPON_SPECIAL_STOP = 0x8,            /**< The hit can stop the target (Time Coin). */
     WEAPON_SPECIAL_STEAL = 0x10,          /**< The hit can steal an item. */
@@ -384,7 +385,7 @@ public:
     s16 buildup_monster[3];   /**< Monsters that must have been defeated to build up, or negative for none. */
     u8  pallet_color;         /**< Colour palette of the weapon's model. */
     u8  unk_47;
-    u8  attack_type; /**< Attack type of the weapon. */
+    u8  attack_type; /**< Attack type of the weapon. @see WEAPON_ATTACK_TYPE */
     u8  model_no;    /**< Model number of the weapon. */
     u8  unk_4a[2];
 
@@ -676,13 +677,13 @@ struct BOILED_USED {
 
 /**
  *
- * Shot kinds of a gun, as CGameDataUsed::GetAttackType returns them.
+ * Shot kinds of a gun or ridepod arm, as CGameDataUsed::GetAttackType returns them.
  *
  */
 enum WEAPON_ATTACK_TYPE {
     WEAPON_ATTACK_GUN = 0,            /**< An ordinary gun. */
     WEAPON_ATTACK_LAUNCHER = 10,      /**< A grenade or rocket launcher. */
-    WEAPON_ATTACK_GUN_2 = 11,         /**< An ordinary gun of a second kind. */
+    WEAPON_ATTACK_GUN_2 = 11,         /**< A gun that fires like an ordinary gun. */
     WEAPON_ATTACK_LASER = 20,         /**< A laser gun. */
     WEAPON_ATTACK_MACHINE_GUN = 30,   /**< A machine gun. */
     WEAPON_ATTACK_RIDEPOD_LASER = 40, /**< The ridepod's four-cannon laser. */

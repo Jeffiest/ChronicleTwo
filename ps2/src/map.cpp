@@ -842,7 +842,7 @@ int CMap::GetCharaLight(mgCObject *chara, CFuncPoint *points, int max, int use_p
     light_mode = FUNC_POINT_LIGHT_CHARA;
 
     if (use_parts != 0) {
-        light_mode |= FUNC_POINT_LIGHT_PARTS;
+        light_mode |= FUNC_POINT_LIGHT_FIRE;
     }
 
     light_num = func_point.GetLight(chara_position, points, max, &check, light_mode);
