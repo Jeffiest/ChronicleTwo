@@ -936,8 +936,13 @@ int viBufStopDMA(ViBuf *buf) {
 }
 
 #pragma optimization_level reset
-enum {
-    MOVIE_ADDR_MASK = 0xFFFFFFF,
+/**
+ *
+ * Mask of the low bits of a saved DMA channel control word, below its mode field.
+ *
+ */
+enum MovieAddrMask {
+    MOVIE_ADDR_MASK = 0xFFFFFFF, /**< Keeps the low 28 bits of a DMA channel control word. */
 };
 
 /**
