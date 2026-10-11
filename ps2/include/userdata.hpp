@@ -222,7 +222,7 @@ enum SPECTOL_TYPE {
  *
  */
 enum CHARA_EQUIP_SLOT {
-    CHARA_EQUIP_MELEE = 0,   /**< Max's wrench or hammer, Monica's sword. */
+    CHARA_EQUIP_MELEE = 0,   /**< Max's wrench, hammer or fishing rod, Monica's sword. */
     CHARA_EQUIP_SUB = 1,     /**< Max's gun, Monica's armband. */
     CHARA_EQUIP_HEAD = 2,    /**< Max's hat, Monica's hair accessory. */
     CHARA_EQUIP_FEET = 3,    /**< Max's shoes, Monica's boots. */
@@ -238,7 +238,7 @@ struct CHARA_DATA {
     COMMON_GAGE   hp;             /**< Health gauge. */
     u16           status_attr;    /**< Conditions, CHARA_STATUS_ATTR bits. */
     u16           defence;        /**< Defence of the character. */
-    s16           status_time[4]; /**< Time left of the CHARA_STATUS_POWER, 0x2, 0x8 and 0x20 conditions. */
+    s16           status_time[4]; /**< Time left of the CHARA_STATUS_POWER, SLOW, STOP and STONE conditions. */
     u8            unk_14[0x17];
     u8            keep_costume_on_equip_change; /**< Keeps the selected costume when equipment changes. */
     CGameDataUsed active_item[3];               /**< Active items. */
@@ -273,7 +273,7 @@ struct ROBO_DATA {
     COMMON_GAGE   hp;             /**< Energy gauge. */
     COMMON_GAGE   abs;            /**< Absorption gauge. */
     CGameDataUsed parts[4];       /**< Fitted parts, by ROBO_PART_SLOT. */
-    s16           status_time[3]; /**< Time left of the 0x2, 0x8 and 0x20 conditions. */
+    s16           status_time[3]; /**< Time left of the CHARA_STATUS_SLOW, STOP and STONE conditions. */
     u8            unk_1e6[2];
     u16           shield_kit_num; /**< Shield kits used, each adding 4 to the defence. */
     u8            unk_1ea[0x36];

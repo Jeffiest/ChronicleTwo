@@ -3101,7 +3101,7 @@ int CActionChara::CheckDamage() {
                 effect_man->CreateEffSpt("\x92\xCA\x8F\xED\x89\xF1\x95\x9C", 0, 0);
                 effect_man->SetScriptTargetId(0, -1, -1);
                 effect_man->SetValue(0, 0, 0, -1);
-                sndSePlay(SystemSND_ID, SYSTEM_SE_REVIVE, 0);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_RECOVER, 0);
             }
         }
 

@@ -62,7 +62,7 @@ struct ROBO_INFO_DATA {
     char *hat_file;                   /**< Path of the model of the hat that Max wears. */
     char *arm_name;                   /**< Arm name of the equipped body's robo_info_body row; NULL without a body. */
     s32   move_type;                  /**< Way of moving that the legs give, an ACTION_MOVE_TYPE value. */
-    s32   attack_type;                /**< Attack type that the arm gives. */
+    s32   attack_type;                /**< Attack type that the arm gives. @see WEAPON_ATTACK_TYPE */
 };
 
 STATIC_ASSERT(sizeof(ROBO_INFO_DATA) == 0x24);
