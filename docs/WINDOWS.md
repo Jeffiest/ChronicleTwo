@@ -3,10 +3,11 @@
 The PC port builds natively on x64 Windows with llvm-mingw clang, SDL3 and
 Vulkan. It needs your own PAL disc image, as on Linux and macOS.
 
-**Status.** The Windows scripts and the Kazarov configurations exist and run as
-far as the port's sources allow. At the time of writing the port does not yet
-compile on Windows, so nothing here has produced a `darkchronicle.exe`; the
-section "What is verified and what is not" says what has been run.
+**Status.** The port compiles, links and starts on Windows. A 60-frame headless
+title run exits 0 on the GPU and logs the same lines as the Linux build; a windowed
+run opens a window. Like the Linux build, the title scene stops at a
+`PS2_UNIMPLEMENTED` (`mgInsideScreen`) about 150 frames in. The section "What is
+verified and what is not" says what has been run.
 
 ## Dependencies
 
@@ -139,6 +140,21 @@ ctest --test-dir $build -j 1 --output-on-failure
 `build.ps1 -Tests` builds `darkchronicle_tests` when the test executable has that
 name, and `darkcloud_tests` otherwise (`port/src/tests/CMakeLists.txt` still uses the second).
 
+## How the port differs from ps2/ on Windows
+
+`ps2/` is never edited. Windows' `long` is 32 bits and COFF links an inline definition
+and a strong one of the same name as a duplicate, so the build compiles copies:
+
+- `port/include/port.h` gives `u_long` its 64-bit PS2 width around `types.h`.
+- `scripts/port/win_rewrite.py` rewrites the literal `long`s that hold 64-bit values and
+  the inline/strong pairs in the stripped copies of the units and in a mirror of
+  `ps2/include` (`build/ps2_include`, which the compiler is pointed at instead of
+  `ps2/include`). Each rule counts its matches in the original and fails on any other number,
+  so a change to `ps2/` is noticed. Linux compiles `ps2/` as it is.
+- `STATIC_ASSERT` checks nothing, as on Linux: the sizes are the PS2's, so every struct that
+  holds a pointer fails. `-DDC_STATIC_ASSERT=ON` turns the checks on; on Windows and Linux the
+  same 310 assertions then fail, all of them through pointer widths.
+
 ## What is verified and what is not
 
 Verified on Windows 11 with PowerShell 7, CMake 4.4, Python 3.13, llvm-mingw
@@ -147,17 +163,17 @@ Verified on Windows 11 with PowerShell 7, CMake 4.4, Python 3.13, llvm-mingw
 - Every script parses, and `build.bat`, `build.bat windows-x64` and `kazarov.conf`'s
   Windows routing reach `configure.ps1` and `build.ps1`.
 - CMake configures `windows-x64` and `windows-x64-release` with those dependencies.
-- The host layer (`platform`, `gfx`, `audio`, `dc_host`) compiles.
+- The whole game compiles and links to `darkchronicle.exe` in `windows-x64` (Debug).
+- `darkchronicle.exe --headless --frames 60 --jump title` exits 0 on the discrete GPU, and
+  its log equals the Linux build's apart from the device, the paths and a timer.
+- A windowed `--jump title` opens the game window and presents frames.
 - The disc extraction and the argument handling of `run.bat`, against a stand-in executable.
 - The dependency archives that were used match the SHA-256 values in `acquire.ps1`.
 
 Not verified:
 
-- That the game compiles or links on Windows. It does not, yet; `docs/PC_PORT_PLAN.md`
-  and the port's own sources are where that work is tracked. In particular
-  `u_long` is 32 bits on Windows. The link no longer merges and weakens ps2/src (COFF
-  supports neither `ld.lld -r` nor `--weaken`): `PORT_OVERRIDE` strips the replaced
-  definitions from copies of its units, which every object format links.
+- Anything past the title scene's first 150 frames, which stops at the same
+  `PS2_UNIMPLEMENTED` on Linux.
 - `acquire.ps1` on this checkout: it was not run, because it downloads.
 - `configure-tests.ps1` and `build.ps1 -Tests` (GoogleTest is fetched with git).
 - Everything that needs a running game: windowed or offscreen output, input, audio,
