@@ -62,7 +62,7 @@ enum WEAPON_SPECIAL_FLAG {
     WEAPON_SPECIAL_SLOW = 0x10000,        /**< The hit can cover the target in goo and slow it. */
     WEAPON_SPECIAL_CURSE = 0x20000,       /**< The hit can curse. */
     WEAPON_SPECIAL_HOLY_WATER = 0x40000,  /**< The hit is holy water. */
-    WEAPON_SPECIAL_BADGE_DROP = 0x80000,  /**< The named monster's hit drops a badge. */
+    WEAPON_SPECIAL_BADGE_DROP = 0x80000,  /**< A killing hit with this bit makes monster 0xDC drop its badge while a Badge Box is held. */
     WEAPON_SPECIAL_DRY = 0x100000,        /**< The hit can make the target thirsty. */
 };
 

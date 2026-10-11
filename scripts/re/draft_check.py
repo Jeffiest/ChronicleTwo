@@ -25,9 +25,10 @@ compares each function with retail's bytes, relocated fields masked:
     NO DRAFT  the source defines no such function
 
 `--promote` is the test a promoted function has to pass: the unit is built
-without UNMATCHING through tools/mwccgap, exactly as the build does, its
-object is linked in place of the build's own among the objects of the last
-full build, and the image is compared with retail's. A function whose bytes
+without UNMATCHING through scripts/build/mwccgap.sh (a direct Satan's Fiddle compile
+with the unit's flags, then the object postprocess), as the build does, its object is
+linked in place of the build's own among the objects of the last full build, and the
+image is compared with retail's. A function whose bytes
 match can still fail it, when promoting it brings data of its own into the
 object that does not land where retail has it.
 

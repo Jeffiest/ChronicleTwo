@@ -936,13 +936,14 @@ int viBufStopDMA(ViBuf *buf) {
 }
 
 #pragma optimization_level reset
+
 /**
  *
  * Mask of the low bits of a saved DMA channel control word, below its mode field.
  *
  */
-enum MovieAddrMask {
-    MOVIE_ADDR_MASK = 0xFFFFFFF, /**< Keeps the low 28 bits of a DMA channel control word. */
+enum MovieChcrMask {
+    MOVIE_CHCR_LOW_MASK = 0xFFFFFFF, /**< Keeps the low 28 bits of a saved DMA channel control word when its upper tag bits are replaced. */
 };
 
 /**
@@ -984,7 +985,7 @@ int viBufRestartDMA(ViBuf *buf) {
         tag_addr = (u32) DmaAddr(buf->tag);
         madr += size;
         mode = (buf->env.d4madr == (u32) buf->data || buf->env.d4madr == (u32) buf->data + size) ? 0 : 3;
-        chcr = (buf->env.d4chcr & MOVIE_ADDR_MASK) | (mode << 28) | 0x100;
+        chcr = (buf->env.d4chcr & MOVIE_CHCR_LOW_MASK) | (mode << 28) | 0x100;
         if (0 > (buf->n - buf->dma_start) % buf->n || (buf->n - buf->dma_start) % buf->n >= buf->dma_n) {
             buf->dma_start = buf->n - 1;
             buf->dma_n++;
@@ -999,7 +1000,7 @@ int viBufRestartDMA(ViBuf *buf) {
                     (u32) buf->data + ((buf->dma_start + buf->dma_n) % buf->n << 11))
                        ? 0
                        : 3;
-            chcr = (buf->env.d4chcr & MOVIE_ADDR_MASK) | (mode << 28) | 0x100;
+            chcr = (buf->env.d4chcr & MOVIE_CHCR_LOW_MASK) | (mode << 28) | 0x100;
             if (0 > (fifo_index + buf->n - buf->dma_start) % buf->n || (fifo_index + buf->n - buf->dma_start) % buf->n >= buf->dma_n) {
                 buf->dma_start = fifo_index;
                 buf->dma_n++;

@@ -49,6 +49,9 @@ enum PadCtrlButton {
     PAD_BTN_RIGHT              = 9,    /**< Right on the frame pressed. */
     PAD_BTN_LEFT               = 10,   /**< Left on the frame pressed. */
     PAD_BTN_START              = 0x0F, /**< Start pressed. */
+    PAD_BTN_CONFIRM_2          = 0x10, /**< Confirm button pressed (circle or cross, by language), second binding. */
+    PAD_BTN_CANCEL_2           = 0x11, /**< Cancel button pressed (cross or circle, by language), second binding. */
+    PAD_BTN_EVENT_SKIP_2       = 0x14, /**< Confirm button pressed: skips a drama scene when a script has set the skip button to 0x14. */
     PAD_BTN_PAUSE              = 0x15, /**< Start pressed: pauses the game. */
     PAD_BTN_EVENT_SKIP         = 0x16, /**< Triangle pressed: skips an event. */
     PAD_BTN_QUICK_CHANGE       = 0x17, /**< L3 pressed: switches the controlled character. */
@@ -68,6 +71,9 @@ enum PadCtrlButton {
     PAD_BTN_EDIT_PAINT_ALL     = 0x6B, /**< Square: paints the roof or the whole fence. */
     PAD_BTN_EDIT_SWITCH        = 0x6C, /**< Select: switches between the Georama edit mode and walking. */
     PAD_BTN_EDIT_MAGNET        = 0x6D, /**< Square: toggles Georama part snapping. */
+    PAD_BTN_FISH_ACTION        = 0x78, /**< Confirm button pressed while fishing: starts a cast, charges the lure and confirms the fish result messages. */
+    PAD_BTN_FISH_REEL          = 0x79, /**< Confirm button held while fishing: reels the line in. */
+    PAD_BTN_FISH_REEL_FAST     = 0x7A, /**< Square button held while fishing: reels the line in quickly. */
 };
 
 // clang-format on
