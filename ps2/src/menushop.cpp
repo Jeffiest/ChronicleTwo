@@ -728,7 +728,7 @@ void CShopMenu::InitEnd() {
     AttachMessageForm();
     AttachForm();
     MenuMoveItemPtr->AttachForm();
-    int bag_max = GetNowBagMax(0);
+    int bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
     MenuItemBrdSetInfo(bag_pos, bag_top, bag_max / 6, 5);
     MenuItemBrdCalcManner = 0;
     UpdataScrlBar();
@@ -1079,7 +1079,7 @@ int CShopMenu::KeyStep() {
 
             if (item != NULL) {
                 item_no = item->item_no;
-                item_name = item->GetName(1);
+                item_name = item->GetName(ITEM_NAME_TYPE_LEVEL);
             }
 
             if (trade_brd != NULL) {
@@ -1138,7 +1138,7 @@ int CShopMenu::KeyStep() {
                     int            room = 0;
                     CGameDataUsed *bag = user->GetUsedDataPtr(0);
 
-                    for (int slot = 0; slot < GetNowBagMax(0); bag++, slot++) {
+                    for (int slot = 0; slot < GetNowBagMax(ITEM_BOARD_MAIN); bag++, slot++) {
                         if (bag->item_no <= 0) {
                             room += common->stack_num;
                         }
@@ -1347,7 +1347,7 @@ int CShopMenu::KeyStep() {
                         char          *name = NULL;
 
                         if (trade_item != NULL) {
-                            name = trade_item->GetName(0);
+                            name = trade_item->GetName(ITEM_NAME_TYPE_PLAIN);
                         }
 
                         char *names[2] = {NULL, NULL};

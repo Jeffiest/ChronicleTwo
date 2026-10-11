@@ -1027,7 +1027,7 @@ int CBaseMenuClass::MenuItemCommandSelect(int select_key, int push_button) {
                     int            space = user->SearchSpaceUsedData();
                     CGameDataUsed *space_item = NULL;
 
-                    if (0 <= space && space < GetNowBagMax(0)) {
+                    if (0 <= space && space < GetNowBagMax(ITEM_BOARD_MAIN)) {
                         space_item = &MenuUserParam.used_data[space];
                     }
 
@@ -1675,7 +1675,7 @@ void CBaseMenuClass::MenuItemAskMode_HowMuch(int select_key, int push_button) {
  */
 CGameDataUsed *CheckTrushWeapon(CGameDataUsed *item) {
     CGameDataUsed *slot = GetUserDataMan()->GetUsedDataPtr(0);
-    int            bag_max = GetNowBagMax(1);
+    int            bag_max = GetNowBagMax(ITEM_BOARD_ALL);
     int            i;
 
     for (i = 0; i < bag_max; i++, slot++) {
@@ -1746,7 +1746,7 @@ int CBaseMenuClass::CheckSpectolFusion(CGameDataUsed *item, int panel, CMenuPosD
         }
 
         char *names[1] = {NULL};
-        names[0] = item->GetName(1);
+        names[0] = item->GetName(ITEM_NAME_TYPE_LEVEL);
         message->SetMsgItemNo(names, 1);
         SetAskParam(&param);
         message->SetAbsPos(abs_pos);
@@ -1912,7 +1912,7 @@ int CBaseMenuClass::IsSpectolTrans(int select_key, int push_button) {
 
                     message->MsgPreset(0xB);
                     message->SetAbsPos(0x12);
-                    char *name = ask_para.item->GetName(1);
+                    char *name = ask_para.item->GetName(ITEM_NAME_TYPE_LEVEL);
 
                     if (name != NULL) {
                         strcpy(message->name[0], name);
@@ -2018,7 +2018,7 @@ int CBaseMenuClass::IsSpectolFusion(int select_key, int push_button) {
                 message->MsgPreset(10);
                 message->SetAbsPos(0x12);
                 char *names[2] = {NULL, NULL};
-                names[0] = SpectolInfo[0]->GetName(1);
+                names[0] = SpectolInfo[0]->GetName(ITEM_NAME_TYPE_LEVEL);
                 message->SetMsgItemNo(names, 1);
 
                 if (0 < raised) {
@@ -2064,7 +2064,7 @@ int IsDispTrushCommand(CGameDataUsed *item) {
         CUserDataManager *user_data = GetUserDataMan();
         CGameDataUsed    *slot = user_data->GetUsedDataPtr(0);
         int               weapon_count = 0;
-        int               bag_max = GetNowBagMax(1);
+        int               bag_max = GetNowBagMax(ITEM_BOARD_ALL);
         int               i;
 
         for (i = 0; i < bag_max; i++, slot++) {
@@ -2457,7 +2457,7 @@ void SetPreCmdTrush(CBaseMenuClass *menu, int panel, CGameDataUsed *item, CMenuP
     menu->step = 3;
     message->MsgPreset(0xB);
     message->SetAbsPos(5);
-    char *name = item->GetName(1);
+    char *name = item->GetName(ITEM_NAME_TYPE_LEVEL);
 
     if (name != NULL) {
         strcpy(message->name[0], name);
@@ -4034,7 +4034,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
                             colors[i] = 0x80202020;
                         }
 
-                        if (item_no == ITEM_ID_HEART_THROB_CHERRY && !(chara_data->status_attr & 8)) {
+                        if (item_no == ITEM_ID_HEART_THROB_CHERRY && !(chara_data->status_attr & CHARA_STATUS_STOP)) {
                             colors[i] = 0x80202020;
                         }
                     }
@@ -4060,15 +4060,15 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
             } else {
                 CHARA_DATA *chara_data = MenuUserParam.chara[who];
 
-                if (chara_data->status_attr & 4) {
+                if (chara_data->status_attr & CHARA_STATUS_CURSE) {
                     colors[i] = 0x80202020;
                 }
 
-                if (chara_data->status_attr & 8) {
+                if (chara_data->status_attr & CHARA_STATUS_STOP) {
                     colors[i] = 0x80202020;
                 }
 
-                if (chara_data->status_attr & 0x20) {
+                if (chara_data->status_attr & CHARA_STATUS_STONE) {
                     colors[i] = 0x80202020;
                 }
             }
@@ -4803,7 +4803,7 @@ void CheckEnableHaveItemNum() {
     memset(have_num, 0, sizeof(have_num));
     memset(full, 0, sizeof(full));
     CGameDataUsed *used = user_data->GetUsedDataPtr(0);
-    int            bag_max = GetNowBagMax(1);
+    int            bag_max = GetNowBagMax(ITEM_BOARD_ALL);
 
     for (i = 0; i < bag_max; i++, used++) {
         int item_no = used->item_no;
@@ -5732,7 +5732,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                             // Says that the part is broken.
                             ExeScript("\x83\x70\x81\x5B\x83\x63\x89\xF3");
                             char *name[2] = {NULL};
-                            name[0] = ask_para.item->GetName(1);
+                            name[0] = ask_para.item->GetName(ITEM_NAME_TYPE_LEVEL);
                             MenuDCMsg[7]->SetMsgItemNo(name, 20);
                             step = 1;
                         }
@@ -5890,7 +5890,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                             step = 0;
                         }
 
-                        char *name = ask_para.item->GetName(1);
+                        char *name = ask_para.item->GetName(ITEM_NAME_TYPE_LEVEL);
 
                         if (name != NULL) {
                             strcpy(mes->name[0], name);
@@ -6114,14 +6114,14 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         u8 code[0x40];
                         ask_para.item->TransToPassword((char *) code, 14);
                         char password[0x20];
-                        EncodePassword(code, 16, (u8 *) ask_para.item->GetName(0), 20, password, 70);
+                        EncodePassword(code, 16, (u8 *) ask_para.item->GetName(ITEM_NAME_TYPE_PLAIN), 20, password, 70);
                         char text[0x80];
                         text[44] = '\0';
                         text[45] = '\0';
                         strcpy(text, password);
                         char  space[0x20] = "  ";
                         char *names[3] = {NULL};
-                        names[0] = ask_para.item->GetName(0);
+                        names[0] = ask_para.item->GetName(ITEM_NAME_TYPE_PLAIN);
                         names[1] = space;
                         names[2] = text;
                         MenuDCMsg[7]->SetMsgItemNo(names, 3);
@@ -7245,7 +7245,7 @@ void CMenuItemInfo::CalcTex() {
     char *names[8] = {" ", " ", " ", " ", " ", " ", " "};
 
     if (view_weapon != NULL) {
-        names[2] = view_weapon->GetName(1);
+        names[2] = view_weapon->GetName(ITEM_NAME_TYPE_LEVEL);
         names[5] = names[2];
     }
 
@@ -7729,13 +7729,13 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
         MenuItem_ItemBoardTopLine = MenuSystemDataPtr->item_board_top;
     }
 
-    MenuItemBoardTotalNum = GetNowBagMax(0);
+    MenuItemBoardTotalNum = GetNowBagMax(ITEM_BOARD_MAIN);
     int trush = CheckTrushMenu();
 
     if (trush) {
-        MenuItemBoardTotalNum = GetNowBagMax(1);
+        MenuItemBoardTotalNum = GetNowBagMax(ITEM_BOARD_ALL);
         MenuItem_ItemBoardTopLine = MenuItemBoardTotalNum / MENU_ITEM_BOARD_COLUMNS - MENU_ITEM_BOARD_ROWS;
-        MenuItem_ItemBoardTopSelect = GetNowBagMax(0);
+        MenuItem_ItemBoardTopSelect = GetNowBagMax(ITEM_BOARD_MAIN);
     }
 
     MenuItemBoardTotalLine = MenuItemBoardTotalNum / MENU_ITEM_BOARD_COLUMNS;
@@ -7899,9 +7899,9 @@ static void MenuItemDebugKey() {
                         }
 
                         if (CheckTrushMenu()) {
-                            MenuItemBoardTotalNum = GetNowBagMax(1);
+                            MenuItemBoardTotalNum = GetNowBagMax(ITEM_BOARD_ALL);
                             MenuItem_ItemBoardTopLine = MenuItemBoardTotalNum / MENU_ITEM_BOARD_COLUMNS - MENU_ITEM_BOARD_ROWS;
-                            MenuItem_ItemBoardTopSelect = GetNowBagMax(0);
+                            MenuItem_ItemBoardTopSelect = GetNowBagMax(ITEM_BOARD_MAIN);
                         }
 
                         item_menu_argtbl[ITEM_MENU_PANEL_BAG].max = MenuItemBoardTotalNum;
@@ -10255,7 +10255,7 @@ int BuildUpWeaponTrans(CGameDataUsed *item, int item_no) {
     item->item_type = GameItemDataManage.GetDataType(item_no);
     WEAPON_USED *weapon = &item->data.weapon;
 
-    if (strcmp(item->GetName(0), GetItemMessage(old_item_no)) == 0) {
+    if (strcmp(item->GetName(ITEM_NAME_TYPE_PLAIN), GetItemMessage(old_item_no)) == 0) {
         item->SetName(GetItemMessage(item_no));
     }
 
@@ -11801,7 +11801,7 @@ int CMenuItemInfo::KeyStep() {
                             mgCMemory stack;
                             int       rest = MenuCharaLoadStack.stGetRest();
                             stack.stSetBuffer(MenuCharaLoadStack.stGetTop(), rest);
-                            int bag_max = GetNowBagMax(0);
+                            int bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
 
                             for (int i = 0; i < over_num; i++) {
                                 s16 item_no = MenuUserDataManPtr->GetUsedDataPtr(bag_max + i)->item_no;

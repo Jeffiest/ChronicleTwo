@@ -3125,7 +3125,7 @@ void CAquaMes::EatMessage(int id, CAquaFish *fish) {
     char *name;
     int   pos[2];
 
-    name = fish->data->GetName(0);
+    name = fish->data->GetName(ITEM_NAME_TYPE_PLAIN);
 
     if (name != NULL) {
         copy_name(fish_mes, 0, name);
@@ -3149,7 +3149,7 @@ static inline CGameDataUsed *fish_data(CAquaFish *fish) {
 
 void CAquaMes::ChangeManMessage(CAquaFish *fish) {
     CGameDataUsed *data = fish_data(fish);
-    char          *name = data->GetName(0);
+    char          *name = data->GetName(ITEM_NAME_TYPE_PLAIN);
     int            pos[2];
 
     if (name != NULL) {
@@ -3176,7 +3176,7 @@ void CAquaMes::DeadMessage(CAquaFish *fish) {
     int   pos[2];
 
     if (fish != NULL) {
-        name = fish->data->GetName(0);
+        name = fish->data->GetName(ITEM_NAME_TYPE_PLAIN);
         fish_mes->mes_no = -1;
         copy_name(fish_mes, 0, name);
         fish_mes->MakeMesWin(AQUA_MES_DEAD);
@@ -3663,7 +3663,7 @@ void DrawFishParam(int x, int y, mgCTexture *tex, CGameDataUsed *data) {
         font.SetColor(0x803CA0A8);
     }
 
-    font.DrawDirect(data->GetName(1), name_x, name_y);
+    font.DrawDirect(data->GetName(ITEM_NAME_TYPE_LEVEL), name_x, name_y);
 }
 
 CAquarium::CAquarium() {
@@ -4951,7 +4951,7 @@ int CAquarium::ColCheck(int no) {
             if (me->eat_item == AQUA_FOOD_ITEM_ELECTRIC_WORM) {
                 target_fish = no;
                 result |= AQUA_FISH_RESULT_ELECTRIC_FOOD_EATEN;
-                strcpy(target_name, me->data->GetName(1));
+                strcpy(target_name, me->data->GetName(ITEM_NAME_TYPE_LEVEL));
             }
         }
     }
@@ -5184,8 +5184,8 @@ int CAquarium::Step() {
                     if (love_phase == AQUA_EVENT_BREED_COMBINE) {
                         mgTexManager.DeleteBlock(fish_tex_block[0]);
                         mgTexManager.DeleteBlock(fish_tex_block[1]);
-                        strcpy(target_name, fish[target_fish]->data->GetName(1));
-                        strcpy(partner_name, fish[partner_fish]->data->GetName(1));
+                        strcpy(target_name, fish[target_fish]->data->GetName(ITEM_NAME_TYPE_LEVEL));
+                        strcpy(partner_name, fish[partner_fish]->data->GetName(ITEM_NAME_TYPE_LEVEL));
                         CombineFish(target_fish, partner_fish);
                     }
 
@@ -5234,7 +5234,7 @@ int CAquarium::Step() {
                         }
 
                         if (child != NULL) {
-                            copy_name(menu->guide_mes, 2, child->data->GetName(1));
+                            copy_name(menu->guide_mes, 2, child->data->GetName(ITEM_NAME_TYPE_LEVEL));
                             menu->guide_id = AQUA_MES_BRED;
                             menu->guide_mes->MakeMesWin(menu->guide_id);
                             menu->guide_mes->fukidashi_pos = 5;
@@ -5258,7 +5258,7 @@ int CAquarium::Step() {
                         }
 
                         if (child != NULL) {
-                            copy_name(menu->guide_mes, 2, child->data->GetName(1));
+                            copy_name(menu->guide_mes, 2, child->data->GetName(ITEM_NAME_TYPE_LEVEL));
                             menu->guide_id = AQUA_MES_ELECTRIC;
                             menu->guide_mes->MakeMesWin(menu->guide_id);
                             menu->guide_mes->fukidashi_pos = 5;
@@ -6793,7 +6793,7 @@ int MenuGyoraceFishSelKey() {
 
                 for (i = 0; i < 6; i++, fish++) {
                     if (fish->item_no > 0) {
-                        names[GyoraceFishSelNum] = fish->GetName(1);
+                        names[GyoraceFishSelNum] = fish->GetName(ITEM_NAME_TYPE_LEVEL);
 
                         if (fish->data.fish.flags & BREEDFISH_FLAG_ELECTRIC) {
                             names[GyoraceFishSelNum] = NULL;
@@ -7413,7 +7413,7 @@ static void GyoracerListUpdate() {
 
         if (0 <= data_index) {
             GYORACE_DATA *record = GyoraceData->GetData(data_index);
-            char         *name = record->fish.GetName(0);
+            char         *name = record->fish.GetName(ITEM_NAME_TYPE_PLAIN);
             CDC2Mes      *message = GyoraceFishMes;
 
             if (name != NULL) {
@@ -7849,7 +7849,7 @@ int GyoraceMenuKey() {
                 racer_fish = GetOmakeGyoracer2(save_now_space_racer_no);
 
                 if (racer_fish != NULL) {
-                    name = racer_fish->GetName(0);
+                    name = racer_fish->GetName(ITEM_NAME_TYPE_PLAIN);
                 }
 
                 if (name != NULL) {
@@ -7894,7 +7894,7 @@ int GyoraceMenuKey() {
                     MenuSePlay(SYSTEM_SE_CANCEL);
                 } else {
                     GyoraceQuestionMsgDrawFlag = true;
-                    name = racer->fish.GetName(0);
+                    name = racer->fish.GetName(ITEM_NAME_TYPE_PLAIN);
 
                     if (0 <= CheckSameRacerFish(GyoraceFishHaveListSelect.cursor)) {
                         GyoraceNowMode = GYORACE_MENU_ALREADY_ASSIGNED;
@@ -8156,7 +8156,7 @@ int GyoraceMenuKey() {
                     MenuLoadFishSelect = 0;
                     MenuLoadFishTopLine = 0;
                     SetModeMenuDrawItemBoard(4);
-                    bag_max = GetNowBagMax(1);
+                    bag_max = GetNowBagMax(ITEM_BOARD_ALL);
                     MenuItemBrdSetInfo(MenuLoadFishSelect, MenuLoadFishTopLine, bag_max / 6, 5);
                     MenuItemBrdCalcManner = 0;
                     list_update = true;
@@ -8190,7 +8190,7 @@ int GyoraceMenuKey() {
                     ask->MakeMsg(0x1393);
 
                     if (MenuLoadFishSelectData != NULL) {
-                        name = MenuLoadFishSelectData->GetName(0);
+                        name = MenuLoadFishSelectData->GetName(ITEM_NAME_TYPE_PLAIN);
 
                         if (name != NULL) {
                             strcpy(ask->name[0], name);
@@ -8201,7 +8201,7 @@ int GyoraceMenuKey() {
                 break;
             case GYORACE_MENU_ASSIGN_RESULT:
                 GyoraceCFGAnalyze("\x8b\x9b\x93\x6f\x98\x5e\x8f\x49\x97\xb9");
-                name = MenuLoadFishSelectData->GetName(0);
+                name = MenuLoadFishSelectData->GetName(ITEM_NAME_TYPE_PLAIN);
 
                 if (name != NULL) {
                     strcpy(ask->name[0], name);
@@ -8233,7 +8233,7 @@ int GyoraceMenuKey() {
                 SetHaveName(GyoraceFishHave, k, name);
 
                 if (entry->IsUsed() != 0) {
-                    name = entry->fish.GetName(0);
+                    name = entry->fish.GetName(ITEM_NAME_TYPE_PLAIN);
                     SetHaveName(GyoraceFishHave, k, name);
                 }
             }

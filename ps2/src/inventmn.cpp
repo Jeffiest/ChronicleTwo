@@ -6326,7 +6326,7 @@ int MenuInventInit(mgCMemory *memory, int *tex_block, int arg) {
     }
 
     CMenuInvent *menu = CMenuInventPt;
-    MenuItemBrdSetInfo(menu->item_cursor, menu->item_top, GetNowBagMax(0) / 6, 5);
+    MenuItemBrdSetInfo(menu->item_cursor, menu->item_top, GetNowBagMax(ITEM_BOARD_MAIN) / 6, 5);
     MenuCommonInfo->cursor = 0;
     MenuCommonInfo->key_enable = false;
     MenuCommonInfo->SetWakuType(-1);

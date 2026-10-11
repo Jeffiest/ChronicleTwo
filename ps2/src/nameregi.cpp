@@ -1172,7 +1172,7 @@ void NameRegistInit(mgCMemory *stack, int *tex_block, int open_type) {
                         case USED_ITEM_TYPE_ROBO_PART:
                         case USED_ITEM_TYPE_FISH:
                             message_no = 1;
-                            item_names.name[0] = Nameregi_Target.item->GetName(0);
+                            item_names.name[0] = Nameregi_Target.item->GetName(ITEM_NAME_TYPE_PLAIN);
                             break;
                     }
                 }
@@ -2060,7 +2060,7 @@ s32 CNameRegiMenu::KeyStep() {
                     ConvertShitJiss2Ascii(name, password);
                     PasswordKey key = {{0}};
                     password[0x16] = 0;
-                    strcpy((char *) key.bytes, Nameregi_Target.item->GetName(0));
+                    strcpy((char *) key.bytes, Nameregi_Target.item->GetName(ITEM_NAME_TYPE_PLAIN));
                     key_text = key.bytes;
                     password_valid = DecodePassword(password, (u8 *) decoded, 0x10, (u8 *) key_text, 0x14);
                     memcpy(header, decoded, sizeof(header));
