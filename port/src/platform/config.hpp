@@ -22,8 +22,8 @@ struct Config : HostSettings {
     float        detail_distance = 0.0f;
     float        shadow_distance = 0.0f;
 
-    // The host layer's defaults are another game's: this one ticks at the PAL field rate, binds the
-    // mouse to the right stick and lets Escape release the captured mouse.
+    // The host layer's defaults are another game's: this one ticks at the PAL field rate, reads the
+    // raw stick and lets Escape release the captured mouse.
     Config();
 
     bool operator==(const Config &) const = default;

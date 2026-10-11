@@ -19,6 +19,8 @@
 namespace {
 
 Config                        g_config;
+// g_config as the host layer reads it (SettingsGet), kept in step with it.
+HostSettings                  g_host;
 std::vector<ConfigChangeHook> g_change_hooks;
 // Whether config.json holds g_config, so a failed save is retried with the same settings.
 bool g_saved = false;
@@ -136,9 +138,6 @@ bool ApplyBindings(Config &config, const Json &bindings) {
     for (const auto &[action, keys] : bindings.items()) {
         ConfigKeyBinding binding = {Lower(action), {}};
         if (ReadList(keys, binding.keys)) {
-            // One entry per action, so the defaults a file rebinds are replaced rather than repeated.
-            std::erase_if(config.key_bindings,
-                          [&](const ConfigKeyBinding &bound) { return bound.action == binding.action; });
             config.key_bindings.push_back(std::move(binding));
         } else {
             Ignore("input.bindings." + action, keys);
@@ -289,6 +288,29 @@ void CarryUnsavedFields(Config &to, const HostSettings &from) {
     to.glyph_device = from.glyph_device;
 }
 
+// A mouse stick binding turns the camera 0.04 radians a tick at full deflection, so the host layer's
+// degrees of mouse motion per count are config.json's stick deflection per pixel times this.
+constexpr float kMouseDegreesPerDeflection = 0.04f * 180.0f / 3.14159265f;
+
+// What a key press does when config.json binds nothing: the right stick follows the mouse, and
+// the layer's own defaults for these actions are another game's.
+const std::vector<ConfigKeyBinding> &DefaultBindings() {
+    static const std::vector<ConfigKeyBinding> bindings = {
+        {"circle", {"F"}}, {"r1", {"Mouse2", "X"}}, {"rx", {"MouseX"}}, {"ry", {"-MouseY"}}};
+    return bindings;
+}
+
+void RefreshHost() {
+    g_host = g_config;
+    g_host.mouse_sensitivity = g_config.mouse_sensitivity * kMouseDegreesPerDeflection;
+    g_host.key_bindings = DefaultBindings();
+    for (const ConfigKeyBinding &binding : g_config.key_bindings) {
+        std::erase_if(g_host.key_bindings,
+                      [&](const ConfigKeyBinding &bound) { return bound.action == binding.action; });
+        g_host.key_bindings.push_back(binding);
+    }
+}
+
 bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
     std::filesystem::path temp = path;
     temp += ".tmp";
@@ -316,11 +338,7 @@ Config::Config() {
     tick_rate = 50.0;
     // The raw stick: the shared layer's 1.33 scaling is tuned to another game's thresholds.
     stick_sensitivity = 1.0f;
-    // A mouse stick binding turns 0.04 radians a tick at full deflection per this many degrees of
-    // motion, so 0.2292 is the 0.1 stick deflection per pixel the port always used.
-    mouse_sensitivity = 0.2292f;
     mouse_release_keys = {"Escape"};
-    key_bindings = {{"circle", {"F"}}, {"r1", {"Mouse2", "X"}}, {"rx", {"MouseX"}}, {"ry", {"-MouseY"}}};
 }
 
 const Config &ConfigGet() {
@@ -328,12 +346,30 @@ const Config &ConfigGet() {
 }
 
 const HostSettings &SettingsGet() {
-    return g_config;
+    static const bool ready = (RefreshHost(), true);
+    (void) ready;
+    return g_host;
 }
 
 bool SettingsChange(const HostSettings &settings) {
     Config config = g_config;
     static_cast<HostSettings &>(config) = settings;
+    if (settings.mouse_sensitivity != g_host.mouse_sensitivity) {
+        config.mouse_sensitivity = settings.mouse_sensitivity / kMouseDegreesPerDeflection;
+    } else {
+        config.mouse_sensitivity = g_config.mouse_sensitivity;
+    }
+    if (settings.key_bindings == g_host.key_bindings) {
+        config.key_bindings = g_config.key_bindings;
+    } else {
+        config.key_bindings.clear();
+        for (const ConfigKeyBinding &binding : settings.key_bindings) {
+            auto fallback = std::ranges::find(DefaultBindings(), binding.action, &ConfigKeyBinding::action);
+            if (fallback == DefaultBindings().end() || !(*fallback == binding)) {
+                config.key_bindings.push_back(binding);
+            }
+        }
+    }
     return ConfigChange(config);
 }
 
@@ -417,6 +453,7 @@ bool ConfigLoad() {
     std::error_code       error;
     if (!file || !std::filesystem::is_regular_file(path, error)) {
         g_config = Config{};
+        RefreshHost();
         if (std::filesystem::exists(PathsSaveRoot() / "config.ini")) {
             std::fprintf(stderr, "config.ini is no longer read: move its settings to config.json (docs/PC.md)\n");
         }
@@ -426,6 +463,7 @@ bool ConfigLoad() {
     std::ostringstream text;
     text << file.rdbuf();
     g_config = ConfigParse(text.str());
+    RefreshHost();
     g_saved = true;
     std::fprintf(stderr, "config: loaded %s\n", PathsDisplay(path).c_str());
     return true;
@@ -459,6 +497,7 @@ bool ConfigChange(const Config &config) {
         return g_saved || ConfigSave();
     }
     Config before = std::exchange(g_config, std::move(after));
+    RefreshHost();
     ConfigSave();
     const std::vector<ConfigChangeHook> hooks = g_change_hooks;
     for (ConfigChangeHook hook : hooks) {
