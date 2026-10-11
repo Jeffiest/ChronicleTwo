@@ -2367,12 +2367,12 @@ int DngMainKey() {
         if (BattleAreaScene->statusbar_show) {
             CGameDataUsed *item = &items[DngStatus.active_item];
 
-            if (item->item_no == 369) {
+            if (item->item_no == ITEM_ID_CAMERA) {
                 found = true;
             }
         } else {
             for (int i = 0; i < 3; i++) {
-                if (items[i].item_no == 369) {
+                if (items[i].item_no == ITEM_ID_CAMERA) {
                     found = true;
                 }
             }

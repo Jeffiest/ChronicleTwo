@@ -3093,7 +3093,7 @@ int CActionChara::CheckDamage() {
         }
 
         if (battle->GetNowHp_i() <= 0) {
-            if (CheckEquipSetItem(0x111) == 0) {
+            if (CheckEquipSetItem(ITEM_ID_RESURRECTION_POWDER) == 0) {
                 reaction = ACTION_REACTION_DEAD;
             } else {
                 battle->SetHpRate(0.5f);

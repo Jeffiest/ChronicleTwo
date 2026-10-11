@@ -1988,7 +1988,7 @@ void CMonsterMan::CheckDamage() {
     se_id = now_scene->se_battle_id;
     player = (CActionChara *) now_scene->GetCharacter(0);
     chara_info = GetBattleCharaInfo();
-    gift_pack_num = GetUserItemHaveNum(0x134);
+    gift_pack_num = GetUserItemHaveNum(ITEM_ID_BADGE_BOX);
 
     for (i = 0; i < MONSTER_ACTIVE_MAX; i++) {
         monster = active[i];

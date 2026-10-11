@@ -294,8 +294,8 @@ int dngDebugKey() {
             floor = DngSaveDataDungeon->floor_id[dungeon];
             DngUserData->GetItem(GetGateKeyIndex(dungeon, floor), 1);
             DngUserData->GetItem(GetKeyDoorIndex(dungeon, floor), 1);
-            DngUserData->GetItem(0x132, 1);
-            DngUserData->GetItem(0x131, 1);
+            DngUserData->GetItem(ITEM_ID_MAGIC_CRYSTAL, 1);
+            DngUserData->GetItem(ITEM_ID_MAP, 1);
             dngDebugExit();
             return true;
         } else if (dbinfo.cursor == DNG_DEBUG_CMD_SOUND_FLAG) {
