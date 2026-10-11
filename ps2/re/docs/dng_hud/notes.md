@@ -10,7 +10,7 @@ The unit's only plain-named datum is `gekirin_anim` (0x33D210, 0x40 bytes, LOCAL
 `static` table of 16 `s32` heights (0,3,6,5,4,3,2,1,3,4,3,2,1,2,1,0) indexed by
 `CEnemyGekirin::frame`; the y offset of the mark is `-4 * gekirin_anim[frame]`, and the break
 animation ends when the next entry is 0. It belongs in the `.cpp`, not the header.
-`at_1221__2` is the `"%d"` format string used by both damage-number `SetValue`s.
+The `"%d"` format string literal is shared (pooled) by both damage-number `SetValue`s.
 The class instances themselves are globals of dng_main (`LevelupInfo` 0x38, `DamageScore` 0x90,
 `DamageScoreMons` 8 x 0x90, `DamageScore2` 0x28, `LockOnModel` 0xB0, `WarningGage2` 0x20);
 `CEnemyLifeGage`/`CPiyori`/`CGiftMark` live inside `CActiveMonster` at 0x1220/0x1270/0x1290 and
@@ -32,10 +32,9 @@ one `CEnemyLifeGage` in `CMonsterMan` at 0x10090.
 ## Layouts
 - **CLevelupInfo**: 0x00-0x1C zeroed by SetLevelUpInfo and never read (8 x s32, kept `unk_`).
   0x20 progress (float, +0.1/frame), 0x24 phase (`LevelupInfoPhase`, 1..4, 0 = off),
-  0x28 x = arg1-0x23, 0x2C y = arg2-6, 0x30/0x34 = arg3/arg4 stored and never read. The only
-  caller (maintex `AddExpWeaponParam`) passes (0x100, screen_h/2, index 0/1 of the
-  `CBattleCharaInfo::AddAbs` that levelled, 0); meaning of 0x30 unknown.
-- **CPiyori**: 0x00 target (`mgCObject*` in the retail signature, holding a `CCharacter2*`; Step passes it to `CCharacter2::GetEntryObjectPos`),
+  0x28 x = arg1-0x23, 0x2C y = arg2-6, 0x30 weapon_slot = arg3, the weapon slot (0 or 1) whose weapon levelled up (maintex
+  `AddExpWeaponParam`); 0x34 = arg4, always 0, never read.
+- **CPiyori**: 0x00 target (typed `CCharacter2*`; the retail `Set` signature takes `mgCObject*`; Step calls `CCharacter2::GetEntryObjectPos` on it),
   0x04 star_angle[3] (+12 deg/frame, random start), 0x10 circle_angle (+6 deg/frame),
   0x14 height, 0x18 radius (Set(obj,time) uses `CCharacter2::body_height * 2` and `body_width * 2`), 0x1C s16 time,
   0x1E s16 se_wait (reset to 13 after SE 0x24 plays).
@@ -57,7 +56,7 @@ one `CEnemyLifeGage` in `CMonsterMan` at 0x10090.
   0x84 mes (InitDungeonMain stores MonsterMess), 0x88 angle (+4 deg/frame), 0x8C name
   (= target chara's `+0x1150` pointer + 4; NULL hides the name), 0x90 s32 set by Draw to
   `chara+0x134C + 5000` (if >= 0) when the target's `+0x1156` equals the controlled monster id,
-  else -1 -- never read in any unit seen, left `unk_90`; 0x94-0x9F padding; 0xA0 pos.
+  else -1 -- never read in any unit seen, named `message_no`; 0x94-0x9F padding; 0xA0 pos.
 - **CWarningGage2**: 0x00 warning[3], 0x0C time (0..39, draws when > 19), 0x10 rate[3]
   (0.0 selects a different sprite), 0x1C layout (`WarningGageLayout`, written by dng_status
   DrawMain/Monster = 0, DrawRobo = 1).
@@ -75,6 +74,6 @@ mgCObject -> CObject -> CObjectFrame -> CLockOnModel); there is no out-of-line c
 - dng_status `DrawStatusBord` and dng_main `DngMainKey` zero `LockOnModel + 0xAC` (the w of
   `CLockOnModel::pos`) together with `WarningGage2.warning[0..2]`. Probably an out-of-bounds or
   differently-declared write in the original source; not reflected in the header.
-- `CLevelupInfo` 0x00-0x1C, 0x30, 0x34 and `CDamageScore` 0x00, 0x54, 0x58, 0x6C, 0x70 purpose.
+- `CLevelupInfo` 0x00-0x1C, 0x34 and `CDamageScore` 0x00, 0x54, 0x58, 0x6C, 0x70 purpose.
 
 `CPiyori::Draw` and `CGiftMark::Draw` construct their `CPreSprite` only after locating the active target; keeping quad temporaries after that native local reproduces the original stack layout.

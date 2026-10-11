@@ -43,7 +43,6 @@
 #include "water.hpp"
 
 static int        gekirin_anim[16] = {0, 3, 6, 5, 4, 3, 2, 1, 3, 4, 3, 2, 1, 2, 1, 0};
-static const char at_1221__2[] = "%d";
 
 void CLevelupInfo::SetLevelUpInfo(int screen_x, int screen_y, int source, int value) {
     unk_00 = 0;
@@ -58,7 +57,7 @@ void CLevelupInfo::SetLevelUpInfo(int screen_x, int screen_y, int source, int va
     phase = LEVELUP_INFO_PHASE_APPEAR;
     x = screen_x - 0x23;
     y = screen_y - 6;
-    unk_30 = source;
+    weapon_slot = source;
     unk_34 = value;
 }
 
@@ -156,7 +155,7 @@ void CPiyori::Set(mgCObject *object, float height, float radius, s16 life) {
     int i;
 
     if (object != NULL) {
-        target = (CCharacter2 *) object;
+        target = static_cast<CCharacter2 *>(object);
         this->height = height;
         this->radius = radius;
         this->time = life;
@@ -172,7 +171,7 @@ void CPiyori::Set(mgCObject *object, float height, float radius, s16 life) {
 
 void CPiyori::Set(mgCObject *target, s16 time) {
     if (target != NULL) {
-        CCharacter2 *character = reinterpret_cast<CCharacter2 *>(target);
+        CCharacter2 *character = static_cast<CCharacter2 *>(target);
         this->Set(target, 2.0f * character->body_height, 2.0f * character->body_width, time);
     }
 }
@@ -233,7 +232,7 @@ void CPiyori::Draw() {
                 prim.Vertex4(quad_b);
             }
 
-            draw_angle += 2.0943952f;
+            draw_angle += TWO_PI / 3.0f;
         }
 
         prim.End();
@@ -257,7 +256,7 @@ void CPiyori::Step() {
         se_wait -= 1;
 
         if (se_wait <= 0) {
-            ((CCharacter2 *) target)->GetEntryObjectPos(0, pos);
+            target->GetEntryObjectPos(0, pos);
             sndGetVolPan(&vol, &pan, pos, 160.0f, 1200.0f);
             sndSePlayVPf(GetMainScene()->se_battle_id, 0x24, vol, pan, 0);
             se_wait = 13;
@@ -265,7 +264,7 @@ void CPiyori::Step() {
 
         {
             float a = circle_angle;
-            a += 0.10471976f;
+            a += 6.0f * DEG_TO_RAD;
             circle_angle = a;
 
             if (a > PI) {
@@ -275,7 +274,7 @@ void CPiyori::Step() {
 
         for (i = 0; i < 3; i++) {
             float a = star_angle[i];
-            a += 0.20943952f;
+            a += 12.0f * DEG_TO_RAD;
             star_angle[i] = a;
 
             if (a > PI) {
@@ -289,7 +288,7 @@ void CGiftMark::Set(CCharacter2 *character, float character_scale) {
     Initialize();
     chara = character;
     height = character_scale;
-    active = 1;
+    active = true;
 }
 
 void CGiftMark::Draw() {
@@ -340,7 +339,7 @@ void CGiftMark::Draw() {
 
 void CGiftMark::Step() {
     if (active != 0) {
-        angle += 0.1308997f;
+        angle += 7.5f * DEG_TO_RAD;
 
         if (angle > PI) {
             angle -= PI;
@@ -349,14 +348,14 @@ void CGiftMark::Step() {
         time += 1;
 
         if (time > 240) {
-            active = 0;
+            active = false;
         }
     }
 }
 
 void CGiftMark::Initialize() {
     chara = NULL;
-    active = 0;
+    active = false;
     angle = 0.0f;
     time = 0;
 }
@@ -400,16 +399,16 @@ void CEnemyLifeGage::SetView(int visible) {
     view = visible;
 }
 
-void CEnemyLifeGage::Set(float *position, int new_max_life, int new_life, int count, int new_pinned) {
+void CEnemyLifeGage::Set(float *position, int new_max_life, int new_life, int gekirin_count, int new_screen) {
     int i;
 
     sceVu0CopyVector(pos, position);
     max_hp = new_max_life;
     hp = new_life;
-    screen = new_pinned;
+    screen = new_screen;
 
     for (i = 0; i < ENEMY_LIFE_GAGE_GEKIRIN_MAX; i++) {
-        if (i > count - 1 && gekirin[i].state == GEKIRIN_STATE_SHOW) {
+        if (i > gekirin_count - 1 && gekirin[i].state == GEKIRIN_STATE_SHOW) {
             gekirin[i].frame = 0;
             gekirin[i].state = GEKIRIN_STATE_BREAK;
         }
@@ -520,7 +519,7 @@ void CEnemyLifeGage::Draw(int hide_gekirin) {
                 int x = position[0] - half_width;
                 top = position[1] - 12;
 
-                for (i = 0; i < 16; i += 1) {
+                for (i = 0; i < ENEMY_LIFE_GAGE_GEKIRIN_MAX; i++) {
                     gekirin[i].Draw(&sprite, x, top);
                     x += 8;
                 }
@@ -587,10 +586,10 @@ void CEnemyLifeGage::Initialize(int gekirin_num) {
 void CDamageScore::SetValue(float *pos, int value) {
     sceVu0CopyVector(this->pos, pos);
     alpha = 0;
-    phase = (int) DAMAGE_SCORE_PHASE_APPEAR;
-    active = 1;
-    sprite = 0;
-    sprintf(text, at_1221__2, value);
+    phase = DAMAGE_SCORE_PHASE_APPEAR;
+    active = true;
+    sprite = false;
+    sprintf(text, "%d", value);
     length = strlen(text);
 
     for (int i = 0; i < length; i++) {
@@ -604,17 +603,17 @@ void CDamageScore::SetColor(s16 red, s16 green, s16 blue) {
     color[2] = blue;
 }
 
-void CDamageScore::SetSprite(float *pos, int u0, int v0, int u1, int v1) {
+void CDamageScore::SetSprite(float *pos, int u, int v, int width, int height) {
     sceVu0CopyVector(this->pos, pos);
     alpha = 0;
-    phase = (int) DAMAGE_SCORE_PHASE_APPEAR;
-    active = 1;
-    sprite = 1;
+    phase = DAMAGE_SCORE_PHASE_APPEAR;
+    active = true;
+    sprite = true;
     bounce[0] = PI;
-    sprite_w = u1;
-    sprite_h = v1;
-    sprite_u = u0;
-    sprite_v = v0;
+    sprite_w = width;
+    sprite_h = height;
+    sprite_u = u;
+    sprite_v = v;
 }
 
 void CDamageScore::Draw() {
@@ -677,12 +676,12 @@ void CDamageScore::Draw() {
 void CDamageScore::Step() {
     if (active != 0) {
         if (sprite != 0) {
-            if (phase == (int) DAMAGE_SCORE_PHASE_APPEAR) {
+            if (phase == DAMAGE_SCORE_PHASE_APPEAR) {
                 bounce[0] = bounce[0] - (PI / 8.0f);
 
                 if (bounce[0] < -PI) {
                     bounce[0] = -PI;
-                    phase = (int) DAMAGE_SCORE_PHASE_FADE;
+                    phase = DAMAGE_SCORE_PHASE_FADE;
                 }
 
                 if (alpha < 0x80) {
@@ -690,17 +689,17 @@ void CDamageScore::Step() {
                 }
             }
 
-            if (phase == (int) DAMAGE_SCORE_PHASE_FADE) {
+            if (phase == DAMAGE_SCORE_PHASE_FADE) {
                 alpha -= 4;
 
                 if (alpha < 0) {
-                    active = 0;
+                    active = false;
                 }
             }
         }
 
         if (sprite == 0) {
-            if (phase == (int) DAMAGE_SCORE_PHASE_APPEAR) {
+            if (phase == DAMAGE_SCORE_PHASE_APPEAR) {
                 for (int i = 0; i < length; i++) {
                     bounce[i] = bounce[i] - (PI / (10.0f + (2.0f * (float) i)));
 
@@ -708,7 +707,7 @@ void CDamageScore::Step() {
                         bounce[i] = -PI;
 
                         if (i == length - 1) {
-                            phase = (int) DAMAGE_SCORE_PHASE_FADE;
+                            phase = DAMAGE_SCORE_PHASE_FADE;
                         }
                     }
                 }
@@ -718,11 +717,11 @@ void CDamageScore::Step() {
                 }
             }
 
-            if (phase == (int) DAMAGE_SCORE_PHASE_FADE) {
+            if (phase == DAMAGE_SCORE_PHASE_FADE) {
                 alpha -= 6;
 
                 if (alpha < 0) {
-                    active = 0;
+                    active = false;
                 }
             }
         }
@@ -733,11 +732,11 @@ void CDamageScore2::SetValue(int slot, int value, float height) {
     chara_no = slot;
     alpha = 0;
     this->value = value;
-    phase = (int) DAMAGE_SCORE2_PHASE_JUMP;
+    phase = DAMAGE_SCORE2_PHASE_JUMP;
     offset_y = 0;
     this->height = 2.0f * height;
     progress = 0;
-    sprintf(text, at_1221__2, this->value);
+    sprintf(text, "%d", this->value);
     length = strlen(text);
 }
 
@@ -787,7 +786,7 @@ void CDamageScore2::Step() {
         if (phase == DAMAGE_SCORE2_PHASE_JUMP) {
             progress += 0.1f;
             alpha += 0.1f;
-            offset_y = (int) (64.0f * sinf(-2.3561945f * progress));
+            offset_y = (int) (64.0f * sinf(-(PI - QUARTER_PI) * progress));
 
             if (progress > 1.0f) {
                 phase = DAMAGE_SCORE2_PHASE_HOLD;
@@ -945,7 +944,7 @@ void CLockOnModel::DrawMess(int tex_block) {
 }
 
 void CLockOnModel::Step() {
-    angle += 0.06981317f;
+    angle += 4.0f * DEG_TO_RAD;
 
     if (angle > PI) {
         angle -= TWO_PI;
@@ -955,7 +954,7 @@ void CLockOnModel::Step() {
 void CWarningGage2::Step() {
     time += 1;
 
-    if (time >= 0x28) {
+    if (time >= 40) {
         time = 0;
     }
 }
