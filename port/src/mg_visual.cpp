@@ -326,6 +326,28 @@ PORT_OVERRIDE int mgCVisualPrim::CreateRenderInfoPacket(u_int *packet, float (*m
     return 0;
 }
 
+namespace {
+
+// Retail's fixed models keep their streams in the packets built at load time, so the file image
+// can be reused once the model is assigned; the host draws from the streams themselves and has to
+// own them. Falls back to the file's copy when the arena is full, which Alloc has already reported.
+sceVu0FVECTOR *OwnStream(u_char *source, int count, mgCMemory *memory) {
+    if (count <= 0) {
+        return (sceVu0FVECTOR *) source;
+    }
+
+    u_long128 *copy = memory->Alloc(count);
+
+    if (copy == NULL) {
+        return (sceVu0FVECTOR *) source;
+    }
+
+    std::memcpy(copy, source, (size_t) count * 16);
+    return (sceVu0FVECTOR *) copy;
+}
+
+} // namespace
+
 // Retail keeps each data stream's address in an int, and sizes the material block by the PS2's
 // 0x30-byte material. On the host the header's high half would be lost and the streams would land
 // low, and a host material is wider than 0x30, so both the addresses and the block follow the
@@ -342,10 +364,10 @@ PORT_OVERRIDE void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemor
     colour_num = header->colour_num;
     uv_num = header->uv_num;
     material_num = header->material_num;
-    vertex = (sceVu0FVECTOR *) vertex_address;
-    normal = (sceVu0FVECTOR *) normal_address;
-    colour = (sceVu0FVECTOR *) colour_address;
-    uv = (sceVu0FVECTOR *) uv_address;
+    vertex = OwnStream(vertex_address, vertex_num, memory);
+    normal = OwnStream(normal_address, normal_num, memory);
+    colour = OwnStream(colour_address, colour_num, memory);
+    uv = OwnStream(uv_address, uv_num, memory);
     material = (mgMaterial *) memory->Alloc((material_num * sizeof(mgMaterial) + 15) / 16);
 
     if (material != NULL) {
