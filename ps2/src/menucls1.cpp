@@ -1431,14 +1431,9 @@ int CMenuItemUse::CheckItemUseEnable(CGameDataUsed *item, int kind, void *ptr) {
 }
 
 int CMenuItemUse::UseItem(CGameDataUsed *item, int kind, void *ptr) {
-#ifdef PORT
-    alignas(CItemUseTarget) u_char target_data_storage[sizeof(CItemUseTarget)];
-    CItemUseTarget &target_data = *reinterpret_cast<CItemUseTarget *>(target_data_storage);
-#else
     union {
         CItemUseTarget target_data;
     };
-#endif
 
     target_data.SetPtr(kind, ptr);
     MenuUsedTarget.SetPtr(kind, ptr);

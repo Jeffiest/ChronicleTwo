@@ -163,7 +163,7 @@ int CCollisionMDT::GetMaxY(float *position) {
     position[1] = max_y;
     return found;
 }
-
+#ifndef PORT
 int CCollisionMDT::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
     sceVu0FVECTOR box_max;
     sceVu0FVECTOR box_min;
@@ -218,12 +218,10 @@ int CCollisionMDT::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
     max_ptr = box_max;
     min_ptr = box_min;
 
-#ifndef PORT
     asm {
         lqc2 vf10, 0(max_ptr)
         lqc2 vf11, 0(min_ptr)
     }
-#endif
     polygon = poly;
     for (; i < poly_count; i++, polygon++) {
         mgVectorMaxMin(poly_max, poly_min, polygon->vertex[0], polygon->vertex[1], polygon->vertex[2]);
@@ -252,7 +250,7 @@ int CCollisionMDT::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
 
     return count;
 }
-
+#endif
 int CCollision::Intersection(float *from, float *to, float *hit) {
     return 0;
 }
@@ -272,14 +270,13 @@ int CColFrame::InsidePoint(float *point) {
     sceVu0ApplyMatrix(local_point, inverse_matrix, point);
     return collision->InsidePoint(local_point);
 }
-
+#ifndef PORT
 /**
  *
  * Loads a matrix into the vector unit's registers vf10-vf13 for the
  * transforms trance_normal makes.
  *
  */
-#ifndef PORT
 static asm void pre_trance_normal(float (*matrix)[4]) {
     .set noreorder
     lqc2 vf10, 0(a0)
@@ -288,7 +285,6 @@ static asm void pre_trance_normal(float (*matrix)[4]) {
     jr ra
     lqc2 vf13, 0x30(a0)
 }
-#endif
 
 /**
  *
@@ -296,7 +292,6 @@ static asm void pre_trance_normal(float (*matrix)[4]) {
  * loaded, and writes the unnormalised normal of the transformed triangle.
  *
  */
-#ifndef PORT
 static asm void trance_normal(float *v0, float *v1, float *v2, float *normal) {
     .set noreorder
     lqc2 vf16, 0(a0)
@@ -326,7 +321,6 @@ static asm void trance_normal(float *v0, float *v1, float *v2, float *normal) {
     sqc2 vf22, 0(a3)
 }
 #endif
-
 int CColFrame::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
     sceVu0FVECTOR corners[8];
     sceVu0FVECTOR transformed[8];

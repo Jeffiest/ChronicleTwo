@@ -17,7 +17,7 @@ struct CollisionRow {
 };
 
 #include <libvu0.h>
-
+#ifndef PORT
 int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
     int flags;
 #ifndef PORT
@@ -42,7 +42,7 @@ int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
 #endif
     return (flags & 0x80) == 0;
 }
-
+#endif
 float OverlapPoly3AreaXZ(sceVu0FVECTOR *clipped, sceVu0FVECTOR *clipper, mgVu0FBOX *box) {
     int   count = 3;
     int   source = 0;

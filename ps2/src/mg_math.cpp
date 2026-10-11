@@ -7,11 +7,10 @@
 
 #include "mg_drawenv.hpp"
 #include "mg_math.hpp"
-
+#ifndef PORT
 int         Check_Point_Poly3(float x, float y, float x0, float y0, float x1, float y1, float x2, float y2);
 static void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]);
 
-#ifndef PORT
 asm void mgFotI4(int *out, float *in) {
     .set noreorder
     lqc2 vf1, 0x0(a1)
@@ -19,8 +18,6 @@ asm void mgFotI4(int *out, float *in) {
     jr ra
     sqc2 vf1, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm void mgCreateBox8(float (*corners)[4], float *max, float *min) {
     .set noreorder
     lqc2 vf1, 0x0(a1)
@@ -48,19 +45,15 @@ asm void mgCreateBox8(float (*corners)[4], float *max, float *min) {
     sqc2 vf8, 0x30(a0)
 }
 #endif
-
 void mgZeroVector(float *vector) {
     *reinterpret_cast<u_long128 *>(vector) = 0;
 }
-
 #ifndef PORT
 asm void mgZeroVectorW(float *vector) {
     .set noreorder
     jr ra
     sqc2 vf0, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm int mgClipBoxVertex(float *point, float *max, float *min) {
     .set noreorder
     lqc2 vf1, 0x0(a0)
@@ -80,8 +73,6 @@ asm int mgClipBoxVertex(float *point, float *max, float *min) {
     jr ra
     sltiu v0, v0, 0x1
 }
-#endif
-#ifndef PORT
 asm int mgClipBox(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -102,8 +93,6 @@ asm int mgClipBox(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
-#endif
-#ifndef PORT
 asm int mgClipBoxW(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -124,8 +113,6 @@ asm int mgClipBoxW(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
-#endif
-#ifndef PORT
 asm int mgClipInBox(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -146,8 +133,6 @@ asm int mgClipInBox(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
-#endif
-#ifndef PORT
 asm int mgClipInBoxW(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -168,8 +153,6 @@ asm int mgClipInBoxW(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
-#endif
-#ifndef PORT
 asm void mgAddVector(float *vector, float *add) {
     .set noreorder
     lqc2 vf15, 0x0(a0)
@@ -178,8 +161,6 @@ asm void mgAddVector(float *vector, float *add) {
     jr ra
     sqc2 vf15, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm void mgSubVector(float *vector, float *sub) {
     .set noreorder
     lqc2 vf15, 0x0(a0)
@@ -188,7 +169,6 @@ asm void mgSubVector(float *vector, float *sub) {
     jr ra
     sqc2 vf15, 0x0(a0)
 }
-#endif
 
 void mgNormalizeVector(float *out, float *in, float length) {
     sceVu0FVECTOR unit;
@@ -197,7 +177,6 @@ void mgNormalizeVector(float *out, float *in, float length) {
     sceVu0ScaleVector(out, unit, length);
 }
 
-#ifndef PORT
 asm void mgVectorMin(float *min, float *a, float *b) {
     .set noreorder
     lqc2 vf15, 0x0(a1)
@@ -206,8 +185,6 @@ asm void mgVectorMin(float *min, float *a, float *b) {
     jr ra
     sqc2 vf18, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm void mgVectorMin(float *min, float *a, float *b, float *c, float *d) {
     .set noreorder
     lqc2 vf15, 0x0(a1)
@@ -220,8 +197,6 @@ asm void mgVectorMin(float *min, float *a, float *b, float *c, float *d) {
     jr ra
     sqc2 vf20, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm void mgVectorMaxMin(float *max, float *min, float *a, float *b) {
     .set noreorder
     lqc2 vf15, 0x0(a2)
@@ -232,8 +207,6 @@ asm void mgVectorMaxMin(float *max, float *min, float *a, float *b) {
     jr ra
     sqc2 vf20, 0x0(a1)
 }
-#endif
-#ifndef PORT
 asm void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c) {
     .set noreorder
     lqc2 vf15, 0x0(a2)
@@ -247,8 +220,6 @@ asm void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c) {
     jr ra
     sqc2 vf21, 0x0(a1)
 }
-#endif
-#ifndef PORT
 asm void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c, float *d) {
     .set noreorder
     lqc2 vf15, 0x0(a2)
@@ -265,8 +236,6 @@ asm void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c, fl
     jr ra
     sqc2 vf21, 0x0(a1)
 }
-#endif
-#ifndef PORT
 asm void mgBoxMaxMin(mgVu0FBOX *box, mgVu0FBOX *other) {
     .set noreorder
     lqc2 vf15, 0x0(a0)
@@ -283,8 +252,6 @@ asm void mgBoxMaxMin(mgVu0FBOX *box, mgVu0FBOX *other) {
     jr ra
     sqc2 vf21, 0x10(a0)
 }
-#endif
-#ifndef PORT
 asm void mgPlaneNormal(float *normal, float *v0, float *v1, float *v2) {
     .set noreorder
     lqc2 vf15, 0x0(a1)
@@ -298,7 +265,6 @@ asm void mgPlaneNormal(float *normal, float *v0, float *v1, float *v2) {
     sqc2 vf12, 0x0(a0)
 }
 #endif
-
 float mgDistPlanePoint(float *normal, float *on_plane, float *point) {
     sceVu0FVECTOR offset;
 
@@ -556,7 +522,6 @@ int Check_Point_Poly3(float x, float y, float x0, float y0, float x1, float y1, 
 
     return MG_POINT_POLY3_OUTSIDE;
 }
-
 #ifndef PORT
 asm float mgDistVector(float *vector) {
     .set noreorder
@@ -573,8 +538,6 @@ asm float mgDistVector(float *vector) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVectorXZ(float *vector) {
     .set noreorder
     lqc2 vf4, 0x0(a0)
@@ -589,8 +552,6 @@ asm float mgDistVectorXZ(float *vector) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVector2(float *vector) {
     .set noreorder
     lqc2 vf4, 0x0(a0)
@@ -604,8 +565,6 @@ asm float mgDistVector2(float *vector) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVector(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -623,8 +582,6 @@ asm float mgDistVector(float *a, float *b) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVectorXZ(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -641,8 +598,6 @@ asm float mgDistVectorXZ(float *a, float *b) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVector2(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -658,8 +613,6 @@ asm float mgDistVector2(float *a, float *b) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm float mgDistVectorXZ2(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -674,8 +627,6 @@ asm float mgDistVectorXZ2(float *a, float *b) {
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm void mgUnitMatrix(float (*matrix)[4]) {
     .set noreorder
     vmr32.xyzw vf1, vf0
@@ -687,8 +638,6 @@ asm void mgUnitMatrix(float (*matrix)[4]) {
     jr ra
     sqc2 vf3, 0x0(a0)
 }
-#endif
-#ifndef PORT
 asm void mgZeroMatrix(float (*matrix)[4]) {
     .set noreorder
     vsub.xyzw vf1, vf1, vf1
@@ -698,13 +647,11 @@ asm void mgZeroMatrix(float (*matrix)[4]) {
     jr ra
     sqc2 vf1, 0x0(a0)
 }
-#endif
 /**
  *
  * Multiplies a matrix in place by two further matrices.
  *
  */
-#ifndef PORT
 static asm void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]) {
     .set noreorder
     lqc2 vf1, 0x0(a0)
@@ -757,8 +704,6 @@ static asm void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third
     jr ra
     sqc2 vf4, 0x30(a0)
 }
-#endif
-#ifndef PORT
 asm void mgMulMatrix(float (*product)[4], float (*left_matrix)[4], float (*right_matrix)[4]) {
     .set noreorder
     lqc2 vf1, 0x0(a1)
@@ -791,8 +736,6 @@ asm void mgMulMatrix(float (*product)[4], float (*left_matrix)[4], float (*right
     jr ra
     sqc2 vf23, 0x30(a0)
 }
-#endif
-#ifndef PORT
 asm void mgInversMatrix(float (*inverse)[4], float (*matrix)[4]) {
     .set noreorder
     lqc2 vf1, 0x0(a1)
@@ -858,7 +801,6 @@ asm void mgInversMatrix(float (*inverse)[4], float (*matrix)[4]) {
     sqc2 vf8, 0x30(a0)
 }
 #endif
-
 void mgRotMatrixX(float (*matrix)[4], float angle_x) {
     mgUnitMatrix(matrix);
     matrix[2][2] = cosf(angle_x);
@@ -992,7 +934,6 @@ void mgShadowMatrix(float (*matrix)[4], float *light_direction, float *on_plane,
     matrix[2][3] = 0.0f;
     matrix[3][3] = scale * -facing;
 }
-
 #ifndef PORT
 asm void mgApplyMatrixN(float (*out)[4], float (*matrix)[4], float (*in)[4], int count) {
     .set noreorder
@@ -1018,8 +959,6 @@ transform_vectors:
     jr ra
     nop
 }
-#endif
-#ifndef PORT
 asm void mgApplyMatrixN_MaxMin(float (*out)[4], float (*matrix)[4], float (*in)[4], int count,
                            float *max, float *min) {
     .set noreorder
@@ -1058,8 +997,6 @@ transform_and_bound_vectors:
     jr ra
     sqc2 vf21, 0x0(t1)
 }
-#endif
-#ifndef PORT
 asm void mgVectorMinMaxN(float *max, float *min, float (*vectors)[4], int count) {
     .set noreorder
     addi a3, a3, -0x1
@@ -1087,7 +1024,6 @@ update_bounds:
     sqc2 vf11, 0x0(a1)
 }
 #endif
-
 void mgApplyMatrix(float *max, float *min, float (*matrix)[4], float *box_max, float *box_min) {
     sceVu0FVECTOR corners[8];
 

@@ -101,7 +101,7 @@ u_long128 mat_pw = 3;
 u_int *GetScrPad() {
     return (u_int *) (buff_id ? 0x70002000 : 0x70000000);
 }
-
+#ifndef PORT
 void SendDMA(void *packet, int size) {
     int address_mask = 0x0FFFFFFF;
 
@@ -139,7 +139,7 @@ void SendDMA(void *packet, int size) {
     start_dma = 1;
     buff_id = !buff_id;
 }
-
+#endif
 int mgSetPkTEX0(u_int *packet, unsigned long tex0, unsigned long tex1) {
     *(u_long128 *) packet = *(u_long128 *) &set_tex0_dma;
     *(u_long128 *) (packet + 4) = *(u_long128 *) &set_tex0_giftag;

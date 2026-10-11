@@ -48,16 +48,12 @@ int DIntr(void);
 
 /** Restores interrupt handling. */
 int EIntr(...);
-
-/**
- * Waits for pending memory accesses and re-enables interrupts at the end of an interrupt handler.
- */
-#ifdef PORT
-#define ExitHandler() ((void) 0)
-#else
+#ifndef PORT
+/** Waits for pending memory accesses and re-enables interrupts at the end of an interrupt handler. */
 #define ExitHandler() asm volatile("sync.l; ei")
+#else
+#define ExitHandler() ((void) 0)
 #endif
-
 /** Registers a handler for an EE interrupt source. */
 int AddIntcHandler(int cause, int (*handler)(int), int next);
 

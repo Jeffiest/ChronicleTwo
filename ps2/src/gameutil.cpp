@@ -492,7 +492,7 @@ Mot_List *MotionProc(mgCFrame *root, unsigned int from_frame, unsigned int to_fr
 
     return list->next;
 }
-
+#ifndef PORT
 /**
  *
  * Accumulates a weighted transformed vertex and writes the resulting vertex.
@@ -606,7 +606,7 @@ Mot_List *MotionProc2(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *fram
 
     return list->next;
 }
-
+#endif
 Mot_List *MotionProc3(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *frame_info, Mot_List *list) {
     static sceVu0FVECTOR *vert;
     static sceVu0FVECTOR *nml;
@@ -1092,7 +1092,7 @@ int CheckHit(CCPoly *polys, int count, float *from, float *to, float *hit_point,
 }
 
 #pragma global_optimizer off
-
+#ifndef PORT
 int CheckHit(CollisionInfo *collision, float *from, float *to, float *hit, int closest, int mask) {
     float   point[4];
     float   diff[4];
@@ -1198,7 +1198,7 @@ int CheckHit(CollisionInfo *collision, float *from, float *to, float *hit, int c
 
     return best;
 }
-
+#endif
 #pragma global_optimizer reset
 
 int CheckHitVertical(CCPoly *polys, int count, float *from, float height, float *hit_point, int ignore_mask) {
@@ -1268,7 +1268,7 @@ int CheckHits(CCPoly *polys, int count, float *from, float *to, int max_hits, in
     info.polys = polys;
     return CheckHits(&info, from, to, max_hits, hit_polys, hit_points, sort, ignore_mask);
 }
-
+#ifndef PORT
 int CheckHits(CollisionInfo *info, float *from, float *to, int max_hits, int *hit_polys, float (*hit_points)[4], int sort, int ignore_mask) {
     float   point[4];
     float   poly_min[4];
@@ -1385,7 +1385,7 @@ int CheckHits(CollisionInfo *info, float *from, float *to, int max_hits, int *hi
 
     return hits;
 }
-
+#endif
 int CheckHitsPipeY(CCPoly *polys, int count, float *from, float height, int max_hits, int *hit_polys, sceVu0FVECTOR *hit_points, int sort, int ignore_mask) {
     float   best[4];
     float   poly_min[4];

@@ -33,10 +33,10 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools" / "mwccgap"))
+sys.path.insert(0, str(ROOT / "tools" / "kazarov" / "python"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from mwccgap.elf import Elf, Symbol, Section, SHT_NOBITS, BssSection  # noqa: E402
+from kazarov_elf import Elf, Symbol, Section, SHT_NOBITS, BssSection  # noqa: E402
 
 import layout  # noqa: E402
 import disassemble
@@ -84,7 +84,7 @@ CODE = (".text", ".init")
 
 # Unresolved retail storage: exact placements only, never inferred alignments.
 # Values fix (kind, start, size, next name/start/size, measured next alignments).
-# See BSS_RESERVATIONS.md for the measured classification and remaining gaps.
+# See docs/BSS_RESERVATIONS.md for the measured classification and remaining gaps.
 BSS_RETAIL_RESERVATIONS = {
     ('convviewlp', 'ConvertResultDispTime'):
         ('.sbss', 0x0037ea8c, 0x4, 'SaveFileInfoTablePtr', 0x0037eac0, 0x4, (4,)),
@@ -398,7 +398,7 @@ INVENTED = re.compile(r"D_([0-9A-F]{8})")
 
 
 def name_sections(elf):
-    """Name every section; mwccgap's reader leaves its `.text` sections unnamed."""
+    """Name every section; the ELF reader leaves its `.text` sections unnamed."""
     for section in elf.sections:
         section.name = elf.shstrtab.get_symbol_by_index(section.sh_name)
 
