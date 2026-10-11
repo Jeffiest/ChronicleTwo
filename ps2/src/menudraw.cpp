@@ -1414,7 +1414,7 @@ int SetModeMenuDrawItemBoard(int mode) {
             MenuDrawItemInfo[k] = &MenuUserParam.used_data[k];
         }
 
-        MenuDrawItemInfoNum = GetNowBagMax(1);
+        MenuDrawItemInfoNum = GetNowBagMax(ITEM_BOARD_ALL);
     }
 
     if (mode == MENU_ITEM_BOARD_WEAPON) {
@@ -3820,7 +3820,7 @@ void MenuItemBrdDraw(float *pos, mgRect<int> clip_rect, int &tex_block, int a, i
         scissor.bottom = bottom = clip_rect.bottom;
         MenuClipRectCheck(scissor);
         MenuReloadTexture(tex_block, tex->block);
-        last_row = GetNowBagMax(0) / 6;
+        last_row = GetNowBagMax(ITEM_BOARD_MAIN) / 6;
         mgRect<int> put(0, 0, 0, 0);
         SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
@@ -3937,7 +3937,7 @@ void MenuItemModeItemDraw(int &tex_block, mgRect<int> clip_rect, float *pos, MEN
     mgRect<int> unused(0, 0, 32, 32);
     MenuReloadTexture(tex_block, icon_tex->block);
     SetMenuScissor(scissor);
-    bag_max = GetNowBagMax(0);
+    bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
     int no = 0;
 
     for (row = 0; row < 25; row++, y += 50) {
@@ -5433,7 +5433,7 @@ void Func_MenuItemBrdPrepare(MENUFORMPARTS_TYPE *parts, CGameDataUsed *items, CG
 
     if (parts != NULL) {
         CItemUseTarget target;
-        count = GetNowBagMax(1);
+        count = GetNowBagMax(ITEM_BOARD_ALL);
         i = 0;
 
         if (0 < count) {
@@ -5463,7 +5463,7 @@ void Func_MenuItemBrdPrepare2(MENUFORMPARTS_TYPE *parts, CGameDataUsed *items,
         return;
     }
 
-    count = GetNowBagMax(1);
+    count = GetNowBagMax(ITEM_BOARD_ALL);
     item_no = used->item_no;
     i = 0;
 
@@ -5659,7 +5659,7 @@ void CheckItemBoardFunc_MenuIconDrawPrepare(CUserDataManager *manager, MENUFORMP
 
     need_item = NowUseNeedItemCheck(manager);
     item = manager->GetUsedDataPtr(0);
-    count = GetNowBagMax(1);
+    count = GetNowBagMax(ITEM_BOARD_ALL);
 
     for (i = 0; i < count; i++) {
         Func_MenuIconDrawPrepare(&parts[i], item, need_item);
