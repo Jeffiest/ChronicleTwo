@@ -8006,7 +8006,7 @@ int GyoraceMenuKey() {
         case GYORACE_MENU_SAVE_FADE:
             if (MenuMainScene->fade.FadeCheck() != 0) {
                 GyoraceNowMode = GYORACE_MENU_SAVE;
-                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], 0x1E);
+                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], MENU_OPEN_GYORACE_LOAD);
             }
 
             break;
@@ -8020,7 +8020,7 @@ int GyoraceMenuKey() {
 
                 next = GYORACE_MENU_RETURN_FROM_SAVE;
                 MenuMainScene->fade.FadeIn(30);
-                MenuArg.end_code = 0;
+                MenuArg.end_code = MENU_END_NONE;
                 MenuArg.result[0] = 0;
             }
 
@@ -8133,10 +8133,10 @@ int GyoraceMenuKey() {
 
                     MenuLoadFishSelect = 0;
                     MenuLoadFishTopLine = 0;
-                    SetModeMenuDrawItemBoard(4);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
                     bag_max = GetNowBagMax(1);
                     MenuItemBrdSetInfo(MenuLoadFishSelect, MenuLoadFishTopLine, bag_max / 6, 5);
-                    MenuItemBrdCalcManner = 0;
+                    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
                     list_update = true;
                     GyoraceMes->cursor_on = 0;
                     Gyoracemenu_CursorXY[0] = 206.0f;
@@ -8148,7 +8148,7 @@ int GyoraceMenuKey() {
 
                 break;
             case GYORACE_MENU_LOAD_FISH:
-                SetModeMenuDrawItemBoard(4);
+                SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
                 GyoraceQuestionMsgDrawFlag = false;
                 GyoraceFishHaveDrawFlag = true;
                 GyoraceHaveFishCursorDrawFlag = false;
