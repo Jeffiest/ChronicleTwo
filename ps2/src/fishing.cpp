@@ -2217,7 +2217,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                     } fields;
                 } event_data;
 
-                if (scene->GetMapEvent(event_pos, 0, &event_data.data) != 0) {
+                if (scene->GetMapEvent(event_pos, MAP_EVENT_CHECK_TOUCH, &event_data.data) != 0) {
                     scene->RunEvent(event_data.fields.event_no, &event_data.data);
                     ExitFishing(scene);
                 }

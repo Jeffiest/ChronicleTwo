@@ -2899,14 +2899,14 @@ void IsEventRun() {
         return;
     }
 
-    button = 0;
+    button = MAP_EVENT_CHECK_TOUCH;
 
     if (PadCtrl.Btn(PAD_BTN_CONFIRM)) {
-        button = 1;
+        button = MAP_EVENT_CHECK_ACTION;
     }
 
     if (PadCtrl.Btn(PAD_BTN_ACTION_SQUARE)) {
-        button = 2;
+        button = MAP_EVENT_CHECK_ITEM;
     }
 
     near = false;
