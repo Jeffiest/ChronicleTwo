@@ -27,6 +27,11 @@
 
 bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
+namespace gfx {
+bool TraceTextures();
+void TraceTexture(const char *format, ...);
+} // namespace gfx
+
 namespace {
 
 // Subtixels per texel as a float; clang rejects dividing one by the enum constant directly.
@@ -80,6 +85,9 @@ gfx::TextureHandle ScratchImage(bool colour, uint32_t width, uint32_t height) {
 
     if (scratch.texture != gfx::kNullTexture) {
         gfx::DestroyTexture(scratch.texture);
+    }
+    if (gfx::TraceTextures()) {
+        gfx::TraceTexture("tanime scratch %#x replaces %#x", grown, scratch.texture);
     }
 
     scratch.texture = grown;

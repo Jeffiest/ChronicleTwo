@@ -17,6 +17,11 @@
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 
+namespace gfx {
+bool TraceTextures();
+void TraceTexture(const char *format, ...);
+} // namespace gfx
+
 // The host side of the texture manager. The ps2 bookkeeping - EnterTexture, EnterIMGFile, the
 // name hash, the block lists, the TIM2 parse - is plain CPU work and still links from ps2/src.
 // What cannot come from there is the VRAM transfer: the ps2 ReloadTexture writes VIF1 upload
@@ -43,7 +48,11 @@ bool RendererUp() {
     return gfx::PipelineCount() != 0;
 }
 
-void Release(Entry &entry) {
+void Release(const mgCTexture *owner, const char *why, Entry &entry) {
+    if (gfx::TraceTextures() && (entry.texture != gfx::kNullTexture || entry.palette != gfx::kNullTexture)) {
+        gfx::TraceTexture("mg release:%s %s %p texture %#x palette %#x target %d", why, owner->name,
+                          static_cast<const void *>(owner), entry.texture, entry.palette, entry.target ? 1 : 0);
+    }
     if (!entry.target) {
         if (entry.texture != gfx::kNullTexture) {
             gfx::DestroyTexture(entry.texture);
@@ -239,10 +248,15 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         // render target for 16 bits and up, an index image with a palette of zeroes below.
         bool has_alpha = texture->bpp != 24;
         if (texture->bpp > 8) {
-            Release(entry);
+            Release(texture, "retarget", entry);
             entry.texture = gfx::NamedRenderTarget(texture->name, static_cast<uint32_t>(texture->width),
                                                    static_cast<uint32_t>(texture->height), has_alpha);
             entry.target = entry.texture != gfx::kNullTexture;
+            if (gfx::TraceTextures()) {
+                gfx::TraceTexture("mg sync-target %s %p -> %#x %dx%d alpha %d", texture->name,
+                                  static_cast<const void *>(texture), entry.texture, texture->width,
+                                  texture->height, has_alpha ? 1 : 0);
+            }
             return;
         }
         desc.width = static_cast<uint32_t>(texture->width);
@@ -263,7 +277,7 @@ void Sync(const mgCTexture *texture, Entry &entry) {
     bool reuse = entry.texture != gfx::kNullTexture && entry.width == desc.width &&
                  entry.height == desc.height && entry.mips == desc.mip_levels && entry.format == desc.format;
     if (!reuse) {
-        Release(entry);
+        Release(texture, "reshape", entry);
         entry.texture = gfx::CreateTexture(desc);
         if (entry.texture == gfx::kNullTexture) {
             return;
@@ -297,6 +311,11 @@ void Sync(const mgCTexture *texture, Entry &entry) {
             gfx::UpdatePalette(entry.palette, rgba.data());
         }
     }
+    if (gfx::TraceTextures()) {
+        gfx::TraceTexture("mg sync %s %p block %d -> %#x palette %#x %ux%u bpp %d%s", texture->name,
+                          static_cast<const void *>(texture), texture->block, entry.texture, entry.palette,
+                          desc.width, desc.height, texture->bpp, reuse ? " reused" : "");
+    }
 }
 
 void MarkDirty(const mgCTexture *texture) {
@@ -306,7 +325,7 @@ void MarkDirty(const mgCTexture *texture) {
 void Forget(const mgCTexture *texture) {
     auto it = g_entries.find(texture);
     if (it != g_entries.end()) {
-        Release(it->second);
+        Release(texture, "delete", it->second);
         g_entries.erase(it);
     }
 }
@@ -327,6 +346,12 @@ bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
     }
     if (entry.texture == gfx::kNullTexture) {
         return false;
+    }
+    if (gfx::TraceTextures() && (!gfx::GetTextureInfo(entry.texture) ||
+                                 (entry.palette != gfx::kNullTexture && !gfx::GetTextureInfo(entry.palette)))) {
+        gfx::TraceTexture("mg DEAD texture %#x palette %#x held by %s %p block %d target %d dirty %d", entry.texture,
+                          entry.palette, texture->name, static_cast<const void *>(texture), texture->block,
+                          entry.target ? 1 : 0, entry.dirty ? 1 : 0);
     }
     if (texture->bpp <= 8 && entry.palette == gfx::kNullTexture) {
         return false;
@@ -422,7 +447,7 @@ PORT_OVERRIDE void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
 
 PORT_OVERRIDE void mgCTextureManager::Initialize(int start, int end) {
     for (auto &pair : g_entries) {
-        Release(pair.second);
+        Release(pair.first, "manager-init", pair.second);
     }
     g_entries.clear();
 

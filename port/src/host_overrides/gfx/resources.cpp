@@ -5,12 +5,35 @@
 #include <algorithm>
 #include <bit>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include "gfx/context.hpp"
 #include "gfx/displaylist.hpp"
 
 namespace gfx {
+
+// DC_TRACE_TEXTURES=1: one numbered stderr line per texture create, destroy, slot free, slot reuse and
+// upload retire, shared with the game glue so a dead handle can be traced to whoever released it.
+bool TraceTextures() {
+    static const bool on = [] {
+        const char *value = std::getenv("DC_TRACE_TEXTURES");
+        return value != nullptr && *value != '\0' && *value != '0';
+    }();
+    return on;
+}
+
+void TraceTexture(const char *format, ...) {
+    static unsigned long long event = 0;
+    std::va_list args;
+    va_start(args, format);
+    std::fprintf(stderr, "tex #%llu ", ++event);
+    std::vfprintf(stderr, format, args);
+    std::fputc('\n', stderr);
+    va_end(args);
+}
 
 namespace detail {
 
@@ -68,9 +91,15 @@ uint32_t AllocateTextureSlot() {
     if (!g.free_texture_slots.empty()) {
         uint32_t slot = g.free_texture_slots.back();
         g.free_texture_slots.pop_back();
+        if (TraceTextures()) {
+            TraceTexture("slot-reuse %u (last generation %u)", slot, g.textures[slot].generation);
+        }
         return slot;
     }
     if (g.textures.size() >= kMaxTextures) {
+        if (TraceTextures()) {
+            TraceTexture("slot-retire: retiring the upload batch at %zu slots", g.textures.size());
+        }
         // Loading screens upload thousands of textures without presenting a frame, so the
         // deferred releases never run; retiring the open upload batch under pressure is safe
         // outside a frame and returns the slots the released images held.
@@ -493,11 +522,17 @@ void DestroyDoomedTexture(TextureHandle handle) {
     texture.doomed = false;
     texture.image = {};
     texture.depth = {};
+    if (TraceTextures()) {
+        TraceTexture("destroy %#x (slot freed when the frame retires)", handle);
+    }
     DeferDestroy([slot, image, depth]() mutable {
         WriteTextureDescriptor(slot, g.textures[0].image.view);
         DestroyImage(image);
         DestroyImage(depth);
         g.free_texture_slots.push_back(slot);
+        if (TraceTextures()) {
+            TraceTexture("slot-free %u", slot);
+        }
     });
 }
 
@@ -553,6 +588,10 @@ TextureHandle CreateTexture(const TextureDesc &desc) {
                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
     ClearImage(UploadCommands(), texture.image, VkClearColorValue{});
     WriteTextureDescriptor(slot, texture.image.view);
+    if (TraceTextures()) {
+        TraceTexture("create %#x %ux%u format %u mips %u", MakeHandle(texture.generation, slot), desc.width,
+                     desc.height, static_cast<unsigned>(desc.format), desc.mip_levels);
+    }
     return MakeHandle(texture.generation, slot);
 }
 
@@ -604,6 +643,10 @@ TextureHandle CreateRenderTarget(uint32_t logical_width, uint32_t logical_height
         ClearDepth(cmd, texture.depth);
     }
     WriteTextureDescriptor(slot, texture.image.view);
+    if (TraceTextures()) {
+        TraceTexture("create-target %#x %ux%u alpha %d", MakeHandle(texture.generation, slot), logical_width,
+                     logical_height, has_alpha ? 1 : 0);
+    }
     return MakeHandle(texture.generation, slot);
 }
 
@@ -646,6 +689,9 @@ void DestroyTexture(TextureHandle handle) {
         }
         texture->doomed = true;
         RecordDoomedTexture(handle);
+        if (TraceTextures()) {
+            TraceTexture("doom %#x (dead now, destroyed after this frame)", handle);
+        }
         return;
     }
     if (g.target == handle) {
