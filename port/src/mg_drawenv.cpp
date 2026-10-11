@@ -127,20 +127,6 @@ gfx::DrawState DrawStateOf(const sceGsTest &test, const sceGsZbuf &zbuf, const s
     return state;
 }
 
-// The texture manager's side of the draw seam: port/src/mg_texture.cpp defines this strongly.
-// Until it does, a textured primitive has nothing to sample and no primitive is drawn, as in the
-// 2D replacement units. u_scale and v_scale are the factors from the game's texel coordinates to
-// the host texture's logical texels (1 for an ordinary texture, 640/512 for an image of the
-// frame).
-__attribute__((weak)) bool ResolveTexture(const mgCTexture &texture, gfx::TextureBinding &binding,
-                                          float &u_scale, float &v_scale) {
-    (void) texture;
-    (void) binding;
-    (void) u_scale;
-    (void) v_scale;
-    return false;
-}
-
 } // namespace mgport
 
 PORT_OVERRIDE mgCDrawEnv::mgCDrawEnv() {

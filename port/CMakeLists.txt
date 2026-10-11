@@ -287,6 +287,16 @@ if(EXISTS ${PORT_DIR}/main.cpp)
     add_executable(darkchronicle ${PORT_DIR}/main.cpp)
     set_target_properties(darkchronicle PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
     dc_link_game(darkchronicle)
+    if(WIN32)
+        # The DLLs the executable loads from its own directory: SDL3 and llvm-mingw's C++ runtime.
+        get_filename_component(MINGW_BIN ${CMAKE_CXX_COMPILER} DIRECTORY)
+        set(MINGW_RUNTIME ${MINGW_BIN}/../x86_64-w64-mingw32/bin)
+        add_custom_command(TARGET darkchronicle POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3>
+                ${MINGW_RUNTIME}/libc++.dll ${MINGW_RUNTIME}/libunwind.dll ${MINGW_RUNTIME}/libwinpthread-1.dll
+                $<TARGET_FILE_DIR:darkchronicle>
+            VERBATIM)
+    endif()
 
     include(GNUInstallDirs)
     install(TARGETS darkchronicle RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

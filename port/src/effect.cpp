@@ -8,10 +8,8 @@
  *
  * A textured mgCDrawPrim run - the scripted particles, the sword trail and every menu and map
  * primitive drawn through the same builder - resolves its texture through mgport::ResolveTexture.
- * mg_drawenv.cpp leaves that definition weak so it can return false and the run is dropped;
- * mg_drawprim.cpp's call site names this the strong definition mg_texture.cpp would provide, but
- * the texture unit only exposes PortMgTextureBinding, so it lives here with the effect units
- * that first read it.
+ * The texture unit only exposes PortMgTextureBinding, so the resolver lives here with the effect
+ * units that first read it.
  */
 
 // mg_texture.cpp's resolver, declared the way the other units declare it (there is no shared
