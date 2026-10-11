@@ -383,7 +383,7 @@ void GameDataSwap(CGameDataUsed *first, CGameDataUsed *second, int mode) {
         second->CopyGameData(&spare);
 
         if (mode == 1) {
-            equipped = &GetUserDataMan()->chara_data[USER_CHARA_MAX].equip[0];
+            equipped = &GetUserDataMan()->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE];
 
             if (equipped == first || equipped == second) {
                 first_is_rod = first->IsFishingRod();
@@ -1726,7 +1726,7 @@ int GetMainCharaModelName(int character_index, char *model_name, int alternate) 
         return false;
     }
 
-    int model_number = character_data->equip[0].GetModelNo();
+    int model_number = character_data->equip[CHARA_EQUIP_MELEE].GetModelNo();
 
     if (model_number < 0) {
         model_number = 0;
@@ -1958,7 +1958,7 @@ void CGameDataUsed::CopyGameData(CGameDataUsed *other) {
         memcpy(this, other, sizeof(CGameDataUsed));
         robo = &GetUserDataMan()->robo_data;
 
-        if (robo != NULL && &robo->parts[2] == this) {
+        if (robo != NULL && &robo->parts[ROBO_PART_PACK] == this) {
             old_max = fptosi(robo->hp.max);
             robo->hp.max = this->data.robopart.energy.max;
 
@@ -2460,7 +2460,7 @@ float ROBO_DATA::AddPoint(float amount) {
 }
 
 int ROBO_DATA::GetDefenceVol() {
-    return parts[1].data.robopart.defence + (shield_kit_num << 2);
+    return parts[ROBO_PART_BODY].data.robopart.defence + (shield_kit_num << 2);
 }
 
 BASE_MONSTER_TBL *GetMonsterBaseInfo(int monster_no) {
@@ -3786,11 +3786,11 @@ void CUserDataManager::RefreshNPCStatus(int mode) {
 }
 
 int CUserDataManager::GetFishingRodNo() {
-    return chara_data[USER_CHARA_MAX].equip[0].item_no;
+    return chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].item_no;
 }
 
 int CUserDataManager::NowFishingStyle() {
-    CGameDataUsed *rod = &chara_data[USER_CHARA_MAX].equip[0];
+    CGameDataUsed *rod = &chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE];
 
     if (rod != NULL) {
         return rod->IsFishingRod();
@@ -3916,11 +3916,11 @@ void CUserDataManager::GetFishRecord(int fish_no, float *size_out, float *weight
 
 void CUserDataManager::GetRodStatus(int *out) {
     if (out != NULL && GetFishingRodNo() > 0) {
-        out[0] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[0];
-        out[1] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[1];
-        out[2] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[2];
-        out[3] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[3];
-        out[4] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[4];
+        out[0] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[0];
+        out[1] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[1];
+        out[2] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[2];
+        out[3] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[3];
+        out[4] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[4];
     }
 }
 
@@ -3929,7 +3929,7 @@ int CUserDataManager::AddFp(int points) {
         return 0;
     }
 
-    return chara_data[USER_CHARA_MAX].equip[0].AddFusionPoint(points);
+    return chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].AddFusionPoint(points);
 }
 
 int CUserDataManager::SetChrEquip(int chara_no, CGameDataUsed *item) {
@@ -4385,7 +4385,7 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
     GetCostume(item_no);
 
     if (item_no == ITEM_ID_LURE_ROD) {
-        GetSaveData()->SetBitFlag(0x30, 1);
+        GetSaveData()->SetBitFlag(SAVE_FLAG_LURE_ROD, 1);
     }
 
     int added = 0;
@@ -4833,7 +4833,7 @@ void CBattleCharaInfo::SetChrNo(int new_chara_no) {
         chara_type = BATTLE_CHARA_ROBO;
         chara_data.robo = &manager->robo_data;
         active_item = NULL;
-        equip = &chara_data.robo->parts[0];
+        equip = &chara_data.robo->parts[ROBO_PART_ARM];
         hp = &chara_data.robo->hp;
         disp_hp = hp->now;
         disp_hp_max = hp->max;
@@ -5570,11 +5570,11 @@ int SetRandamCircleStatus(int trap, float &amount_out) {
 
         if (manager != NULL) {
             CHARA_DATA *max = manager->GetCharaDataPtr(USER_CHARA_MAX);
-            max->equip[0].Repair(999);
-            max->equip[1].Repair(999);
+            max->equip[CHARA_EQUIP_MELEE].Repair(999);
+            max->equip[CHARA_EQUIP_SUB].Repair(999);
             CHARA_DATA *monica = manager->GetCharaDataPtr(USER_CHARA_MONICA);
-            monica->equip[0].Repair(999);
-            monica->equip[1].Repair(999);
+            monica->equip[CHARA_EQUIP_MELEE].Repair(999);
+            monica->equip[CHARA_EQUIP_SUB].Repair(999);
             return true;
         }
     }
@@ -5969,9 +5969,9 @@ int KillMonsterCount(int monster, int amount) {
 int SearchEquipType(int category, int slot) {
     // Gives the item type accepted by each human or ridepod equipment slot.
     static signed char equip_type_tbl[3][5] = {
-        {ITEM_DATA_MAX_MELEE, ITEM_DATA_MAX_GUN, ITEM_DATA_MAX_HAT, ITEM_DATA_MAX_SHOES, ITEM_DATA_MAX_CLOTHES},
+        {ITEM_DATA_MAX_MELEE,    ITEM_DATA_MAX_GUN,      ITEM_DATA_MAX_HAT,          ITEM_DATA_MAX_SHOES,    ITEM_DATA_MAX_CLOTHES},
         {ITEM_DATA_MONICA_MELEE, ITEM_DATA_MONICA_MAGIC, ITEM_DATA_MONICA_ACCESSORY, ITEM_DATA_MONICA_BOOTS, ITEM_DATA_MONICA_CLOTHES},
-        {ITEM_DATA_ROBO_ARM, ITEM_DATA_ROBO_BODY, ITEM_DATA_ROBO_ENERGY_PACK, ITEM_DATA_ROBO_LEG, ITEM_DATA_NONE},
+        {ITEM_DATA_ROBO_ARM,     ITEM_DATA_ROBO_BODY,    ITEM_DATA_ROBO_ENERGY_PACK, ITEM_DATA_ROBO_LEG,     ITEM_DATA_NONE},
     };
 
     if (category < USER_CHARA_MAX || category > USER_CHARA_ROBO) {
@@ -6724,8 +6724,8 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
         CHARA_DATA *chara = manager->GetCharaDataPtr(USER_CHARA_MAX);
 
         if (mode == 1) {
-            chara->equip[0].Init();
-            chara->equip[1].Init();
+            chara->equip[CHARA_EQUIP_MELEE].Init();
+            chara->equip[CHARA_EQUIP_SUB].Init();
         }
 
         items = NULL;
@@ -6777,8 +6777,8 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
     }
 
     if (mode == 0x10 || mode == 0xF) {
-        manager->chara_data[USER_CHARA_MAX].equip[0].Init();
-        manager->chara_data[USER_CHARA_MAX].equip[1].Init();
+        manager->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].Init();
+        manager->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_SUB].Init();
 
         if (mode == 0xF) {
             items = subgame1;

@@ -50,8 +50,6 @@
 
 void EditModeChgStep(CScene *scene);
 
-static const int kEventNoMapJump = 0x1869F;
-
 static const int kEventDataCallFlag = 8;
 
 static const int kKeyOpenEvent = 0x96;
@@ -2063,7 +2061,7 @@ int EditStep() {
         printf("event = %d\n", event_no);
         event_data = &MainScene->event_data;
 
-        if (event_no == kEventNoMapJump) {
+        if (event_no == EDIT_LOOP_EVENT_EDIT_EVENT) {
             if (EditEvent.StartEvent(event_data) != 0) {
                 camera = (CCameraControl *) MainScene->GetCamera(MainScene->active_camera);
 
@@ -2655,8 +2653,8 @@ int BurnEditParts() {
             do {
                 CEditPartsInfo *river_info = map->GetePartsInfoAtID(id);
 
-                if (river_info != NULL && !(river_info->attr & 0x8000) &&
-                    !(river_info->attr & 0x1000)) {
+                if (river_info != NULL && !(river_info->attr & EDIT_PARTS_ATR_NO_REFUND) &&
+                    !(river_info->attr & EDIT_PARTS_ATR_BURN)) {
                     int count = info.parts_num[id];
 
                     if (count > 0) {
@@ -2801,7 +2799,7 @@ int EditMapJump(int map_no) {
     MainScene->SetNowMapNo(MapNo);
     EdEventMapInit();
 
-    if (GetMapType(MapNo) == 1) {
+    if (GetMapType(MapNo) == MAP_TYPE_GEORAMA) {
         used_before = main_data->stack_used;
         map = (CEditMap *) MainScene->GetMap(0);
         map->CreateTable(main_data, 0x100, 0xA000);
@@ -2836,7 +2834,7 @@ int EditMapJump(int map_no) {
     NowLoadingBarStep();
     MainScene->LoadGameObject(map_no, 0xA4, main_data);
 
-    if (GetMapType(MapNo) == 5) {
+    if (GetMapType(MapNo) == MAP_TYPE_FUTURE) {
         area_no = 0;
         SearchMapNo("f01");
 
@@ -3042,7 +3040,7 @@ void EditDataSave() {
                 map->GroundBalance(0);
                 map->UpdateHouse();
 
-                if ((DebugInfo.georama_debug == 0) && (GetMapType(MapNo) == 1)) {
+                if ((DebugInfo.georama_debug == 0) && (GetMapType(MapNo) == MAP_TYPE_GEORAMA)) {
                     AnalyzeEditMap(MapNo, map);
                 }
             }
@@ -3069,7 +3067,7 @@ void EditDataLoad() {
             map->GroundBalance(0);
             map->UpdateHouse();
 
-            if (DebugInfo.georama_debug == 0 && GetMapType(MapNo) == 1) {
+            if (DebugInfo.georama_debug == 0 && GetMapType(MapNo) == MAP_TYPE_GEORAMA) {
                 AnalyzeEditMap(MapNo, map);
             }
 

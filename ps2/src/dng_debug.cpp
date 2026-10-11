@@ -130,7 +130,8 @@ void dngDebugStart() {
     GamePad__2.SetAutoRepeat(PAD_UP | PAD_RIGHT | PAD_DOWN | PAD_LEFT, 15, 4);
     GamePad__2.SetAutoRepeat(PAD_UP | PAD_DOWN, 8, 1);
     dbinfo.saved_pause_flag = BattleAreaScene->pause_flag;
-    BattleAreaScene->pause_flag = DNG_PAUSE_MONSTER_AI | DNG_PAUSE_PLAYER_STEP | DNG_PAUSE_PLAYER_CONTROL | DNG_PAUSE_FIELD_STEP;
+    BattleAreaScene->pause_flag = DNG_PAUSE_MONSTER_AI | DNG_PAUSE_PLAYER_STEP |
+                                   DNG_PAUSE_PLAYER_CONTROL | DNG_PAUSE_FIELD_STEP;
 }
 
 void dngDebugDraw() {

@@ -144,7 +144,7 @@ struct tagMOTION_TYPE {
     sceVu0FMATRIX *base_matrices; /**< Bind-pose matrix of each frame, loaded from the motion's first file. */
     Mot_List      *motion_list;   /**< Key lists that pose the frames, applied by SetMotionTime and ChangeMotion. */
     Mot_List      *skin_list;     /**< Key lists that skin the visuals, applied by DeformMesh. */
-    u32            unk_0C;
+    u32            unk_0C; /**< Unknown; the loaders leave it zero and _MOTION copies it from shadow motion set 0 with the pointers above. */
     tagFRAME_INF  *frame_info; /**< Skinning data of each frame of the model. */
 };
 

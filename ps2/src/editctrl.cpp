@@ -10,6 +10,7 @@
 #include "dng_event.hpp"
 #include "editctrl.hpp"
 #include "editexception.hpp"
+#include "editloop.hpp"
 #include "editmap.hpp"
 #include "effscript.hpp"
 #include "gamepad.hpp"
@@ -555,7 +556,7 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
             if (!(ground_normal[1] <= 0.6f) && (ground_poly.parts_no & CCPOLY_PARTS_EDIT)) {
                 parts = edit_map->GetePlaceParts(ground_poly.parts_no & CCPOLY_PARTS_SLOT_MASK);
 
-                if (parts != NULL && parts->info != NULL && (parts->info->attr & 0x800)) {
+                if (parts != NULL && parts->info != NULL && (parts->info->attr & EDIT_PARTS_ATR_MOVE_MASK_SWITCH)) {
                     ignore_mask = 0x10;
                 }
             }
@@ -1067,7 +1068,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
 
         if (event.event.flag & FUNC_EVENT_DOOR) {
             atan2f(event.map_event.matrix[2][0], event.map_event.matrix[2][2]);
-            event_no = 99999;
+            event_no = EDIT_LOOP_EVENT_EDIT_EVENT;
         }
 
         if (event.event.flag & FUNC_EVENT_LADDER_BOTTOM) {
@@ -1081,11 +1082,11 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
         }
 
         if (event.event.flag & FUNC_EVENT_TREASURE_BOX) {
-            event_no = 99999;
+            event_no = EDIT_LOOP_EVENT_EDIT_EVENT;
         }
 
         if (event.event.flag & FUNC_EVENT_BOOK) {
-            event_no = 99999;
+            event_no = EDIT_LOOP_EVENT_EDIT_EVENT;
         }
 
         scene->RunEvent(event_no, &event);

@@ -674,7 +674,7 @@ void CActionChara::EntryThrowItem() {
     item_no = item->item_no;
     ThrowItemTable table = {
         {0x114, 0x118, 0x119, 0x11A, 0x11B, 0x11C, 0x11D, 0x11E, 0x11F,
-         0x120, 0x121, 0x122, 0x123, 0x124, 0x130, 0x186, 0x187, 0x133, -1}
+         0x120, 0x121, 0x122, 0x123, 0x124, ITEM_ID_GIFT_CAPSULE, 0x186, 0x187, 0x133, -1}
     };
     index = 0;
 
@@ -3655,8 +3655,8 @@ void CActionChara::Step() {
 
     StepParam();
 
-    if (self->sound_info.se_positional != 2) {
-        self->sound_info.se_positional = 1;
+    if (self->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+        self->sound_info.se_positional = CHARA_SE_POSITIONAL_HEAD;
     }
 
     self->CCharacter2::Step();
@@ -3666,8 +3666,8 @@ void CActionChara::Step() {
         do {
             chained = link;
 
-            if (chained->sound_info.se_positional != 2) {
-                chained->sound_info.se_positional = 0;
+            if (chained->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+                chained->sound_info.se_positional = CHARA_SE_POSITIONAL_CHAINED;
             }
 
             chained->CCharacter2::Step();

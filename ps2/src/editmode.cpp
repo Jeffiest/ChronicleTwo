@@ -1179,7 +1179,7 @@ int RemoveEditParts(CScene *scene, int parts_index, float *pos) {
         for (j = 0; j < 0x100; j++) {
             CEditPartsInfo *river_info = map->GetePartsInfoAtID(j);
 
-            if (river_info != NULL && !(river_info->attr & 0x8000)) {
+            if (river_info != NULL && !(river_info->attr & EDIT_PARTS_ATR_NO_REFUND)) {
                 count = info.parts_num[j];
 
                 if (count > 0) {

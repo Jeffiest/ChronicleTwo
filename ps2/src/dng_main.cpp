@@ -1637,7 +1637,7 @@ void DngMainDraw() {
     if (show && debag_param) {
         WarningGage2.Draw();
 
-        if (!BattleAreaScene->script.running && !(BattleAreaScene->pause_flag & DNG_PAUSE_MINIMAP) && config->map) {
+        if (!BattleAreaScene->script.running && !(BattleAreaScene->pause_flag & DNG_PAUSE_MINIMAP) && config->map != SV_CONFIG_MAP_OFF) {
             tex_man->ReloadTexture(0x66, (sceVif1Packet *) NULL);
             sceVu0FVECTOR pos;
 
@@ -1916,16 +1916,16 @@ void DngStep() {
                     }
 
                     if (r < 40) {
-                        no = 294;
+                        no = ITEM_ID_MELEE_REPAIR;
 
                         if (iRand(100) < 40) {
                             if (DngSaveDataDungeon->stage_id == 0) {
-                                no = 298;
+                                no = ITEM_ID_GUN_REPAIR;
                             } else {
                                 if (iRand(100) < 50) {
-                                    no = 298;
+                                    no = ITEM_ID_GUN_REPAIR;
                                 } else {
-                                    no = 352;
+                                    no = ITEM_ID_MAGIC_REPAIR;
                                 }
                             }
                         }
@@ -1933,10 +1933,10 @@ void DngStep() {
 
                     if (DngSaveDataDungeon->stage_id == 0) {
                         if (DngSaveDataDungeon->floor_id[DngSaveDataDungeon->stage_id] >= 5 && iRand(100) < 20) {
-                            no = 381;
+                            no = ITEM_ID_RIDEPOD_FUEL;
                         }
                     } else if (iRand(100) < 20) {
-                        no = 381;
+                        no = ITEM_ID_RIDEPOD_FUEL;
                     }
                 }
 

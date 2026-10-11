@@ -26,6 +26,25 @@ enum NpcModelPathType {
 
 /**
  *
+ * Kinds of message GetPartyCharaMessage gives the number of, as its type argument holds them.
+ *
+ */
+// clang-format off
+enum PARTY_MESSAGE {
+    PARTY_MESSAGE_CMD_QUESTION     = 0,   /**< The question shown while the command menu is open. */
+    PARTY_MESSAGE_TALK             = 1,   /**< What the character says when the screen opens. */
+    PARTY_MESSAGE_CANCEL           = 3,   /**< What the character says when the menu is cancelled. */
+    PARTY_MESSAGE_FIRST_CMD        = 5,   /**< The first ability's command name; the next abilities follow it. */
+    PARTY_MESSAGE_ABILITY_QUESTION = 6,   /**< The question asked before an ability is used. */
+    PARTY_MESSAGE_ABILITY_DONE     = 7,   /**< What the character says once the ability was used. */
+    PARTY_MESSAGE_REFUSED          = 8,   /**< What the character says when the ability cannot be used, or fails. */
+    PARTY_MESSAGE_GIFT_OVER_LIMIT  = 0xB, /**< What the character says when a gift would pass the item limit. */
+};
+
+// clang-format on
+
+/**
+ *
  * One party character's entry in the NPC configuration table, as an NPC_INFO script tag fills it.
  *
  */

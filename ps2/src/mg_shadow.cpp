@@ -160,7 +160,7 @@ int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
 FACES_ID *mgCShadowMDT::CreateFace(FACES_ID *source, mgCMemory *face_memory, mgCMemory *index_memory,
                                    mgCFace **result) {
     mgCFace *face = new (face_memory->Alloc(5)) mgCFace;
-    face->vertex_num = (int) source->face_num / 3;
+    face->vertex_num = (int) source->vertex_num / 3;
     face->type = source->type;
     face->index_stride = 3;
     face->index_num = face->vertex_num * face->index_stride;

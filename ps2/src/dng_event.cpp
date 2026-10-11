@@ -1812,7 +1812,7 @@ void AutoSetTreasureBox() {
     for (i = 0; i < ActiveMonster->locate.num; i++) {
         int monster_id = ActiveMonster->locate.monster_id[i];
 
-        if (monster_id >= 245 && monster_id < 269) {
+        if (monster_id >= MONSTER_ID_MIMIC_FIRST && monster_id <= MONSTER_ID_MIMIC_LAST) {
             int placed = false;
             int param = ActiveMonster->locate.param[i];
 
@@ -2025,7 +2025,7 @@ void AutoSetMonster() {
                         CheckObjectPutArea(position) != 0) {
                         base_id = ActiveMonster->locate.monster_id[i];
 
-                        if (base_id >= 245 && base_id < 269) {
+                        if (base_id >= MONSTER_ID_MIMIC_FIRST && base_id <= MONSTER_ID_MIMIC_LAST) {
                             placed = true;
                         } else {
                             monster = ActiveMonster->SetActiveMonster(ActiveMonster->SearchBaseIndex(base_id), position, direction, -1);

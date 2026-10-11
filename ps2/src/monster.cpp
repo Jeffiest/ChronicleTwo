@@ -2433,7 +2433,7 @@ void CMonsterMan::CheckDamage() {
                         monster->drop_badge = true;
                     }
 
-                    if (monster->monster_id == 0xDC && (prim->status & 0x80000)) {
+                    if (monster->monster_id == 0xDC && (prim->status & WEAPON_SPECIAL_BADGE_DROP)) {
                         monster->drop_badge = true;
                     }
                 }

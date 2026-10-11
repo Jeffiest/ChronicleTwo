@@ -43,6 +43,7 @@
 #include "mapparts.hpp"
 #include "mapselect.hpp"
 #include "menuaqua.hpp"
+#include "menuchr.hpp"
 #include "menucommon.hpp"
 #include "menudraw.hpp"
 #include "menumain.hpp"
@@ -18419,7 +18420,7 @@ static int _DNG_SETUP_MAIN_UNIT(RS_STACKDATA *stack, int argc) {
 
     FxScriptMan->AllClearEffSpt();
     FxScriptMan->ClearBaseFromLevel(2, NULL, -1);
-    manager->DeleteBlock(0xAA);
+    manager->DeleteBlock(MONSTER_EFFECT_TEX_BLOCK);
     DngUserData->SetActiveChrNo(chara_no);
     SetupMainUnit(read_buffer, &BuffCharacter, BaseCharacter, 0x10, EventScene, user_data, chara_no, 0);
 
