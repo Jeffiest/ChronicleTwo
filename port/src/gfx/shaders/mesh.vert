@@ -29,6 +29,7 @@ layout(set = 1, binding = 0, std140) uniform MeshConstants {
     vec4 specular;
     vec4 fog;
     vec4 clip_plane[2];
+    vec4 world_uv[2];
     uint flags;
     uint light_count;
 }
@@ -41,6 +42,7 @@ const uint kShadow      = 8u;
 const uint kClip0       = 16u;
 const uint kClip1       = 32u;
 const uint kScreenUv    = 64u;
+const uint kWorldUv     = 128u;
 
 // A byte colour (0..255 as 0..1) read as a modulation with 0x80 as 1.0.
 const float kModulate = 255.0 / 128.0;
@@ -54,6 +56,13 @@ out float gl_ClipDistance[2];
 void main() {
     vec4 position = vec4(a_position, 1.0);
     vec4 clip     = mc.mvp * position;
+    // The GS rasterises vertices at 1/16-pixel precision. Separate ground cells can reach the
+    // same screen edge through different transforms, whose last floating-point bits may differ.
+    // Quantise in logical-pixel units before viewport conversion so both edges use one location.
+    vec2 logical_pixel_ndc = pc.xform.xy;
+    vec2 ndc = clip.xy / clip.w;
+    ndc = round(ndc / (logical_pixel_ndc / 16.0)) * (logical_pixel_ndc / 16.0);
+    clip.xy = ndc * clip.w;
     gl_Position   = clip;
 
     gl_ClipDistance[0] = (mc.flags & kClip0) != 0u ? dot(mc.clip_plane[0], position) : 1.0;
@@ -78,6 +87,7 @@ void main() {
 
     // Back to GS bytes, saturated as VU1 saturates its colour output.
     v_color = clamp(vec4(color, alpha) / kModulate, 0.0, 1.0);
-    v_uv    = (mc.flags & kScreenUv) != 0u ? clip.xy / clip.w * 0.5 + 0.5 + a_uv : a_uv;
+    v_uv    = (mc.flags & kWorldUv) != 0u ? vec2(dot(mc.world_uv[0], position), dot(mc.world_uv[1], position)) :
+              (mc.flags & kScreenUv) != 0u ? clip.xy / clip.w * 0.5 + 0.5 + a_uv : a_uv;
     v_fog   = (mc.flags & kFog) != 0u ? clamp(mc.fog.x + mc.fog.y / clip.w, mc.fog.z, mc.fog.w) / 255.0 : 1.0;
 }

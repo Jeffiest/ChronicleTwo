@@ -108,6 +108,9 @@ void CreateInstance() {
     std::vector<const char *> layers;
 
     bool wanted = g.config.validation || SDL_getenv("DC_VULKAN_VALIDATION") != nullptr;
+#ifdef NDEBUG
+    wanted = false;
+#endif
     bool validation = wanted && ValidationAvailable();
     if (wanted && !validation) {
         Error("validation requested but VK_LAYER_KHRONOS_validation is not installed");
@@ -231,7 +234,9 @@ void PickPhysicalDevice() {
     vkGetPhysicalDeviceProperties(g.physical_device, &g.properties);
     vkGetPhysicalDeviceMemoryProperties(g.physical_device, &g.memory_properties);
     g.portability_subset = chosen.portability_subset;
-    g.triangle_fans = g.config.triangle_fans && (!chosen.portability_subset || chosen.portability.triangleFans);
+    // Metal has no fans. MoltenVK 1.4 reports triangleFans anyway, and its emulation draws a
+    // non-indexed fan as a strip, so a portability-subset device always gets the indexed list.
+    g.triangle_fans = g.config.triangle_fans && !chosen.portability_subset;
     g.separate_stencil_masks =
         g.config.separate_stencil_masks && (!chosen.portability_subset || chosen.portability.separateStencilMaskRef);
     std::fprintf(stderr, "Vulkan: using %s (Vulkan %u.%u.%u)%s\n", g.properties.deviceName,
@@ -301,6 +306,8 @@ void CreateDevice() {
     features13.pNext = g.dynamic_color_write_mask ? &dynamic3 : dynamic3.pNext;
     features13.dynamicRendering = VK_TRUE;
     features13.synchronization2 = VK_TRUE;
+    // The fragment shaders' discard compiles to OpDemoteToHelperInvocation, which needs this on.
+    features13.shaderDemoteToHelperInvocation = VK_TRUE;
 
     VkPhysicalDeviceVulkan12Features features12 = {};
     features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
@@ -315,6 +322,10 @@ void CreateDevice() {
     features.features.dualSrcBlend = VK_TRUE;
     features.features.shaderClipDistance = VK_TRUE;
     features.features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
+    VkPhysicalDeviceFeatures supported = {};
+    vkGetPhysicalDeviceFeatures(g.physical_device, &supported);
+    g.sampler_anisotropy = supported.samplerAnisotropy == VK_TRUE;
+    features.features.samplerAnisotropy = supported.samplerAnisotropy;
 
     std::vector<const char *> extensions;
     if (!g.offscreen) {
@@ -845,6 +856,21 @@ void RendererShutdown() {
 }
 
 void RendererResize() { g.resize_pending = true; }
+
+void SetAnisotropy(int samples) {
+    uint32_t level = 0;
+    while (level < kAnisotropyLevels && (2 << level) <= samples) {
+        ++level;
+    }
+    g.anisotropy_level = level;
+}
+
+void SetPresentMode(PresentMode mode) {
+    if (mode != g.config.present_mode) {
+        g.config.present_mode = mode;
+        g.resize_pending = true;
+    }
+}
 
 namespace detail {
 namespace {
