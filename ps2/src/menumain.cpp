@@ -1884,7 +1884,7 @@ void DrawMenuTopic() {
         mgCTextureManager *manager = &mgTexManager;
         mgCDrawPrim       *prim = GetMenuPrim();
         manager->ReloadTexture(TopicTex->block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(TopicTex);
         prim->Color(0x80, 0x80, 0x80, MenuTopicAlpha);
@@ -1897,7 +1897,7 @@ void DrawMenuTopic() {
         PrimQuad(prim, 22.0f, 22.0f, mgRect<int>(0x66, 0, title_width, 0xC));
         prim->End();
         manager->ReloadTexture(MenuArg.mes_tex_block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 1);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Color(0x2A, 0x22, 0x1E, MenuTopicAlpha * 6 / 10);
         prim->Vertex(box.left - 2, box.top - 2, 0);
@@ -2031,7 +2031,7 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
     if (open_type != MENU_OPEN_INVENT) {
         MenuMainSubDataPackAdr = stack->stack + stack->stack_used;
         MenuCommonReadData(stack, fname_1858, 0);
-        MenuMainFrameModeSet(0, 1);
+        MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, 1);
         int icon_count = 0;
 
         for (int k = 0; 0 <= CMenuInterPt->mode_list[k]; k++) {
@@ -2560,7 +2560,7 @@ int MenuInternSelectKey() {
                     }
 
                     ReturnMenuIntern(1);
-                    MenuMainFrameModeSet(1, 1);
+                    MenuMainFrameModeSet(MENU_MAIN_FRAME_CLOSE, 1);
                     MenuMesForm[0]->SetAction("\x8A\x4F\x82\xD6");
                     MenuSePlay(SYSTEM_SE_CANCEL);
                     break;

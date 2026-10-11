@@ -1862,7 +1862,7 @@ void TitleModeDraw() {
     TitleMapDraw();
     mgTexManager.ReloadTexture(0x40, (sceVif1Packet *) NULL);
     mgCDrawPrim prim;
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     float left = 0.0f;
     float top = 24.0f;
     float title_alpha = TitleInfo->title_alpha;
@@ -3052,7 +3052,7 @@ void DrawMenuDl(int x, int y, int width, int alpha, float rate) {
     mgRect<int> shadow_put;
     mgRect<int> body_put;
 
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     prim.Begin(6);
     prim.Texture(HDDDlBar);
     prim.Color(0x80, 0x80, 0x80, alpha);
