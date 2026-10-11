@@ -4385,7 +4385,7 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
     GetCostume(item_no);
 
     if (item_no == ITEM_ID_LURE_ROD) {
-        GetSaveData()->SetBitFlag(0x30, 1);
+        GetSaveData()->SetBitFlag(SAVE_FLAG_LURE_ROD, 1);
     }
 
     int added = 0;

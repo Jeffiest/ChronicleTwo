@@ -109,6 +109,7 @@
  */
 enum SAVE_BIT_FLAG {
     SAVE_FLAG_MENU_TIME_EVENING = 4,      /**< The top menu is shown at 18:15, or later per short flag 5. */
+    SAVE_FLAG_LURE_ROD = 0x30,            /**< The lure rod has been obtained. */
     SAVE_FLAG_GUIDE_RANDOM_STONE = 0x32,  /**< The random-stone explanation has been shown. */
     SAVE_FLAG_GUIDE_LEVEL_UP = 0x34,      /**< The level-up guide has been shown. */
     SAVE_FLAG_ROBO_BIKE_EVENT_SEEN = 0x35,
