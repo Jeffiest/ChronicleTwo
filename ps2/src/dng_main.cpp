@@ -1643,7 +1643,7 @@ void DngMainDraw() {
 
             MainChara__2->GetPosition(pos);
 
-            if (config->map == 1) {
+            if (config->map == SV_CONFIG_MAP_SMALL) {
                 AutoMapGen.mini_map.large = 0;
                 AutoMapGen.mini_map.x = 436;
                 AutoMapGen.mini_map.y = 144;
@@ -1651,7 +1651,7 @@ void DngMainDraw() {
                 AutoMapGen.mini_map.h = 112;
             }
 
-            if (config->map == 2) {
+            if (config->map == SV_CONFIG_MAP_LARGE) {
                 AutoMapGen.mini_map.x = 336;
                 AutoMapGen.mini_map.y = 212;
                 AutoMapGen.mini_map.w = 320;
@@ -2219,8 +2219,8 @@ int DngMainKey() {
         if (config != NULL) {
             config->map++;
 
-            if (config->map > 2) {
-                config->map = 0;
+            if (config->map > SV_CONFIG_MAP_LARGE) {
+                config->map = SV_CONFIG_MAP_OFF;
             }
         }
     }
@@ -2883,9 +2883,9 @@ void IsEventRun() {
         return;
     }
 
-    if (!DngSaveData->GetBitFlag(0x3B) && info->GetMagicSwordCounterNow() > 0) {
+    if (!DngSaveData->GetBitFlag(SAVE_FLAG_GUIDE_MAGIC_SWORD) && info->GetMagicSwordCounterNow() > 0) {
         *event_no = DNG_EVENT_MAGIC_SWORD_GUIDE;
-        DngSaveData->SetBitFlag(0x3B, 1);
+        DngSaveData->SetBitFlag(SAVE_FLAG_GUIDE_MAGIC_SWORD, 1);
         return;
     }
 
@@ -2932,7 +2932,7 @@ void IsEventRun() {
         DngSaveData->SetBitFlag(SAVE_FLAG_ROBO_BIKE_EVENT_SEEN, 1);
     }
 
-    if (!DngSaveData->GetBitFlag(0x32) && (info->chr_no == USER_CHARA_MAX || info->chr_no == USER_CHARA_MONICA)) {
+    if (!DngSaveData->GetBitFlag(SAVE_FLAG_GUIDE_RANDOM_STONE) && (info->chr_no == USER_CHARA_MAX || info->chr_no == USER_CHARA_MONICA)) {
         if (AutoMapGen.SearchRandomStone(pos, 30.0f)) {
             if (button == 1) {
                 *event_no = DNG_EVENT_RANDOM_STONE;
@@ -2943,9 +2943,9 @@ void IsEventRun() {
         }
     }
 
-    if (!DngSaveData->GetBitFlag(0x34) && LevelupInfo.phase != 0) {
+    if (!DngSaveData->GetBitFlag(SAVE_FLAG_GUIDE_LEVEL_UP) && LevelupInfo.phase != 0) {
         *event_no = DNG_EVENT_LEVEL_UP_GUIDE;
-        DngSaveData->SetBitFlag(0x34, 1);
+        DngSaveData->SetBitFlag(SAVE_FLAG_GUIDE_LEVEL_UP, 1);
         return;
     }
 
