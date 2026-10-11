@@ -13,11 +13,8 @@
 // dng_main.hpp declares EventCamera__2 for the camera sphida.cpp copies the follow camera
 // into. These strong definitions replace ps2/src/dng_main.cpp's weak ones, and the aliases
 // make both spellings one object, as they are in retail.
-mgCMemory      BuffWorkData;
-CCameraControl EventCamera;
-
-extern mgCMemory      BuffWorkData__2 __attribute__((alias("BuffWorkData")));
-extern CCameraControl EventCamera__2  __attribute__((alias("EventCamera")));
+// BuffWorkData, EventCamera and their __2 aliases live in port/src/kernel.cpp;
+// Vu_prog_wtr lives in port/src/title.cpp.
 
 // VU1 microprogram that draws water surfaces (main.hpp), which mainloop.cpp loads into the
 // user program table. No host code runs it - water.cpp only writes its address into a DMA
@@ -26,4 +23,3 @@ extern CCameraControl EventCamera__2  __attribute__((alias("EventCamera")));
 // port/src/sce/vuprog.cpp; its extent is the retail block 0x329FD0 up to __data_start in
 // ps2/config/pal/main.symbols.txt, the water program's own labels (__INIT_DATA__4,
 // __MAIN_PROG__4, __CPwtr) included.
-u_long128 Vu_prog_wtr[53] = {};
