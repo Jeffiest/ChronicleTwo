@@ -12,8 +12,8 @@
 ## File-local functions (static, define in editmap2.cpp, not in the header)
 Both are LOCAL in `build/re/local_symbols.tsv` and called only from this unit.
 - `PlaneNormalXZ(float *out, float *p0, float *p1, float *p2)` @ 0x002F26F0: VU0 outer product
-  of (p1 - p0) and (p2 - p0), stored to `out` (lqc2/vsub/vopmula/vopmsub/sqc2). Will need the
-  VU0 inline asm form (see the first game's mg_math / docs/MWCC.md). Called by
+  of (p1 - p0) and (p2 - p0), stored to `out` (lqc2/vsub/vopmula/vopmsub/sqc2). It is an inline
+  VU0 `asm` body (see the first game's mg_math). Called by
   `CEditMap::GetEditPartsAlt(CEditPartsInfo*, float*, float, CEditParts**, int)`.
 - `int CheckFenceChain(CEditParts *a, CEditParts *b)` @ 0x002F3C60: returns 1 when both parts
   have bound spheres that overlap (`CMapParts::GetBoundSphere`, distance <= sum of radii at
@@ -25,10 +25,8 @@ All 21 functions are native; the unit has no `NONMATCHING` guards or `INCLUDE_AS
 data symbols are compiler-generated, so no `extern` is declared:
 - `CheckEditParts(..., EP_PLACE_INFO*, CEditParts**, int)` has a function-local
   `static int cnt = 0` (`cnt = (cnt + 1) % 10`) with its compiler-generated init guard (one byte
-  plus three alignment bytes). These two .sbss pieces are the unit's only remaining markers,
-  `INCLUDE_BSS(cnt_482, 0x4)` / `INCLUDE_BSS(init_483, 0x4)`, kept because the object checker
-  binds MWCC's suffixed local names to retail only through them; the native static and guard
-  instructions match with or without the markers.
+  plus three alignment bytes). The two .sbss pieces (retail `cnt_482` and `init_483`) are
+  produced by the native static and guard instructions.
 - `GroundBalance(int)` declares four zero-initialized integer weights; MWCC emits their 16-byte
   zero template in .bss and reads it as a 64-bit value at the top of the function. Unrelated to
   `CEditMap` field offset 0x1050 (`balance_moved`). Its four model-name literals are inline.

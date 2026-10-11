@@ -56,29 +56,18 @@ selects `DrawSystemParamInfo`, `DNG_DEBUG_INFORMATION_TARGET` (3) selects `DrawS
 Steps: pad 0x2000/0x8000 +-1, 8/4 +-10 (+-4 on EnemyLoader), 2/1 +-100. Pad 0x400 closes.
 Returns 0 when not active, else 1.
 
-## dbFont (0x01ECDC30, .bss, retail size 0xB8; INCLUDE_BSS reserves 0xC0)
+## dbFont (0x01ECDC30, .bss, retail size 0xB8)
 `static CFont dbFont`; `__sinit` calls `CFont::Init`; dngDebugInit calls `Init` and
 `SetClearance(20,20)`; drawn with `DrawDirect(buf, 16, 72)`. CFont has no constructor call
 in `__sinit`, only `Init`.
 
-## Draft and promotion status
-All twelve named functions have typed C++ implementations. `command_int` is
-treated as a flat integer table with two entries per debug-menu command.
+## Function status
+All twelve named functions have typed C++ implementations, including the large
+bodies such as `dngDebugStart`. `command_int` is treated as a flat integer
+table with two entries per debug-menu command.
 Every function was run through `decompile.sh`; the Ghidra export clarified
 the irregular jump table in `dngDebugKey` and the monster target fields in
 `DrawSystemParamInfo2`.
-
-`dngGetDebugInfo`, `dngDebugInit`, `dngDebugExit`, and `DrawDebugWindow`
-passed linked-image promotion and are active. `CTreasureBox::Initialize`
-also compared exactly in the isolated draft, but its single promotion attempt
-failed because the header supplied an inline definition. The header now gives
-this unit a declaration so the guarded out-of-line draft compiles; a later
-matching pass can revisit that promotion. `dngDebugStart` and the other five
-large drafts differ from retail and remain behind `NONMATCHING`. The static
-initializer draft compiles, but `mwccgap` cannot locate its unmangled local
-symbol for promotion. Each symbol had one recorded promotion attempt in
-`scripts/re/promotion_attempts.tsv`. The default full build remains byte
-identical to retail.
 
 ## dngDebugDraw
 Reloads texture 0x6C, draws a translucent box (14,70)-(260,332), then prints the list; on
@@ -86,8 +75,8 @@ EnemyLoader line prints "[G%d]%s" of the matching `base_monster_define` row (str
 terminated by s16 -1; +2 s16, +4 name) or "[%d]--------", and "BASE > %s" of the row sharing the
 s16 at +0x44 when +2 > 0. `base_monster_define`'s row type belongs to the monster unit.
 
-## dngDebugStart draft
-`dngDebugStart` copies the live camera, movement, lock-on, sound, talk and effect settings into the editable command values. It configures pad repeat for 0xF000 and 0x5000, saves the battle pause flag, then sets that flag to 15. The guarded C++ draft compiles and differs from retail in nine instruction words.
+## dngDebugStart
+`dngDebugStart` copies the live camera, movement, lock-on, sound, talk and effect settings into the editable command values. It configures pad repeat for 0xF000 and 0x5000, saves the battle pause flag, then sets that flag to 15. It is native C++ and matches retail.
 
 `dngDebugDraw` constructs a `CPreSprite` after reloading its texture, while the debug window is active. Declaring the sprite before the text buffer within the active branch preserves the retail stack layout and eliminates the base-constructor alias.
 

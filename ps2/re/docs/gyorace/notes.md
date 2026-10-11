@@ -19,9 +19,8 @@ counterpart (Dark Cloud 1 has no fish race).
 
 ## Matching status
 
-All ten functions are native and exact. The only remaining markers are the two
-`INCLUDE_BSS` zero vector templates `at_1775`/`at_1776` that `DivSpriteScreen` copies (see
-"Retained data markers").
+All ten functions are native and exact. The two zero vector templates `at_1775`/`at_1776` that
+`DivSpriteScreen` copies are file-local `static RaceVector` objects (see "Zero vector templates").
 
 ## SubGameInfo (subgame.hpp, not owned here)
 `+0` CScene*; `+4` is the first texture block number for fish characters (`CharaTexb = info->texb`).
@@ -198,8 +197,8 @@ Source forms the match depends on:
 - `float angle = atan2f(...)` as its own statement emits `atan2f`'s second argument first,
   the first in the delay slot, and `0.034906585f` before `rotation[1]` is reloaded; the nested
   call reverses both orders.
-- The motion names, part/frame names and format strings are the retail string literals
-  (`INCLUDE_RODATA` symbols) declared `char[]` and passed uncast, so they are simple address
+- The motion names, part/frame names and format strings are string literals in the source (retail
+  `INCLUDE_RODATA` symbols) passed uncast, so they are simple address
   arguments evaluated after the computed ones. Casting `const unsigned char` arrays makes each
   name a computed argument evaluated in source order.
 
@@ -247,13 +246,13 @@ zero template `at_1765__2`, and `float step[4] = {0, 0, 0, 1}` supplies `at_1766
 loads a constant quadword template before patching in the screen offsets, and a `RaceVector`
 filled field by field stores the offsets directly and reorders the function's opening.
 
-## Retained data markers
+## Zero vector templates
 
-- `INCLUDE_BSS(at_1775, 0x10)` / `INCLUDE_BSS(at_1776, 0x10)` with `extern RaceVector
-  at_1775/at_1776`: the two zero vector templates `DivSpriteScreen` copies into `uv` and `xy`.
-  SDK integer-vector zero initializers with a memcpy of the origin, or a typed aggregate
-  containing an SDK integer vector with ordinary value assignment, change the strip helper and
-  the linked unit initializer, so the markers stay. Both are under `#ifndef NONMATCHING`.
+- `at_1775`/`at_1776` are file-local `static RaceVector` objects: the two zero vector templates
+  `DivSpriteScreen` copies into `uv` and `xy`. SDK integer-vector zero initializers with a memcpy
+  of the origin, or a typed aggregate containing an SDK integer vector with ordinary value
+  assignment, change the strip helper and the linked unit initializer, so these statics keep the
+  `RaceVector` form.
 
 Strings supplied inline by the native functions (no markers): `snd2/mon/EN_902.snd`,
 `/sg/gyo/`, `gyore%d.mes`, the seed/fatigue/entrant diagnostics, `info.cfg`,

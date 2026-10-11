@@ -2,8 +2,7 @@
 
 ## CSound
 - Empty class, `sizeof == 1`: no function reads `this`. The single instance `CSnd` (0x37D168, symbol
-  size 0x1) is owned by **mainloop** (`INCLUDE_BSS(CSnd, 0x4)` in `mainloop.cpp`), so it is not
-  declared in `sound.hpp`.
+  size 0x1) is defined in **mainloop** (`CSound CSnd;` in `mainloop.cpp`).
 - 37 members: 36 in `sound`, plus `StreamOpenState()` in `ezbgm` (`j sceSifCheckStatRpc(&gCd2)`;
   callers use the result, so `int`).
 - First-game counterpart: `CSound` in `chronicle/ps2/include/sound.hpp` (also empty). Different
@@ -122,7 +121,7 @@ return in the alternative branch. The helper profile for `sound.cpp` seeds the
 integer argument-register read mask to 0x20 ($a1); floating helper mask remains
 zero. This prevents `$a1` from being prepared for `ezMidi` across `fptosi` and
 restores the retail conversion branch delay slot. The three sequence diagnostic
-strings are native literals; their duplicate assembly markers are removed.
+strings are native literals.
 
 ## CSound::LoadSeq
 

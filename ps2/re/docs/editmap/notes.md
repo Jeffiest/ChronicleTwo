@@ -17,13 +17,14 @@ words per callback). See [placement conversion](../satansfiddle/placement-new.md
 | `emapMASK_PARTS_NAME__FP9SPI_STACKi` | 0x1B59A0 | 0x174 | 0x180 |
 | `emapWATER_PARTS_NAME__FP9SPI_STACKi` | 0x1B5B20 | 0x11C | 0x120 |
 
-Two data markers remain, both consumed through the `EditVector` union
-wrapper: `INCLUDE_RODATA` `at_1837__2` (the wall-up vector copied by
-`CheckWallEditParts`; an ordinary or aligned VU-vector initialiser at the
-copy point changes 0x20 text bytes from function+0xAC) and `INCLUDE_BSS`
-`at_426` (0x10, the zero rotation reset in each `ClearAllParts` placement
-iteration; ordinary and aligned vector initialisers both change the linked
-image). All other data is typed: part identifiers, the placement diagnostic
+Both data objects that retail places as separate symbols are typed
+`EditVector` statics: `at_1837__2` is the file-local `static EditVector`
+holding the wall-up vector copied by `CheckWallEditParts` (an ordinary or
+aligned VU-vector initialiser at the copy point changes 0x20 text bytes from
+function+0xAC), and `at_426` is the function-local `static EditVector
+zero_rotation` of `ClearAllParts` (0x10, the zero rotation reset in each
+placement iteration; ordinary and aligned vector initialisers both change the
+linked image). All other data is typed: part identifiers, the placement diagnostic
 and `"CEditMap"` (`CEditMapName`, a file-private pointer) are inline; the
 river-position and part-bound margin vectors are float aggregates; the
 fourteen script-state words/pointers keep retail order; the fixed and initial
