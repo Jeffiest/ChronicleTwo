@@ -67,8 +67,8 @@ to the retail symbol names without defining a compiler initializer manually.
 The earlier isolated C++ checkpoint of `InitDungeonMain` was 0x20D8 bytes,
 short of retail's 0x2110-byte function, and changed later text layout. The
 merged source now selects the native body by default; that change does not
-establish an exact match. Historical assembly-fallback layout observations
-below describe the earlier checkpoint. Fresh integrated verification is
+establish an exact match. The layout observations below describe the
+earlier checkpoint. Fresh integrated verification is
 required, including the naturally emitted local-static storage and helpers.
 
 ## Globals (types from __sinit, InitDungeonMain, CommonStageClassInit)
@@ -124,10 +124,8 @@ also compiles the unrelated `InitDungeonMain` draft. Disabling just that
 earlier draft restores the reverse load order. An isolated game-build link of
 `DngMainKey` differs from retail by ten bytes in `.text`; every other section,
 including BSS, matches. Local variables, unsuffixed literals, array elements,
-and equivalent constant expressions did not fix the ordering. The normal
-build therefore keeps the retail assembly and its three data pieces
-(`at_2994`, `at_3336`, `at_3337`) until the C++ function matches in the
-normal translation-unit configuration.
+and equivalent constant expressions did not fix the ordering. The native body in
+`dng_main.cpp` is the one the normal build links.
 
 ## Enums (names ours; values from the retail code)
 - DNG_CHARA_SLOT: InitDungeonMain fills scene character slots 0-7 (party, CActionChara via
@@ -171,9 +169,9 @@ further matching claims. No source changes from this trial are retained.
 
 `InitDungeonMain` declares one local `mgCMemory debug_event_stack` (0x30 bytes),
 and `DngMainKey` declares one local `sceVu0FVECTOR chk_pos` (0x10 bytes). The
-source also retains the explicit retail BSS markers `debug_event_stack_1106`
-(0x01EF7380) and `chk_pos_2870` (0x01EF7400). Their typed C++ objects and their
-retail storage therefore coexist before object postprocessing.
+retail BSS objects `debug_event_stack_1106` (0x01EF7380) and `chk_pos_2870`
+(0x01EF7400) correspond to these typed C++ objects, and both storages coexist
+before object postprocessing.
 
 MWCC gives a local static a generated numeric suffix. The compiler's current
 suffix depends on the source/header parse; its value is not the variable's
@@ -183,8 +181,8 @@ native function has a different instruction sequence.
 
 `postprocess_object.py` binds these cases by the translation unit, a unique
 source static declaration, the variable's base name, and its exact storage
-extent. A matching target must be an explicit `INCLUDE_BSS` marker within that
-unit's retail BSS/SBSS ranges. Native storage must be a local, whole-section
+extent. A matching target is a retail BSS/SBSS object within that unit's retail
+BSS/SBSS ranges. Native storage must be a local, whole-section
 NOBITS object of the same BSS kind and exact size. Retail storage must have the
 same declared size and contain only zeroed storage. Interior symbols,
 initialized native objects, and ambiguous declarations, native names, or marker
@@ -243,6 +241,5 @@ does not claim that those addresses or the complete unit are exact.
 
 # `MoveCheckInfo::Initialize`
 
-The 0x110-byte movement-query record is cleared with `memset`. Moving its
-definition from the header into `dng_main.cpp` produces the retail tail call
-and allows the assembly fallback for this function to be removed.
+The 0x110-byte movement-query record is cleared with `memset`. Its inline
+definition in `gameutil.hpp` produces the retail tail call.

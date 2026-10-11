@@ -17,8 +17,8 @@ binding 13:
 - `CActionChara::CActionChara()` (0x1ACF40, 0xC0), the header constructor,
   emitted as the array-constructor callback of `EditInit`'s character array.
 
-Data markers still in the source: `INCLUDE_RODATA` for `at_1528` (camera
-vector) and `at_2125`..`at_2136` (loop diagnostics and object names). All
+The camera vector (retail `at_1528`) is the local `camera_pos` initializer of its function, and the
+loop diagnostics and object names (retail `at_2125`..`at_2136`) are inline string literals. All
 other data is typed or emitted by `EditInit` itself: `MenuInfo` is a
 `MENU_INIT_ARG *` initialised to `&MenuArg`, `DataPktMode` starts at -1 (no
 packet mode allocated), `MenuDataSize` is the loaded menu file's byte count,

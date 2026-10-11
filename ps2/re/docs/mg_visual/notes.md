@@ -25,9 +25,9 @@ rest of the body is C++: it writes `0x100` to D_STAT (`0x1000E010`), sets
 sets `start_dma` and flips `buff_id` with `!buff_id`. Every other function is
 native C++ and byte-identical.
 
-Ten `INCLUDE_RODATA` markers remain. `set_tex0_dma`, `set_tex0_giftag`,
-`set_texa_dma`, `set_texa_giftag`, `mat_vif`, `mat_vif_dif`, `mat_vif_d` and
-`mat_vif_d_tex` are 128-bit scalars with nonzero upper words: MWCC rejects a
+`set_tex0_dma`, `set_tex0_giftag`, `set_texa_dma`, `set_texa_giftag`, `mat_vif`,
+`mat_vif_dif`, `mat_vif_d` and `mat_vif_d_tex` are 16-byte-aligned `u_int[4]` definitions of
+128-bit scalars with nonzero upper words. MWCC rejects a
 shift-based 128-bit initializer (`illegal data size`), a plain wide hexadecimal
 scalar leaves `set_tex0_dma`'s high command word wrong, and four-word arrays
 copied with `memcpy` change `mgSetPkTEX0` (0x74 bytes, a `memcpy` relocation) and

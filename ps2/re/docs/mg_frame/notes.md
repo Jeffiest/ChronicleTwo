@@ -105,14 +105,13 @@ mgCObject/mgCFrameBase vtables end at 0x3c. No destructors. Trailing zero word i
   info 0xfa8 && !no_light && bound; tests 4 lights, stride 0x30 at lightinfo+0x90/0xb0/0xb4).
   Visual drawn by vtable slot 0x2c of visual (+0x1c vptr). Children skipped when draw&2; child
   skipped if its attr has draw&4. Packet advanced by count*4 words (quadwords).
-  The guarded behavioral draft now follows those draw, cull, clip, point-light and child rules.
-  It uses `mgInsideScreen` for the VU0 screen test; the draft differs from retail and the normal
-  build still uses the original assembly.
+  The C++ definition follows those draw, cull, clip, point-light and child rules.
+  It uses `mgInsideScreen` for the VU0 screen test.
 - GetDrawRect: null manager -> &mgDrawManager; info = manager+0x64; uses static `dmy_attr` when attr null.
-  The guarded draft projects all eight bound corners through `world_screen_rel`, divides x/y by
+  The C++ definition projects all eight bound corners through `world_screen_rel`, divides x/y by
   absolute w, moves the resulting rectangle to screen coordinates, and unions visible child
-  rectangles. The retail code uses an inlined VU0 projection, so this behavioral draft differs
-  substantially while ordinary builds retain the assembly.
+  rectangles. The retail code uses an inlined VU0 projection, which the C++ definition reproduces
+  as an inline VU0 block.
 
 ## mgCFrameAttr (0x90)
 Size: Initialize memsets 0x90; `dmy_attr` bss 0x90. Fields copied member-wise by SetAttrParam
@@ -204,9 +203,7 @@ this game's `CObject` (object unit) derives from mgCObject.
   the supplied matrix, transforms eight corners into vf10-vf17, and writes their
   four-component bounds. `test2` reads those eight retained VU0 vectors, divides only
   their x/y components by the absolute value of w, then writes four-component bounds.
-  The guarded C++ drafts preserve the intermediate vectors in a file-local array;
-  they compile but differ from the hand-scheduled VU0 functions. Both functions
-  are now emitted by MWCC from VU0 `asm void` source definitions. `test1` has
+  Both functions are emitted by MWCC from VU0 `asm void` source definitions. `test1` has
   81 instructions and a 0x144-byte symbol; `test2` has 49 instructions and a
   0xc4-byte symbol. Both match retail exactly in objdiff (score 0).
 - mgInsideScreen(corners, matrix, max, min): hand-scheduled VU0 block (screen*matrix, transform
@@ -221,11 +218,11 @@ this game's `CObject` (object unit) derives from mgCObject.
 - `GetWorldBBox`'s `bound` is `mgCFrame::BoundInfo *` and `GetLWMatrixTopBottom`'s `parent` is
   `mgCFrame *`; the attribute copy `*(mgVec4 *) &dst->unk_50[0] = *(mgVec4 *) &attr.unk_50[0]`
   copies a `float[4]` as one quadword.
-- `at_1118` and `at_1119` are the two zero-vector templates of `GetDrawRect` and remain
-  `INCLUDE_BSS` reservations: initializing ordinary zero vectors at the copy point changes 0x3E
-  text bytes from `GetDrawRect+0x3c` through register allocation.
+- `GetDrawRect` copies its two zero-vector templates (retail `at_1118` and `at_1119`) from the
+  function-local statics `empty_max` and `empty_min`; initializing ordinary zero vectors at the copy
+  point changes 0x3E text bytes from `GetDrawRect+0x3c` through register allocation.
 
-## Assembly gaps
+## Inline VU0 functions
 
 `GetDrawRect` now compiles from C++ with an inline VU0 block. It starts with
 empty bounds, transforms the visible frame's eight bound corners through the
