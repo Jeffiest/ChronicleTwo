@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(chronicletwo NONE)
 
 # PLATFORM picks what is built: PS2 builds and verifies the retail executable
-# (ps2/CMakeLists.txt), PC builds the x64 port (port/CMakeLists.txt).
+# (ps2/CMakeLists.txt); PC builds the x64 port (port/CMakeLists.txt).
 set(PLATFORM PS2 CACHE STRING "Platform to build: PS2 or PC")
 set_property(CACHE PLATFORM PROPERTY STRINGS PS2 PC)
 if(PLATFORM STREQUAL "PS2")

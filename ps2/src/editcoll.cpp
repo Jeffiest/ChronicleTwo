@@ -20,6 +20,7 @@ struct CollisionRow {
 #ifndef PORT
 int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
     int flags;
+#ifndef PORT
     asm {
         lqc2 vf10, 0(max_a)
         lqc2 vf11, 0(min_a)
@@ -38,6 +39,7 @@ int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
         vnop
         cfc2.ni flags, vi16
     }
+#endif
     return (flags & 0x80) == 0;
 }
 #endif

@@ -1,25 +1,48 @@
 #pragma once
 
+#include <strings.h>
+
+#include <cassert>
 #include <cstddef>
 #include <new>
-#include <strings.h>
-#ifdef _WIN32
-#include <cstring>
-// mingw's <strings.h> has no BSD index(); the PS2 libc's index() is strchr().
-inline char *index(const char *s, int c) {
-    return const_cast<char *>(strchr(s, c));
-}
+
+#ifdef __APPLE__
+#undef __assert
+#define section(name)
 #endif
 
-#include <kazarov/port.h>
+#define PORT_STRINGIFY2(x) #x
+#define PORT_STRINGIFY(x) PORT_STRINGIFY2(x)
+#define PORT_ASM_NAME(name) PORT_STRINGIFY(__USER_LABEL_PREFIX__) #name
 
-// types.h names the PS2's size_t and NULL. Included under other names, the host's stay in force,
-// and #pragma once keeps the game from including types.h again.
+// PORT_OVERRIDE, Ps2Unimplemented and PS2_UNIMPLEMENTED.
+#include "kazarov/port.h"
+
+/**
+ * The Metrowerks runtime's assertion failure.
+ */
+[[noreturn]] void __assert(const char *file, int line, const char *expression);
+
+/**
+ * The Metrowerks runtime's exit.
+ */
+extern "C" [[noreturn]] void exit__2(int status);
+
+/**
+ * Makes a temporary an lvalue, for the non-const reference parameters MWCC binds temporaries to.
+ */
+template <class T> T &Ps2Lvalue(T &&value) {
+    return static_cast<T &>(value);
+}
+
+// types.h gives the PS2's size_t and NULL. Included here under another name,
+// the host's stay in force, and #pragma once keeps the game from including it again.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmacro-redefined"
 #pragma push_macro("NULL")
 #define size_t ps2_size_t
 #ifdef _WIN32
+// Windows is LLP64; the GS register bitfields and packets need the PS2's 64-bit u_long.
 #define u_long ps2_native_u_long
 #endif
 #include "types.h"
@@ -31,8 +54,12 @@ inline char *index(const char *s, int c) {
 #pragma pop_macro("NULL")
 #pragma clang diagnostic pop
 
-// The PS2 layouts (32-bit pointers, 32-bit long) are what STATIC_ASSERT checks against; on the host
-// every check would fail, so it checks nothing.
+// The layouts STATIC_ASSERT checks are the PS2's: 32-bit pointers and longs as
+// MWCC lays them out. Once common.h is in, it checks nothing, unless the build asks
+// for them (DC_STATIC_ASSERT): every struct holding a pointer then fails by design,
+// so that is a way to audit integer widths, not a default.
 #include "common.h"
+#ifndef PORT_STATIC_ASSERT
 #undef STATIC_ASSERT
 #define STATIC_ASSERT(expr)
+#endif

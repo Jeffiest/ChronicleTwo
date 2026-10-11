@@ -380,7 +380,12 @@ void CEffect::Step(int steps) {
 
                 break;
             case EFFECT_CHANGE_ADD_HEAD_TAIL:
-                int total; total = param.life;
+#ifdef PORT
+                int total;
+                total = param.life;
+#else
+                int total = param.life;
+#endif
                 life = total;
 
                 if (life > 0.0f) {

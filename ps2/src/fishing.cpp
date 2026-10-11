@@ -2184,7 +2184,18 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                 float event_pos[4];
                 chara->GetPosition(event_pos);
 
-                union EventDataUnion { EventDataUnion() {}
+#ifdef PORT
+                union EventDataStorage {
+                    CSceneEventData data;
+
+                    struct {
+                        u_char unknown_00[8];
+                        int    event_no;
+                    } fields;
+                    EventDataStorage() {}
+                } event_data;
+#else
+                union {
                     CSceneEventData data;
 
                     struct {
@@ -2192,6 +2203,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                         int    event_no;
                     } fields;
                 } event_data;
+#endif
 
                 if (scene->GetMapEvent(event_pos, MAP_EVENT_CHECK_TOUCH, &event_data.data) != 0) {
                     scene->RunEvent(event_data.fields.event_no, &event_data.data);

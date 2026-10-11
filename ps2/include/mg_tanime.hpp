@@ -114,6 +114,10 @@ inline mgRect<int>::mgRect() {}
 template <>
 void mgRect<int>::Set(int new_left, int new_top, int new_right, int new_bottom);
 
+#ifdef PORT
+// clang rejects the specialization below where MWCC accepted it: this
+// constructor instantiates the primary template first. Declared ahead of it
+// for the port only; MWCC keeps its original order so the match is unchanged.
 /**
  *
  * Sets the four edges of a floating-point rectangle.
@@ -124,9 +128,23 @@ void mgRect<int>::Set(int new_left, int new_top, int new_right, int new_bottom);
  */
 template <>
 void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
+#endif
 
 template <>
 inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }
+
+#ifndef PORT
+/**
+ *
+ * Sets the four edges of a floating-point rectangle.
+ *
+ * @mangled Set__9mgRect_f_Fffff
+ * @address 0x1F3D50
+ * @size 0x14
+ */
+template <>
+void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
+#endif
 
 STATIC_ASSERT(sizeof(mgRect<int>) == 0x10);
 

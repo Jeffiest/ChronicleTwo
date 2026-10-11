@@ -1,5 +1,12 @@
 # PC port plan
 
+Current integration status (2026-10-11): this document retains the upstream Phase 1
+work-package baseline. The implemented Windows branch has progressed through the prologue
+and menu opening; Items model memory and combat attacks remain unresolved. See `PC.md`
+for current commands, `port/COMPATIBILITY_AUDIT.md` for enforcement coverage and
+`port/UPSTREAM_SYNC.md` for integration evidence. Phase 1 aborts and test counts below
+describe the upstream baseline, not the current executable.
+
 This is the working plan for the native PC port of Dark Chronicle (PAL,
 `SCES_511.90`). It follows the shape of Chronicle's `docs/PC_PORT_PLAN.md`
 and shares Chronicle's host code through the Kazarov submodule wherever the

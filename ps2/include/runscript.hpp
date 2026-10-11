@@ -172,10 +172,16 @@ STATIC_ASSERT(sizeof(vmcode_t) == 0xC);
  *
  */
 struct funcdata {
-    u32   addr;  /**< Nonnegative byte offset of the function's first instruction in the code section. */
-    char *name;  /**< Name of the function, for runtime error messages. */
-    int   local; /**< Number of frame slots, arguments included. */
-    int   arg;   /**< Number of argument slots. */
+    u32 addr; /**< Nonnegative byte offset of the function's first instruction in the code section. */
+#ifdef PORT
+    // The program images were built for the PS2 and never carry a host name pointer; the field is
+    // read as the file holds it so local and arg stay at their file offsets.
+    u32 name; /**< Name field as the file holds it; only the PS2 build's error messages read it. */
+#else
+    char *name; /**< Name of the function, for runtime error messages. */
+#endif
+    int local; /**< Number of frame slots, arguments included. */
+    int arg;   /**< Number of argument slots. */
 };
 
 STATIC_ASSERT(sizeof(funcdata) == 0x10);

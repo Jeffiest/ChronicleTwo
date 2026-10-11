@@ -427,7 +427,13 @@ int CVillagerMngr::GetAppearVlgr(int progress, int time, int map_no, int *villag
                                 output_position = output_offset;
 
                                 do {
+#ifdef PORT
+                                    // Retail indexes place[alternative][time] from the schedule pointer's low
+                                    // half with the PS2's strides; the member itself is used here.
+                                    place = schedule->place[alternative][time];
+#else
                                     place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + alternative_offset + 8);
+#endif
 
                                     if (place != NULL) {
                                         handled = 1;
@@ -467,7 +473,11 @@ int CVillagerMngr::GetAppearVlgr(int progress, int time, int map_no, int *villag
                         fallback_output_position = found * sizeof(int);
 
                         do {
+#ifdef PORT
+                            place = schedule->place[fallback_alternative][time];
+#else
                             place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + fallback_offset + 8);
+#endif
 
                             if (place != NULL && map_no >= 0 && place->map_no == map_no) {
                                 *(CVillagerPlaceInfo **) ((u8 *) places + fallback_output_position) = place;

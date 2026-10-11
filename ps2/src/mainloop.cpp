@@ -1561,7 +1561,12 @@ int PauseMenu() {
                 PauseSel = PAUSE_CHOICE_QUIT;
             }
 
-            int selected; selected = PauseSel;
+#ifdef PORT
+            int selected;
+            selected = PauseSel;
+#else
+            int selected = PauseSel;
+#endif
 
             if (PauseMes.select < 0) {
                 PauseMes.cursor_time = 0;

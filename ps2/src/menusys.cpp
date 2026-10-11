@@ -1952,7 +1952,12 @@ int CBaseMenuClass::IsSpectolFusion(int select_key, int push_button) {
 
     switch (step) {
         case 0:
-            int choice; choice = message->YesNoCursor();
+#ifdef PORT
+            int choice;
+            choice = message->YesNoCursor();
+#else
+            int choice = message->YesNoCursor();
+#endif
 
             switch (push_button) {
                 case MENU_PUSH_BUTTON_DECIDE:
@@ -6411,7 +6416,12 @@ int CMenuItemInfo::IsAskExtend(int select_key, int push_button) {
                     break;
                 }
                 case MENU_BUILD_UP_CONFIRM: {
-                    int choice = message->YesNoCursor();
+        #ifdef PORT
+            int choice;
+            choice = message->YesNoCursor();
+#else
+            int choice = message->YesNoCursor();
+#endif
 
                     switch (push_button) {
                         case MENU_PUSH_BUTTON_DECIDE:
@@ -8489,7 +8499,7 @@ static void MenuItemDebugDraw() {
     CMenuFont         *font = &menu_font;
     mgCDrawPrim        prim;
     CGameDataUsed     *weapon = CMenuItemInfoPt->view_weapon;
-    char               text[0x100]; int attribute; int count; int i;
+    char               text[0x100];
 
     switch (CMenuItemInfoPt->key_arg_no) {
         case ITEM_MENU_PANEL_BAG: {
@@ -8650,7 +8660,10 @@ static void MenuItemDebugDraw() {
 
             break;
         }
-        case ITEM_MENU_PANEL_CHARA: {
+        case ITEM_MENU_PANEL_CHARA:
+#ifdef PORT
+        {
+#endif
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 200.0f, 0x80, 0, 0, 0);
             font->SetStr("HP control");
             font->SetPos(236, 60);
@@ -8673,10 +8686,10 @@ static void MenuItemDebugDraw() {
             font->SetStr("\x20\x44\x65\x66\x44\x6F\x77\x6E\x20\x20\x20\x3A\x20\x81\x7E");
             font->SetPos(236, 180);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
-            attribute = MenuUserDataManPtr->GetCharaStatusAttirbute(CMenuItemInfoPt->sub_view);
+            int  attribute = MenuUserDataManPtr->GetCharaStatusAttirbute(CMenuItemInfoPt->sub_view);
             char status[0x100] = "Status : ";
-            count = 0;
-
+            int  count = 0;
+            int  i;
 
             for (i = 0; i < 6; i++) {
                 if (attribute & (1 << i)) {
@@ -8692,7 +8705,10 @@ static void MenuItemDebugDraw() {
             font->SetStr(status);
             font->SetPos(236, 200);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
-            break; }
+            break;
+#ifdef PORT
+        }
+#endif
         case ITEM_MENU_PANEL_WEAPON: {
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 300.0f, 0x80, 0, 0, 0);
             font->SetStr("WHP control");
@@ -8707,6 +8723,9 @@ static void MenuItemDebugDraw() {
             font->SetStr("Change Abs");
             font->SetPos(236, 120);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
+#ifdef PORT
+            int   i;
+#endif
             int   build_item[3];
             char *build_name[3];
 
@@ -12321,7 +12340,11 @@ int CItemSelect::KeyStep() {
         default: {
             int select_key = MenuCommonInfo->CheckSelectKey();
             int push_button = MenuCommonInfo->CheckPushButton();
-            int max = (int) ((int) ITEM_SELECT_COLUMNS * line_num);
+#ifdef PORT
+            int max = (int) ((float) ITEM_SELECT_COLUMNS * line_num);
+#else
+            int max = (int) (ITEM_SELECT_COLUMNS * line_num);
+#endif
             int old_cursor = cursor;
 
             if (select_key & MENU_SELECT_KEY_UP) {

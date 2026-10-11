@@ -20,10 +20,13 @@ jobs:
 
       # Lavapipe renders on the CPU, so the unit tests' per-case limit is widened from its 5 second default.
       - name: Configure
-        run: tools/kazarov/bin/kazarov shell cmake --preset linux-x64 -DCT_TEST_TIMEOUT=60
+        run: tools/kazarov/bin/kazarov shell cmake --preset linux-x64 -DDC_TEST_TIMEOUT=60
 
       - name: Build
         run: ./build.sh linux-x64
+
+      - name: Run host compatibility fixtures
+        run: tools/kazarov/bin/kazarov shell cmake --build port/build/pc --target dc_compatibility_tests
 
       - name: Test
         run: tools/kazarov/bin/kazarov shell ctest --test-dir port/build/pc --output-on-failure -j4
@@ -59,10 +62,13 @@ jobs:
           cat artifacts/vulkaninfo.txt
 
       - name: Configure
-        run: cmake --preset macos-arm64 -DCT_TEST_TIMEOUT=60
+        run: cmake --preset macos-arm64 -DDC_TEST_TIMEOUT=60
 
       - name: Build
         run: cmake --build --preset macos-arm64
+
+      - name: Run host compatibility fixtures
+        run: cmake --build port/build/macos-arm64 --target dc_compatibility_tests
 
       - name: Test
         run: ctest --preset macos-arm64
@@ -113,9 +119,12 @@ jobs:
         run: |
           ./tools/windows/build.ps1 -Root $env:RUNNER_TEMP -BuildDirectory $env:GITHUB_WORKSPACE/port/build/windows-x64-tests -Tests
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cmake --build port/build/windows-x64-tests --target dc_compatibility_tests_headless
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Copy-Item $env:VULKAN_RUNTIME/vulkan-1.dll port/build/windows-x64-tests
 
-      # The renderer's cases need a Vulkan device, which this runner does not have.
+      # The renderer's cases need a Vulkan device, which this runner does not have. The compatibility
+      # source and native compatibility checks run above without launching the capture fixture.
       - name: Test
         run: ctest --test-dir port/build/windows-x64-tests --output-on-failure -j4 -E '^(GfxMisc|TexDecode)\.'
 

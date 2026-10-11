@@ -184,7 +184,13 @@ static int htoi(char *text) {
 
     for (i = 0; i < length; i++) {
         s32 back = length - i;
+#ifdef PORT
+        // Retail forms the digit's address from the text pointer's low half; the pointer is used
+        // as it is here.
+        s32 ch = ((u8 *) text)[back - 1];
+#else
         s32 ch = ((u8 *) (back + (s32) text))[-1];
+#endif
         s32 digit = 0;
 
         if (ch >= '0' && ch <= '9') {
@@ -696,19 +702,29 @@ mgCFrame *mgLoadMDSFile(mgLoadData *load) {
 
     u_int frame_count = mds->object_num;
 
+#ifdef PORT
+    // A host frame is wider than the PS2's 0x110 bytes, so the block count follows the type.
+    blocks = align16_blocks(frame_count * sizeof(mgCFrame));
+#else
     if ((frame_count * 0x110) & 0xF) {
         blocks = ((frame_count * 0x110) >> 4) + 1;
     } else {
         blocks = (frame_count * 0x110) >> 4;
     }
+#endif
 
     frames = new (memory->Alloc(blocks + 2)) mgCFrame[frame_count];
 
+#ifdef PORT
+    // A host frame pointer is eight bytes, not the PS2's four.
+    blocks = align16_blocks(mds->object_num * sizeof(mgCFrame *));
+#else
     if ((mds->object_num * 4) & 0xF) {
         blocks = ((mds->object_num * 4) >> 4) + 1;
     } else {
         blocks = (mds->object_num * 4) >> 4;
     }
+#endif
 
     frame_table = new (memory->Alloc(blocks + 2)) mgCFrame *[mds->object_num];
     matrix_table = NULL;
@@ -933,6 +949,11 @@ mgCFrame *mgCopyFrame(mgCFrame *frame, mgCMemory *memory, int copy_visual) {
     table = frame->frame_list;
 
     if (count > 0 && table != 0) {
+#ifdef PORT
+        // Both blocks follow the host's frame and pointer widths, not the PS2's 0x110 and 4.
+        bytes = (u_int) count * sizeof(mgCFrame *);
+        blocks = align16_blocks(bytes);
+#else
         bytes = count * 4;
 
         if (bytes & 0xF) {
@@ -940,6 +961,7 @@ mgCFrame *mgCopyFrame(mgCFrame *frame, mgCMemory *memory, int copy_visual) {
         } else {
             blocks = bytes >> 4;
         }
+#endif
 
         copy_table = (mgCFrame **) operator new[](bytes, memory->Alloc(blocks + 2));
 
@@ -947,11 +969,15 @@ mgCFrame *mgCopyFrame(mgCFrame *frame, mgCMemory *memory, int copy_visual) {
             return 0;
         }
 
+#ifdef PORT
+        blocks = align16_blocks((u_int) count * sizeof(mgCFrame));
+#else
         if (((u_int) count * 0x110) & 0xF) {
             blocks = (((u_int) count * 0x110) >> 4) + 1;
         } else {
             blocks = ((u_int) count * 0x110) >> 4;
         }
+#endif
 
         copies = new (memory->Alloc(blocks + 2)) mgCFrame[count];
 

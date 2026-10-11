@@ -3067,7 +3067,12 @@ int CMenuInvent::IsCreateObject(int mode, int keys) {
             break;
         case INVENT_CREATE_STEP_SHOW_READY:
             action_chara->GetNowMotionName();
-            s32 motion; motion = action_chara->seq_state;
+#ifdef PORT
+            s32 motion;
+            motion = action_chara->seq_state;
+#else
+            s32 motion = action_chara->seq_state;
+#endif
 
             if (this->create_load_state >= INVENT_CREATE_LOAD_JINGLE_OPEN && motion == 3) {
                 this->step++;
@@ -5815,7 +5820,11 @@ void PictureDraw(int &tex_block, mgRect<float> rect, int picture_no, float scale
         if (0 <= picture_no && picture_no < INVENT_PHOTO_NUM) {
             texture = CMenuInventPt->photo_tex[picture_no];
             photo = InventUserDataPtr->GetPhotoInfo(picture_no);
+#ifdef PORT
         } else if (picture_no >= INVENT_PICTURE_ALBUM && picture_no < INVENT_PICTURE_ALBUM + (int) INVENT_ALBUM_PHOTO_NUM) {
+#else
+        } else if (picture_no >= INVENT_PICTURE_ALBUM && picture_no < INVENT_PICTURE_ALBUM + INVENT_ALBUM_PHOTO_NUM) {
+#endif
             picture_no -= INVENT_PICTURE_ALBUM;
             texture = CMenuInventPt->album_tex[picture_no];
             photo = InventAlbumPtr->GetAlbumPhotoInfo(picture_no);
@@ -6281,7 +6290,12 @@ int MenuInventInit(mgCMemory *memory, int *tex_block, int arg) {
             MenuMainFrameModeSet(MENU_MAIN_FRAME_CLOSE, true);
             ReturnMenuIntern(1);
             MenuMesForm[0]->draw_flag = false;
-            CMenuPosDataForm *image_form; image_form = MenuPosData->GetFormInfo("mainpureimage");
+#ifdef PORT
+            CMenuPosDataForm *image_form;
+            image_form = MenuPosData->GetFormInfo("mainpureimage");
+#else
+            CMenuPosDataForm *image_form = MenuPosData->GetFormInfo("mainpureimage");
+#endif
 
             if (image_form != NULL) {
                 image_form->draw_flag = true;
