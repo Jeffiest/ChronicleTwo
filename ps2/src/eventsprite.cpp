@@ -85,11 +85,11 @@ void CEventSprite::SetMove(int x, int y, int frames) {
 }
 
 void CEventSprite::SetFade(int fade_in, int frames) {
-    anime[0] = (int) EVENT_SPRITE_ANIME_NONE;
+    anime[0] = EVENT_SPRITE_ANIME_NONE;
     anime[1] = -1;
     anime[2] = -1;
     anime[3] = -1;
-    anime[0] = (int) EVENT_SPRITE_ANIME_FADE;
+    anime[0] = EVENT_SPRITE_ANIME_FADE;
 
     if (fade_in != 0) {
         anime[1] = 0x80;
@@ -109,14 +109,14 @@ void CEventSprite::SetColor(int r, int g, int b, int a) {
 
 void CEventSprite::Step() {
     switch (anime[0]) {
-        case (int) EVENT_SPRITE_ANIME_MOVE:
+        case EVENT_SPRITE_ANIME_MOVE:
             if (anime[3] == 0) {
                 put[0] = anime[1];
                 put[1] = anime[2];
             }
 
             if (put[0] == anime[1] && put[1] == anime[2]) {
-                anime[0] = (int) EVENT_SPRITE_ANIME_NONE;
+                anime[0] = EVENT_SPRITE_ANIME_NONE;
                 anime[1] = -1;
                 anime[2] = -1;
                 anime[3] = -1;
@@ -127,13 +127,13 @@ void CEventSprite::Step() {
             put[1] = LinerInterpolationI(put[1], anime[2], 1, anime[3] + 1);
             anime[3] -= 1;
             break;
-        case (int) EVENT_SPRITE_ANIME_FADE:
+        case EVENT_SPRITE_ANIME_FADE:
             if (anime[2] <= 0) {
                 color[3] = anime[1];
             }
 
             if (color[3] == anime[1]) {
-                anime[0] = (int) EVENT_SPRITE_ANIME_NONE;
+                anime[0] = EVENT_SPRITE_ANIME_NONE;
                 anime[1] = -1;
                 anime[2] = -1;
                 anime[3] = -1;
@@ -292,7 +292,7 @@ CEventSprite2::CEventSprite2() {
 }
 
 void CEventSprite2::Initialize() {
-    draw_flag = (int) EVENT_SPRITE2_DRAW_OFF;
+    draw_flag = EVENT_SPRITE2_DRAW_OFF;
     sprite_type = -1;
     tex_block = -1;
     memset(tex_name, 0, sizeof(tex_name));
@@ -422,7 +422,7 @@ void CEventSprite2::Draw() {
     float height = put_h * scale_y;
 
     switch (sprite_type) {
-        case (int) EVENT_SPRITE2_TYPE_SCREEN:
+        case EVENT_SPRITE2_TYPE_SCREEN:
             prim.Coord(0);
             width /= 2.0f;
             height /= 2.0f;
@@ -477,7 +477,7 @@ void CEventSprite2::Draw() {
 
             prim.End();
             break;
-        case (int) EVENT_SPRITE2_TYPE_WORLD:
+        case EVENT_SPRITE2_TYPE_WORLD:
             prim.DepthTestEnable(1);
             prim.DepthTest(MG_DEPTH_TEST_GEQUAL);
             prim.ZMask(MG_Z_MASK_MASKED);
@@ -508,7 +508,7 @@ void CEventSprite2::Draw() {
 
             break;
         default:
-            draw_flag = (int) EVENT_SPRITE2_DRAW_OFF;
+            draw_flag = EVENT_SPRITE2_DRAW_OFF;
             break;
     }
 }

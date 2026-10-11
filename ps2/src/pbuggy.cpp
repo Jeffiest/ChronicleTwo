@@ -1065,7 +1065,7 @@ void CharaControl(CScene *scene, CPadControl *pad) {
             EditMoveChara(scene, velocity, &move);
 
             if (camera != NULL) {
-                camera->SetRotCameraCancel((int) CAMERA_ROT_CANCEL_BUTTON);
+                camera->SetRotCameraCancel(CAMERA_ROT_CANCEL_BUTTON);
             }
 
             switch (BombStatus) {

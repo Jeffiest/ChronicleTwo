@@ -1493,7 +1493,7 @@ char *GetItemFileName(int item_no, int variant) {
     CSaveData *save_data = GetSaveData();
     u8         type = record->type;
 
-    if ((type == ITEM_DATA_MAX_CLOTHES || type == ITEM_DATA_MONICA_CLOTHES) && save_data->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK) != 0) {
+    if ((type == ITEM_DATA_MAX_CLOTHES || type == ITEM_DATA_MONICA_CLOTHES) && save_data->GetBitFlag(SAVE_FLAG_COSTUME_UNLOCK) != 0) {
         strcat(filename, "t");
     }
 

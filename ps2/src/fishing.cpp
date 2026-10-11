@@ -1181,7 +1181,7 @@ int sgRestartFishing(SubGameInfo *info) {
         }
     }
 
-    if (info->rod_no == (int) ITEM_ID_LURE_ROD) {
+    if (info->rod_no == ITEM_ID_LURE_ROD) {
         SetFishingMode(kFishingModeLure);
         EsaChara = NULL;
         char lure_path[0x40] = "sg/fish/";
@@ -1312,7 +1312,7 @@ int InitDataLoading() {
     }
 
     EffectMan = scene->GetEffect(0);
-    CharaMode = (int) FISHING_CHARA_MODE_CONTROL;
+    CharaMode = FISHING_CHARA_MODE_CONTROL;
     NextCharaMode = -1;
     RunEventNo = -1;
     CastOKFlag = 0;
@@ -1487,7 +1487,7 @@ static void StepDataLoading(void *arg) {
     switch_thread();
     scene->PlayBGM(0, -1, 1.0f);
 
-    if (info->rod_no == (int) ITEM_ID_LURE_ROD) {
+    if (info->rod_no == ITEM_ID_LURE_ROD) {
         u_int *rod_pack;
 
         if ((rod_pack = GetPackFile(pack, "f_rod2.chr", NULL)) != NULL) {
@@ -1710,25 +1710,25 @@ int sgLoopFishing(SubGameInfo *info) {
     sgSetMenuOpenEnableFlag(0);
 
     switch (CharaMode) {
-        case (int) FISHING_CHARA_MODE_CONTROL:
+        case FISHING_CHARA_MODE_CONTROL:
             CharaControl(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_SELECT_POINT:
+        case FISHING_CHARA_MODE_SELECT_POINT:
             SelectCastingPoint(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_CASTING:
+        case FISHING_CHARA_MODE_CASTING:
             CastingLoop(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_UKI_WAIT:
+        case FISHING_CHARA_MODE_UKI_WAIT:
             UkiWaitLoop(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_BATTLE:
+        case FISHING_CHARA_MODE_BATTLE:
             BattleLoop(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_FALSE:
+        case FISHING_CHARA_MODE_FALSE:
             FalseLoop(scene, pad);
             break;
-        case (int) FISHING_CHARA_MODE_SUCCESS:
+        case FISHING_CHARA_MODE_SUCCESS:
             SuccessLoop(scene, pad);
 
             if (FishChara != NULL) {
@@ -1745,7 +1745,7 @@ int sgLoopFishing(SubGameInfo *info) {
         CharaMode = NextCharaMode;
     }
 
-    if (CharaMode == (int) FISHING_CHARA_MODE_CONTROL) {
+    if (CharaMode == FISHING_CHARA_MODE_CONTROL) {
         sgSetMenuOpenEnableFlag(1);
     }
 
@@ -1862,7 +1862,7 @@ int sgDrawFishing(SubGameInfo *info) {
         HariFrame->GetWorldPosition(lure_matrix[3], hook_offset);
     }
 
-    if (CharaMode == (int) FISHING_CHARA_MODE_SELECT_POINT) {
+    if (CharaMode == FISHING_CHARA_MODE_SELECT_POINT) {
         char *cursor_motion[2] = {"NG", "OK"};
         CursorChara[0]->SetMotion(cursor_motion[CastOKFlag], 0);
         CursorChara[0]->SetPosition(CastPointCur.v);
@@ -1952,7 +1952,7 @@ int sgSystemDrawFishing(SubGameInfo *info) {
     prim.Bilinear(1);
     prim.TextureMapEnable(0);
 
-    if (CharaMode == (int) FISHING_CHARA_MODE_BATTLE) {
+    if (CharaMode == FISHING_CHARA_MODE_BATTLE) {
         top = mgScreenHeight - 0x47;
         prim.Begin(MG_PRIM_SPRITE);
         prim.Color(0x15, 0x29, 0x47, 0x60);
@@ -2200,7 +2200,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                 ShowHelpMes(0x65, 1);
 
                 if (pad->Btn(kPadButtonCast) != 0 && InitSelectCastingPoint(scene) != 0) {
-                    SetNextMode((int) FISHING_CHARA_MODE_SELECT_POINT);
+                    SetNextMode(FISHING_CHARA_MODE_SELECT_POINT);
                 }
             }
 
@@ -2387,7 +2387,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
     target[0] = position[0];
     target[2] = position[2];
     saved_cancel = camera->rot_cancel;
-    camera->BitSetRotCameraCancel((int) CAMERA_ROT_CANCEL_AUTO_MOVE);
+    camera->BitSetRotCameraCancel(CAMERA_ROT_CANCEL_AUTO_MOVE);
     EditCameraControl(scene, pad, NULL);
     camera->SetRotCameraCancel(saved_cancel);
     castable = CheckCasting(scene, position, cast_dir);
@@ -2434,13 +2434,13 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
 
     if (CastOKFlag != 0 && pad->Btn(kPadButtonCast) != 0) {
         if (InitCasting(scene) != 0) {
-            SetNextMode((int) FISHING_CHARA_MODE_CASTING);
+            SetNextMode(FISHING_CHARA_MODE_CASTING);
         }
     } else if (pad->Btn(kPadButtonCancel) != 0) {
         BreakReadBG();
 
         if (EndSelectCastingPoint(scene) != 0) {
-            SetNextMode((int) FISHING_CHARA_MODE_CONTROL);
+            SetNextMode(FISHING_CHARA_MODE_CONTROL);
         }
     }
 }
@@ -2599,7 +2599,7 @@ void CastingLoop(CScene *scene, CPadControl *pad) {
                 EndCastingLure();
 
                 if (InitUkiWait(scene) != 0) {
-                    SetNextMode((int) FISHING_CHARA_MODE_UKI_WAIT);
+                    SetNextMode(FISHING_CHARA_MODE_UKI_WAIT);
                 }
             }
         }
@@ -2686,7 +2686,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 chara->SetMotion("\x82\xC2\x82\xE8\x8A\xC6\x8E\x9D\x82\xBF\x97\xA7\x82\xBF", 4);
             }
 
-            SetNextMode((int) FISHING_CHARA_MODE_CONTROL);
+            SetNextMode(FISHING_CHARA_MODE_CONTROL);
         }
 
         return;
@@ -2932,7 +2932,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
         UkiModeCnt = 0;
     }
 
-    camera->SetRotCameraCancel((int) CAMERA_ROT_CANCEL_AUTO_MOVE);
+    camera->SetRotCameraCancel(CAMERA_ROT_CANCEL_AUTO_MOVE);
 
     if (caught == 0 && GetFishingMode() == kFishingModeFloat) {
         GetUkiPos(camera_target[0], uki_pos2);
@@ -2979,7 +2979,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
         if (InitBattle(scene) != 0) {
             GamePad__2.SetVibration(0, 1, 5);
-            SetNextMode((int) FISHING_CHARA_MODE_BATTLE);
+            SetNextMode(FISHING_CHARA_MODE_BATTLE);
             sndSePlay(FishSnd, 0x12, 0);
 
             if (MardanEventMap != 0 && MardanEventPlace != 0) {
@@ -3227,7 +3227,7 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
     if (!(LineTension < 1.0f)) {
         if (InitFalse(scene) != 0) {
             EndFishBattle();
-            SetNextMode((int) FISHING_CHARA_MODE_FALSE);
+            SetNextMode(FISHING_CHARA_MODE_FALSE);
             sndSePlay(FishSnd, 0x13, 0);
             scene->StopBGM(0);
         }
@@ -3235,11 +3235,11 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
         if (LoadFishFlag == 0) {
             if (InitFalse(scene) != 0) {
                 EndFishBattle();
-                SetNextMode((int) FISHING_CHARA_MODE_FALSE);
+                SetNextMode(FISHING_CHARA_MODE_FALSE);
             }
         } else if (InitSuccess(scene) != 0) {
             EndFishBattle();
-            SetNextMode((int) FISHING_CHARA_MODE_SUCCESS);
+            SetNextMode(FISHING_CHARA_MODE_SUCCESS);
             sndSePlay(FishSnd, 0x14, 0);
             scene->StopBGM(0);
         }
@@ -3386,7 +3386,7 @@ void FalseLoop(CScene *scene, CPadControl *pad) {
         ExtendLine(-1000.0f);
         ResetLineVelo();
         EndSelectCastingPoint(scene);
-        SetNextMode((int) FISHING_CHARA_MODE_CONTROL);
+        SetNextMode(FISHING_CHARA_MODE_CONTROL);
         camera->RotBack(mgAngleLimit(PI + chara_rot[1]));
         scene->PlayBGM(0, -1, 1.0f);
     }
@@ -3673,7 +3673,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
         ExtendLine(-1000.0f);
         ResetLineVelo();
         EndSelectCastingPoint(scene);
-        SetNextMode((int) FISHING_CHARA_MODE_CONTROL);
+        SetNextMode(FISHING_CHARA_MODE_CONTROL);
         FishChara = NULL;
         mgTexManager.DeleteBlock(FishTexb);
         camera->RotBack(mgAngleLimit(PI + chara_rot[1]));
@@ -3993,7 +3993,7 @@ int GetUkiWaitTime(FISH_DATA *fish, CScene *scene, float *position, int rod_no, 
             }
         }
 
-        if (rod_no == (int) ITEM_ID_LURE_ROD) {
+        if (rod_no == ITEM_ID_LURE_ROD) {
             wait_base /= 2;
             wait_extra /= 2;
         }

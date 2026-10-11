@@ -179,7 +179,7 @@ static void InitPhotoTitle() {
 
 void InitTakePhoto() {
     TakePhotoMode = TAKE_PHOTO_OFF;
-    AddProj = (int) TAKE_PHOTO_OFF;
+    AddProj = TAKE_PHOTO_OFF;
 
     InitPhotoTitle();
     ShowTakePhotoCnt = 0;
@@ -583,26 +583,26 @@ void DrawTakePhotoSystem(int texture, CInventUserData *user_data) {
         }
     } else {
         y = mgScreenHeight - 0x29;
-        Font.SetStr(GetMesTxt((int) PHOTO_MES_CONFIRM));
+        Font.SetStr(GetMesTxt(PHOTO_MES_CONFIRM));
         Font.SetPos(0x28, y);
         Font.DrawDirect(Font.str, Font.pos_x, Font.pos_y);
         y = mgScreenHeight - 0x29;
-        Font.SetStr(GetMesTxt((int) PHOTO_MES_ZOOM));
+        Font.SetStr(GetMesTxt(PHOTO_MES_ZOOM));
         Font.SetPos(0xF0, y);
         Font.DrawDirect(Font.str, Font.pos_x, Font.pos_y);
         y = mgScreenHeight - 0x15;
-        Font.SetStr(GetMesTxt((int) PHOTO_MES_TAKE));
+        Font.SetStr(GetMesTxt(PHOTO_MES_TAKE));
         Font.SetPos(0x28, y);
         Font.DrawDirect(Font.str, Font.pos_x, Font.pos_y);
     }
 
-    ConvertFontCode(GetMesTxt((int) PHOTO_MES_LEVEL_UP), title);
+    ConvertFontCode(GetMesTxt(PHOTO_MES_LEVEL_UP), title);
     char_width = Font.draw_w;
     y = 0xF6;
     y -= (int) ((u32) (char_width * strlen(title)) >> 1) / 2;
 
     if (ShowLevelUpCnt > 0) {
-        Font.SetStr(GetMesTxt((int) PHOTO_MES_LEVEL_UP));
+        Font.SetStr(GetMesTxt(PHOTO_MES_LEVEL_UP));
         Font.SetPos(y, 0x140);
         Font.DrawDirect(Font.str, Font.pos_x, Font.pos_y);
         ShowLevelUpCnt -= 1;

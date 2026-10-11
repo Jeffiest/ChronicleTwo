@@ -5536,7 +5536,7 @@ void MenuCharaSoundEnter(CScene *scene, CActionChara *chara, int open_port) {
             }
 
             chara->sound_info.se_bank =
-                sndLoadSound((int) SND_PORT_CHARA, buffer, MorattaStack + chara_ids[index]);
+                sndLoadSound(SND_PORT_CHARA, buffer, MorattaStack + chara_ids[index]);
         }
 
         chara->sound_info.se_bank_2 = scene->se_battle_id;
@@ -6505,7 +6505,7 @@ int MenuNPCModelLoad(mgCMemory *memory, int chara_no, int background) {
 
     MenuNPCLoadFlag = 0;
     memory->Align64();
-    name = GetPartyCharaModelName(chara_no, (int) NPC_MODEL_PATH_MENU);
+    name = GetPartyCharaModelName(chara_no, NPC_MODEL_PATH_MENU);
     buffer = reinterpret_cast<u_int *>(memory_free_top(memory));
     MenuPartyNPCModelReadBuffer = buffer;
 
@@ -7645,9 +7645,9 @@ void CMosBookMenu::Draw() {
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_MBase);
     prim->Color(0x80, 0x80, 0x80, 0x80);
-    PrimDrawNumber(prim, hp, (int) MENU_NUMBER_ALIGN_RIGHT, 0x156, 0x6D, digit_rect, -1, 0);
-    PrimDrawNumber(prim, abs, (int) MENU_NUMBER_ALIGN_RIGHT, 0x1AE, 0x6D, digit_rect, -1, 0);
-    PrimDrawNumber(prim, kill_num, (int) MENU_NUMBER_ALIGN_RIGHT, 0xEC, 0x185, digit_rect, -2, 0);
+    PrimDrawNumber(prim, hp, MENU_NUMBER_ALIGN_RIGHT, 0x156, 0x6D, digit_rect, -1, 0);
+    PrimDrawNumber(prim, abs, MENU_NUMBER_ALIGN_RIGHT, 0x1AE, 0x6D, digit_rect, -1, 0);
+    PrimDrawNumber(prim, kill_num, MENU_NUMBER_ALIGN_RIGHT, 0xEC, 0x185, digit_rect, -2, 0);
     prim->End();
     tex_manager->ReloadTexture(MenuArg.mes_tex_block, (sceVif1Packet *) NULL);
     CMenuFont font;

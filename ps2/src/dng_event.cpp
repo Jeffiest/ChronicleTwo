@@ -730,7 +730,7 @@ int CTreasureBoxManager::CheckArea(float *pos, float radius) {
     for (i = 0; i < 0x18; i++) {
         slot = &this->box[i];
 
-        if (slot->state != (int) TREASURE_BOX_STATE_NONE) {
+        if (slot->state != TREASURE_BOX_STATE_NONE) {
             slot->GetPosition(chest_pos);
 
             if (mgDistVector(chest_pos, pos) < radius) {

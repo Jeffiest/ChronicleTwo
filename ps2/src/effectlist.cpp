@@ -209,7 +209,7 @@ void CFadeInOut::Initialize() {
     b = 0.0f;
     g = 0.0f;
     r = 0.0f;
-    mode = (int) FADE_MODE_NONE;
+    mode = FADE_MODE_NONE;
     speed = 0.0f;
     end = 0;
     cross = 0;
@@ -218,17 +218,17 @@ void CFadeInOut::Initialize() {
 }
 
 void CFadeInOut::ResetFade() {
-    mode = (int) FADE_MODE_NONE;
+    mode = FADE_MODE_NONE;
     alpha = 0.0f;
     cross = 0;
 }
 
 void CFadeInOut::FadeIn(int frames, float r, float g, float b) {
-    if ((mode == (int) FADE_MODE_NONE) || (frames < 0)) {
+    if ((mode == FADE_MODE_NONE) || (frames < 0)) {
         alpha = 128.0f;
     }
 
-    mode = (int) FADE_MODE_IN;
+    mode = FADE_MODE_IN;
     end = 0;
 
     if (frames < 0) {
@@ -244,7 +244,7 @@ void CFadeInOut::FadeIn(int frames, float r, float g, float b) {
 }
 
 void CFadeInOut::FadeIn(int frames) {
-    if (mode >= (int) FADE_MODE_NONE) {
+    if (mode >= FADE_MODE_NONE) {
         FadeIn(frames, 0.0f, 0.0f, 0.0f);
     } else {
         FadeIn(frames, r, g, b);
@@ -252,11 +252,11 @@ void CFadeInOut::FadeIn(int frames) {
 }
 
 void CFadeInOut::FadeOut(int frames, float r, float g, float b) {
-    if ((mode == (int) FADE_MODE_NONE) || (frames < 0)) {
+    if ((mode == FADE_MODE_NONE) || (frames < 0)) {
         alpha = 0.0f;
     }
 
-    mode = (int) FADE_MODE_OUT;
+    mode = FADE_MODE_OUT;
     end = 0;
 
     if (frames < 0) {
@@ -272,7 +272,7 @@ void CFadeInOut::FadeOut(int frames, float r, float g, float b) {
 }
 
 void CFadeInOut::CrossFade(int duration, float alpha) {
-    CrossFadeIn((int) CROSS_FADE_DISSOLVE, duration, alpha);
+    CrossFadeIn(CROSS_FADE_DISSOLVE, duration, alpha);
 }
 
 void CFadeInOut::CrossFadeIn(int mode, int frames, float value) {
@@ -293,20 +293,20 @@ void CFadeInOut::CrossFadeOut(int mode, int frames, float value) {
 int CFadeInOut::FadeCheck() { return this->end; }
 
 int CFadeInOut::NowFade() {
-    return mode != (int) FADE_MODE_NONE;
+    return mode != FADE_MODE_NONE;
 }
 
 int CFadeInOut::FadeStep() {
-    if (mode == (int) FADE_MODE_NONE) {
+    if (mode == FADE_MODE_NONE) {
         return 1;
     }
 
-    if (mode > (int) FADE_MODE_NONE) {
+    if (mode > FADE_MODE_NONE) {
         alpha -= speed;
 
         if (alpha <= 0.0f) {
             alpha = 0.0f;
-            mode = (int) FADE_MODE_NONE;
+            mode = FADE_MODE_NONE;
             end = 1;
         }
     } else {

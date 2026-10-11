@@ -375,7 +375,7 @@ void CShop::CheckEventItem() {
             local_sort1(cursor, &item_num, item_no);
         }
 
-        if (GetItemDataType(item_no[cursor]) == (int) ITEM_DATA_ROBO_CORE) {
+        if (GetItemDataType(item_no[cursor]) == ITEM_DATA_ROBO_CORE) {
             int core = CheckRobotCore();
 
             if (core >= ITEM_ID_CORE && core < ITEM_ID_MASTER_GRADE_CORE) {
@@ -718,7 +718,7 @@ void CShopMenu::InitEnd() {
 
     if (LoadFile2("snd2/sp/SP_042.snd", sound_buffer, NULL, 0) != 0) {
         sndInitPort(8);
-        se_handle = sndLoadSound((int) SND_PORT_MENU, sound_buffer, &sound_memory);
+        se_handle = sndLoadSound(SND_PORT_MENU, sound_buffer, &sound_memory);
     }
 
     MenuPosData->AttachCommonTexInfo();
@@ -1096,7 +1096,7 @@ int CShopMenu::KeyStep() {
 
             CDC2Mes *count_mes = MenuDCMsg[3];
             CDC2Mes *ask_mes = MenuDCMsg[4];
-            int      refuse = (int) SHOP_MENU_ERROR_NONE;
+            int      refuse = SHOP_MENU_ERROR_NONE;
 
             switch (command) {
                 case 5:
@@ -1154,14 +1154,14 @@ int CShopMenu::KeyStep() {
                     }
 
                     if (room <= 0) {
-                        refuse = (int) SHOP_MENU_ERROR_BAG_FULL;
+                        refuse = SHOP_MENU_ERROR_BAG_FULL;
                         break;
                     }
 
                     int can_have = common->max_num - user->GetNumSameItem(item_no);
 
                     if (can_have <= 0) {
-                        refuse = (int) SHOP_MENU_ERROR_ITEM_LIMIT;
+                        refuse = SHOP_MENU_ERROR_ITEM_LIMIT;
                         break;
                     }
 
@@ -1291,7 +1291,7 @@ int CShopMenu::KeyStep() {
                     } else if (CShopPtr->price[item_no].sell <= 0) {
                         MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (CheckEquipFishRod(sell_item) == 1) {
-                        refuse = (int) SHOP_MENU_ERROR_LAST_WEAPON;
+                        refuse = SHOP_MENU_ERROR_LAST_WEAPON;
                     } else {
                         arrow_flash[1] = 0;
                         arrow_flash[0] = 0;
@@ -1329,7 +1329,7 @@ int CShopMenu::KeyStep() {
                             "\x82\xA9\x82\xA4\x81\x48"};
 
                         if (NowSellMode != SHOP_SELL_MODE_DONY && total > CShopPtr->CheckMoney()) {
-                            refuse = (int) SHOP_MENU_ERROR_NO_MONEY;
+                            refuse = SHOP_MENU_ERROR_NO_MONEY;
                             break;
                         }
 
@@ -1370,7 +1370,7 @@ int CShopMenu::KeyStep() {
                     break;
                 case 0x44C:
                     ExeScript("\x83\x41\x83\x43\x83\x65\x83\x80\x91\x49\x91\xF0\x82\xC9\x82\xE0\x82\xC7\x82\xE9");
-                    error = (int) SHOP_MENU_ERROR_NONE;
+                    error = SHOP_MENU_ERROR_NONE;
                     key_arg_no = shop_mode_prev;
                     SetMenuKeyCtrlEnv(0);
                     break;
@@ -1817,10 +1817,10 @@ void ShopSellListDraw(int &tex_block, float *pos) {
         PrimQuad(prim, x + 128.0f, y + 1.0f, have_board);
         int have = CShopPtr->GetHaveNum(line);
         price = have;
-        PrimDrawNumber(prim, have, (int) MENU_NUMBER_ALIGN_CENTER, fptosi(x + 134.0f + 23.0f), fptosi(y + 12.0f), have_digits, 0, 0);
+        PrimDrawNumber(prim, have, MENU_NUMBER_ALIGN_CENTER, fptosi(x + 134.0f + 23.0f), fptosi(y + 12.0f), have_digits, 0, 0);
         item.item_no = item_no;
         CShopPtr->GetPrice(&item, &price, NULL);
-        PrimDrawNumber(prim, price, (int) MENU_NUMBER_ALIGN_RIGHT, fptosi(price_x), fptosi(y + 16.0f), price_digits, 0, 0);
+        PrimDrawNumber(prim, price, MENU_NUMBER_ALIGN_RIGHT, fptosi(price_x), fptosi(y + 16.0f), price_digits, 0, 0);
         int mark_y = fptosi(y + 22.0f);
         int mark_left = fptosi(mark_x);
         PrimQuad(prim, mgRect<int>(mark_left, mark_y, price_mark->right, price_mark->bottom), *price_mark);
@@ -2177,7 +2177,7 @@ int CMenuQuestView::KeyStep() {
                     int select_key = MenuListSelectKeyCheck(lr_key, 7);
                     int old_select = select;
                     int old_top = top;
-                    MenuKeySelectCheck(select_key, &select, &top, 0, max, 7, (int) MENU_CURSOR_LIMIT_CLAMP);
+                    MenuKeySelectCheck(select_key, &select, &top, 0, max, 7, MENU_CURSOR_LIMIT_CLAMP);
 
                     if (old_select != select) {
                         MenuSePlay(SYSTEM_SE_CURSOR);

@@ -2635,7 +2635,7 @@ int BurnEditParts() {
     int                  i;
     int                  id;
 
-    if (GetSaveData()->GetBitFlag((int) SAVE_FLAG_EDIT_BLOCKED) != 0) {
+    if (GetSaveData()->GetBitFlag(SAVE_FLAG_EDIT_BLOCKED) != 0) {
         return 0;
     }
 
@@ -3036,7 +3036,7 @@ void EditDataSave() {
 
             if ((map != NULL) && (strcmp(map->Iam(), "CEditMap") == 0) && (map != NULL)) {
                 map->SaveData(edit_data);
-                GetSaveData()->GetBitFlag((int) SAVE_FLAG_EDIT_BLOCKED);
+                GetSaveData()->GetBitFlag(SAVE_FLAG_EDIT_BLOCKED);
                 edit_data->culture_point = map->CultureAnalyze(0);
                 edit_data->save_count += 1;
                 map->GroundBalance(0);

@@ -748,7 +748,7 @@ _EFF_SCRIPT *CEffectScriptMan::CreateEffSpt(int base_no, int group, int register
         }
     }
 
-    token = work_memory->StartStackMode((int) MG_STACK_MODE_FIT, base->work_size);
+    token = work_memory->StartStackMode(MG_STACK_MODE_FIT, base->work_size);
 
     if (token == NULL) {
         printf("--- effect script work max[%d]!!! ---\n", work_memory->stack_size - work_memory->stack_used);
@@ -1253,7 +1253,7 @@ _ES_SPRITE *CEffectScriptMan::AssignSprite(int count) {
     u_int size = count * sizeof(_ES_SPRITE);
     u_int blocks = align16_blocks(size) + 3;
 
-    if (work_memory->StartStackMode((int) MG_STACK_MODE_FIT, blocks) == 0) {
+    if (work_memory->StartStackMode(MG_STACK_MODE_FIT, blocks) == 0) {
         printf("------- es work max!! (assign sprite[%d]) ---------\n", blocks);
         return 0;
     }

@@ -1041,7 +1041,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                 strcpy(save_buffer->version, version);
                 save_buffer->costume_bit = 0;
 
-                if (save->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK)) {
+                if (save->GetBitFlag(SAVE_FLAG_COSTUME_UNLOCK)) {
                     save_buffer->costume_bit = user_data->GetCostumeBit();
                 }
 
@@ -1052,7 +1052,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
                     save_buffer->omake_flag |= OMAKE_ENABLE_GYORACE;
                 }
 
-                if (save->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK)) {
+                if (save->GetBitFlag(SAVE_FLAG_COSTUME_UNLOCK)) {
                     save_buffer->omake_flag |= OMAKE_ENABLE_COSTUME;
                     save_buffer->omake_flag |= OMAKE_ENABLE_DUNGEON;
                 }
