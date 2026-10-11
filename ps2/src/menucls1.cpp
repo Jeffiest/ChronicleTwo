@@ -1103,13 +1103,13 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 dead = true;
             }
 
-            if (dead == 1 && (effect.action_flags & 0x10)) {
+            if (dead == 1 && (effect.action_flags & ITEM_ACTION_EAT)) {
                 break;
             }
 
             int weapon_type = chara->equip[0].item_type;
 
-            if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & 0x10)) {
+            if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & ITEM_ACTION_EAT)) {
                 if (((MenuUsedItemNo == ITEM_ID_POTATO_PIE && weapon_type == ITEM_DATA_MAX_MELEE) ||
                      (MenuUsedItemNo == ITEM_ID_WITCH_PARFAIT && weapon_type == ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
@@ -1162,7 +1162,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_DRY) && (effect.action_flags & 0x10) && item->item_no != ITEM_ID_PLUM_RICE_BALL) {
+            if ((chara->status_attr & CHARA_STATUS_DRY) && (effect.action_flags & ITEM_ACTION_EAT) && item->item_no != ITEM_ID_PLUM_RICE_BALL) {
                 MenuUsedNotErrorCode = true;
                 break;
             }
@@ -1318,7 +1318,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
             } else if (MenuUsedItemNo == ITEM_ID_SHIELD_KIT) {
                 sound = CheckRoboShieldKit(user, weapon, apply, &count, &used);
             } else if (MenuUsedItemNo == ITEM_ID_RIDEPOD_FUEL) {
-                if (weapon == &user->robo_data.parts[2] && user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
+                if (weapon == &user->robo_data.parts[ROBO_PART_PACK] && user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
                     count++;
 
                     if (apply != 0) {

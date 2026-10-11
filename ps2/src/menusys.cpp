@@ -11064,7 +11064,7 @@ int CMenuItemInfo::ModelReadEndCheck() {
                     break;
                 case MENU_ITEM_VIEW_ROBO: {
                     chara->SetPosition(-44.0f, -20.0f, -180.0f);
-                    CDataRoboPart *leg_info = GetRoboPartInfoData(GetUserDataMan()->robo_data.parts[3].item_no);
+                    CDataRoboPart *leg_info = GetRoboPartInfoData(GetUserDataMan()->robo_data.parts[ROBO_PART_LEG].item_no);
                     int            offset_no = 0;
 
                     if (leg_info != NULL) {
