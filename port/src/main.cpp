@@ -28,6 +28,10 @@
 #include "mainloop_port.hpp"
 #pragma clang diagnostic pop
 
+// DC_CRASH_TRACE=1 installs a handler (crash_trace.cpp) that writes a backtrace on a fault. It lives
+// in its own unit because Windows' headers clash with the game's (macros B/R, struct RECT).
+void InstallCrashTrace();
+
 /**
  *
  * The port's entry point. It takes the place of ps2/src/main.cpp's main:
@@ -291,6 +295,7 @@ void DisableAudioForHeadless() {
 PORT_OVERRIDE int main(int argc, char **argv) {
     // The game logs with printf; redirected to a file it is block-buffered and a hung or killed run loses it all.
     std::setvbuf(stdout, nullptr, _IONBF, 0);
+    InstallCrashTrace();
     ConfigureHost();
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);
