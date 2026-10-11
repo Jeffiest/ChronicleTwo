@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <cstdio>
 #include "common.h"
 
 #include <libvu0.h>
@@ -293,7 +295,26 @@ int mgInsideScreen(float (*corners)[4], float (*matrix)[4], float *out_max, floa
     return mgClipBoxW(out_max, out_min, render_info->screen_box_max, render_info->screen_box_min);
 }
 
+// Diagnostic: DC_DUMP_DRAWS=1 prints the rectangle each top-level GetDrawRect returns.
+static int LogDrawRect(const mgCFrame *frame, const mgVu0FBOX *rect, int visible, int depth) {
+    static const bool dump = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    static int        printed;
+
+    if (dump && depth == 1 && printed < 200) {
+        printed++;
+        std::fprintf(stderr, "drawrect frame %p vis %d max [%.1f %.1f %.1f %.1f] min [%.1f %.1f %.1f %.1f]\n",
+                     (const void *) frame, visible, rect->max[0], rect->max[1], rect->max[2], rect->max[3],
+                     rect->min[0], rect->min[1], rect->min[2], rect->min[3]);
+    }
+    return visible;
+}
+
 int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
+    static int depth;
+    struct Depth {
+        Depth() { depth++; }
+        ~Depth() { depth--; }
+    } depth_guard;
     sceVu0FMATRIX  lw;
     sceVu0FVECTOR  rect_max = {0.0f, 0.0f, 0.0f, 0.0f};
     sceVu0FVECTOR  rect_min = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -356,7 +377,7 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
     }
 
     if (draw & MG_FRAME_DRAW_SKIP_CHILDREN) {
-        return visible;
+        return LogDrawRect(this, rect, visible, depth);
     }
 
     for (mgCFrame *frame = child; frame != NULL; frame = frame->brother) {
@@ -378,5 +399,5 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
 
     sceVu0CopyVector(rect->max, rect_max);
     sceVu0CopyVector(rect->min, rect_min);
-    return visible;
+    return LogDrawRect(this, rect, visible, depth);
 }
