@@ -61,7 +61,7 @@ void CEditMap::DrawEffect() {
     attr.no_cull = 1;
     attr.draw = 3;
     attr.depth_bias = 1.015f;
-    attr.fog = 2;
+    attr.fog = MG_FOG_BLACK;
 
     CEditParts *part = edit_parts;
 

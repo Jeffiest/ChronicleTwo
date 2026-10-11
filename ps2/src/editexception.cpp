@@ -392,7 +392,7 @@ void InitFirePowder(int map_no, CScene *scene, int texb, mgCMemory *memory) {
     FirePowFrame = new (memory->Alloc(0x13)) mgCFrame;
     mgCFrameAttr *attr = new (memory->Alloc(0xB)) mgCFrameAttr;
     FirePowFrame->attr = attr;
-    attr->fog = 2;
+    attr->fog = MG_FOG_BLACK;
     attr->z_write = MG_ZBUF_NO_WRITE;
     FirePowFrame->SetVisual(SpriteVis);
 
@@ -691,7 +691,7 @@ void InitGeyserEffect(int scene_no, CScene *scene, int texb, mgCMemory *memory) 
             GeyserFrame = new (memory->Alloc(0x13)) mgCFrame;
             mgCFrameAttr *attr = new (memory->Alloc(0xB)) mgCFrameAttr;
             GeyserFrame->attr = attr;
-            attr->fog = 2;
+            attr->fog = MG_FOG_BLACK;
             attr->z_write = -1;
             GeyserEffect = new (memory->Alloc(0x22)) CGeyserEffect[4];
 
