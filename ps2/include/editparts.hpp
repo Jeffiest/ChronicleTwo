@@ -60,6 +60,7 @@ enum EditPartsAtr {
  *
  */
 enum EditPartsType {
+    EDIT_PARTS_TYPE_FENCE = 8,  /**< Piece of fence. */
     EDIT_PARTS_TYPE_RIVER = 11, /**< Piece of river. */
 };
 

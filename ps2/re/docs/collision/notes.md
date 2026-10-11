@@ -24,7 +24,7 @@ fills it. Size: stride 0x50 in every loop (`CreateCollisionMDT`, `PickUpNearPoly
   gameutil `CheckHit*` (ignore mask); 0x44 compared to 7 and 1 in `GetCPolyAttr`. 0x40/0x42
   only copied (GetFootPoly) -- names unverified in this game.
 - 0x48 u16 `parts_no`: `CMap::GetPoly` writes the map-part index; `CEditMap::GetPoly` writes
-  `index | 0x1000`; copied with `lhu`.
+  `index | CCPOLY_PARTS_EDIT`; copied with `lhu`.
 - 0x4A s16, 0x4C float: only copied (lh/sh, lwc1/swc1).
 
 ## Area kinds (CCPoly::area_kind, enum CCPolyAreaKind)

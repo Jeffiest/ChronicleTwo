@@ -327,6 +327,15 @@ STATIC_ASSERT(sizeof(_EFF_SCRIPT) == 0x150);
 
 /**
  *
+ * Effect-script program numbers that have a fixed meaning.
+ *
+ */
+enum EFFECT_SCRIPT_PROG {
+    EFFECT_SCRIPT_PROG_FINISH = 300, /**< Ends an effect. */
+};
+
+/**
+ *
  * Loads effect bases and runs the scripted effects started from them, keeping every
  * running effect in a list and in a table of slots by owner.
  *

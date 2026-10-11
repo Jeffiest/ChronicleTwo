@@ -350,7 +350,7 @@ public:
     s16               chara_kind;    /**< What the character is in its chain, an ACTION_CHARA_KIND value. */
     sceVu0FVECTOR     front_vec;     /**< Direction that the character faces. */
     s32               mask_flag;     /**< Bits that monster scripts set and clear. */
-    s32               attack_type;   /**< Attack type that the action script reads. */
+    s32               attack_type;   /**< Attack type that the action script reads. @see WEAPON_ATTACK_TYPE */
     s32               move_type;     /**< Way of moving, an ACTION_MOVE_TYPE value. */
     float             max_speed;     /**< Speed at which the ridepod moves at its fastest. */
     s32               unk_6b0;
