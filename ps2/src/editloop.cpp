@@ -2757,7 +2757,7 @@ int EditMapJump(int map_no) {
     InitSphida();
     mgWaitFrame();
 
-    if (GetMapType(map_no) == 1) {
+    if (GetMapType(map_no) == MAP_TYPE_GEORAMA) {
         SetDataPacket(2);
     } else {
         SetDataPacket(1);

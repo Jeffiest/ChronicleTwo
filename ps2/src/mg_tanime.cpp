@@ -143,8 +143,6 @@ static int texBugPatch;
 /** Record the script is building. */
 static mgCTexAnimeData nowTexData;
 
-#pragma optimization_level 2
-
 mgCTexAnimeData::mgCTexAnimeData() {
     Initialize();
 }

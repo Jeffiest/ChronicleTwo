@@ -141,9 +141,9 @@ static PAD_TABLE_ENTRY pad_table[] = {
     {PAD_BTN_CANCEL,             PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
     {PAD_BTN_R1_HELD,            PAD_CTRL_TRIGGER_ON,   PAD_R1      },
     {PAD_BTN_L1_HELD,            PAD_CTRL_TRIGGER_ON,   PAD_L1      },
-    {4,                          PAD_CTRL_TRIGGER_DOWN, PAD_L2      },
+    {PAD_BTN_L2,                 PAD_CTRL_TRIGGER_DOWN, PAD_L2      },
     {PAD_BTN_MENU,               PAD_CTRL_TRIGGER_DOWN, PAD_TRIANGLE},
-    {6,                          PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
+    {PAD_BTN_R2,                 PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
     {PAD_BTN_UP,                 PAD_CTRL_TRIGGER_DOWN, PAD_UP      },
     {PAD_BTN_DOWN,               PAD_CTRL_TRIGGER_DOWN, PAD_DOWN    },
     {PAD_BTN_RIGHT,              PAD_CTRL_TRIGGER_DOWN, PAD_RIGHT   },
@@ -164,8 +164,8 @@ static PAD_TABLE_ENTRY pad_table[] = {
     {PAD_BTN_ACTION_CONFIRM,     PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
     {PAD_BTN_ACTION_SQUARE,      PAD_CTRL_TRIGGER_DOWN, PAD_SQUARE  },
     {PAD_BTN_ACTION_CANCEL,      PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
-    {53,                         PAD_CTRL_TRIGGER_ON,   PAD_L1      },
-    {54,                         PAD_CTRL_TRIGGER_ON,   PAD_R1      },
+    {PAD_BTN_L1_HELD_2,          PAD_CTRL_TRIGGER_ON,   PAD_L1      },
+    {PAD_BTN_R1_HELD_2,          PAD_CTRL_TRIGGER_ON,   PAD_R1      },
     {55,                         PAD_CTRL_TRIGGER_DOWN, PAD_SELECT  },
     {PAD_BTN_ACTION_HELD,        PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
     {PAD_BTN_EDIT_TURN_DECREASE, PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
@@ -188,15 +188,15 @@ static PAD_TABLE_ENTRY pad_table[] = {
  * Mappings from logical analog controls to pad stick axes.
  */
 static ANALOG_TABLE_ENTRY analog_table[] = {
-    {PAD_ANALOG_LEFT_X,  PAD_CTRL_AXIS_LX},
-    {PAD_ANALOG_LEFT_Y,  PAD_CTRL_AXIS_LY},
-    {PAD_ANALOG_RIGHT_X, PAD_CTRL_AXIS_RX},
-    {PAD_ANALOG_RIGHT_Y, PAD_CTRL_AXIS_RY},
-    {4,                  PAD_CTRL_AXIS_LY},
-    {5,                  PAD_CTRL_AXIS_LX},
-    {6,                  PAD_CTRL_AXIS_RX},
-    {7,                  PAD_CTRL_AXIS_RY},
-    {-1,                 -1              },
+    {PAD_ANALOG_LEFT_X,    PAD_CTRL_AXIS_LX},
+    {PAD_ANALOG_LEFT_Y,    PAD_CTRL_AXIS_LY},
+    {PAD_ANALOG_RIGHT_X,   PAD_CTRL_AXIS_RX},
+    {PAD_ANALOG_RIGHT_Y,   PAD_CTRL_AXIS_RY},
+    {PAD_ANALOG_LEFT_Y_2,  PAD_CTRL_AXIS_LY},
+    {PAD_ANALOG_LEFT_X_2,  PAD_CTRL_AXIS_LX},
+    {PAD_ANALOG_RIGHT_X_2, PAD_CTRL_AXIS_RX},
+    {PAD_ANALOG_RIGHT_Y_2, PAD_CTRL_AXIS_RY},
+    {-1,                   -1              },
 };
 
 extern CFont     Font;

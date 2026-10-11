@@ -3156,9 +3156,9 @@ int CMenuTreeMap::Step() {
 
                             if (target == MenuDngMap->GetEntranceRoomGlid() &&
                                 ((0 <= current_map && current_map < 11 &&
-                                  (GetMapType(MenuMainScene->now_sub_map_no) == 2 ||
-                                   GetMapType(MenuMainScene->now_sub_map_no) == 4 ||
-                                   GetMapType(MenuMainScene->now_sub_map_no) == 6)) ||
+                                  (GetMapType(MenuMainScene->now_sub_map_no) == MAP_TYPE_GEORAMA_INTERIOR ||
+                                   GetMapType(MenuMainScene->now_sub_map_no) == MAP_TYPE_INTERIOR ||
+                                   GetMapType(MenuMainScene->now_sub_map_no) == MAP_TYPE_FUTURE_INTERIOR)) ||
                                  (current_map == 1 && MenuMainScene->now_sub_map_no == 100))) {
                                 action = TREE_MAP_ACTION_CLOSE;
                             }

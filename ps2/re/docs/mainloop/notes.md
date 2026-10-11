@@ -81,8 +81,12 @@ InitPadTable calls `RegisterBtn(no, button, trigger)`; CPadControl::Update reads
 0x34, 0x11 or 1 the button is overwritten with at_974[lang != 0] = {0x40,0x20}; for rows
 0x79,0x78,0x68,0x67,0x66,0x38,0x32,0x14,0x10,0 with at_973[lang != 0] = {0x20,0x40} (circle/cross
 swap for non-Japanese). The trigger/axis enums belong to padcontrol; not declared here.
-analog_table: ANALOG_TABLE_ENTRY {no, axis} rows {0,1},{1,2},{2,3},{3,4},{4,2},{5,1},{6,3},{7,4},
-{-1,-1} (0x48). CPadControl::Update maps axis 4 -> RY, 3 -> RX, 2 -> LY (1 presumably LX).
+analog_table: ANALOG_TABLE_ENTRY {no, axis} rows {0,1},{1,2},{2,3},{3,4} (PAD_ANALOG_LEFT_X..RIGHT_Y),
+{4,2} (PAD_ANALOG_LEFT_Y_2), {5,1} (PAD_ANALOG_LEFT_X_2), {6,3} (PAD_ANALOG_RIGHT_X_2), {7,4}
+(PAD_ANALOG_RIGHT_Y_2), {-1,-1} (0x48). CPadControl::Update maps axis 4 -> RY, 3 -> RX, 2 -> LY
+(1 presumably LX).
+pad_table rows for buttons 4 (PAD_BTN_L2), 6 (PAD_BTN_R2), 53 (PAD_BTN_L1_HELD_2) and 54
+(PAD_BTN_R1_HELD_2) use the `PadCtrlButton` names.
 
 ## Enums and values
 - LanguageCode (enum LanguageCodeNo): names from MenuLoop's table at_1305 (Japanese, English,

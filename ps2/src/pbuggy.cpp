@@ -618,7 +618,7 @@ int sgLoopBuggy(SubGameInfo *info) {
     CPadControl *pad = &PadCtrl;
 
     if (IntroHelpMesFlag != 0) {
-        if (pad->Btn(0) != 0) {
+        if (pad->Btn(PAD_BTN_CONFIRM) != 0) {
             message = scene->GetMessage(1);
 
             if (message->select < 0) {
@@ -909,8 +909,8 @@ void CharaControl(CScene *scene, CPadControl *pad) {
             sceVu0SubVector(to_bomb, bomb_position, player_position);
             *(u_long128 *) velocity = *(u_long128 *) player->velocity;
             angle = camera->GetAngle();
-            stick_x = pad->Analog(5);
-            stick_y = pad->Analog(4);
+            stick_x = pad->Analog(PAD_ANALOG_LEFT_X_2);
+            stick_y = pad->Analog(PAD_ANALOG_LEFT_Y_2);
             speed_x = stick_x * cosf(angle) + stick_y * sinf(angle);
             speed_z = -stick_x * sinf(angle) + stick_y * cosf(angle);
             speed_x *= 5.0f;
@@ -922,7 +922,7 @@ void CharaControl(CScene *scene, CPadControl *pad) {
                     speed_z *= 3.0f;
                 }
 
-                if (pad->Btn(1)) {
+                if (pad->Btn(PAD_BTN_CANCEL)) {
                     velocity[1] = 8.0f;
                 }
             }
@@ -946,7 +946,7 @@ void CharaControl(CScene *scene, CPadControl *pad) {
 
             switch (CharaStatus) {
                 case BUGGY_CHARA_FREE:
-                    if (pad->Btn(0) && pad->Btn(0x36) && TakeBombCheck() &&
+                    if (pad->Btn(PAD_BTN_CONFIRM) && pad->Btn(PAD_BTN_R1_HELD_2) && TakeBombCheck() &&
                         mgDistVector(player_position, bomb_position) <= 40.0f &&
                         mgAngleCmp(player_rotation[1], atan2f(to_bomb[0], to_bomb[2]), 2.0f) == 0) {
                         CharaStatus = BUGGY_CHARA_PICKUP_START;
@@ -969,7 +969,7 @@ void CharaControl(CScene *scene, CPadControl *pad) {
 
                     break;
                 case BUGGY_CHARA_CARRYING:
-                    if (pad->Btn(0) != 0) {
+                    if (pad->Btn(PAD_BTN_CONFIRM) != 0) {
                         player->SetMotion("\x94\x9a\x92"
                                           "e\x93\x8a\x82\xb0",
                                           6);
