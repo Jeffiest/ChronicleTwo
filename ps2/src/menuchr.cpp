@@ -66,9 +66,9 @@ static inline u_int align16_blocks(u_int size) {
 }
 
 inline CMenuChrCngMenu::CMenuChrCngMenu() {
-    change_phase = (int) CHR_CNG_PHASE_NONE;
+    change_phase = CHR_CNG_PHASE_NONE;
     change_chara = -1;
-    change_ready = 0;
+    change_ready = false;
     MenuCharaChangePosDataCfgBuffer = NULL;
     unk_118 = 0;
     select = 0;
@@ -79,8 +79,8 @@ inline CMenuChrCngMenu::CMenuChrCngMenu() {
     item_brd_select = 0;
     item_brd_pos = 0;
     open_wait = -1;
-    set_cursor = 1;
-    cursor_wave = 0;
+    set_cursor = true;
+    cursor_wave = 0.0f;
     form = NULL;
     npc_sub_form2 = NULL;
     npc_chara_form = NULL;
@@ -101,35 +101,35 @@ inline CMenuChrCngMenu::CMenuChrCngMenu() {
     cmd_part[2] = NULL;
     cmd_part[3] = NULL;
     point_gauge_part = NULL;
-    set_cursor = 0;
+    set_cursor = false;
     gauge_part[0] = NULL;
     gauge_part[1] = NULL;
     gauge_part[2] = NULL;
     gauge[0] = NULL;
     gauge[1] = NULL;
     gauge[2] = NULL;
-    item_brd_arrived = 0;
-    party_info = 0;
-    npc_data = 0;
-    mes_data = 0;
+    item_brd_arrived = false;
+    party_info = NULL;
+    npc_data = NULL;
+    mes_data = NULL;
     sys_mes = NULL;
     npc_no = 0;
-    sub_menu = -1;
-    sub_menu_next = -1;
+    sub_menu = CHR_CNG_SUB_MENU_NONE;
+    sub_menu_next = CHR_CNG_SUB_MENU_NONE;
     face_state = -1;
     face_chara = -1;
     face_loaded = 0;
     face_img = NULL;
     npc_chara = NULL;
-    npc_loading = 0;
-    npc_loaded = 0;
+    npc_loading = false;
+    npc_loaded = false;
     npc_wait = 0;
-    npc_show = 0;
-    npc_y = 0;
+    npc_show = false;
+    npc_y = 0.0f;
     InitStarInfo();
-    key_arg_no = 0;
-    close_on_end = 0;
-    got_item = 0;
+    key_arg_no = CHR_CNG_PAGE_SELECT;
+    close_on_end = false;
+    got_item = false;
     gift_item = 0;
     gift_num = 0;
     memset(clut_storage, 0, sizeof(clut_storage));
@@ -205,39 +205,6 @@ static inline unsigned int blocks_for(unsigned int size) {
 
 /**
  *
- * Number of monster memo entries.
- *
- */
-const int kMonsterMemoCount = 0x119;
-/**
- *
- * Frames waited before starting a monster preview load.
- *
- */
-const int kModelDelayFrames = 20;
-/**
- *
- * Maximum value of the monster preview display wait counter.
- *
- */
-const int kModelFrameCap = 20;
-
-/**
- *
- * Commands used to close the monster book or turn its page.
- *
- */
-enum {
-    kCmdClose = 0xA,
-    kCmdTurnPage = 0x64
-};
-
-enum {
-    kEnvStepSunMoon = 0x38
-};
-
-/**
- *
  * Non-zero while the party townsperson model is loading.
  *
  */
@@ -249,58 +216,6 @@ static signed char MenuNPCLoadFlag;
  *
  */
 static int mos_effect_read_num;
-
-void SetupUnitMan(CScene *scene, CUserDataManager *user_data, int unit, ROBO_INFO_DATA *robo_info);
-void GetBajjiPosition(CMenuPosDataForm *form, int slot, int unused, int *pos);
-void SetSwordBlurEffect(CCharacter2 *chara, mgCMemory *stack, int blur_type);
-
-/**
- *
- * Stores a four-component camera point.
- *
- */
-struct CameraPoint {
-    float xyzw[4]; /**< Camera-space point components. */
-};
-
-/**
- *
- * Message numbers of the monster box's badge commands.
- *
- */
-enum MOS_SELECT_COMMAND_MSG {
-    MOS_SELECT_CMD_TRANSFORM = 0x14B6,   /**< Turns Monica into one of the badge's monsters. */
-    MOS_SELECT_CMD_STATUS = 0x14B7,      /**< Shows the status of the badge's monster. */
-    MOS_SELECT_CMD_CLASS_CHANGE = 0x14B8 /**< Moves the badge on to a higher class of monster. */
-};
-
-/**
- *
- * Page of the monster box shown, as CBaseMenuClass::key_arg_no holds it.
- *
- */
-enum MOS_SELECT_PAGE {
-    MOS_SELECT_PAGE_BADGE = 0,   /**< The cursor moves over the badges. */
-    MOS_SELECT_PAGE_COMMAND = 1, /**< A command of the chosen badge is picked and run. */
-    MOS_SELECT_PAGE_STATUS = 2   /**< The status of the badge's monster forms is shown. */
-};
-
-/**
- *
- * Step of the badge command page, as CBaseMenuClass::step holds it while key_arg_no is MOS_SELECT_PAGE_COMMAND.
- *
- */
-enum MOS_SELECT_COMMAND_STEP {
-    MOS_SELECT_STEP_COMMAND = 0,            /**< A badge command is chosen. */
-    MOS_SELECT_STEP_ERROR = 1,              /**< A message that the command is not possible waits for a button. */
-    MOS_SELECT_STEP_CLASS_SELECT = 10,      /**< The monster to change class to is chosen. */
-    MOS_SELECT_STEP_CLASS_CONFIRM = 11,     /**< The class change waits for its yes/no answer. */
-    MOS_SELECT_STEP_CLASS_EFFECT = 12,      /**< The class-change effect loads and plays. */
-    MOS_SELECT_STEP_CLASS_DONE = 13,        /**< The class change's end message waits for a button. */
-    MOS_SELECT_STEP_CLASS_REWARD = 14,      /**< The monster-drop reward message waits for a button. */
-    MOS_SELECT_STEP_CLASS_LAST_REWARD = 15, /**< The last class's item reward message waits for a button. */
-    MOS_SELECT_STEP_FORM_SELECT = 20        /**< The monster form to transform into is chosen. */
-};
 
 /**
  *
@@ -314,38 +229,28 @@ static MOS_HENGE_PARAM *mos_effect_henge_param;
  * Script buffer for each loaded transformation effect.
  *
  */
-static u8 *mos_effect_readbuff1[4];
+static u8 *mos_effect_readbuff1[MONSTER_EFFECT_NUM];
 
 /**
  *
  * Script byte count for each loaded transformation effect.
  *
  */
-static int mos_effect_readbuff1_size[4];
+static int mos_effect_readbuff1_size[MONSTER_EFFECT_NUM];
 
 /**
  *
  * Pack buffer for each loaded transformation effect.
  *
  */
-static u8 *mos_effect_readbuff2[4];
+static u8 *mos_effect_readbuff2[MONSTER_EFFECT_NUM];
 
 /**
  *
  * Pack byte count for each loaded transformation effect.
  *
  */
-static int mos_effect_readbuff2_size[4];
-
-/**
- *
- * Dimensions of the monster badge grid.
- *
- */
-enum {
-    MOS_SELECT_GRID_COLUMNS = 4, /**< Columns of monster badges. */
-    MOS_SELECT_GRID_ROWS = 3     /**< Rows of monster badges. */
-};
+static int mos_effect_readbuff2_size[MONSTER_EFFECT_NUM];
 
 /**
  *
@@ -770,15 +675,6 @@ static s8 menu_debug_npcselect;
 
 /**
  *
- * Number of resistance or weakness icons that the monster book can display.
- *
- */
-enum {
-    MOS_BOOK_AFFINITY_NUM = 8
-};
-
-/**
- *
  * Page counter format of the monster book for each supported language.
  *
  */
@@ -798,8 +694,6 @@ static char *monstere_file_template[LANG_CHINESE + 1] = {
  *
  */
 static int menu_debug_select__2;
-
-int CosutmeSelDefaultSet(int costume_id, short *costume_list);
 
 /**
  *
@@ -840,9 +734,7 @@ static CMenuChrCngMenu *ChrChangMenuPt;
  */
 static u8 MenuGetPartySeFlag;
 
-static int  MenuMemoryDivide(mgCMemory *memory, mgCMemory **list, int chara);
-static void MenuItemCharaDataLoadPack(int chara_no, CActionChara *chara, CActionChara *body, int part,
-                                      u_int *pack, mgCMemory *stack, int tex_block, int blur_type);
+
 /**
  *
  * Quadword capacities of the ridepod menu work buffers.
@@ -858,21 +750,20 @@ static const u16 menu_robo_memorytbl[MENU_CHARA_LOAD_MAX] = {
  */
 static const u16 menu_chr_memorytbl[MENU_CHARA_LOAD_MAX] = {
     0x1B80, 0x9AC0, 0x1C84, 0x11C0, 0x0BC0, 0x26C0, 0x0708};
-int ReadBGSync();
 
 void InitMenuBGReadInfo2(MENU_BGREAD_INFO2 *info) {
-    info->reading = 0;
+    info->reading = false;
     info->chara = NULL;
     info->name[0] = 0;
     info->path[0] = 0;
 }
 
 int MenuLoadFileCheck(MENU_BGREAD_INFO2 **slots) {
-    int found = 0;
+    int found = false;
 
-    for (int i = 0; i < 7; i++) {
-        if (slots[i] != NULL && slots[i]->reading != 0) {
-            found = 1;
+    for (int i = 0; i < MENU_CHARA_LOAD_MAX; i++) {
+        if (slots[i] != NULL && slots[i]->reading) {
+            found = true;
         }
     }
 
@@ -880,7 +771,7 @@ int MenuLoadFileCheck(MENU_BGREAD_INFO2 **slots) {
 }
 
 void MenuBGReadInfo2Malloc(mgCMemory *memory, int *wanted) {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < MENU_CHARA_LOAD_MAX; i++) {
         if (wanted[i] != 0) {
             MenuCharaBuild2[i] = (MENU_BGREAD_INFO2 *) memory->Alloc(8);
             InitMenuBGReadInfo2(MenuCharaBuild2[i]);
@@ -903,16 +794,17 @@ short ConvertCharaLoadDataPhase(int a0, int a1) {
 
 int CheckBattleLoop() {
     if (MenuCommonInfo == NULL) {
-        return 1;
+        return true;
     }
 
     short menu_type = MenuCommonInfo->open_type;
 
-    if (menu_type == 1 || menu_type == 17 || menu_type == 14 || menu_type == 21) {
-        return 1;
+    if (menu_type == MENU_OPEN_MAIN_DUNGEON || menu_type == MENU_OPEN_MAIN_DUNGEON_ITEM_OVER ||
+        menu_type == MENU_OPEN_CHARA_CHANGE_DUNGEON || menu_type == MENU_OPEN_MAIN_CHARA_BG_DUNGEON) {
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 void SetMenuLoadItemNo(int who) {
@@ -924,8 +816,8 @@ void SetMenuLoadItemNo(int who) {
     }
 
     switch (who) {
-        case 0:
-        case 1: {
+        case USER_CHARA_MAX:
+        case USER_CHARA_MONICA: {
             CHARA_DATA *chara = user_data->GetCharaDataPtr(who);
 
             do {
@@ -935,7 +827,7 @@ void SetMenuLoadItemNo(int who) {
 
             break;
         }
-        case 2: {
+        case USER_CHARA_ROBO: {
             ROBO_DATA &robo = user_data->robo_data;
             MenuLoadItemNo[0] = robo.parts[3].item_no;
             MenuLoadItemNo[1] = robo.parts[0].item_no;
@@ -947,7 +839,7 @@ void SetMenuLoadItemNo(int who) {
         }
     }
 
-    while (count < 12) {
+    while (count < MENU_LOAD_ITEM_MAX) {
         MenuLoadItemNo[count] = 0;
         count++;
     }
@@ -1003,21 +895,19 @@ static int MenuMemoryDivide(mgCMemory *memory, mgCMemory **list, int chara) {
 
 void MenuMemoryAdjust(mgCMemory *pool, mgCMemory *rest, mgCMemory *buffers, int chara) {
     int        free_blocks = pool->stack_size - pool->stack_used;
-    mgCMemory *list[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-    list[0] = buffers;
-    list[1] = buffers + 1;
-    list[2] = buffers + 2;
-    list[3] = buffers + 3;
-    list[4] = buffers + 4;
-    list[5] = buffers + 5;
-    list[6] = buffers + 6;
+    mgCMemory *list[MENU_CHARA_LOAD_MAX] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    list[0] = &buffers[0];
+    list[1] = &buffers[1];
+    list[2] = &buffers[2];
+    list[3] = &buffers[3];
+    list[4] = &buffers[4];
+    list[5] = &buffers[5];
+    list[6] = &buffers[6];
     int used = MenuMemoryDivide(pool, list, chara);
     rest->stSetBuffer(buffers->stack + buffers->stack_used + used,
                       free_blocks - used);
 
-    if (strlen("LOAD STACK") < 16) {
-        strcpy(rest->name, "LOAD STACK");
-    }
+    SetMemoryName(rest, "LOAD STACK");
 
     rest->stack_used = 0;
     rest->lock = 0;
@@ -1030,7 +920,7 @@ void DeleteMonsterEffect() {
         FxScriptMan->ClearBaseFromLevel(2, NULL, -1);
     }
 
-    mgTexManager.DeleteBlock(0xAA);
+    mgTexManager.DeleteBlock(MONSTER_EFFECT_TEX_BLOCK);
 }
 
 void SetMessagePositionNPCForm(CMenuPosDataForm *form, CDC2Mes *mes) {
@@ -1054,19 +944,17 @@ void SetMessagePositionNPCForm(CMenuPosDataForm *form, CDC2Mes *mes) {
 }
 
 void AdjustNPCTalk(CDC2Mes *mes, CCharacter2 *npc) {
-    ClsMes *bubble = (ClsMes *) mes;
-
-    if (bubble == NULL || npc == NULL) {
+    if (mes == NULL || npc == NULL) {
         return;
     }
 
     int screen_pos[4];
-    bubble->fukidashi_pos = 5;
-    bubble->tail_on = 1;
+    mes->fukidashi_pos = 5;
+    mes->tail_on = 1;
     GetScrPosFromChar(npc, screen_pos);
     screen_pos[2] = 0;
     screen_pos[3] = 0xBE;
-    bubble->AutoSet(screen_pos);
+    mes->AutoSet(screen_pos);
 }
 
 void CMenuChrCngMenu::AttachForm() {
@@ -1074,7 +962,7 @@ void CMenuChrCngMenu::AttachForm() {
     int  i;
     int  j;
 
-    form = (CMenuPosDataForm *) MenuPosData->GetFormInfo("chr_bg");
+    form = MenuPosData->GetFormInfo("chr_bg");
 
     if (form != NULL) {
         gauge_part[0] = form->GetPartInfo("hpfill0");
@@ -1082,20 +970,20 @@ void CMenuChrCngMenu::AttachForm() {
         gauge_part[2] = form->GetPartInfo("hpfill2");
     }
 
-    (&npc_mes_form)[0] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin");
-    (&npc_mes_form)[1] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin_bg");
-    (&npc_mes_form)[2] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polychr");
-    (&npc_mes_form)[3] = (CMenuPosDataForm *) MenuPosData->GetFormInfo("polywin_chrhide");
-    (&npc_mes_form)[2]->SetActionCharaPtr(NULL, 0, -1);
+    npc_mes_form = MenuPosData->GetFormInfo("polywin");
+    npc_sub_form = MenuPosData->GetFormInfo("polywin_bg");
+    npc_chara_form = MenuPosData->GetFormInfo("polychr");
+    npc_sub_form2 = MenuPosData->GetFormInfo("polywin_chrhide");
+    npc_chara_form->SetActionCharaPtr(NULL, 0, -1);
 
-    for (i = 0; i < 5; i++) {
+    for (i = 0; i < CHR_CNG_SELECT_NPC + 1; i++) {
         sprintf(name, "namep%d", i);
         chara_pos[i] = MenuPosData->GetEtcTbl(name);
     }
 
     point_gauge_part = form->GetPartInfo("stbar");
 
-    for (j = 0; j < 4; j++) {
+    for (j = 0; j < CHR_CNG_NPC_COMMAND_NUM; j++) {
         sprintf(name, "cmd%d", j);
         cmd_part[j] = form->GetPartInfo(name);
     }
@@ -1204,7 +1092,7 @@ void CMenuChrCngMenu::EnterDataMenu(u_char *pack) {
     MenuCommandAnalyzeInfo.mes_buff[0] = sys_mes;
     MenuCommandAnalyzeInfo.mes_buff[1] = mes_data;
 
-    if (key_arg_no == 2) {
+    if (key_arg_no == CHR_CNG_PAGE_NPC_JOIN) {
         MenuDCMsg[0]->SetBuff(mes_data);
     }
 
@@ -1263,32 +1151,32 @@ void CMenuChrCngMenu::LoadNPCFaceData(mgCMemory *memory, int mode) {
     face_chara = MenuUserDataManPtr->NowPartyCharaID();
 
     if (face_chara < 0) {
-        face_loaded = 1;
+        face_loaded = MENU_FILE_LOAD_DIRECT;
         face_state = -1;
     } else {
         face_state = 0;
 
         if (face_chara <= 0) {
-            face_chara = 1;
+            face_chara = PARTY_NPC_CEDRIC;
         }
 
-        if (face_chara > 26) {
-            face_chara = 26;
+        if (face_chara > PARTY_NPC_LIN) {
+            face_chara = PARTY_NPC_LIN;
         }
 
         sprintf(path, "npcface/%d.img", face_chara);
         memory->Align64();
         face_img = reinterpret_cast<u8 *>(memory->stGetTop());
         size = LoadFileMenu(path, (u_long128 *) face_img, mode);
-        memory->Alloc((size & 0xF) ? (size >> 4) + 1 : size >> 4);
+        memory->Alloc(blocks_for(size));
     }
 }
 
 void CMenuChrCngMenu::EnterNPCFaceData() {
     signed char load_state;
 
-    if ((face_state == 0) && ((load_state = face_loaded, (load_state == 1)) ||
-                              ((load_state == 0) && (ReadBGSync() == 0)))) {
+    if ((face_state == 0) && ((load_state = face_loaded, (load_state == MENU_FILE_LOAD_DIRECT)) ||
+                              ((load_state == MENU_FILE_LOAD_BG) && (ReadBGSync() == 0)))) {
         mgTexManager.EnterIMGFile(face_img, tex_block[0], NULL, NULL);
         face_state = 1;
         ExeScript("NPCFACEEND");
@@ -1305,10 +1193,10 @@ int CMenuChrCngMenu::LoadBGNPCModel(int restart_read) {
     stack->Alloc(0xCD00);
     int rest = stack->stGetRest();
     npc_model_stack.stSetBuffer(stack->stGetTop(), rest);
-    npc_loading = 0;
-    npc_loaded = 0;
+    npc_loading = false;
+    npc_loaded = false;
     npc_wait = 0;
-    npc_show = 0;
+    npc_show = false;
 
     if (restart_read) {
         BreakReadBG();
@@ -1319,7 +1207,7 @@ int CMenuChrCngMenu::LoadBGNPCModel(int restart_read) {
     npc_y = 0.0f;
 
     if (size > 0) {
-        npc_loading = 1;
+        npc_loading = true;
     } else {
         npc_chara = NULL;
     }
@@ -1341,7 +1229,7 @@ int CMenuChrCngMenu::CheckBGNPCModel() {
         return 0;
     }
 
-    if (key_arg_no == 3) {
+    if (key_arg_no == CHR_CNG_PAGE_NPC) {
         npc_y = npc_y + ((-2.8f - npc_y) / 6.0f);
     } else {
         npc_y = npc_y + ((-16.6f - npc_y) / 6.0f);
@@ -1351,55 +1239,55 @@ int CMenuChrCngMenu::CheckBGNPCModel() {
     position[1] = npc_y;
 
     if (load_result == 1) {
-        npc_loaded = 1;
+        npc_loaded = true;
         npc_wait = 0;
-        ((CCharacter2 *) npc_chara)->SetRotation(0.0f, -0.07853982f, 0.0f);
-        (&npc_mes_form)[2]->counter = 0;
+        npc_chara->SetRotation(0.0f, -0.07853982f, 0.0f);
+        npc_chara_form->counter = 0;
     }
 
-    if (npc_loaded != 0) {
-        ((CCharacter2 *) npc_chara)->SetScale(1.0f, 1.0f, 1.0f);
+    if (npc_loaded) {
+        npc_chara->SetScale(1.0f, 1.0f, 1.0f);
 
-        if (npc_no == 9) {
-            MenuAdjustPolygonScale((CCharacter2 *) npc_chara, 5.655f);
+        if (npc_no == PARTY_NPC_PAU) {
+            MenuAdjustPolygonScale(npc_chara, 5.655f);
         } else {
-            MenuAdjustPolygonScale((CCharacter2 *) npc_chara, 6.96f);
+            MenuAdjustPolygonScale(npc_chara, 6.96f);
         }
 
-        ((CCharacter2 *) npc_chara)->SetPosition(position);
-        ((CCharacter2 *) npc_chara)->Step();
+        npc_chara->SetPosition(position);
+        npc_chara->Step();
 
-        if ((&npc_mes_form)[2]->counter >= 0xF && (&npc_mes_form)[1]->y < 60.0f) {
+        if (npc_chara_form->counter >= 0xF && npc_sub_form->y < 60.0f) {
             ExeScript("CHRFADEIN");
         }
 
         if (npc_wait < 0x15) {
             npc_wait = npc_wait + 1;
         } else {
-            npc_show = 1;
+            npc_show = true;
         }
 
-        if (npc_show != 0) {
-            (&npc_mes_form)[2]->SetActionCharaPtr(npc_chara, tex_block[1], -1);
+        if (npc_show) {
+            npc_chara_form->SetActionCharaPtr(npc_chara, tex_block[1], -1);
         }
 
-        if (key_arg_no != 3) {
-            npc_show = 0;
+        if (key_arg_no != CHR_CNG_PAGE_NPC) {
+            npc_show = false;
         }
 
         if (-166.0f < form->y) {
-            npc_show = 0;
+            npc_show = false;
         }
 
-        if (select != 4) {
-            npc_show = 0;
+        if (select != CHR_CNG_SELECT_NPC) {
+            npc_show = false;
         }
 
-        if (36.0f < (&npc_mes_form)[2]->y) {
-            npc_show = 0;
+        if (36.0f < npc_chara_form->y) {
+            npc_show = false;
         }
 
-        (&npc_mes_form)[2]->draw_flag = npc_show != 0;
+        npc_chara_form->draw_flag = npc_show != 0;
     }
 
     return load_result;
@@ -1456,21 +1344,21 @@ int CMenuChrCngMenu::KeyChangeMain() {
     CDC2Mes       *cmd_mes = MenuDCMsg[4];
     CDC2Mes       *npc_mes = MenuDCMsg[5];
     CDC2Mes       *repair_mes = MenuDCMsg[7];
-    int            action = 0;
+    int            action = CHR_CNG_ACTION_NONE;
     CGameDataUsed *item = NULL;
-    int            cancelled = 0;
+    int            cancelled = false;
     static s8      SelectedCmdNo = -1;
 
     switch (key_arg_no) {
-        case 2:
+        case CHR_CNG_PAGE_NPC_JOIN:
             if (buttons) {
-                action = 0x1E;
+                action = CHR_CNG_ACTION_NPC_PAGE;
             }
 
             break;
-        case 3:
+        case CHR_CNG_PAGE_NPC:
             switch (step) {
-                case 0: {
+                case CHR_CNG_NPC_STEP_COMMAND: {
                     int last_cmd = npc_data->ability_num - 1;
 
                     if (last_cmd < 0) {
@@ -1514,16 +1402,16 @@ int CMenuChrCngMenu::KeyChangeMain() {
                             switch (buttons) {
                                 case MENU_PUSH_BUTTON_DECIDE:
                                 case MENU_PUSH_BUTTON_TRIANGLE:
-                                    action = 5;
+                                    action = CHR_CNG_ACTION_REJECT;
 
                                     if (npc_data->ability_num > 0) {
-                                        action = 100;
+                                        action = CHR_CNG_ACTION_ABILITY;
                                         SelectedCmdNo = cmd_mes->GetMsgCursor();
                                     }
 
                                     break;
                                 case MENU_PUSH_BUTTON_CANCEL:
-                                    action = 0x3C;
+                                    action = CHR_CNG_ACTION_NPC_PAGE_END;
                                     break;
                             }
 
@@ -1533,31 +1421,31 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                     break;
                 }
-                case 1:
-                case 2:
+                case CHR_CNG_NPC_STEP_NO_POINT:
+                case CHR_CNG_NPC_STEP_RESULT:
                     if (buttons) {
-                        cancelled = 1;
-                        action = 0x1E;
+                        cancelled = true;
+                        action = CHR_CNG_ACTION_NPC_PAGE;
 
                         if (close_on_end) {
                             mode = MENU_ASK_MODE_CLOSE;
                             ExeScript("GET_P_END");
-                            action = -1;
-                            MenuArg.end_code = 5;
+                            action = CHR_CNG_ACTION_CLOSED;
+                            MenuArg.end_code = MENU_END_DNG_MOVE;
                             MenuArg.result[0] = 1;
                             MenuArg.result[1] = 1;
                             MenuArg.result[2] = 0;
                         }
 
                         if (got_item) {
-                            step = 3;
+                            step = CHR_CNG_NPC_STEP_GOT_ITEM;
                         }
                     }
 
                     break;
-                case 3:
+                case CHR_CNG_NPC_STEP_GOT_ITEM:
                     break;
-                case 10: {
+                case CHR_CNG_NPC_STEP_CONFIRM: {
                     int widest;
 
                     if (npc_mes->page_num <= 0) {
@@ -1579,46 +1467,46 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             if (cursor - (widest - 2) == 0) {
-                                action = 0x5A;
+                                action = CHR_CNG_ACTION_USE_ABILITY;
 
-                                if (npc_no == 1) {
+                                if (npc_no == PARTY_NPC_CEDRIC) {
                                     if (SelectedCmdNo == 0) {
-                                        action = 0xC8;
+                                        action = CHR_CNG_ACTION_REPAIR_WEAPON;
                                     }
 
                                     if (SelectedCmdNo == 1) {
-                                        action = 0xC9;
+                                        action = CHR_CNG_ACTION_REPAIR_ARM;
                                     }
                                 }
 
                                 break;
                             }
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x1E;
-                            cancelled = 1;
+                            action = CHR_CNG_ACTION_NPC_PAGE;
+                            cancelled = true;
                             break;
                     }
 
                     break;
                 }
-                case 11:
+                case CHR_CNG_NPC_STEP_IDLE:
                     break;
-                case 20:
+                case CHR_CNG_NPC_STEP_REPAIR_SELECT:
                     MenuItemBrdKey(keys, &item_brd_select, &item_brd_pos, 0);
 
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                         case MENU_PUSH_BUTTON_TRIANGLE:
                             item = MenuDrawItemInfo[item_brd_select];
-                            action = 5;
+                            action = CHR_CNG_ACTION_REJECT;
 
                             if (item != NULL && item->IsRepair()) {
-                                action = 0x5A;
+                                action = CHR_CNG_ACTION_USE_ABILITY;
                             }
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x1E;
+                            action = CHR_CNG_ACTION_NPC_PAGE;
                             ExeScript("BACK_NPCVIEW");
                             MenuCommonInfo->SetWakuType(-1);
                             break;
@@ -1628,7 +1516,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             break;
-        case 1: {
+        case CHR_CNG_PAGE_CONFIRM: {
             int answer = cmd_mes->YesNoCursor();
 
             switch (buttons) {
@@ -1636,17 +1524,17 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 case MENU_PUSH_BUTTON_TRIANGLE:
                 case MENU_PUSH_BUTTON_SQUARE:
                     if (answer == 0) {
-                        action = 0x14;
+                        action = CHR_CNG_ACTION_CHANGE;
                         break;
                     }
                 case MENU_PUSH_BUTTON_CANCEL:
-                    action = 0x50;
+                    action = CHR_CNG_ACTION_CHANGE_CANCEL;
                     break;
             }
 
             break;
         }
-        case 0:
+        case CHR_CNG_PAGE_SELECT:
             if (change_phase) {
                 keys = 0;
             }
@@ -1662,7 +1550,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             if (menu_debug_flag) {
-                if (select != 4) {
+                if (select != CHR_CNG_SELECT_NPC) {
                     int lr = MenuCommonInfo->CheckLRKey();
 
                     if (lr & MENU_SELECT_KEY_R1 || lr & MENU_SELECT_KEY_RIGHT) {
@@ -1674,14 +1562,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (MenuDebugChangeSelectMode < 0) {
-                        MenuDebugChangeSelectMode = 2;
+                        MenuDebugChangeSelectMode = MENU_DEBUG_CHANGE_MASK;
                     }
 
-                    if (MenuDebugChangeSelectMode > 2) {
-                        MenuDebugChangeSelectMode = 0;
+                    if (MenuDebugChangeSelectMode > MENU_DEBUG_CHANGE_MASK) {
+                        MenuDebugChangeSelectMode = MENU_DEBUG_CHANGE_PARTY;
                     }
 
-                    if (MenuDebugChangeSelectMode == 0) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_PARTY) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1691,23 +1579,23 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
-                        if (buttons & MENU_PUSH_BUTTON_DECIDE && MenuDebugCharaChangeSelect < 4) {
+                        if (buttons & MENU_PUSH_BUTTON_DECIDE && MenuDebugCharaChangeSelect < USER_CHARA_NUM) {
                             MenuUserDataManPtr->JoinPartyMember(MenuDebugCharaChangeSelect);
                         }
 
-                        if (buttons & MENU_PUSH_BUTTON_CANCEL && MenuDebugCharaChangeSelect < 4) {
+                        if (buttons & MENU_PUSH_BUTTON_CANCEL && MenuDebugCharaChangeSelect < USER_CHARA_NUM) {
                             MenuUserDataManPtr->LeavePartyMember(MenuDebugCharaChangeSelect);
                         }
                     }
 
-                    if (MenuDebugChangeSelectMode == 1) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_ENABLE) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1717,10 +1605,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
@@ -1733,7 +1621,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
                     }
 
-                    if (MenuDebugChangeSelectMode == 2) {
+                    if (MenuDebugChangeSelectMode == MENU_DEBUG_CHANGE_MASK) {
                         if (lr & MENU_SELECT_KEY_UP) {
                             MenuDebugCharaChangeSelect--;
                         }
@@ -1743,10 +1631,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         }
 
                         if (MenuDebugCharaChangeSelect < 0) {
-                            MenuDebugCharaChangeSelect = 3;
+                            MenuDebugCharaChangeSelect = USER_CHARA_MONSTER;
                         }
 
-                        if (MenuDebugCharaChangeSelect > 3) {
+                        if (MenuDebugCharaChangeSelect > USER_CHARA_MONSTER) {
                             MenuDebugCharaChangeSelect = 0;
                         }
 
@@ -1762,14 +1650,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (buttons & MENU_PUSH_BUTTON_TRIANGLE) {
                         MenuUserDataManPtr->JoinPartyMember(USER_CHARA_MAX);
                         MenuUserDataManPtr->JoinPartyMember(USER_CHARA_MONICA);
-                        MenuUserDataManPtr->EnableCharaChange(0);
-                        MenuUserDataManPtr->EnableCharaChange(1);
-                        MenuUserDataManPtr->EnableCharaChange(2);
-                        MenuUserDataManPtr->EnableCharaChange(3);
-                        MenuUserDataManPtr->EnableCharaChangeMask(0);
-                        MenuUserDataManPtr->EnableCharaChangeMask(1);
-                        MenuUserDataManPtr->EnableCharaChangeMask(2);
-                        MenuUserDataManPtr->EnableCharaChangeMask(3);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MAX);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MONICA);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_ROBO);
+                        MenuUserDataManPtr->EnableCharaChange(USER_CHARA_MONSTER);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MAX);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MONICA);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_ROBO);
+                        MenuUserDataManPtr->EnableCharaChangeMask(USER_CHARA_MONSTER);
                     }
                 } else {
                     if (keys & MENU_SELECT_KEY_UP) {
@@ -1780,12 +1668,12 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         menu_debug_npcselect++;
                     }
 
-                    if (menu_debug_npcselect < 1) {
-                        menu_debug_npcselect = 1;
+                    if (menu_debug_npcselect < PARTY_NPC_CEDRIC) {
+                        menu_debug_npcselect = PARTY_NPC_CEDRIC;
                     }
 
-                    if (menu_debug_npcselect >= 0x1B) {
-                        menu_debug_npcselect = 0x1A;
+                    if (menu_debug_npcselect >= PARTY_NPC_LIN + 1) {
+                        menu_debug_npcselect = PARTY_NPC_LIN;
                     }
 
                     if (keys & MENU_SELECT_KEY_RIGHT) {
@@ -1808,19 +1696,19 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         int npc = menu_debug_npcselect;
 
                         if (GetUserDataMan()->GetPartyCharaStatus(npc) == 0) {
-                            GetUserDataMan()->JoinPartyChara(npc, 0x80, 1);
+                            GetUserDataMan()->JoinPartyChara(npc, PARTY_CHARA_STATUS_JOIN, 1);
                         }
 
                         if (menu_debug_npc_decide == 0) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 1);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_IN_PARTY);
                         }
 
                         if (menu_debug_npc_decide == 1) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 2);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_JOINED);
                         }
 
                         if (menu_debug_npc_decide == 2) {
-                            GetUserDataMan()->SetPartyCharaStatus(npc, 4);
+                            GetUserDataMan()->SetPartyCharaStatus(npc, PARTY_CHARA_STATUS_IN_HOUSE);
                         }
                     }
                 }
@@ -1829,7 +1717,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             switch (step) {
-                case 0: {
+                case CHR_CNG_STEP_SELECT: {
                     int last_select = select;
                     int dir = -1;
 
@@ -1878,11 +1766,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (last_select != select) {
                         MenuSePlay(SYSTEM_SE_CURSOR);
 
-                        if (select == 4) {
+                        if (select == CHR_CNG_SELECT_NPC) {
                             MenuDCMsg[0]->SetBuff(mes_data);
                         }
 
-                        if (last_select == 4) {
+                        if (last_select == CHR_CNG_SELECT_NPC) {
                             MenuDCMsg[0]->SetBuff(sys_mes);
                         }
                     }
@@ -1890,31 +1778,31 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             switch (select) {
-                                case 4:
-                                    action = 5;
+                                case CHR_CNG_SELECT_NPC:
+                                    action = CHR_CNG_ACTION_REJECT;
 
                                     if (MenuCommonInfo->open_type != MENU_OPEN_CHARA_CHANGE_DUNGEON && 0 < npc_no) {
-                                        action = 0x22;
+                                        action = CHR_CNG_ACTION_NPC_MENU;
                                     }
 
                                     break;
                                 case USER_CHARA_MONSTER:
-                                    action = 0x32;
+                                    action = CHR_CNG_ACTION_MONSTER_BOX;
                                     break;
                                 default:
-                                    action = 0x46;
+                                    action = CHR_CNG_ACTION_ASK_CHANGE;
                                     break;
                             }
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            action = 0x28;
+                            action = CHR_CNG_ACTION_CLOSE;
 
                             if (MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
-                                action = 5;
+                                action = CHR_CNG_ACTION_REJECT;
 
                                 if (MenuUserDataManPtr->GetHp(MenuUserDataManPtr->active_chr_no) < 1.0f) {
-                                    action = 5;
+                                    action = CHR_CNG_ACTION_REJECT;
                                 } else {
                                     mode = MENU_ASK_MODE_CLOSE;
                                     FadeOutMenu(40, 0.0f);
@@ -1926,10 +1814,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                     break;
                 }
-                case 1: {
+                case CHR_CNG_STEP_NPC_MENU: {
                     int last = 1;
 
-                    if (npc_no == 0x1A) {
+                    if (npc_no == PARTY_NPC_LIN) {
                         last = 0;
                     }
 
@@ -1938,16 +1826,16 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                             if (cursor == 0) {
-                                action = 0x1E;
+                                action = CHR_CNG_ACTION_NPC_PAGE;
                             }
 
                             if (cursor == 1) {
-                                step = 2;
+                                step = CHR_CNG_STEP_NPC_LEAVE;
                                 ExeScript("NPC_\x8A\x4F\x82\xB7\x81\x48");
                                 char *names[1] = {GetNPCName(npc_no)};
                                 cmd_mes->SetMsgItemNo(names, 1);
 
-                                if (party_info->status & 4) {
+                                if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
                                     cmd_mes->MakeMsg(0x1B0);
                                 } else {
                                     cmd_mes->MakeMsg(0x1AF);
@@ -1956,21 +1844,21 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
                             break;
                         case MENU_PUSH_BUTTON_CANCEL:
-                            step = 0;
+                            step = CHR_CNG_STEP_SELECT;
                             ExeScript("NPC_CMDEND");
                             break;
                     }
 
                     break;
                 }
-                case 2: {
+                case CHR_CNG_STEP_NPC_LEAVE: {
                     int answer = cmd_mes->YesNoCursor2(0);
 
-                    if (answer == 1) {
-                        if (party_info->status & 4) {
-                            party_info->status = 4;
+                    if (answer == MES_YESNO_YES) {
+                        if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
+                            party_info->status = PARTY_CHARA_STATUS_IN_HOUSE;
                         } else {
-                            party_info->status = 2;
+                            party_info->status = PARTY_CHARA_STATUS_JOINED;
                             int map_no = MenuNowMapNo;
 
                             if (map_no == SearchMapNo("s07") || map_no == SearchMapNo("s38")) {
@@ -1984,11 +1872,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         npc_mes_cmd = -1;
                         npc_mes_cancel = -1;
                         ExeScript("NPC\x8A\x4F\x82\xB7");
-                        step = 0;
+                        step = CHR_CNG_STEP_SELECT;
                     }
 
-                    if (answer == 2) {
-                        step = 1;
+                    if (answer == MES_YESNO_NO) {
+                        step = CHR_CNG_STEP_NPC_MENU;
                         ExeScript("NPC_\x8A\x4F\x82\xB7\x81\x48"
                                   "END");
                     }
@@ -2003,26 +1891,26 @@ int CMenuChrCngMenu::KeyChangeMain() {
     int active_chara = key_func->GetActiveCharaNo();
 
     switch (action) {
-        case 5:
+        case CHR_CNG_ACTION_REJECT:
             MenuSePlay(SYSTEM_SE_CANCEL);
             break;
-        case 0x22:
-            if (party_info->status & 4) {
+        case CHR_CNG_ACTION_NPC_MENU:
+            if (party_info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
                 ExeScript("NPC_CMD2");
             } else {
                 ExeScript("NPC_CMD");
             }
 
-            if (npc_no == 0x1A) {
+            if (npc_no == PARTY_NPC_LIN) {
                 MenuDCMsg[5]->MakeMsg(0x1B3);
             }
 
             MenuSePlay(SYSTEM_SE_WINDOW);
-            step = 1;
+            step = CHR_CNG_STEP_NPC_MENU;
             npc_mes->point_x = 20;
             npc_mes->point_y = 200;
             break;
-        case 0x1E:
+        case CHR_CNG_ACTION_NPC_PAGE:
             if (mode == MENU_ASK_MODE_OPEN) {
                 break;
             }
@@ -2035,9 +1923,9 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 }
 
                 MenuSePlay(2);
-                key_arg_no = 3;
+                key_arg_no = CHR_CNG_PAGE_NPC;
                 star_stop_wait = 20;
-                step = 0;
+                step = CHR_CNG_NPC_STEP_COMMAND;
                 ExeScript("NPCSETBUF");
 
                 if (cancelled != 1) {
@@ -2065,24 +1953,24 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
                 }
 
-                star_fade_out = 0;
+                star_fade_out = false;
 
                 if (key_func->open_type == MENU_OPEN_CHARA_CHANGE) {
                     cmd_mes->SetMsgCursor(-1);
                 } else {
-                    star_fade_out = 1;
+                    star_fade_out = true;
                 }
 
-                MenuItemBrdCalcManner = 1;
+                MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_JUMP;
                 item_brd_select = 0;
                 item_brd_pos = 0;
-                MenuItemBrdSetInfo(item_brd_select, item_brd_pos, GetNowBagMax(0) / 6, 5);
+                MenuItemBrdSetInfo(item_brd_select, item_brd_pos, GetNowBagMax(ITEM_BOARD_MAIN) / 6, 5);
             } else {
                 MenuSePlay(SYSTEM_SE_CANCEL);
             }
 
             break;
-        case 0x46: {
+        case CHR_CNG_ACTION_ASK_CHANGE: {
             COMMON_GAGE *robo_hp = &MenuUserParam.robo->hp;
 
             if (active_chara == select) {
@@ -2159,7 +2047,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 break;
             }
 
-            key_arg_no = 1;
+            key_arg_no = CHR_CNG_PAGE_CONFIRM;
             ExeScript("\x83\x4C\x83\x83\x83\x89\x83\x60\x83\x46\x83\x93\x83\x57\x8A\x6D\x94\x46");
             cmd_mes->MakeMsg(msgtbl1[select]);
             npc_chara = NULL;
@@ -2171,10 +2059,10 @@ int CMenuChrCngMenu::KeyChangeMain() {
             change_chara = select;
             MENU_LOAD_INFO *load_info = &MenuLoadInfo;
             load_info->chara_no = select;
-            load_info->mode = 2;
+            load_info->mode = MENU_LOAD_MODE_SCENE;
             load_info->request_phase = -1;
             load_info->load_phase = 0;
-            load_info->update_scene = 1;
+            load_info->update_scene = true;
             ReEquipFishingGameWeapon();
             MenuCharaLoadStack.stack_used = 0;
             MenuCharaLoadStack.lock = 0;
@@ -2184,29 +2072,29 @@ int CMenuChrCngMenu::KeyChangeMain() {
             switch (change_chara) {
                 case USER_CHARA_MAX:
                 case USER_CHARA_MONICA:
-                    load_info->load_all = 1;
+                    load_info->load_all = true;
                     load_info->request_phase = -1;
                     MenuItemCharaDataLoad(&MenuCharaLoadStack, change_chara, MenuCharaBuild2, 1);
                     break;
                 case USER_CHARA_ROBO:
-                    load_info->load_all = 1;
+                    load_info->load_all = true;
                     MenuCharaLoadStack.Alloc(blocks_for(MenuItemRoboDataLoad(&MenuCharaLoadStack, MenuCharaBuild2, 1)));
                     break;
             }
 
             change_phase = CHR_CNG_PHASE_LOAD;
-            change_ready = 0;
+            change_ready = false;
             break;
         }
-        case 0x50:
-            key_arg_no = 0;
+        case CHR_CNG_ACTION_CHANGE_CANCEL:
+            key_arg_no = CHR_CNG_PAGE_SELECT;
             change_phase = CHR_CNG_PHASE_NONE;
             ExeScript("CHANGE_CANCEL");
             break;
-        case 0x14: {
-            change_ready = 1;
+        case CHR_CNG_ACTION_CHANGE: {
+            change_ready = true;
             ExeScript("CHNG_BEGIN");
-            MenuArg.end_code = 1;
+            MenuArg.end_code = MENU_END_CHARA_CHANGE;
             MenuArg.result[0] = select;
             int last_chara = GetUserDataMan()->active_chr_no;
             GetUserDataMan()->SetActiveChrNo(MenuArg.result[0]);
@@ -2244,11 +2132,11 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0x28: {
+        case CHR_CNG_ACTION_CLOSE: {
             mode = MENU_ASK_MODE_CLOSE;
             ReturnMenuIntern(0);
             ExeScript("PREEND");
-            MenuMainFrameModeSet(5, 0);
+            MenuMainFrameModeSet(MENU_MAIN_FRAME_RETURN_RIGHT, 0);
             CMenuPosDataForm *main_form = MenuFormMI2;
 
             if (main_form != NULL) {
@@ -2258,7 +2146,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0x32:
+        case CHR_CNG_ACTION_MONSTER_BOX:
             if (!GetMenuMainFrameEndFlag()) {
                 break;
             }
@@ -2274,7 +2162,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             FadeOutMenu(40, 0.0f);
             MenuSePlay(SYSTEM_SE_DECIDE);
             break;
-        case 0x3C:
+        case CHR_CNG_ACTION_NPC_PAGE_END:
             MenuSePlay(2);
             ExeScript("RETURN_CHANGESELECT");
 
@@ -2283,22 +2171,22 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             key_func->MenuPosPlay();
-            key_arg_no = 0;
-            star_fade_out = 0;
+            key_arg_no = CHR_CNG_PAGE_SELECT;
+            star_fade_out = false;
             star_stop_wait = 20;
-            step = 0;
+            step = CHR_CNG_STEP_SELECT;
             break;
-        case 100:
+        case CHR_CNG_ACTION_ABILITY:
             if (npc_data == NULL || party_info == NULL) {
                 MenuSePlay(SYSTEM_SE_CANCEL);
                 break;
             }
 
-            got_item = 0;
+            got_item = false;
             ExeScript("NPCCMD_PRE");
 
             if (!MenuUserDataManPtr->UseNpcAbility(npc_no, SelectedCmdNo, 0)) {
-                step = 1;
+                step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
                 npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
                 npc_mes->StepMsg();
@@ -2307,17 +2195,17 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-                int dungeon_only = 0;
+                int dungeon_only = false;
 
                 switch (npc_no) {
-                    case 5:
-                    case 6:
-                    case 0x12:
-                    case 0x13:
-                    case 0x15:
-                    case 0x16:
-                    case 0x17:
-                        dungeon_only = 1;
+                    case PARTY_NPC_PARN:
+                    case PARTY_NPC_DR_DELL:
+                    case PARTY_NPC_PRIEST_BRUNO:
+                    case PARTY_NPC_RUFIO:
+                    case PARTY_NPC_OLIVIE:
+                    case PARTY_NPC_JULIA:
+                    case PARTY_NPC_MINA:
+                        dungeon_only = true;
                         break;
                 }
 
@@ -2326,7 +2214,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     npc_mes->StepMsg();
                     AdjustNPCTalk(npc_mes, npc_chara);
                     MenuSePlay(SYSTEM_SE_CANCEL);
-                    step = 2;
+                    step = CHR_CNG_NPC_STEP_RESULT;
                     break;
                 }
             }
@@ -2355,67 +2243,67 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 npc_mes->draw_speed = 0.0f;
                 AdjustNPCTalk(npc_mes, npc_chara);
                 MenuSePlay(SYSTEM_SE_CURSOR);
-                step = 10;
+                step = CHR_CNG_NPC_STEP_CONFIRM;
             }
             break;
-        case 0x5A: {
+        case CHR_CNG_ACTION_USE_ABILITY: {
             MenuMesForm[6]->draw_flag = 0;
             npc_mes->push_button = 0;
             npc_mes->SetMsgCursor(-1);
             int sound_mode = 0;
 
             if (party_info->point - npc_data->ability_cost[SelectedCmdNo] < 0) {
-                step = 1;
+                step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
                 npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
                 break;
             }
 
             int se = 5;
-            int used = 0;
-            int in_dungeon = 0;
+            int used = false;
+            int in_dungeon = false;
 
             if (GetMenuLoopType() == MENU_LOOP_DUNGEON) {
-                in_dungeon = 1;
+                in_dungeon = true;
             }
 
-            int              boss_floor = 0;
+            int              boss_floor = false;
             DNG_BATTLE_AREA *area = &MenuMainScene->battle_area;
 
             if (area != NULL && area->floor_status & DNG_FLOOR_DISABLE_ITEMS) {
-                boss_floor = 1;
+                boss_floor = true;
             }
 
             int bit_ctrl = GetSaveData()->GetBitCtrl();
             int max_bad = CheckBadStatus(MenuUserDataManPtr->GetCharaStatusAttirbute(USER_CHARA_MAX));
             int monica_bad = CheckBadStatus(MenuUserDataManPtr->GetCharaStatusAttirbute(USER_CHARA_MONICA));
-            int max_hurt = 0;
+            int max_hurt = false;
 
             if (MenuUserDataManPtr->chara_data[USER_CHARA_MAX].hp.GetRate() < 1.0f) {
-                max_hurt = 1;
+                max_hurt = true;
             }
 
-            int monica_hurt = 0;
+            int monica_hurt = false;
 
             if (MenuUserDataManPtr->party_member & (1 << USER_CHARA_MONICA) && MenuUserDataManPtr->chara_data[USER_CHARA_MONICA].hp.GetRate() < 1.0f) {
-                monica_hurt = 1;
+                monica_hurt = true;
             }
 
-            step = 2;
+            step = CHR_CNG_NPC_STEP_RESULT;
             int volume[8] = {0};
             int message = GetPartyCharaMessage(npc_no, 7, 0) + SelectedCmdNo;
 
             switch (npc_no) {
-                case 1:
+                case PARTY_NPC_CEDRIC:
                     if (SelectedCmdNo == 2) {
                         if (1.0f <= MenuUserDataManPtr->robo_data.AddPoint(0.0f)) {
-                            used = 0;
-                            message = GetPartyCharaMessage(1, 8, 0);
+                            used = false;
+                            message = GetPartyCharaMessage(PARTY_NPC_CEDRIC, 8, 0);
                         } else {
                             MenuUserDataManPtr->robo_data.AddPoint(999.0f);
                             se = 10;
                             UpdataLife();
-                            used = 1;
+                            used = true;
                         }
                     } else {
                         int pos[2];
@@ -2424,50 +2312,50 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         MenuPosData->GetPosMenuItemBrdKoma(pos, item_brd_select, 0);
                         MenuRepairMan->Generate(pos[0], pos[1]);
                         UpdataLife();
-                        used = 1;
-                        step = 20;
+                        used = true;
+                        step = CHR_CNG_NPC_STEP_REPAIR_SELECT;
                         message = 0;
                     }
 
                     break;
-                case 0x16:
-                    used = 0;
+                case PARTY_NPC_JULIA:
+                    used = false;
 
                     if (in_dungeon && ActiveMonster != NULL) {
                         ActiveMonster->SetNearAreaPiyori(350.0f);
                         se = 10;
-                        used = 1;
+                        used = true;
                     } else {
-                        message = GetPartyCharaMessage(0x16, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_JULIA, 8, 0);
                     }
 
                     break;
-                case 5:
-                    used = 0;
+                case PARTY_NPC_PARN:
+                    used = false;
 
                     if (in_dungeon) {
-                        used = 1;
+                        used = true;
                         area = &MenuMainScene->battle_area;
 
                         if (bit_ctrl & 1) {
-                            used = 0;
+                            used = false;
                         }
 
                         if (area->boss_map && area->battle_clear) {
-                            used = 0;
+                            used = false;
                         }
                     }
 
                     if (used) {
-                        close_on_end = 1;
+                        close_on_end = true;
                     } else {
-                        message = GetPartyCharaMessage(5, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PARN, 8, 0);
                     }
 
                     break;
-                case 6:
+                case PARTY_NPC_DR_DELL:
                     if (in_dungeon && !boss_floor && (max_bad || monica_bad)) {
-                        used = 1;
+                        used = true;
                         se = 0x56;
                         sound_mode = 1;
                         MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
@@ -2475,13 +2363,13 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(6, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_DR_DELL, 8, 0);
                     }
 
                     break;
-                case 0x17:
+                case PARTY_NPC_MINA:
                     if (in_dungeon && !boss_floor && (max_bad || monica_bad || max_hurt || monica_hurt)) {
-                        used = 1;
+                        used = true;
                         se = 10;
                         MenuUserDataManPtr->AddHp(USER_CHARA_MAX, 999);
                         MenuUserDataManPtr->AddHp(USER_CHARA_MONICA, 999);
@@ -2491,22 +2379,22 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(0x17, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_MINA, 8, 0);
                     }
 
                     break;
-                case 0x12:
+                case PARTY_NPC_PRIEST_BRUNO:
                     if (in_dungeon && !boss_floor) {
-                        used = 0;
+                        used = false;
 
-                        if (MenuUserDataManPtr->GetHp(0) < 1.0f) {
-                            MenuUserDataManPtr->chara_data[(int) USER_CHARA_MAX].hp.SetFillRate(1.0f);
-                            used = 1;
+                        if (MenuUserDataManPtr->GetHp(USER_CHARA_MAX) < 1.0f) {
+                            MenuUserDataManPtr->chara_data[USER_CHARA_MAX].hp.SetFillRate(1.0f);
+                            used = true;
                         }
 
-                        if (MenuUserDataManPtr->GetHp(1) < 1.0f) {
-                            MenuUserDataManPtr->chara_data[(int) USER_CHARA_MONICA].hp.SetFillRate(1.0f);
-                            used = 1;
+                        if (MenuUserDataManPtr->GetHp(USER_CHARA_MONICA) < 1.0f) {
+                            MenuUserDataManPtr->chara_data[USER_CHARA_MONICA].hp.SetFillRate(1.0f);
+                            used = true;
                         }
                     }
 
@@ -2515,19 +2403,19 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 0x56;
                         UpdataLife();
                     } else {
-                        message = GetPartyCharaMessage(0x12, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PRIEST_BRUNO, 8, 0);
                     }
 
                     break;
-                case 0x15:
+                case PARTY_NPC_OLIVIE:
                     if (in_dungeon) {
-                        used = 0;
+                        used = false;
 
                         for (int chara = 0; chara < 2; chara++) {
                             if (MenuUserDataManPtr->GetNowPartyMember() & (1 << chara) &&
                                 1.0f <= MenuUserDataManPtr->GetHp(chara)) {
                                 MenuUserDataManPtr->SetCharaStatusAttirbuteVol(chara, CHARA_STATUS_POWER, 750);
-                                used = 1;
+                                used = true;
                             }
                         }
                     }
@@ -2536,42 +2424,33 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         sound_mode = 1;
                         se = 0x56;
                     } else {
-                        message = GetPartyCharaMessage(0x15, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_OLIVIE, 8, 0);
                     }
 
                     break;
-                case 7:
-                case 0xC:
-                case 0xD:
-                case 0x14:
-                case 0x19: {
-                    /**
-                     *
-                     * Capacity of the aquarium-food list supplied by a townsperson.
-                     *
-                     */
-                    enum {
-                        NPC_GIFT_FOOD_CAPACITY = 32
-                    };
-
-                    int esa[NPC_GIFT_FOOD_CAPACITY];
+                case PARTY_NPC_FERDINAND:
+                case PARTY_NPC_AUNT_POLLY:
+                case PARTY_NPC_ERIK:
+                case PARTY_NPC_FABIO:
+                case PARTY_NPC_GRANNY_ROSA: {
+                    int esa[CHR_CNG_GIFT_BAIT_MAX];
                     gift_item = -1;
                     gift_num = 1;
 
-                    if (npc_no == 7) {
+                    if (npc_no == PARTY_NPC_FERDINAND) {
                         gift_item = 0x10E;
                     }
 
-                    if (npc_no == 0xC) {
+                    if (npc_no == PARTY_NPC_AUNT_POLLY) {
                         gift_item = 0x10C;
                     }
 
-                    if (npc_no == 0xD) {
+                    if (npc_no == PARTY_NPC_ERIK) {
                         gift_item = 0x186;
                         gift_num = 3;
                     }
 
-                    if (npc_no == 0x14) {
+                    if (npc_no == PARTY_NPC_FABIO) {
                         int count = GetUseableEsaNo(esa);
 
                         if (count > 0) {
@@ -2587,7 +2466,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         gift_num = 3;
                     }
 
-                    if (npc_no == 0x19) {
+                    if (npc_no == PARTY_NPC_GRANNY_ROSA) {
                         gift_item = 0x10D;
                         gift_num = 1;
                     }
@@ -2598,8 +2477,8 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (gift_num == 0) {
                         message = GetPartyCharaMessage(npc_no, 0xB, 0);
                     } else {
-                        used = 1;
-                        got_item = 1;
+                        used = true;
+                        got_item = true;
                         se = 0x12;
                         MenuUserDataManPtr->GetItem(gift_item, gift_num);
                     }
@@ -2626,14 +2505,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             break;
         }
-        case 0xC8:
-        case 0xC9:
-        case 0xCA:
+        case CHR_CNG_ACTION_REPAIR_WEAPON:
+        case CHR_CNG_ACTION_REPAIR_ARM:
+        case CHR_CNG_ACTION_REPAIR_ENERGY:
             MenuMesForm[6]->draw_flag = 0;
             MenuMesForm[5]->draw_flag = 0;
 
-            if (npc_no == 1) {
-                step = 20;
+            if (npc_no == PARTY_NPC_CEDRIC) {
+                step = CHR_CNG_NPC_STEP_REPAIR_SELECT;
                 MenuCommonInfo->SetWakuType(0);
                 ExeScript("\x83\x58\x83\x5E\x81\x5B\x83\x75\x83\x8B\x8F\x43\x97\x9D");
                 repair_mes->abs_win.width = 0xDC;
@@ -2645,18 +2524,18 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 repair_mes->MakeMsg(0x1C3);
                 item_brd_select = 0;
                 item_brd_pos = 0;
-                MenuItemBrdCalcManner = 0;
+                MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
 
                 if (SelectedCmdNo == 0) {
-                    SetModeMenuDrawItemBoard(1);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_WEAPON);
                 }
 
                 if (SelectedCmdNo == 1) {
-                    SetModeMenuDrawItemBoard(2);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_RIDEPOD_ARM);
                 }
 
                 if (SelectedCmdNo == 2) {
-                    SetModeMenuDrawItemBoard(3);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_ENERGY_PACK);
                 }
             }
 
@@ -2689,10 +2568,10 @@ void CMenuChrCngMenu::CalcTex() {
         form->x = x;
     }
 
-    int icon_num = 4;
+    int icon_num = USER_CHARA_NUM;
 
     if (0 <= face_chara) {
-        icon_num = 5;
+        icon_num = CHR_CNG_SELECT_NPC + 1;
     }
 
     for (i = 0; i < icon_num; i++) {
@@ -2702,7 +2581,7 @@ void CMenuChrCngMenu::CalcTex() {
         shadow = form->GetPartInfo(name);
         shadow->draw_flag = 0;
 
-        if ((party_member & (1 << i)) || (i == 4 && 0 < npc_no)) {
+        if ((party_member & (1 << i)) || (i == CHR_CNG_SELECT_NPC && 0 < npc_no)) {
             icon->x = chara_pos[i]->value[0];
             icon->y = chara_pos[i]->value[1];
 
@@ -2733,7 +2612,7 @@ void CMenuChrCngMenu::CalcTex() {
     sprintf(name, "fc%d", last_select);
     MENUFORMPARTS_TYPE *ring = form->GetPartInfo(name);
 
-    if (ring != NULL && (star_spawn != 0 || star_fade == 0 || mode == 2)) {
+    if (ring != NULL && (star_spawn || star_fade == 0 || mode == MENU_ASK_MODE_CLOSE)) {
         star_x = form->x + ring->x;
         star_y = form->y + ring->y;
 
@@ -2774,7 +2653,7 @@ void CMenuChrCngMenu::CalcTex() {
         star_angle -= TWO_PI;
     }
 
-    if (mode == 2) {
+    if (mode == MENU_ASK_MODE_CLOSE) {
         star_fade = 1;
     }
 
@@ -2791,7 +2670,7 @@ void CMenuChrCngMenu::CalcTex() {
             if (0.0f < star->alpha) {
                 star->alpha -= 1.7f;
                 star->life -= 1.0f;
-            } else if ((0 < spawn && mode != 2) || star_spawn != 0) {
+            } else if ((0 < spawn && mode != MENU_ASK_MODE_CLOSE) || star_spawn) {
                 star->life = 30.0f + GetRandF(8.0f);
                 float spread = radius * (0.95f + 0.1f * sinf(GetRandF(TWO_PI)));
                 star->x = center + spread * cosf(angle);
@@ -2800,7 +2679,7 @@ void CMenuChrCngMenu::CalcTex() {
                 spawn--;
             }
 
-            if (mode == 2 || star_stop_wait > 0) {
+            if (mode == MENU_ASK_MODE_CLOSE || star_stop_wait > 0) {
                 star->alpha -= 14.0f;
             }
         }
@@ -2821,14 +2700,14 @@ void CMenuChrCngMenu::CalcTex() {
         form->GetPutPosXY("dousuru", item_pos[1][0], item_pos[1][1]);
         MenuDCMsg[2]->SetMsgItemPos(item_pos[0], 2);
 
-        for (i = 0; i < 4; i++) {
+        for (i = 0; i < CHR_CNG_NPC_COMMAND_NUM; i++) {
             if (cmd_part[i] != NULL) {
                 item_pos[i][0] = (int) (form->x + cmd_part[i]->x);
                 item_pos[i][1] = (int) (form->y + cmd_part[i]->y);
             }
         }
 
-        if (key_arg_no != 0 || step != 2) {
+        if (key_arg_no != CHR_CNG_PAGE_SELECT || step != CHR_CNG_STEP_NPC_LEAVE) {
             SetFormPoint(MenuMesForm[4], item_pos[0][0], item_pos[0][1]);
         }
 
@@ -2860,10 +2739,10 @@ void CMenuChrCngMenu::CalcTex() {
         form->GetPutPosXY("mi2", frame_pos[0], frame_pos[1]);
 
         if (abs((int) ((float) frame_pos[0] - MenuFormMI2->x)) < 8) {
-            item_brd_arrived = 1;
+            item_brd_arrived = true;
         }
 
-        if ((item_brd_arrived && mode != 2) || key_arg_no == 2 || MenuCommonInfo->open_type == (int) MENU_OPEN_CHARA_CHANGE_DUNGEON) {
+        if ((item_brd_arrived && mode != MENU_ASK_MODE_CLOSE) || key_arg_no == CHR_CNG_PAGE_NPC_JOIN || MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
             MenuFormMI2->draw_flag = 1;
             CMenuPosDataForm *item_board = MenuFormMI2;
             item_board->x = frame_pos[0];
@@ -2882,31 +2761,31 @@ int CMenuChrCngMenu::CheckChrChange() {
         case CHR_CNG_PHASE_NONE:
             break;
         case CHR_CNG_PHASE_LOAD:
-            if (change_ready != 0 && read_busy == 0) {
+            if (change_ready && read_busy == 0) {
                 switch (change_chara) {
-                    case 0:
-                    case 1:
+                    case USER_CHARA_MAX:
+                    case USER_CHARA_MONICA:
                         MenuItemCharaDataLoadEndCheck(MenuCharaBuild2, stack, MenuActionChara,
                                                       change_chara, -1, MenuArg.chara_tex_block);
                         break;
-                    case 2:
+                    case USER_CHARA_ROBO:
                         break;
                 }
 
                 MenuCharaSoundLoad(stack, change_chara, 1);
-                change_phase = (int) CHR_CNG_PHASE_ENTER;
+                change_phase = CHR_CNG_PHASE_ENTER;
             }
 
             break;
         case CHR_CNG_PHASE_ENTER:
-            if (change_ready != 0 && read_busy == 0) {
+            if (change_ready && read_busy == 0) {
                 switch (change_chara) {
-                    case 0:
-                    case 1:
+                    case USER_CHARA_MAX:
+                    case USER_CHARA_MONICA:
                         MenuItemCharaDataLoadEndCheck(MenuCharaBuild2, stack, MenuActionChara,
                                                       change_chara, -1, MenuArg.chara_tex_block);
                         break;
-                    case 2:
+                    case USER_CHARA_ROBO:
                         MenuItemRoboDataLoadEndCheck(MenuCharaBuild2, stack, MenuActionChara, -1,
                                                      MenuArg.chara_tex_block);
                         break;
@@ -2914,7 +2793,7 @@ int CMenuChrCngMenu::CheckChrChange() {
 
                 chara = (CActionChara *) MenuMainScene->GetCharacter(0);
 
-                if (GetMenuLoopType() == (int) MENU_LOOP_DUNGEON) {
+                if (GetMenuLoopType() == MENU_LOOP_DUNGEON) {
                     chara->effect_man = FxScriptMan;
                 }
 
@@ -2962,8 +2841,8 @@ int CMenuChrCngMenu::MenuLocalLoop() {
     KeyChangeMain();
     int step[2] = {0, 0};
 
-    if (npc_no == 1 && this->step == 0x14) {
-        (MenuPosData)->GetPosMenuItemOnItemBrd(cursor, item_brd_select, 1);
+    if (npc_no == PARTY_NPC_CEDRIC && this->step == CHR_CNG_NPC_STEP_REPAIR_SELECT) {
+        MenuPosData->GetPosMenuItemOnItemBrd(cursor, item_brd_select, 1);
         cursor[0] -= 8;
         cursor[1] -= 10;
         step[0] = -0x2E;
@@ -2976,22 +2855,22 @@ int CMenuChrCngMenu::MenuLocalLoop() {
 
     MenuCommonInfo->MenuPosStep(cursor, step);
 
-    if (set_cursor != 0) {
+    if (set_cursor) {
         MenuCommonInfo->MenuSetPos(cursor[0], cursor[1]);
-        set_cursor = 0;
+        set_cursor = false;
     }
 
     icon_mode = 2;
     int *mode_id = GetCommonMenuModeID();
 
-    if (mode == 2) {
+    if (mode == MENU_ASK_MODE_CLOSE) {
         icon_mode = 0;
     }
 
-    (MenuPosData)->StepMainMenuIconMove(mode_id, 4, icon_mode);
+    MenuPosData->StepMainMenuIconMove(mode_id, 4, icon_mode);
     fade_done = 1;
 
-    if (MenuCommonInfo->open_type == (int) MENU_OPEN_CHARA_CHANGE || close_on_end == 1 || MenuCommonInfo->open_type == (int) MENU_OPEN_CHARA_CHANGE_DUNGEON) {
+    if (MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE || close_on_end == 1 || MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
         fade_done = FadeCheckMenu();
     }
 
@@ -2999,24 +2878,24 @@ int CMenuChrCngMenu::MenuLocalLoop() {
     result = CheckChrChange();
 
     switch (mode) {
-        case 1:
+        case MENU_ASK_MODE_OPEN:
             EnterNPCFaceData();
 
             if (fade_done != 0 && face_state != 0 && ReadBGSync() == 0) {
                 short key_mode = MenuCommonInfo->open_type;
 
-                if ((key_mode != 4 && frame_end != 0) || key_mode == 4) {
-                    mode = 0;
+                if ((key_mode != MENU_OPEN_CHARA_CHANGE && frame_end != 0) || key_mode == MENU_OPEN_CHARA_CHANGE) {
+                    mode = MENU_ASK_MODE_NONE;
                     star_fade = 0;
-                    star_spawn = 1;
+                    star_spawn = true;
                     open_wait = 0;
-                    set_cursor = 1;
+                    set_cursor = true;
                     ExeScript("INI0");
                     key_mode = MenuCommonInfo->open_type;
 
-                    if (key_mode == 4) {
+                    if (key_mode == MENU_OPEN_CHARA_CHANGE) {
                         ExeScript("INIT1");
-                    } else if (key_mode == 0xE) {
+                    } else if (key_mode == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
                         ExeScript("INIT2");
                     }
 
@@ -3025,23 +2904,23 @@ int CMenuChrCngMenu::MenuLocalLoop() {
             }
 
             break;
-        case 2:
+        case MENU_ASK_MODE_CLOSE:
             if (fade_done != 0 && frame_end != 0) {
                 DeleteTexBlock();
-                (&MenuCommonInfo->cursor)[0] = 1;
+                MenuCommonInfo->cursor = 1;
                 MenuCursorReverseFlag = 0;
                 ExeScript("\x8F\x49\x97\xB9\x8F\x88\x97\x9D");
                 result = 1;
 
-                if (close_on_end != 0) {
+                if (close_on_end) {
                     result = 2;
                 }
             }
 
             break;
         default:
-            if (MenuCommonInfo->open_type == (int) MENU_OPEN_CHARA_CHANGE && MenuGetPartySeFlag == 0 && fade_done != 0) {
-                MenuGetPartySeFlag = 1;
+            if (MenuCommonInfo->open_type == MENU_OPEN_CHARA_CHANGE && !MenuGetPartySeFlag && fade_done != 0) {
+                MenuGetPartySeFlag = true;
                 MenuSePlay(0x11);
             }
 
@@ -3053,33 +2932,33 @@ int CMenuChrCngMenu::MenuLocalLoop() {
     CalcTex();
     message_id = select + 0x190;
 
-    if (select == 4) {
+    if (select == CHR_CNG_SELECT_NPC) {
         message_id = npc_mes_talk;
     }
 
-    if (select < 4) {
+    if (select < CHR_CNG_SELECT_NPC) {
         if (IsCheckParty(select) == 0) {
             message_id = 0x194;
         }
 
-        if (CheckBitFlagMenu(0x36) == 0 && select == 1 && OmakeFlag == 0) {
+        if (CheckBitFlagMenu(0x36) == 0 && select == USER_CHARA_MONICA && OmakeFlag == 0) {
             message_id = 0x199;
         }
     }
 
     MenuDCMsg[0]->MakeMsg(message_id);
 
-    if (npc_no == 1) {
+    if (npc_no == PARTY_NPC_CEDRIC) {
         item_no = item_brd_select;
 
-        if (0 <= item_no && item_no < GetNowBagMax(0)) {
+        if (0 <= item_no && item_no < GetNowBagMax(ITEM_BOARD_MAIN)) {
             char *item_names[2] = {" ", ""};
             int   item_volumes[2] = {0, 0};
             item = MenuDrawItemInfo[item_brd_select];
             mes = MenuDCMsg[7];
 
             if (item != NULL) {
-                item_names[0] = item->GetName(0);
+                item_names[0] = item->GetName(ITEM_NAME_TYPE_PLAIN);
                 item->GetWHp(item_volumes);
             }
 
@@ -3105,7 +2984,7 @@ void CMenuChrCngMenu::InitStarInfo() {
     int i;
 
     star_fade = -1;
-    star_spawn = 0;
+    star_spawn = false;
     star_y = 0.0f;
     star_x = 0.0f;
     unk_260 = 0;
@@ -3113,12 +2992,12 @@ void CMenuChrCngMenu::InitStarInfo() {
     star_angle = 0.0f;
     star_alpha = 0.0f;
 
-    for (i = 0; i < 256; i++) {
+    for (i = 0; i < CHR_CNG_STAR_NUM; i++) {
         star[i].alpha = 0.0f;
     }
 
     star_stop_wait = 0;
-    star_fade_out = 0;
+    star_fade_out = false;
     star_pulse = 0.0f;
 }
 
@@ -3128,42 +3007,39 @@ void CMenuChrCngMenu::UpdataLife() {
      * Current and maximum gauge label part names of the party menu.
      *
      */
-    static char *partt[6] = {
-        "hp_now0",
-        "hp_max0",
-        "hp_now1",
-        "hp_max1",
-        "hp_now2",
-        "hp_max2",
+    static char *partt[CHR_CNG_GAUGE_NUM][2] = {
+        {"hp_now0", "hp_max0"},
+        {"hp_now1", "hp_max1"},
+        {"hp_now2", "hp_max2"},
     };
 
     int i;
 
     i = 0;
-    gauge[0] = &MenuUserParam.chara[0]->hp;
-    gauge[1] = &MenuUserParam.chara[1]->hp;
-    gauge[2] = &MenuUserParam.robo->hp;
+    gauge[USER_CHARA_MAX] = &MenuUserParam.chara[USER_CHARA_MAX]->hp;
+    gauge[USER_CHARA_MONICA] = &MenuUserParam.chara[USER_CHARA_MONICA]->hp;
+    gauge[USER_CHARA_ROBO] = &MenuUserParam.robo->hp;
 
     do {
-        form->SetNumber(partt[i * 2], GetDispVolumeForFloat(gauge[i]->now));
-        form->SetNumber(partt[i * 2 + 1], fptosi(gauge[i]->max));
+        form->SetNumber(partt[i][0], GetDispVolumeForFloat(gauge[i]->now));
+        form->SetNumber(partt[i][1], fptosi(gauge[i]->max));
 
         if (gauge_part[i] != NULL && gauge[i] != NULL) {
             gauge_part[i]->w = GetDispVolumeForFloat(66.0f * gauge[i]->GetRate());
         }
 
         i++;
-    } while (i < 3);
+    } while (i < CHR_CNG_GAUGE_NUM);
 
-    if (!(party_member & 1)) {
+    if (!(party_member & (1 << USER_CHARA_MAX))) {
         ExeScript("YURIS_OFFLIFE");
     }
 
-    if (!(party_member & 2)) {
+    if (!(party_member & (1 << USER_CHARA_MONICA))) {
         ExeScript("MONICA_OFFLIFE");
     }
 
-    if (!(party_member & 4)) {
+    if (!(party_member & (1 << USER_CHARA_ROBO))) {
         ExeScript("ROBO_OFFLIFE");
     }
 }
@@ -3198,7 +3074,7 @@ void MenuCharaChangeStarDraw() {
         {u1, v1},
         {u0, v1}
     };
-    SetSpriteEnv(prim, 4);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_ADD);
     prim->Bilinear(1);
     prim->Begin(MG_PRIM_TRIANGLE_FAN);
     prim->Texture(MenuCharaChangeBase_Tex);
@@ -3282,9 +3158,9 @@ int MenuCharaChangeInit(mgCMemory *stack, int *tex_block, int mode) {
 
     buffer = stack->stack;
 
-    if (mode == 4 || mode == 0xE) {
-        file_size = LoadFileMenu("chrchg0.pac", buffer, 1);
-        stack->Alloc((file_size & 0xF) ? (file_size >> 4) + 1 : file_size >> 4);
+    if (mode == MENU_OPEN_CHARA_CHANGE || mode == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
+        file_size = LoadFileMenu("chrchg0.pac", buffer, MENU_FILE_LOAD_DIRECT);
+        stack->Alloc(blocks_for(file_size));
         stack->Align64();
     }
 
@@ -3306,10 +3182,10 @@ int MenuCharaChangeInit(mgCMemory *stack, int *tex_block, int mode) {
     MenuRepairMan = repair;
     repair->Initialize();
 
-    if (mode == 4) {
-        ChrChangMenuPt->key_arg_no = 2;
-        ChrChangMenuPt->last_select = 4;
-        ChrChangMenuPt->select = 4;
+    if (mode == MENU_OPEN_CHARA_CHANGE) {
+        ChrChangMenuPt->key_arg_no = CHR_CNG_PAGE_NPC_JOIN;
+        ChrChangMenuPt->last_select = CHR_CNG_SELECT_NPC;
+        ChrChangMenuPt->select = CHR_CNG_SELECT_NPC;
     }
 
     for (i = 0; i < MENU_CHARA_LOAD_MAX; i++) {
@@ -3318,29 +3194,29 @@ int MenuCharaChangeInit(mgCMemory *stack, int *tex_block, int mode) {
     }
 
     MenuBGReadInfo2Malloc(&MenuChangeMemory, tbl);
-    MenuCharaChangeCLUT_Tex = 0;
-    MenuMainFrameModeSet(4, 1);
+    MenuCharaChangeCLUT_Tex = NULL;
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_LEAVE_RIGHT, 1);
     ChrChangMenuPt->EnterDataMenu((u8 *) stack->stack);
     MenuChangeMemory.Align64();
     size = MenuChangeMemory.stGetRest();
     MenuChangeNpcMemory.stSetBuffer(MenuChangeMemory.stGetTop(), size);
-    ChrChangMenuPt->LoadNPCFaceData(&MenuChangeNpcMemory, 0);
+    ChrChangMenuPt->LoadNPCFaceData(&MenuChangeNpcMemory, MENU_FILE_LOAD_BG);
     MenuChangeNpcMemory.Align64();
     size = stack_free_size(&MenuChangeNpcMemory);
     MenuCharaLoadStack.stSetBuffer((u_long128 *) stack_free_top(&MenuChangeNpcMemory), size);
-    MenuLoadInfo.alternate_model = 0;
+    MenuLoadInfo.alternate_model = false;
     MenuCharaLoadStack.stack_used = 0;
     MenuCharaLoadStack.lock = 0;
 
     switch (mode) {
-        case 0:
-            MenuLoadInfo.alternate_model = 1;
+        case MENU_OPEN_MAIN_TOWN:
+            MenuLoadInfo.alternate_model = true;
             break;
     }
 
-    MenuLoadInfo.mode = 2;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_SCENE;
 
-    if (ChrChangMenuPt->key_arg_no == 2 || mode == 0xE) {
+    if (ChrChangMenuPt->key_arg_no == CHR_CNG_PAGE_NPC_JOIN || mode == MENU_OPEN_CHARA_CHANGE_DUNGEON) {
         while (GetMenuMainFrameEndFlag() == 0) {
             MenuMainFrameStep();
         }
@@ -3355,7 +3231,7 @@ int MenuCharaChangeInit(mgCMemory *stack, int *tex_block, int mode) {
     MenuCommonInfo->key_enable = 0;
     MenuCommonInfo->cursor = 0;
     MenuGetPartySeFlag = 0;
-    MenuDCMsg[0]->MsgPreset(3);
+    MenuDCMsg[0]->MsgPreset(MENU_SCRIPT_MES_SYSTEM);
     return 1;
 }
 
@@ -3378,8 +3254,8 @@ int MenuCharaChangeKey() {
     phase = ChrChangMenuPt->sub_menu;
 
     switch (phase) {
-        case -1:
-            if (ChrChangMenuPt->sub_menu_next == 1) {
+        case CHR_CNG_SUB_MENU_NONE:
+            if (ChrChangMenuPt->sub_menu_next == CHR_CNG_SUB_MENU_MONSTER_BOX) {
                 if (fade_done != 0) {
                     ChrChangMenuPt->sub_menu = ChrChangMenuPt->sub_menu_next;
                     MenuCharaLoadStack.stack_used = 0;
@@ -3391,34 +3267,34 @@ int MenuCharaChangeKey() {
 
                     MenuMonsterBoxInit(&MenuCharaLoadStack, ChrChangMenuPt->tex_block, mode);
                 }
-            } else if (ChrChangMenuPt->sub_menu_next == -1 && fade_done != 0) {
+            } else if (ChrChangMenuPt->sub_menu_next == CHR_CNG_SUB_MENU_NONE && fade_done != 0) {
                 result = ChrChangMenuPt->MenuLocalLoop();
             }
 
             break;
-        case 1:
-            if (ChrChangMenuPt->sub_menu_next == -1) {
+        case CHR_CNG_SUB_MENU_MONSTER_BOX:
+            if (ChrChangMenuPt->sub_menu_next == CHR_CNG_SUB_MENU_NONE) {
                 if (fade_done != 0) {
                     ChrChangMenuPt->sub_menu = ChrChangMenuPt->sub_menu_next;
                 }
-            } else if (phase == 1) {
+            } else if (phase == CHR_CNG_SUB_MENU_MONSTER_BOX) {
                 box_result = MenuMonsterBoxKey();
 
                 if (box_result != 0) {
-                    if (box_result == 1) {
-                        ChrChangMenuPt->sub_menu_next = -1;
-                        ChrChangMenuPt->sub_menu = -1;
+                    if (box_result == MOS_SELECT_RESULT_CLOSE) {
+                        ChrChangMenuPt->sub_menu_next = CHR_CNG_SUB_MENU_NONE;
+                        ChrChangMenuPt->sub_menu = CHR_CNG_SUB_MENU_NONE;
                         MenuCharaLoadStack.stack_used = 0;
                         MenuCharaLoadStack.lock = 0;
                         texture = (u8 *) ChrChangeInitTextureStack.stack;
                         char file_name[0x40] = "chrchg0.pac";
-                        LoadFileMenu(file_name, (u_long128 *) texture, 1);
+                        LoadFileMenu(file_name, (u_long128 *) texture, MENU_FILE_LOAD_DIRECT);
                         ChrChangMenuPt->EnterDataMenu(texture);
-                        ChrChangMenuPt->LoadNPCFaceData(&MenuChangeNpcMemory, 1);
+                        ChrChangMenuPt->LoadNPCFaceData(&MenuChangeNpcMemory, MENU_FILE_LOAD_DIRECT);
                         ChrChangMenuPt->EnterNPCFaceData();
                         ChrChangMenuPt->LoadBGNPCModel(0);
                         ChrChangMenuPt->CheckBGNPCModel();
-                        ((ClsMes *) MenuDCMsg[0])->SetBuff(ChrChangMenuPt->sys_mes);
+                        MenuDCMsg[0]->SetBuff(ChrChangMenuPt->sys_mes);
                         MenuDCMsg[0]->MakeMsg(ChrChangMenuPt->select + 0x190);
                         form = MenuMesForm[7];
                         form->rgba[0] = 0x80;
@@ -3434,7 +3310,7 @@ int MenuCharaChangeKey() {
 
                         ChrChangMenuPt->InitStarInfo();
                         ChrChangMenuPt->star_fade = 0;
-                        ChrChangMenuPt->set_cursor = 1;
+                        ChrChangMenuPt->set_cursor = true;
                         ChrChangMenuPt->form->GetPutPosXY("cur3", pos[0], pos[1]);
                         MenuCommonInfo->MenuSetPos(pos[0], pos[1]);
                         ChrChangMenuPt->form->GetPutPosXY("mi2", pos[0], pos[1]);
@@ -3443,10 +3319,10 @@ int MenuCharaChangeKey() {
                         cursor_form->y = (float) pos[1];
                         ChrChangMenuPt->FadeInMenu(0x28, 0.0f);
                         MenuCamInit(1.0f);
-                    } else if (box_result == 2) {
-                        SetupUnitMan(MenuMainScene, MenuUserDataManPtr, 3, NULL);
+                    } else if (box_result == MOS_SELECT_RESULT_CHANGE) {
+                        SetupUnitMan(MenuMainScene, MenuUserDataManPtr, USER_CHARA_MONSTER, NULL);
                         result = 2;
-                        MenuArg.result[0] = 3;
+                        MenuArg.result[0] = USER_CHARA_MONSTER;
                     }
                 }
             }
@@ -3475,7 +3351,7 @@ void MenuCharaChangeDraw() {
         CMenuFont font;
         mgTexManager.ReloadTexture(MenuArg.mes_tex_block, (sceVif1Packet *) NULL);
 
-        if (ChrChangMenuPt->select != 4) {
+        if (ChrChangMenuPt->select != CHR_CNG_SELECT_NPC) {
             DrawMenuFillBox(20.0f, 20.0f, 300.0f, 220.0f, 0x60, 0, 0, 0);
             char party[0x80] = {0};
             char change[0x80] = {0};
@@ -3485,7 +3361,7 @@ void MenuCharaChangeDraw() {
             int change_mask = MenuUserDataManPtr->chara_change_mask;
             int i;
 
-            for (i = 0; i < 4; i++) {
+            for (i = 0; i < USER_CHARA_NUM; i++) {
                 int bit = 1 << i;
 
                 if (party_member & bit) {
@@ -3538,7 +3414,7 @@ void MenuCharaChangeDraw() {
             font.SetPos(0x14, cursor_y);
             font.DrawDirect(font.str, font.pos_x, font.pos_y);
 
-            if (LanguageCode == 0) {
+            if (LanguageCode == LANG_JAPANESE) {
                 font.SetStr("Control \nL1 R1:Mode Change\n(O):Join or Shift Enable\n(X):Leave or Shift Disable");
                 font.SetPos(0x28, 0xA0);
                 font.DrawDirect(font.str, font.pos_x, font.pos_y);
@@ -3586,19 +3462,19 @@ void MenuCharaChangeDraw() {
             char line[0x100];
             sprintf(line, "  :%14s", name);
 
-            if (info->status & 1) {
+            if (info->status & PARTY_CHARA_STATUS_IN_PARTY) {
                 strcat(line, "o:");
             } else {
                 strcat(line, "x:");
             }
 
-            if (info->status & 2) {
+            if (info->status & PARTY_CHARA_STATUS_JOINED) {
                 strcat(line, "o:");
             } else {
                 strcat(line, "x:");
             }
 
-            if (info->status & 4) {
+            if (info->status & PARTY_CHARA_STATUS_IN_HOUSE) {
                 strcat(line, "o");
             } else {
                 strcat(line, "x");
@@ -3671,14 +3547,14 @@ int get_monster_tbl_bajjilevel(int *list, int monster_id, int value, int column)
     int entry;
     int j;
 
-    if (column < 0 || column > 3) {
+    if (column < 0 || column > MONSTER_PROGRESS_LEVEL_NUM - 1) {
         return 0;
     }
 
     count = 0;
     row = 0;
 
-    for (; row < 19; row++) {
+    for (; row < MONSTER_PROGRESS_NUM; row++) {
         if (value < 0 ||
             (0 <= value && column > 0 && value == monster_progress_tbl[row][column])) {
             if (monster_id == monster_progress_tbl[row][0]) {
@@ -3706,7 +3582,7 @@ int get_monster_tbl_bajjilevel(int *list, int monster_id, int value, int column)
 int get_default_monster_progresstbl(int id) {
     int row;
 
-    for (row = 0; row < 19; row++) {
+    for (row = 0; row < MONSTER_PROGRESS_NUM; row++) {
         if (id == monster_progress_tbl[row][0]) {
             return row;
         }
@@ -3720,7 +3596,7 @@ int GetMonsterModelFile(int monster_id, int kind, char *file_name) {
     BASE_MONSTER_TBL *monster;
     char             *base_name;
     int               number;
-    int              *henge_param;
+    MOS_HENGE_PARAM  *henge_param;
 
     if (file_name == NULL) {
         return 0;
@@ -3739,11 +3615,11 @@ int GetMonsterModelFile(int monster_id, int kind, char *file_name) {
 
     strcpy(file_name, base_name);
 
-    if (kind == 0) {
+    if (kind == MONSTER_FILE_MODEL) {
         strcat(file_name, ".chr");
     }
 
-    if (kind == 1) {
+    if (kind == MONSTER_FILE_SOUND) {
         number = monster->sound_no;
 
         if (number < 0) {
@@ -3763,15 +3639,15 @@ int GetMonsterModelFile(int monster_id, int kind, char *file_name) {
         strcat(file_name, suffix);
     }
 
-    if (kind == 2) {
-        henge_param = (int *) GetMonsterHengeParam(monster_id);
+    if (kind == MONSTER_FILE_SCRIPT) {
+        henge_param = GetMonsterHengeParam(monster_id);
 
         if (henge_param != NULL) {
-            sprintf(file_name, "%s.stb", henge_param[2]);
+            sprintf(file_name, "%s.stb", henge_param->script_name);
         }
     }
 
-    if (kind == 3) {
+    if (kind == MONSTER_FILE_CONFIG) {
         strcpy(file_name, monster->model);
         strcat(file_name, ".cfg");
     }
@@ -3783,9 +3659,9 @@ void CMenuMosSelect::AttachForm() {
     char              name[0x20];
     MOS_CHANGE_PARAM *base;
     int               i;
-    badge_form = (CMenuPosDataForm *) MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x6F\x83\x62\x83\x57\x94\xA0");
-    model_form = (CMenuPosDataForm *) MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x7C\x83\x8A");
-    info_form = (CMenuPosDataForm *) MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x58\x83\x65\x81\x5B\x83\x5E\x83\x58");
+    badge_form = MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x6F\x83\x62\x83\x57\x94\xA0");
+    model_form = MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x7C\x83\x8A");
+    info_form = MenuPosData->GetFormInfo("\x83\x82\x83\x93\x83\x58\x83\x5E\x81\x5B\x83\x58\x83\x65\x81\x5B\x83\x5E\x83\x58");
     Tex_BuildUpBoard = mgTexManager.GetTexture("itembrd", -1);
     GetUserDataMan();
 
@@ -3803,7 +3679,7 @@ void CMenuMosSelect::AttachForm() {
             }
 
             i += 1;
-        } while (i < 0xC);
+        } while (i < MOS_SELECT_BADGE_NUM);
     }
 }
 
@@ -3829,7 +3705,7 @@ int MonsterEffectRead(mgCMemory *stack, int monster_no, int background) {
 
     if (mos_effect_henge_param != NULL && stack != NULL) {
         if (FxScriptMan != NULL) {
-            for (i = 0; i < 4; i++) {
+            for (i = 0; i < MONSTER_EFFECT_NUM; i++) {
                 char *effect_name = mos_effect_henge_param->effect_name[i];
 
                 if (effect_name == NULL) {
@@ -3840,7 +3716,7 @@ int MonsterEffectRead(mgCMemory *stack, int monster_no, int background) {
                 stack->Align64();
                 mos_effect_readbuff1[i] = (u8 *) stack->stGetTop();
 
-                if (background != 0) {
+                if (background) {
                     if (LoadFileBG(script_path, (u_long128 *) mos_effect_readbuff1[i],
                                    &mos_effect_readbuff1_size[i]) == 0) {
                         continue;
@@ -3851,11 +3727,11 @@ int MonsterEffectRead(mgCMemory *stack, int monster_no, int background) {
                 }
 
                 unsigned int total = mos_effect_readbuff1_size[i] + 0x800;
-                stack->Alloc((total & 0xF) ? (total >> 4) + 1 : total >> 4);
+                stack->Alloc(blocks_for(total));
                 stack->Align64();
                 mos_effect_readbuff2[i] = (u8 *) stack->stGetTop();
 
-                if (background != 0) {
+                if (background) {
                     if (LoadFileBG(pack_path, (u_long128 *) mos_effect_readbuff2[i],
                                    &mos_effect_readbuff2_size[i]) == 0) {
                         continue;
@@ -3866,7 +3742,7 @@ int MonsterEffectRead(mgCMemory *stack, int monster_no, int background) {
                 }
 
                 total = mos_effect_readbuff2_size[i] + 0x800;
-                stack->Alloc((total & 0xF) ? (total >> 4) + 1 : total >> 4);
+                stack->Alloc(blocks_for(total));
                 mos_effect_read_num += 1;
             }
         }
@@ -3883,7 +3759,7 @@ int MonsterEffectEnter(CScene *scene, u_long128 *buffer, int tex_block) {
         mgTexManager.DeleteBlock(tex_block);
         saved_buffer = scene->read_buff;
         i = 0;
-        FxScriptMan->load_buffer = (u_long128 *) buffer;
+        FxScriptMan->load_buffer = buffer;
 
         for (; i < mos_effect_read_num; i++) {
             char *effect_name = mos_effect_henge_param->effect_name[i];
@@ -3905,7 +3781,7 @@ int MonsterEffectEnter(CScene *scene, u_long128 *buffer, int tex_block) {
 
 int CMenuMosSelect::CheckLoadBGMonster() {
     switch (load_phase) {
-        case 0: {
+        case MOS_SELECT_LOAD_WAIT: {
             load_wait = load_wait - 1;
 
             if (load_wait > 0) {
@@ -3914,13 +3790,13 @@ int CMenuMosSelect::CheckLoadBGMonster() {
 
             if (view_monster < 0) {
                 load_monster = -1;
-                load_phase = -1;
+                load_phase = MOS_SELECT_LOAD_NONE;
                 model_form->draw_flag = 0;
                 break;
             }
 
             if (load_monster == view_monster) {
-                load_phase = 2;
+                load_phase = MOS_SELECT_LOAD_SHOWN;
                 return 0;
             }
 
@@ -3940,16 +3816,16 @@ int CMenuMosSelect::CheckLoadBGMonster() {
             model_form->counter = -16;
 
             if (MenuLoadInfo.update_scene == 1) {
-                MenuCharaSoundLoad(stack, 3, 1);
+                MenuCharaSoundLoad(stack, USER_CHARA_MONSTER, 1);
             }
 
             load_phase++;
             model_form->draw_flag = 0;
             break;
         }
-        case 1:
+        case MOS_SELECT_LOAD_BUILD:
             if (MenuMonsterBGInfo[0]->reading && ReadBGSync() == 0) {
-                CActionChara *chara[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+                CActionChara *chara[MENU_CHARA_LOAD_MAX] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
                 chara[0] = monster;
                 int tex_block = this->tex_block[1];
                 MenuMonsterLoadBGCheck(MenuMonsterBGInfo, chara, tex_block, MenuArg.chara_tex_block);
@@ -3969,7 +3845,7 @@ int CMenuMosSelect::CheckLoadBGMonster() {
 
                 if (MenuLoadInfo.update_scene == 1) {
                     load_phase++;
-                    MenuSoundCharaNo = 3;
+                    MenuSoundCharaNo = USER_CHARA_MONSTER;
                     chara[0] = (CActionChara *) MenuMainScene->GetCharacter(0);
                     MenuCharaSoundEnter(MenuMainScene, chara[0], 1);
                     mgCMemory *stack = MenuMainScene->GetStack(5);
@@ -3980,9 +3856,9 @@ int CMenuMosSelect::CheckLoadBGMonster() {
             }
 
             return 1;
-        case 2:
+        case MOS_SELECT_LOAD_SHOWN:
             break;
-        case 3:
+        case MOS_SELECT_LOAD_EFFECT:
             if (ReadBGSync() == 0) {
                 load_phase++;
                 mgCMemory *stack = &MenuMonChangeLoadStack;
@@ -3992,7 +3868,7 @@ int CMenuMosSelect::CheckLoadBGMonster() {
                     buffer = stack->stGetTop();
                 }
 
-                MonsterEffectEnter(MenuMainScene, buffer, 0xAA);
+                MonsterEffectEnter(MenuMainScene, buffer, MONSTER_EFFECT_TEX_BLOCK);
             }
 
             break;
@@ -4044,9 +3920,9 @@ void CMenuMosSelect::CalcCursorPosition() {
 
     MenuCommonInfo->MenuPosStep(pos, NULL);
 
-    if (set_cursor != 0) {
+    if (set_cursor) {
         MenuCommonInfo->MenuSetPos(pos[0], pos[1]);
-        set_cursor = 0;
+        set_cursor = false;
     }
 }
 
@@ -4102,7 +3978,7 @@ void CMenuMosSelect::CalcTex() {
         form->y = badge_pos[1];
     }
 
-    if (step == 20) {
+    if (step == MOS_SELECT_STEP_FORM_SELECT) {
         badge_pos[0] += 0x6E;
         mes = MenuDCMsg[6];
         mes->point_x = -40;
@@ -4136,15 +4012,14 @@ int CMenuMosSelect::KeyNormalMode(int keys, int a, int b) {
     static int overcode[4] = {0, 0, 0, 0};
 
     int old_cursor = select;
-    MenuGlidKeyCheck(keys, &select, &top, max, viewnum, overcode,
-                     0xC);
+    MenuGlidKeyCheck(keys, &select, &top, max, viewnum, overcode, MOS_SELECT_BADGE_NUM);
 
     if (old_cursor != select) {
-        MenuLoadInfo.update_scene = 0;
+        MenuLoadInfo.update_scene = false;
         view_monster = -1;
 
-        if (select < 0xA) {
-            MOS_CHANGE_PARAM *entry = badge + select;
+        if (select < MOS_SELECT_BADGE_KIND_NUM) {
+            MOS_CHANGE_PARAM *entry = &badge[select];
 
             if (entry != NULL) {
                 if (entry->enable != 0) {
@@ -4153,29 +4028,29 @@ int CMenuMosSelect::KeyNormalMode(int keys, int a, int b) {
             }
         }
 
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     return 1;
 }
 
 inline CMenuMosSelect::CMenuMosSelect() {
-    key_arg_no = 0;
+    key_arg_no = MOS_SELECT_PAGE_BADGE;
     select = 0;
     top = 0;
     unk_5504 = 0;
     mes_data = NULL;
     monster->Initialize(NULL);
     unk_765C = 0;
-    result = 0;
+    result = MOS_SELECT_RESULT_NONE;
     load_wait = 0;
-    load_phase = 0;
+    load_phase = MOS_SELECT_LOAD_WAIT;
     view_monster = -1;
     pick_monster = -1;
     load_monster = -1;
-    level_max = 0;
-    set_cursor = 1;
-    mes_show = 0;
+    level_max = false;
+    set_cursor = true;
+    mes_show = false;
     MenuMesInit(&mes);
     mes.texture_block = MenuArg.mes_tex_block;
     badge = GetUserDataMan()->GetMonsterBajjiDataPtr(1);
@@ -4190,10 +4065,10 @@ inline CMenuMosSelect::CMenuMosSelect() {
     info_win.alpha = 0;
     effect_data = NULL;
     effect_sound = NULL;
-    effect_show = 0;
+    effect_show = false;
     effect_frame = 0;
-    info_win_show = 1;
-    skip_draw = 0;
+    info_win_show = true;
+    skip_draw = false;
     change_wait = 0;
     badge_form = NULL;
     info_form = NULL;
@@ -4240,7 +4115,7 @@ void MenuMonsterBoxInit(mgCMemory *stack, int *tex_block, int mode) {
     memory.stSetBuffer(stack->stGetTop(), rest);
     stack = &memory;
 
-    menu = new (stack->Alloc(0x769)) CMenuMosSelect;
+    menu = new (stack->Alloc(blocks_for(sizeof(CMenuMosSelect)) + 2)) CMenuMosSelect;
 
     MenuMosSelectPtr = menu;
     menu->SetTexBlock(tex_block);
@@ -4262,15 +4137,15 @@ void MenuMonsterBoxInit(mgCMemory *stack, int *tex_block, int mode) {
         }
     }
 
-    *(CameraPoint *) MenuMosSelectPtr->camera_pos = *(CameraPoint *) MenuDrawEnv->pos;
-    *(CameraPoint *) MenuMosSelectPtr->camera_ref = *(CameraPoint *) MenuDrawEnv->ref;
+    *(mgVec4 *) MenuMosSelectPtr->camera_pos = *(mgVec4 *) MenuDrawEnv->pos;
+    *(mgVec4 *) MenuMosSelectPtr->camera_ref = *(mgVec4 *) MenuDrawEnv->ref;
     sceVu0CopyVector(MenuDrawEnv->pos, posdef);
     sceVu0CopyVector(MenuDrawEnv->ref, refdef);
     MenuDrawEnv->camera.SetPos(posdef);
     MenuDrawEnv->camera.SetRef(refdef);
     stack->Align64();
     u_int *pack = (u_int *) stack->stGetTop();
-    size = LoadFileMenu("mosbox.pac", (u_long128 *) pack, 1);
+    size = LoadFileMenu("mosbox.pac", (u_long128 *) pack, MENU_FILE_LOAD_DIRECT);
     stack->Alloc(blocks_for(size));
     u_char *image = (u_char *) GetPackFile(pack, "mosbox.img", NULL);
     int     block = MenuMosSelectPtr->tex_block[0];
@@ -4296,10 +4171,10 @@ void MenuMonsterBoxInit(mgCMemory *stack, int *tex_block, int mode) {
     stack->Align64();
     rest = stack->stGetRest();
     MenuMosLoadStack.stSetBuffer(stack->stGetTop(), rest);
-    MenuLoadInfo.load_all = 1;
-    MenuLoadInfo.mode = 0;
-    MenuLoadInfo.update_scene = 0;
-    MenuMemoryAdjust(&MenuMosLoadStack, &MenuMonChangeLoadStack, MenuActionCharaBuffer, 3);
+    MenuLoadInfo.load_all = true;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_MENU;
+    MenuLoadInfo.update_scene = false;
+    MenuMemoryAdjust(&MenuMosLoadStack, &MenuMonChangeLoadStack, MenuActionCharaBuffer, USER_CHARA_MONSTER);
     int badge_no = get_gajji_id_from_monster_progress_table(MenuUserDataManPtr->monster_id, NULL);
 
     if (badge_no < 0) {
@@ -4344,24 +4219,6 @@ int CMenuMosSelect::KeyStep() {
         "\x8F\x6E\x97\xFB\x8D\xC5\x91\xE5",
     };
 
-    /**
-     *
-     * Actions requested by the badge, command, form-list and status keys.
-     *
-     */
-    enum MosSelectAction {
-        MOS_SELECT_ACTION_NONE = 0,              /**< No action requested. */
-        MOS_SELECT_ACTION_REJECT = 5,            /**< Rejects the key with the cancel sound. */
-        MOS_SELECT_ACTION_TRANSFORM = 10,        /**< Turns Monica into the monster form chosen in the form list. */
-        MOS_SELECT_ACTION_CANNOT_TRANSFORM = 11, /**< Shows that the transformation is not possible. */
-        MOS_SELECT_ACTION_FORM_LIST = 12,        /**< Opens the list of the badge's monster forms to transform into. */
-        MOS_SELECT_ACTION_STATUS = 20,           /**< Opens the status page of the badge's monster. */
-        MOS_SELECT_ACTION_CLASS_CHANGE = 30,     /**< Opens the list of monsters the badge can change class to. */
-        MOS_SELECT_ACTION_BADGES = 500,          /**< Returns to the badge selection. */
-        MOS_SELECT_ACTION_COMMANDS = 600,        /**< Opens the chosen badge's command window. */
-        MOS_SELECT_ACTION_CLOSE = 1000           /**< Closes the monster box. */
-    };
-
     int      size;
     int      i;
     int      keys = MenuCommonInfo->CheckSelectKey();
@@ -4369,7 +4226,7 @@ int CMenuMosSelect::KeyStep() {
     int      buttons = MenuCommonInfo->CheckPushButton();
     int      fade_end = MenuMosSelectPtr->FadeCheckMenu();
     CDC2Mes *command = MenuDCMsg[5];
-    int      show_info = 0;
+    int      show_info = false;
     int      action;
 
     switch (mode) {
@@ -4381,7 +4238,7 @@ int CMenuMosSelect::KeyStep() {
 
             break;
         case MENU_ASK_MODE_CLOSE:
-            if (fade_end && (result == MOS_SELECT_RESULT_CLOSE || (result == MOS_SELECT_RESULT_CHANGE && load_phase == 4))) {
+            if (fade_end && (result == MOS_SELECT_RESULT_CLOSE || (result == MOS_SELECT_RESULT_CHANGE && load_phase == MOS_SELECT_LOAD_DONE))) {
                 if (result == MOS_SELECT_RESULT_CHANGE) {
                     CActionChara *player = (CActionChara *) MenuMainScene->GetCharacter(0);
 
@@ -4390,16 +4247,16 @@ int CMenuMosSelect::KeyStep() {
                         player->InitScript();
                     }
 
-                    MenuArg.end_code = 1;
+                    MenuArg.end_code = MENU_END_CHARA_CHANGE;
                     MenuArg.result[0] = USER_CHARA_MONSTER;
                 }
 
                 MenuDrawEnv->camera.SetPos(camera_pos);
                 MenuDrawEnv->camera.SetRef(camera_ref);
-                *(CameraPoint *) MenuDrawEnv->pos = *(CameraPoint *) camera_pos;
-                *(CameraPoint *) MenuDrawEnv->ref = *(CameraPoint *) camera_ref;
+                *(mgVec4 *) MenuDrawEnv->pos = *(mgVec4 *) camera_pos;
+                *(mgVec4 *) MenuDrawEnv->ref = *(mgVec4 *) camera_ref;
                 ExeScript("\x8F\x49\x97\xB9\x8F\x88\x97\x9D");
-                MenuPosData->TexGetInfoClear(0xAA, 0x100);
+                MenuPosData->TexGetInfoClear(MONSTER_EFFECT_TEX_BLOCK, 0x100);
                 MenuPosData->FormInfoClear(0x3C, 0x4F);
                 return result;
             }
@@ -4478,7 +4335,7 @@ int CMenuMosSelect::KeyStep() {
                     switch (buttons) {
                         case MENU_PUSH_BUTTON_DECIDE:
                         case MENU_PUSH_BUTTON_TRIANGLE:
-                            if (select > 9) {
+                            if (select > MOS_SELECT_BADGE_KIND_NUM - 1) {
                                 action = MOS_SELECT_ACTION_REJECT;
                             } else {
                                 select_badge = &badge[select];
@@ -4577,7 +4434,7 @@ int CMenuMosSelect::KeyStep() {
                                         select_monster_save = BuildUpWeaponInfo.select_no;
                                         step = MOS_SELECT_STEP_CLASS_CONFIRM;
                                         ExeScript("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57\x81\x48");
-                                        mes_show = 1;
+                                        mes_show = true;
                                         mes.MsgPreset(MENU_SCRIPT_MES_YESNO);
                                         mes.ClsMes::mes_no = -1;
                                         char *name = GetMonsterName(level_monster[select_monster_save]);
@@ -4606,14 +4463,14 @@ int CMenuMosSelect::KeyStep() {
                             int answer = mes.YesNoCursor2(0);
 
                             if (answer == MES_YESNO_YES && ReadBGSync() == 0) {
-                                mes_show = 0;
+                                mes_show = false;
                                 BuildUpWeaponInfo.mode = 0;
                                 change_wait = 0;
                                 step = MOS_SELECT_STEP_CLASS_EFFECT;
                                 ExeScript("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57\x81\x49");
                                 MenuMonChangeLoadStack.stReset();
                                 effect.Initialize(NULL);
-                                effect_show = 0;
+                                effect_show = false;
                                 effect_data = MenuMonChangeLoadStack.stack;
                                 effect_sound = reinterpret_cast<u32 *>(&effect_data[0x3980]);
                                 effect_stack.stSetBuffer(
@@ -4624,7 +4481,7 @@ int CMenuMosSelect::KeyStep() {
                             }
 
                             if (answer == MES_YESNO_NO) {
-                                mes_show = 0;
+                                mes_show = false;
                                 BuildUpWeaponInfo.mode = 1;
                                 step = MOS_SELECT_STEP_CLASS_SELECT;
                                 ExeScript("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57\x8E\x7E\x82\xDF");
@@ -4635,7 +4492,7 @@ int CMenuMosSelect::KeyStep() {
                         case MOS_SELECT_STEP_CLASS_EFFECT: {
                             change_wait++;
 
-                            if (ReadBGSync() == 0 && effect_show == 0) {
+                            if (ReadBGSync() == 0 && !effect_show) {
                                 if (effect_sound != NULL) {
                                     mgCMemory sound_stack;
                                     sound_stack.stSetBuffer(
@@ -4656,7 +4513,7 @@ int CMenuMosSelect::KeyStep() {
                                 effect.SetPosition(effect_pos);
                                 effect.SetMotion("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57", 6, 1);
                                 effect.Step();
-                                effect_show = 1;
+                                effect_show = true;
                                 effect_frame = 0;
                             }
 
@@ -4668,7 +4525,7 @@ int CMenuMosSelect::KeyStep() {
                                 }
 
                                 if (effect_frame == 10) {
-                                    load_phase = 0;
+                                    load_phase = MOS_SELECT_LOAD_WAIT;
                                     select_badge->class_level++;
                                     select_badge->monster_id = level_monster[select_monster_save];
                                     view_monster = select_badge->monster_id;
@@ -4684,7 +4541,7 @@ int CMenuMosSelect::KeyStep() {
                             effect.GetNowFrame(NULL);
 
                             if (change_wait > 900 || (effect_show && effect.CheckMotionEnd(NULL))) {
-                                effect_show = 0;
+                                effect_show = false;
                                 effect.Initialize(NULL);
                                 step = MOS_SELECT_STEP_CLASS_DONE;
                                 ExeScript("\x83\x4E\x83\x89\x83\x58\x83\x60\x83\x46\x83\x93\x83\x57\x8F\x49\x97\xB9MSG");
@@ -4704,7 +4561,7 @@ int CMenuMosSelect::KeyStep() {
                             }
 
                             if (step == MOS_SELECT_STEP_CLASS_DONE) {
-                                level_max = 0;
+                                level_max = false;
                                 step = MOS_SELECT_STEP_CLASS_REWARD;
                                 CGameDataUsed *place = GetUserDataMan()->SearchSpaceUsedDataPtr();
 
@@ -4718,8 +4575,8 @@ int CMenuMosSelect::KeyStep() {
                                     reward.data.attach.spectol_value = select_badge->class_level + 1;
                                     s16 *param = reward.data.attach.status;
 
-                                    if (select_badge->class_level == 3) {
-                                        level_max = 1;
+                                    if (select_badge->class_level == MONSTER_PROGRESS_LEVEL_NUM - 1) {
+                                        level_max = true;
                                     }
 
                                     for (int j = 0; j < 10; j++) {
@@ -4815,10 +4672,10 @@ int CMenuMosSelect::KeyStep() {
 
                     if (level != old_level) {
                         view_monster = monster_progress_tbl[select_badge->progress][1 + level];
-                        show_info = 1;
+                        show_info = true;
                         pick_monster = view_monster;
                         load_wait = 0;
-                        load_phase = 0;
+                        load_phase = MOS_SELECT_LOAD_WAIT;
                         MenuSePlay(SYSTEM_SE_CURSOR);
                     }
 
@@ -4918,20 +4775,20 @@ int CMenuMosSelect::KeyStep() {
                     break;
                 }
                 case MOS_SELECT_ACTION_TRANSFORM: {
-                    MenuLoadInfo.update_scene = 1;
+                    MenuLoadInfo.update_scene = true;
 
                     if (MenuLoadInfo.update_scene == 1 && FxScriptMan != NULL) {
                         DeleteMonsterEffect();
                     }
 
                     GetCharaMemAllocPtr(MenuArg.chara_stack, MorattaStack, USER_CHARA_MONSTER, 0);
-                    MenuLoadInfo.mode = 2;
-                    MenuLoadInfo.update_scene = 1;
+                    MenuLoadInfo.mode = MENU_LOAD_MODE_SCENE;
+                    MenuLoadInfo.update_scene = true;
                     MenuMosLoadStack.stReset();
                     result = MOS_SELECT_RESULT_CHANGE;
                     monster->Initialize(NULL);
                     load_wait = 0;
-                    load_phase = 0;
+                    load_phase = MOS_SELECT_LOAD_WAIT;
                     FadeOutMenu(40, 0.0f);
                     mode = MENU_ASK_MODE_CLOSE;
                     MOS_CHANGE_PARAM *chosen = select_badge;
@@ -4954,7 +4811,7 @@ int CMenuMosSelect::KeyStep() {
                     view_monster = select_badge->monster_id;
 
                     if (select_badge != NULL) {
-                        show_info = 1;
+                        show_info = true;
                     }
 
                     model_side = 1;
@@ -4991,7 +4848,7 @@ int CMenuMosSelect::KeyStep() {
 
     if (pick_monster != view_monster) {
         load_wait = 17;
-        load_phase = 0;
+        load_phase = MOS_SELECT_LOAD_WAIT;
         pick_monster = view_monster;
     }
 
@@ -5168,7 +5025,7 @@ void MenuTimeStepEnvFunc(CScene *scene, CActionChara *chara, int step) {
         return;
     }
 
-    if (step != kEnvStepSunMoon) {
+    if (step != MENU_ENV_STEP_SUN_MOON) {
         return;
     }
 
@@ -5192,7 +5049,7 @@ void MenuWeaponRealStepEnvFunc(CActionChara *chara, int step) {
     mgCFrame *object;
     float     rotation[4];
 
-    if (step == 0x58) {
+    if (step == MENU_ENV_STEP_WEAPON_TURN) {
         object = chara->SearchObject("parts01");
 
         if (object != NULL) {
@@ -7560,7 +7417,7 @@ void CMosBookMenu::InitEnd() {
     MenuMemoryAdjust(&scratch, &this->stack, MenuActionCharaBuffer, 3);
     this->list_num = 0;
 
-    for (i = 0; i < kMonsterMemoCount; i++) {
+    for (i = 0; i < MOS_BOOK_MEMO_NUM; i++) {
         entry = GetMonsterBaseInfoForMonsterMemoIndex(i);
 
         if (entry != NULL && 0 < KillMonsterCount(entry->id, 0)) {
@@ -7569,7 +7426,7 @@ void CMosBookMenu::InitEnd() {
         }
     }
 
-    for (i = this->list_num; i < kMonsterMemoCount; i++) {
+    for (i = this->list_num; i < MOS_BOOK_MEMO_NUM; i++) {
         this->list[i] = -1;
     }
 
@@ -7876,7 +7733,7 @@ int CMosBookMenu::KeyStep() {
         case MENU_ASK_MODE_NONE:
             if ((lr & MENU_SELECT_KEY_L1) || (lr & MENU_SELECT_KEY_R1) ||
                 (select & MENU_SELECT_KEY_LEFT) || (select & MENU_SELECT_KEY_RIGHT)) {
-                cmd = kCmdTurnPage;
+                cmd = MOS_BOOK_COMMAND_TURN_PAGE;
 
                 if (select & MENU_SELECT_KEY_LEFT) {
                     this->select -= 1;
@@ -7909,11 +7766,11 @@ int CMosBookMenu::KeyStep() {
                 this->monster_info = GetMonsterBaseInfo(this->list[this->select]);
                 this->SetMonsterInfo(this->monster_info);
             } else if (push & MENU_PUSH_BUTTON_CANCEL) {
-                cmd = kCmdClose;
+                cmd = MOS_BOOK_COMMAND_CLOSE;
                 MenuSePlay(SYSTEM_SE_CANCEL);
             } else if (menu_debug_flag != 0) {
                 if (push & MENU_PUSH_BUTTON_TRIANGLE) {
-                    for (i = 0; i < kMonsterMemoCount; i++) {
+                    for (i = 0; i < MOS_BOOK_MEMO_NUM; i++) {
                         if (i != 0x30 && i != 0x44) {
                             KillMonsterCount(i, 1);
                         }
@@ -7928,11 +7785,11 @@ int CMosBookMenu::KeyStep() {
 
     if (0 <= cmd) {
         switch (cmd) {
-            case kCmdClose:
+            case MOS_BOOK_COMMAND_CLOSE:
                 this->mode = MENU_ASK_MODE_CLOSE;
                 FadeOutMenu(0x3C, 0.0f);
                 break;
-            case kCmdTurnPage:
+            case MOS_BOOK_COMMAND_TURN_PAGE:
                 this->load_phase = 1;
                 break;
         }
@@ -7949,7 +7806,7 @@ int CMosBookMenu::KeyStep() {
         case 2:
             this->load_wait += 1;
 
-            if (this->load_wait >= kModelDelayFrames) {
+            if (this->load_wait >= MOS_BOOK_LOAD_DELAY) {
                 StartReadBG();
 
                 this->stack.stack_used = 0;
@@ -7986,8 +7843,8 @@ int CMosBookMenu::KeyStep() {
 
             this->show_wait += 1;
 
-            if (this->show_wait > kModelFrameCap) {
-                this->show_wait = kModelFrameCap;
+            if (this->show_wait > MOS_BOOK_SHOW_WAIT_MAX) {
+                this->show_wait = MOS_BOOK_SHOW_WAIT_MAX;
             }
 
             break;

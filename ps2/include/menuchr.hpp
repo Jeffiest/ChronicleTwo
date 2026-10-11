@@ -47,6 +47,18 @@ enum {
     COSTUME_LIST_MAX = 8,           /**< Costumes one list of the costume screen holds. */
     MOS_BOOK_LIST_MAX = 0x180,      /**< Monster numbers the monster book can list. */
     MOS_BOOK_DROP_ITEM_NUM = 3,     /**< Dropped items the monster book shows for one monster. */
+    CHR_CNG_GAUGE_NUM = 3,          /**< Health gauges of the party change screen: Max, Monica and the ridepod. */
+    CHR_CNG_GIFT_BAIT_MAX = 32,     /**< Bait numbers that Fabio's gift can be chosen from. */
+    MOS_SELECT_BADGE_KIND_NUM = 10, /**< Badges of the monster box that hold a family of monsters. */
+    MOS_SELECT_GRID_COLUMNS = 4,    /**< Columns of monster badges. */
+    MOS_SELECT_GRID_ROWS = 3,       /**< Rows of monster badges. */
+    MONSTER_EFFECT_NUM = 4,         /**< Effect files a monster transformation reads, as MOS_HENGE_PARAM::effect_name lists them. */
+    MONSTER_EFFECT_TEX_BLOCK = 0xAA, /**< Texture block of the effects of a monster transformation. */
+    MOS_BOOK_MEMO_NUM = 0x119,      /**< Monster memo numbers that the monster book goes through. */
+    MOS_BOOK_MONSTER_NUM = 0x14A,   /**< Entries of the monster table searched for a memo number. */
+    MOS_BOOK_AFFINITY_NUM = 8,      /**< Resistance or weakness icons the monster book can show. */
+    MOS_BOOK_LOAD_DELAY = 20,       /**< Frames the monster book waits before it reads the monster's model. */
+    MOS_BOOK_SHOW_WAIT_MAX = 20,    /**< Highest count of frames that the monster book's model has been shown. */
 };
 
 /**
@@ -77,8 +89,304 @@ enum CHR_CNG_SUB_MENU {
  *
  */
 enum MOS_SELECT_RESULT {
+    MOS_SELECT_RESULT_NONE = 0,   /**< The monster box is still open. */
     MOS_SELECT_RESULT_CLOSE = 1,  /**< The player left the monster box. */
     MOS_SELECT_RESULT_CHANGE = 2, /**< Monica turned into the chosen monster. */
+};
+
+/**
+ *
+ * Value of CMenuChrCngMenu::select that is not a USER_CHARA character.
+ *
+ */
+enum CHR_CNG_SELECT {
+    CHR_CNG_SELECT_NPC = 4, /**< The townsperson in the party; 0 to 3 are the USER_CHARA characters. */
+};
+
+/**
+ *
+ * Pages of the party change screen, as CBaseMenuClass::key_arg_no holds them for CMenuChrCngMenu.
+ *
+ */
+enum CHR_CNG_PAGE {
+    CHR_CNG_PAGE_SELECT = 0,   /**< The cursor picks a character. */
+    CHR_CNG_PAGE_CONFIRM = 1,  /**< A change of character waits for its yes/no answer. */
+    CHR_CNG_PAGE_NPC_JOIN = 2, /**< A townsperson has just joined and speaks; any button opens their page. */
+    CHR_CNG_PAGE_NPC = 3,      /**< The townsperson's page, with their abilities and the item board. */
+};
+
+/**
+ *
+ * Steps of the party change screen, as CBaseMenuClass::step holds them on CHR_CNG_PAGE_SELECT.
+ *
+ */
+enum CHR_CNG_STEP {
+    CHR_CNG_STEP_SELECT = 0,    /**< The cursor moves over the characters. */
+    CHR_CNG_STEP_NPC_MENU = 1,  /**< The townsperson asks whether to open their page or to leave the party. */
+    CHR_CNG_STEP_NPC_LEAVE = 2, /**< Leaving the party waits for its yes/no answer. */
+};
+
+/**
+ *
+ * Steps of the townsperson's page, as CBaseMenuClass::step holds them on CHR_CNG_PAGE_NPC.
+ *
+ */
+enum CHR_CNG_NPC_STEP {
+    CHR_CNG_NPC_STEP_COMMAND = 0,        /**< An ability is chosen. */
+    CHR_CNG_NPC_STEP_NO_POINT = 1,       /**< The townsperson says that their points are too few; a button returns. */
+    CHR_CNG_NPC_STEP_RESULT = 2,         /**< The townsperson speaks after the ability; a button returns. */
+    CHR_CNG_NPC_STEP_GOT_ITEM = 3,       /**< The townsperson's gift has been received; no keys are taken. */
+    CHR_CNG_NPC_STEP_CONFIRM = 10,       /**< Using the ability waits for its yes/no answer. */
+    CHR_CNG_NPC_STEP_IDLE = 11,          /**< No keys are taken. */
+    CHR_CNG_NPC_STEP_REPAIR_SELECT = 20, /**< Cedric's item board picks the item to repair. */
+};
+
+/**
+ *
+ * What CMenuChrCngMenu::KeyChangeMain does after reading the keys.
+ *
+ */
+enum CHR_CNG_ACTION {
+    CHR_CNG_ACTION_CLOSED = -1,         /**< The screen closes after the townsperson's ability. */
+    CHR_CNG_ACTION_NONE = 0,            /**< Nothing. */
+    CHR_CNG_ACTION_REJECT = 5,          /**< Rejects the key with the cancel sound. */
+    CHR_CNG_ACTION_CHANGE = 20,         /**< Changes to the chosen character. */
+    CHR_CNG_ACTION_NPC_PAGE = 30,       /**< Opens the townsperson's page. */
+    CHR_CNG_ACTION_NPC_MENU = 34,       /**< Asks whether to open the townsperson's page or to send them away. */
+    CHR_CNG_ACTION_CLOSE = 40,          /**< Closes the screen. */
+    CHR_CNG_ACTION_MONSTER_BOX = 50,    /**< Opens the monster box. */
+    CHR_CNG_ACTION_NPC_PAGE_END = 60,   /**< Leaves the townsperson's page. */
+    CHR_CNG_ACTION_ASK_CHANGE = 70,     /**< Asks whether to change to the character under the cursor and starts loading them. */
+    CHR_CNG_ACTION_CHANGE_CANCEL = 80,  /**< Drops the change of character. */
+    CHR_CNG_ACTION_USE_ABILITY = 90,    /**< Uses the chosen ability. */
+    CHR_CNG_ACTION_ABILITY = 100,       /**< Asks whether to use the chosen ability. */
+    CHR_CNG_ACTION_REPAIR_WEAPON = 200, /**< Opens Cedric's item board of weapons. */
+    CHR_CNG_ACTION_REPAIR_ARM = 201,    /**< Opens Cedric's item board of ridepod arms. */
+    CHR_CNG_ACTION_REPAIR_ENERGY = 202, /**< Opens Cedric's item board of energy packs. */
+};
+
+/**
+ *
+ * Townspeople who can join the party, by party character number.
+ *
+ */
+enum PARTY_NPC {
+    PARTY_NPC_CEDRIC = 1,             /**< Cedric, who repairs weapons and ridepod arms and recharges the ridepod. */
+    PARTY_NPC_BORNEO = 2,             /**< Borneo. */
+    PARTY_NPC_GORDON = 3,             /**< Gordon. */
+    PARTY_NPC_DONNY = 4,              /**< Donny. */
+    PARTY_NPC_PARN = 5,               /**< Parn, who takes the party out of the dungeon. */
+    PARTY_NPC_DR_DELL = 6,            /**< Dr. Dell, who cures the ailments of Max and Monica. */
+    PARTY_NPC_FERDINAND = 7,          /**< Ferdinand, who gives an item. */
+    PARTY_NPC_CLAIRE = 8,             /**< Claire. */
+    PARTY_NPC_PAU = 9,                /**< Pau, whose model the party change screen scales down further. */
+    PARTY_NPC_STEWART = 10,           /**< Stewart. */
+    PARTY_NPC_ADEL = 11,              /**< Adel. */
+    PARTY_NPC_AUNT_POLLY = 12,        /**< Aunt Polly, who gives an item. */
+    PARTY_NPC_ERIK = 13,              /**< Erik, who gives three of an item. */
+    PARTY_NPC_SHERIFF_BLINKHORN = 14, /**< Sheriff Blinkhorn. */
+    PARTY_NPC_MILANE = 15,            /**< Milane. */
+    PARTY_NPC_GERALD = 16,            /**< Gerald. */
+    PARTY_NPC_MAYOR_NEED = 17,        /**< Mayor Need. */
+    PARTY_NPC_PRIEST_BRUNO = 18,      /**< Priest Bruno, who revives Max and Monica. */
+    PARTY_NPC_RUFIO = 19,             /**< Rufio, whose ability works only in a dungeon. */
+    PARTY_NPC_FABIO = 20,             /**< Fabio, who gives three of a fishing bait. */
+    PARTY_NPC_OLIVIE = 21,            /**< Olivie, who powers up Max and Monica. */
+    PARTY_NPC_JULIA = 22,             /**< Julia, who stuns the monsters nearby. */
+    PARTY_NPC_MINA = 23,              /**< Mina, who heals Max and Monica and cures their ailments. */
+    PARTY_NPC_CORINNE = 24,           /**< Corinne. */
+    PARTY_NPC_GRANNY_ROSA = 25,       /**< Granny Rosa, who gives an item. */
+    PARTY_NPC_LIN = 26,               /**< Lin, the last townsperson, who cannot be sent away. */
+};
+
+/**
+ *
+ * Settings the party change screen's debug keys change, as MenuDebugChangeSelectMode holds them.
+ *
+ */
+enum MENU_DEBUG_CHANGE_MODE {
+    MENU_DEBUG_CHANGE_PARTY = 0,  /**< Buttons add characters to the party or remove them. */
+    MENU_DEBUG_CHANGE_ENABLE = 1, /**< Buttons allow or forbid changing to characters. */
+    MENU_DEBUG_CHANGE_MASK = 2,   /**< Buttons set or clear the characters' change mask bits. */
+};
+
+/**
+ *
+ * Message numbers of the monster box's badge commands.
+ *
+ */
+enum MOS_SELECT_COMMAND_MSG {
+    MOS_SELECT_CMD_TRANSFORM = 0x14B6,    /**< Turns Monica into one of the badge's monsters. */
+    MOS_SELECT_CMD_STATUS = 0x14B7,       /**< Shows the status of the badge's monster. */
+    MOS_SELECT_CMD_CLASS_CHANGE = 0x14B8, /**< Moves the badge on to a higher class of monster. */
+};
+
+/**
+ *
+ * Pages of the monster box, as CBaseMenuClass::key_arg_no holds them for CMenuMosSelect.
+ *
+ */
+enum MOS_SELECT_PAGE {
+    MOS_SELECT_PAGE_BADGE = 0,   /**< The cursor moves over the badges. */
+    MOS_SELECT_PAGE_COMMAND = 1, /**< A command of the chosen badge is picked and run. */
+    MOS_SELECT_PAGE_STATUS = 2,  /**< The status of the badge's monster forms is shown. */
+};
+
+/**
+ *
+ * Steps of the badge command page, as CBaseMenuClass::step holds them on MOS_SELECT_PAGE_COMMAND.
+ *
+ */
+enum MOS_SELECT_COMMAND_STEP {
+    MOS_SELECT_STEP_COMMAND = 0,            /**< A badge command is chosen. */
+    MOS_SELECT_STEP_ERROR = 1,              /**< A message that the command is not possible waits for a button. */
+    MOS_SELECT_STEP_CLASS_SELECT = 10,      /**< The monster to change class to is chosen. */
+    MOS_SELECT_STEP_CLASS_CONFIRM = 11,     /**< The class change waits for its yes/no answer. */
+    MOS_SELECT_STEP_CLASS_EFFECT = 12,      /**< The class-change effect loads and plays. */
+    MOS_SELECT_STEP_CLASS_DONE = 13,        /**< The class change's end message waits for a button. */
+    MOS_SELECT_STEP_CLASS_REWARD = 14,      /**< The monster-drop reward message waits for a button. */
+    MOS_SELECT_STEP_CLASS_LAST_REWARD = 15, /**< The last class's item reward message waits for a button. */
+    MOS_SELECT_STEP_FORM_SELECT = 20,       /**< The monster form to transform into is chosen. */
+};
+
+/**
+ *
+ * What CMenuMosSelect::KeyStep does after reading the keys.
+ *
+ */
+enum MOS_SELECT_ACTION {
+    MOS_SELECT_ACTION_NONE = 0,              /**< Nothing. */
+    MOS_SELECT_ACTION_REJECT = 5,            /**< Rejects the key with the cancel sound. */
+    MOS_SELECT_ACTION_TRANSFORM = 10,        /**< Turns Monica into the monster form chosen in the form list. */
+    MOS_SELECT_ACTION_CANNOT_TRANSFORM = 11, /**< Shows that the transformation is not possible. */
+    MOS_SELECT_ACTION_FORM_LIST = 12,        /**< Opens the list of the badge's monster forms to transform into. */
+    MOS_SELECT_ACTION_STATUS = 20,           /**< Opens the status page of the badge's monster. */
+    MOS_SELECT_ACTION_CLASS_CHANGE = 30,     /**< Opens the list of monsters the badge can change class to. */
+    MOS_SELECT_ACTION_BADGES = 500,          /**< Returns to the badge selection. */
+    MOS_SELECT_ACTION_COMMANDS = 600,        /**< Opens the chosen badge's command window. */
+    MOS_SELECT_ACTION_CLOSE = 1000,          /**< Closes the monster box. */
+};
+
+/**
+ *
+ * Steps of loading the monster that the monster box shows, as CMenuMosSelect::load_phase holds them.
+ *
+ */
+enum MOS_SELECT_LOAD_PHASE {
+    MOS_SELECT_LOAD_NONE = -1,  /**< No monster is shown. */
+    MOS_SELECT_LOAD_WAIT = 0,   /**< Counts load_wait down, then starts reading the model. */
+    MOS_SELECT_LOAD_BUILD = 1,  /**< Builds the model once it has been read. */
+    MOS_SELECT_LOAD_SHOWN = 2,  /**< The model is shown. */
+    MOS_SELECT_LOAD_EFFECT = 3, /**< Enters the transformation effects of Monica's new form once they have been read. */
+    MOS_SELECT_LOAD_DONE = 4,   /**< Monica's new form and its effects are in the scene. */
+};
+
+/**
+ *
+ * Steps of loading the monster that the monster book shows, as CMosBookMenu::load_phase holds them.
+ *
+ */
+enum MOS_BOOK_LOAD_PHASE {
+    MOS_BOOK_LOAD_NONE = 0,  /**< Nothing is loading. */
+    MOS_BOOK_LOAD_START = 1, /**< Another monster was picked; the wait restarts. */
+    MOS_BOOK_LOAD_WAIT = 2,  /**< Waits MOS_BOOK_LOAD_DELAY frames, then starts reading the model. */
+    MOS_BOOK_LOAD_BUILD = 3, /**< Builds the model once it has been read. */
+    MOS_BOOK_LOAD_SHOWN = 4, /**< The model is shown. */
+};
+
+/**
+ *
+ * Commands of the monster book's keys.
+ *
+ */
+enum MOS_BOOK_COMMAND {
+    MOS_BOOK_COMMAND_NONE = -1,       /**< No command. */
+    MOS_BOOK_COMMAND_CLOSE = 10,      /**< Closes the book. */
+    MOS_BOOK_COMMAND_TURN_PAGE = 100, /**< Shows another monster. */
+};
+
+/**
+ *
+ * Lines of the costume screen past its costume lists, as CMenuCostumeSel::select holds them.
+ *
+ */
+enum COSTUME_SELECT {
+    COSTUME_SELECT_CHARA = 3, /**< Finishes with the character; 0 to 2 are the costume lists. */
+    COSTUME_SELECT_EXIT = 4,  /**< Shown while Monica is dressed; ends the screen and puts her default costumes back. */
+};
+
+/**
+ *
+ * Steps of loading the character the costume screen shows, as MenuCosutumeLoadPhase holds them.
+ *
+ */
+enum COSTUME_LOAD_PHASE {
+    COSTUME_LOAD_NONE = 0,      /**< Nothing is loading. */
+    COSTUME_LOAD_START = 1,     /**< Starts reading the character in the chosen costumes. */
+    COSTUME_LOAD_BUILD = 2,     /**< Builds the model once it has been read. */
+    COSTUME_LOAD_SHOW_WAIT = 3, /**< Steps the hidden model for 15 frames. */
+    COSTUME_LOAD_SHOWN = 4,     /**< The model is shown and can be turned. */
+};
+
+/**
+ *
+ * How the menus' background model loading puts the models it reads, as MENU_LOAD_INFO::mode holds it.
+ *
+ */
+enum MENU_LOAD_MODE {
+    MENU_LOAD_MODE_MENU = 0,   /**< Into the menu's own models, and into the scene's when update_scene is set. */
+    MENU_LOAD_MODE_INVENT = 1, /**< Max's thinking model and two equipment slots, into the menu's models, for the invention menu. */
+    MENU_LOAD_MODE_SCENE = 2,  /**< Into the scene's characters only, as a change of character does. */
+    MENU_LOAD_MODE_THINK = 3,  /**< As MENU_LOAD_MODE_MENU with Max's thinking model, for the costume screen. */
+    MENU_LOAD_MODE_BOOK = 4,   /**< Monster models from the monster book's folder. */
+};
+
+/**
+ *
+ * Slots of MenuCharaBuild2 and MenuActionChara that a character's model is loaded into.
+ *
+ */
+enum MENU_CHARA_SLOT {
+    MENU_CHARA_SLOT_BODY = 0,    /**< The character's body. */
+    MENU_CHARA_SLOT_SKIN = 1,    /**< Skin of the equipment in MenuLoadItemNo[4], put on the body. */
+    MENU_CHARA_SLOT_EQUIP_0 = 2, /**< Equipment in MenuLoadItemNo[0], which carries the sword trail. */
+    MENU_CHARA_SLOT_EQUIP_1 = 3, /**< Equipment in MenuLoadItemNo[1]. */
+    MENU_CHARA_SLOT_EQUIP_2 = 4, /**< Equipment in MenuLoadItemNo[2]. */
+    MENU_CHARA_SLOT_EQUIP_3 = 5, /**< Equipment in MenuLoadItemNo[3], put on the body as its "skin3" skin. */
+    MENU_CHARA_SLOT_SCRIPT = 6,  /**< Action script of the character. */
+};
+
+/**
+ *
+ * Files of a monster that GetMonsterModelFile gives the path of, as its kind argument holds them.
+ *
+ */
+enum MONSTER_FILE_KIND {
+    MONSTER_FILE_MODEL = 0,  /**< The model, "<model>.chr". */
+    MONSTER_FILE_SOUND = 1,  /**< The sounds, "snd2/mon/EN_<number>.snd". */
+    MONSTER_FILE_SCRIPT = 2, /**< The action script of the transformation, "<script>.stb". */
+    MONSTER_FILE_CONFIG = 3, /**< The information script, "<model>.cfg". */
+};
+
+/**
+ *
+ * What ReadMainCharaBG reports about the quick change.
+ *
+ */
+enum MAIN_CHARA_BG_READ {
+    MAIN_CHARA_BG_READ_IDLE = 0, /**< Nothing to load, or the refused quick change waits for a button. */
+    MAIN_CHARA_BG_READ_BUSY = 1, /**< The character is loading. */
+    MAIN_CHARA_BG_READ_DONE = 2, /**< The character is in the scene, or the refused quick change was dismissed. */
+};
+
+/**
+ *
+ * Steps at which the menus' model step functions act.
+ *
+ */
+enum MENU_ENV_STEP {
+    MENU_ENV_STEP_SUN_MOON = 0x38,    /**< MenuTimeStepEnvFunc shows the sun or the moon. */
+    MENU_ENV_STEP_WEAPON_TURN = 0x58, /**< MenuWeaponRealStepEnvFunc turns the weapon's moving part. */
 };
 
 /**
@@ -132,7 +440,7 @@ STATIC_ASSERT(sizeof(CHR_CNG_CLUT_COLOR) == 0x4);
  */
 class CMenuChrCngMenu : public CBaseMenuClass {
 public:
-    int                 select;      /**< Character the cursor is on: 0 to 3 for the party, 4 for the townsperson. */
+    int                 select;      /**< Character the cursor is on: a USER_CHARA, or CHR_CNG_SELECT_NPC. */
     int                 last_select; /**< Character the cursor was last moved to. */
     s32                 unk_118;
     s16                 open_wait;                            /**< Frames left before the screen takes keys. */
@@ -149,9 +457,9 @@ public:
     int                 item_brd_select;                      /**< Slot of the item board the cursor is on. */
     int                 item_brd_pos;                         /**< Scroll position of the item board. */
     CMenuPosDataForm   *form;                                 /**< Form of the screen. */
-    MENUFORMPARTS_TYPE *gauge_part[3];                        /**< Health gauge part of Max, Monica and the ridepod. */
-    COMMON_GAGE        *gauge[3];                             /**< Health of Max, Monica and the ridepod. */
-    MENU_ETCINFO       *chara_pos[5];                         /**< Place of each character's icon. */
+    MENUFORMPARTS_TYPE *gauge_part[CHR_CNG_GAUGE_NUM];        /**< Health gauge part of Max, Monica and the ridepod. */
+    COMMON_GAGE        *gauge[CHR_CNG_GAUGE_NUM];             /**< Health of Max, Monica and the ridepod. */
+    MENU_ETCINFO       *chara_pos[CHR_CNG_SELECT_NPC + 1];    /**< Place of each character's icon, by select. */
     CMenuPosDataForm   *npc_mes_form;                         /**< Form that holds the townsperson's speech. */
     CMenuPosDataForm   *npc_sub_form;                         /**< Form that moves with the townsperson's speech. */
     CMenuPosDataForm   *npc_chara_form;                       /**< Form that shows the townsperson's model. */
@@ -164,7 +472,7 @@ public:
     NPC_BASE_DATA      *npc_data;                             /**< Definition of the townsperson. */
     int                 item_brd_arrived;                     /**< Non-zero once the item board has reached its place. */
     s8                  face_state;                           /**< State of the townsperson's face: -1 none, 0 loading, 1 entered. */
-    u8                  face_loaded;                          /**< Non-zero when the face file has been read at once rather than in the background. */
+    u8                  face_loaded;                          /**< How the face file was read. @see MenuFileLoadMode */
     s16                 face_chara;                           /**< Townsperson whose face is loaded, or below zero for none. */
     u8                 *face_img;                             /**< Face image file of the townsperson. */
     u8                  npc_loading;                          /**< Non-zero while the townsperson's model is loading. */
@@ -243,7 +551,7 @@ public:
      * @address 0x2B50B0
      * @size 0xF4
      */
-    void LoadNPCFaceData(mgCMemory *memory, int mode);
+    void LoadNPCFaceData(mgCMemory *memory, int load_mode);
 
     /**
      *
@@ -385,7 +693,7 @@ public:
     s16               effect_frame; /**< Frames the growth effect has played. */
     s32               unk_765C;
     s16               load_wait;  /**< Frames left before the shown monster's model is loaded. */
-    s16               load_phase; /**< Step of loading the shown monster's model. */
+    s16               load_phase; /**< Step of loading the shown monster's model. @see MOS_SELECT_LOAD_PHASE */
 
     /**
      *
@@ -442,7 +750,7 @@ public:
      * @address 0x2BB1B0
      * @size 0xC0
      */
-    int KeyNormalMode(int keys, int lr_key, int push_button);
+    int KeyNormalMode(int keys, int lr_keys, int buttons);
 
     /**
      *
@@ -465,7 +773,7 @@ STATIC_ASSERT(sizeof(CMenuMosSelect) == 0x7670);
 class CMenuCostumeSel : public CBaseMenuClass {
 public:
     mgCCameraFollow camera; /**< Camera that looks at the character. */
-    int             select; /**< Line the cursor is on: the costume lists, then the character and leaving. */
+    int             select; /**< Line the cursor is on: a costume list, or a COSTUME_SELECT line. */
     s32             unk_1D4;
     s16             costume_num[COSTUME_LIST_NUM];                    /**< Number of costumes in each list of list. */
     s16             costume_select[COSTUME_LIST_NUM];                 /**< Costume picked in each list of list. */
@@ -474,7 +782,7 @@ public:
     s32             unk_220;
     float           tile_scroll;         /**< Scroll of the background tiles. */
     mgCMemory       stack;               /**< Memory of the screen's data. */
-    s16             chara;               /**< Character being dressed: 0 for Max, 1 for Monica. */
+    s16             chara;               /**< Character being dressed, USER_CHARA_MAX or USER_CHARA_MONICA. */
     int             monica_enabled;      /**< 1 when Monica can be dressed too. */
     sceVu0FVECTOR   chara_pos;           /**< Position of the character's model. */
     float           costume_rotation[4]; /**< Rotation restored to the character model while dressing it. */
@@ -496,6 +804,11 @@ public:
     mgCTexture     *tile_tex;      /**< Texture of the background tiles. */
     mgCTexture     *cursor_tex;    /**< Texture of the cursor. */
 
+    /**
+     *
+     * Initializes the costume screen with its camera and Max's default model place.
+     *
+     */
     CMenuCostumeSel();
 
     /**
@@ -506,7 +819,7 @@ public:
      * @address 0x2C0A80
      * @size 0x1A0
      */
-    void UpdateCostumeList(int mode, unsigned long chara_flag);
+    void UpdateCostumeList(int chara_no, unsigned long chara_flag);
 
     /**
      *
@@ -558,7 +871,7 @@ public:
     s32               unk_1C4;
     s32               unk_1C8;
     s32               unk_1CC;
-    int               load_phase;                              /**< Step of loading the monster's model. */
+    int               load_phase;                              /**< Step of loading the monster's model. @see MOS_BOOK_LOAD_PHASE */
     int               load_wait;                               /**< Frames counted before the monster's model is loaded. */
     int               show_wait;                               /**< Frames the monster's model has been built, up to 20. */
     s8                skip_draw;                               /**< Toggled each frame to step the model every other frame. */
@@ -781,6 +1094,13 @@ extern mgCMemory SwordEffectStack;
 
 /**
  *
+ * Memory stack reserved for building the monster box's models; nothing uses it.
+ *
+ */
+extern mgCMemory MenuMosBuildStack;
+
+/**
+ *
  * Clears a background read.
  *
  * @mangled InitMenuBGReadInfo2__FP17MENU_BGREAD_INFO2
@@ -817,7 +1137,17 @@ void MenuBGReadInfo2Malloc(mgCMemory *memory, int *wanted);
  * @address 0x2B4300
  * @size 0x24
  */
-s16 ConvertCharaLoadDataPhase(int a0, int a1);
+s16 ConvertCharaLoadDataPhase(int chara_no, int slot);
+
+/**
+ *
+ * Tells whether the menu was opened from a dungeon; returns non-zero if so.
+ *
+ * @mangled CheckBattleLoop__Fv
+ * @address 0x2B4330
+ * @size 0x4C
+ */
+int CheckBattleLoop();
 
 /**
  *
@@ -837,7 +1167,7 @@ void SetMenuLoadItemNo(int who);
  * @address 0x2B4670
  * @size 0xF0
  */
-void MenuMemoryAdjust(mgCMemory *pool, mgCMemory *rest, mgCMemory *buffer, int chara);
+void MenuMemoryAdjust(mgCMemory *pool, mgCMemory *rest, mgCMemory *buffers, int chara);
 
 /**
  *
@@ -868,6 +1198,16 @@ void SetMessagePositionNPCForm(CMenuPosDataForm *form, CDC2Mes *mes);
  * @size 0x6C
  */
 void AdjustNPCTalk(CDC2Mes *mes, CCharacter2 *npc);
+
+/**
+ *
+ * Clears the scene's weapon models before Max or Monica is loaded in their town model.
+ *
+ * @mangled EditCharaPrepare__Fv
+ * @address 0x2B56F0
+ * @size 0x64
+ */
+void EditCharaPrepare();
 
 /**
  *
@@ -992,14 +1332,22 @@ int MonsterEffectRead(mgCMemory *stack, int monster_no, int background);
 /**
  *
  * Builds the effects of a monster transformation once read into a texture block; returns non-zero on success.
- * The two-argument form has no definition; it is kept for an older caller.
  *
  * @mangled MonsterEffectEnter__FP6CSceneP1i
  * @address 0x2BA8F0
  * @size 0x11C
  */
 int MonsterEffectEnter(CScene *scene, u_long128 *buffer, int tex_block);
-int MonsterEffectEnter(CScene *scene, u_long128 *buffer);
+
+/**
+ *
+ * Gives the place of a badge of the monster box's form.
+ *
+ * @mangled GetBajjiPosition__FP16CMenuPosDataFormiiPi
+ * @address 0x2BAE20
+ * @size 0x58
+ */
+void GetBajjiPosition(CMenuPosDataForm *form, int slot, int unused, int *pos);
 
 /**
  *
@@ -1191,7 +1539,7 @@ void MenuItemCharaDataLoadEndCheckAfter(MENU_BGREAD_INFO2 **info, int chara_no);
  * @address 0x2BFD30
  * @size 0x4C4
  */
-void InitMainCharaBG(int chara_no, mgCMemory *stack, int mode);
+void InitMainCharaBG(int chara_no, mgCMemory *stack, int town);
 
 /**
  *
@@ -1245,6 +1593,16 @@ int MenuNPCLoadCheck(CActionChara *chara, mgCMemory *memory, int tex_block);
 
 /**
  *
+ * Gives the place of a costume in a costume list, or 0 if it is not there.
+ *
+ * @mangled CosutmeSelDefaultSet__FiPs
+ * @address 0x2C0C20
+ * @size 0x3C
+ */
+int CosutmeSelDefaultSet(int costume_id, short *costume_list);
+
+/**
+ *
  * Opens the costume screen.
  *
  * @mangled MenuCostumeInit__FP9mgCMemoryPii
@@ -1272,6 +1630,16 @@ int MenuCostumeKey();
  * @size 0x8
  */
 void MenuCostumeDraw();
+
+/**
+ *
+ * Gives the monster table entry of a monster memo number, or NULL.
+ *
+ * @mangled GetMonsterBaseInfoForMonsterMemoIndex__Fi
+ * @address 0x2C25B0
+ * @size 0x54
+ */
+BASE_MONSTER_TBL *GetMonsterBaseInfoForMonsterMemoIndex(int memo_index);
 
 /**
  *
@@ -1303,25 +1671,24 @@ int MonsterBookKey();
  */
 void MonsterBookDraw();
 
-#define MENU_LOAD_TARGET_SCENE 1
-
 /**
  *
  * State of the menus' background model loading.
  *
  */
 struct MENU_LOAD_INFO {
-    signed char mode;            /**< Current loading mode. */
-    signed char alternate_model; /**< Selects the alternate character model for loading. */
-    signed char load_all;        /**< Non-zero when all character model phases are loaded together. */
-    signed char chara_no;        /**< Character selected for model loading. */
-    signed char request_phase;   /**< Requested phase of character model loading. */
-    signed char load_phase;      /**< Current phase of character model loading. */
-    signed char target_flags;
-    signed char update_scene; /**< Non-zero when loading also updates the main scene's characters and stacks. */
+    s8 mode;            /**< Where the loaded models go. @see MENU_LOAD_MODE */
+    s8 alternate_model; /**< Non-zero to load the town model of Max or Monica instead of the dungeon one. */
+    s8 load_all;        /**< Non-zero to read every slot at once rather than one slot a frame. */
+    s8 chara_no;        /**< Character being loaded. */
+    s8 request_phase;   /**< Slot asked for, or below zero for each slot in turn. */
+    s8 load_phase;      /**< Slot being read when the slots are read in turn. @see MENU_CHARA_SLOT */
+    s8 target_flags;
+    s8 update_scene; /**< Non-zero when loading also updates the main scene's characters and stacks. */
 };
 
 STATIC_ASSERT(sizeof(MENU_LOAD_INFO) == 8);
+
 /**
  *
  * State of the menus' background model loading.
