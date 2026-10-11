@@ -15,6 +15,8 @@
 #include "gfx/gfx.hpp"
 #include "platform/clock.hpp"
 
+bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
+
 // The VSync and timing group of ps2/src/mglib.cpp, moved onto the platform clock
 // (platform/clock.hpp) in place of the PS2's root counter and VSync interrupt, plus the frame
 // path's packet-layer functions. The count the game reads is the clock's tick count and every
@@ -44,8 +46,6 @@ int g_data_id;
 
 // Texture description of the frame buffer mgSetPkFrameBuffer last set (retail's frame_tex).
 mgCTexture g_frame_tex;
-
-bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
 // Whether mgSetPkFrameBuffer has drawing redirected to a texture, so only a redirect it made is undone.
 bool g_frame_redirected;
