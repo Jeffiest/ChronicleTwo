@@ -172,7 +172,7 @@ SetDrawEnvGifTag reads the same layout from `info->(+0xFCC)`, an mgCFrameAttr (d
 mgCFace (`7mgCFace`, retail name, no members): 0x00 u_short type (lhu + andi), 0x02 short
 index_stride = 3, +1 if 0x100, -1 if 0x200, -1 if 0x10; 0x04 short material; 0x06 short index_num
 = vertex_num*stride; 0x08 short vertex_num; 0x0C int* index (`Alloc(index_mem, n/4+1)`, copied
-from `faces->index`); 0x10 next; 0x20 packet_tag. CreateFace reads FACES_ID type/face_num/material
+from `faces->index`); 0x10 next; 0x20 packet_tag. CreateFace reads FACES_ID type/vertex_num/material
 with `lhu` (int fields in mg_dataset.hpp: MWCC narrowing the load. Change the field types if the
 body will not match). The return value is the record after the index words.
 mgFACE_GROUP (**name invented**, no symbol): 0x00 material index (match key, plus `unk 0x0C == 0` for

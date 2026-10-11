@@ -839,10 +839,10 @@ int CMap::GetCharaLight(mgCObject *chara, CFuncPoint *points, int max, int use_p
     chara->GetPosition(chara_position);
     chara_position[3] = 0.0f;
     chara_position[1] += 20.0f;
-    light_mode = 1;
+    light_mode = FUNC_POINT_LIGHT_CHARA;
 
     if (use_parts != 0) {
-        light_mode |= 0x2;
+        light_mode |= FUNC_POINT_LIGHT_PARTS;
     }
 
     light_num = func_point.GetLight(chara_position, points, max, &check, light_mode);
@@ -1019,7 +1019,7 @@ void CMap::DrawEffect() {
     static mgCFrameAttr attr;
     attr.draw = MG_FRAME_DRAW_VISIBLE | MG_FRAME_DRAW_SKIP_CHILDREN;
     attr.no_cull = 1;
-    attr.fog = 2;
+    attr.fog = MG_FOG_BLACK;
     attr.no_cull = 1;
     attr.depth_bias = 1.015f;
     func_point.GetStart(FUNC_POINT_EFFECT);

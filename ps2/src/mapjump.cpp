@@ -535,7 +535,7 @@ void GotoInterior(CScene *scene, int interior_no) {
             SetInteriorDoorPos(scene);
         }
 
-        if (GetMapType(interior_no) == 2) {
+        if (GetMapType(interior_no) == MAP_TYPE_GEORAMA_INTERIOR) {
             LoadMapScript("g00");
         } else {
             LoadMapScript(map_name);
