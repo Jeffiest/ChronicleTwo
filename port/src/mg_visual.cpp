@@ -325,3 +325,18 @@ void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemory *memory) {
         }
     }
 }
+
+// The PS2's scratchpad has no host address; a static buffer with the same two halves stands in, so
+// code that still builds scratchpad packets writes real memory instead of the EE's 0x70000000.
+u_int *GetScrPad() {
+    static u_int scratchpad[2][0x2000 / 4] __attribute__((aligned(64)));
+
+    return scratchpad[buff_id ? 1 : 0];
+}
+
+// The DMA transfer to the GS has no host counterpart, and neither have the EE's DMA registers the
+// retail routine writes; the packet is discarded.
+void SendDMA(void *packet, int size) {
+    (void) packet;
+    (void) size;
+}
