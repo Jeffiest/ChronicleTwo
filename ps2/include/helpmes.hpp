@@ -32,10 +32,10 @@ struct HELP_MES_INFO {
         time = 0;
         mes_no = -1;
         fukidashi_pos = -1;
-        show = 0;
+        show = false;
         y = 0;
         x = 0;
-        created = 0;
+        created = false;
     }
 };
 
@@ -53,13 +53,14 @@ void LoadHelpMes(u_long128 *scratch);
 
 /**
  *
- * Resets the help message window and clears any request, once the help message file is loaded.
+ * Resets the help message window, gives it a texture block and clears any request, once the help
+ * message file is loaded.
  *
  * @mangled CreateHelpMes__Fi
  * @address 0x31E3B0
  * @size 0x43C
  */
-void CreateHelpMes(int message_id);
+void CreateHelpMes(int texture_block);
 
 /**
  *

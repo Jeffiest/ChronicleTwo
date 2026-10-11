@@ -1111,7 +1111,7 @@ void Init_MENUFORM_MAKEBRD_INFO(MENUFORM_MAKEBRD_INFO *board) {
 void GetMenuItemIconTexGetXY(int item_no, mgRect<int> &rect) {
     int icon_no = GetItemIconNo(item_no);
 
-    if (item_no == 0x38 && MenuMainScene != 0 &&
+    if (item_no == ITEM_ID_LAMBS_SWORD && MenuMainScene != 0 &&
         GetTimeBand(MenuMainScene->time) == MAP_TIME_BAND_NIGHT) {
         icon_no++;
     }
@@ -1475,7 +1475,7 @@ int SetModeMenuDrawItemBoard(int mode) {
     }
 
     if (mode == MENU_ITEM_BOARD_FISH) {
-        if (0 < GetUserItemHaveNum(0x135)) {
+        if (0 < GetUserItemHaveNum(ITEM_ID_AQUARIUM)) {
             CFishAquarium *aquarium = GetAquariumData();
 
             if (aquarium != NULL) {
@@ -4023,18 +4023,18 @@ void MenuItemModeItemDraw(int &tex_block, mgRect<int> clip_rect, float *pos, MEN
                         }
                     }
                 }
-            } else if (item_no == 0x137) {
+            } else if (item_no == ITEM_ID_MEDAL_HOLDER) {
                 num = GetUserDataMan()->yarikomi_medal;
             }
 
             if (no < bag_max) {
                 DrawOneItem(prim, item_rect, item_no, icon_mode, effect, rgba, item_flag);
 
-                if (num >= 2 || item_no == 0x137) {
+                if (num >= 2 || item_no == ITEM_ID_MEDAL_HOLDER) {
                     prim->Begin(MG_PRIM_SPRITE);
                     prim->Texture(num_tex);
 
-                    if (item_no == 0x137) {
+                    if (item_no == ITEM_ID_MEDAL_HOLDER) {
                         prim->Color(0xA4, 0xA4, 0x40, rgba[3]);
                     } else if ((s8) menu_limmit_displayflag[no] == 1) {
                         prim->Color(0x52, 0x52, 0x94, rgba[3]);
@@ -4059,7 +4059,7 @@ void MenuItemModeItemDraw(int &tex_block, mgRect<int> clip_rect, float *pos, MEN
 
                 DrawOneItem(prim, item_rect, item_no, icon_mode, effect, rgba, item_flag);
 
-                if (num >= 2 || item_no == 0x137) {
+                if (num >= 2 || item_no == ITEM_ID_MEDAL_HOLDER) {
                     prim->Begin(MG_PRIM_SPRITE);
                     prim->Texture(num_tex);
                     prim->Color(rgba[0], rgba[1], rgba[2], rgba[3]);
@@ -5616,7 +5616,7 @@ void Func_MenuIconDrawPrepare(MENUFORMPARTS_TYPE *part, CGameDataUsed *item, int
         if (item_no >= 0x10C) {
             record = GetCommonItemData(item_no);
 
-            if (record != NULL && (record->attribute & 0x20) != 0) {
+            if (record != NULL && (record->attribute & ITEM_ATTRIBUTE_USABLE) != 0) {
                 item_info = GetItemInfoData(item_no);
 
                 if (item_info != NULL) {
@@ -5625,11 +5625,11 @@ void Func_MenuIconDrawPrepare(MENUFORMPARTS_TYPE *part, CGameDataUsed *item, int
                     if ((flags & ITEM_USE_FLAG_RESTORE_HP) != 0 && (need_item & MENU_ITEM_NEED_RESTORE_HP) != 0) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
                     } else if (((flags & ITEM_USE_FLAG_CURE_POISON) != 0 && (need_item & MENU_ITEM_NEED_CURE_POISON) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STATUS_UNK_4) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_4) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STATUS_UNK_8) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_8) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_CURSE) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_4) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_STOP) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_8) != 0) ||
                                ((flags & ITEM_USE_FLAG_CURE_SLOW) != 0 && (need_item & MENU_ITEM_NEED_CURE_SLOW) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STATUS_UNK_20) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_20) != 0) ||
-                               ((flags & ITEM_USE_FLAG_CURE_STATUS_UNK_40) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_40) != 0)) {
+                               ((flags & ITEM_USE_FLAG_CURE_STONE) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_20) != 0) ||
+                               ((flags & ITEM_USE_FLAG_CURE_DRY) != 0 && (need_item & MENU_ITEM_NEED_CURE_STATUS_UNK_40) != 0)) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
                     } else if ((flags & ITEM_USE_FLAG_REPAIR) != 0 &&
                                ((item_no == ITEM_ID_MELEE_REPAIR &&
@@ -5638,11 +5638,11 @@ void Func_MenuIconDrawPrepare(MENUFORMPARTS_TYPE *part, CGameDataUsed *item, int
                                 (item_no == ITEM_ID_MAGIC_REPAIR && (need_item & MENU_ITEM_NEED_REPAIR_MAGIC) != 0) ||
                                 (item_no == ITEM_ID_RIDEPOD_FUEL && (need_item & MENU_ITEM_NEED_REFUEL_RIDEPOD) != 0))) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
-                    } else if (item_no == 0x1A7 && (need_item & MENU_ITEM_NEED_RIDEPOD_SHIELD_KIT) != 0) {
+                    } else if (item_no == ITEM_ID_SHIELD_KIT && (need_item & MENU_ITEM_NEED_RIDEPOD_SHIELD_KIT) != 0) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
-                    } else if (item_no == 0x128 || item_no == 0x184) {
+                    } else if (item_no == ITEM_ID_FRUIT_OF_EDEN || item_no == ITEM_ID_POTATO_PIE) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
-                    } else if (item_no == 0x185 && (need_item & MENU_ITEM_NEED_MONICA_IN_PARTY) != 0) {
+                    } else if (item_no == ITEM_ID_WITCH_PARFAIT && (need_item & MENU_ITEM_NEED_MONICA_IN_PARTY) != 0) {
                         part->item_flag |= MENU_ITEM_ICON_HIGHLIGHT;
                     }
                 }

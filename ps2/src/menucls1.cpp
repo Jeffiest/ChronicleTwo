@@ -1095,13 +1095,13 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 dead = 1;
             }
 
-            if (dead == 1 && (effect.status_flags & 0x10)) {
+            if (dead == 1 && (effect.action_flags & 0x10)) {
                 break;
             }
 
             int weapon_type = chara->equip[0].item_type;
 
-            if (!(chara->status_attr & 0x40) || !(effect.status_flags & 0x10)) {
+            if (!(chara->status_attr & 0x40) || !(effect.action_flags & 0x10)) {
                 if (((MenuUsedItemNo == 0x184 && weapon_type == (int) ITEM_DATA_MAX_MELEE) ||
                      (MenuUsedItemNo == 0x185 && weapon_type == (int) ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
@@ -1154,7 +1154,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if ((chara->status_attr & 0x40) && (effect.status_flags & 0x10) && item->item_no != 0x110) {
+            if ((chara->status_attr & 0x40) && (effect.action_flags & 0x10) && item->item_no != 0x110) {
                 MenuUsedNotErrorCode = 1;
                 break;
             }

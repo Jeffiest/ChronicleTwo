@@ -172,6 +172,13 @@ incorrect.
   is saved), where retail keeps it in the stack array. The found polygon is
   copied as `*(CCPolyCopy *) found = *(CCPolyCopy *) &polys[...]`: `CCPoly`'s
   implicit copy is emitted differently from the plain record copy.
+- Casts that must stay for the match: `(u64) header->more` and `(u64) deform_header->more`
+  in the motion and skin key readers, and `(unsigned int) list->target - 1` in the vertex
+  path of the float `MotionProc`. Removing them fails the build. Removing the cast on `time`
+  for `frame_no` builds.
+- `GetFootPoly`: the second loop indexes `short *poly = &polys[...].ground_kind` with
+  `poly[0..2]`. A `CCPoly *` with `poly->ground_kind`, `foot_sound` and `area_kind` changes
+  the match.
 - `ChangeWeight` and `AnimeDataInit`: `data` is a serialized stream of
   32-byte records, each `Mot_File_List` header followed by `key_count`
   `FRAME_VECTOR_EX_DATA` keys, walked with a `FRAME_VECTOR_EX_DATA *` cursor.

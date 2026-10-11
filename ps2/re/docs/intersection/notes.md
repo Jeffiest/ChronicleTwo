@@ -86,3 +86,6 @@ output is therefore the transformed 1, not the distance. Caller: CMapParts::InSc
 ## mt_test (0x2E3C00)
 `return 1;` Script-command signature `(RS_STACKDATA *, int)`; no references found anywhere in
 the asm (event_func's `_MT_TEST` is a different function).
+
+## IntersectionSpherePoly3 result
+Returns `SpherePoly3Contact` values (`SPHERE_POLY3_NONE`, `FACE`, `VERTEX`, `EDGE`); the declared return type stays `int`.

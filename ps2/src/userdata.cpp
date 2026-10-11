@@ -456,7 +456,7 @@ int CGameDataUsed::CheckTypeEnableStack() {
             return false;
         }
 
-        return (item_no == 0x17F) ^ 1;
+        return (item_no == ITEM_ID_MONSTER_DROP) ^ 1;
     }
 
     return false;
@@ -553,11 +553,11 @@ int CGameDataUsed::GetNum() {
         case USED_ITEM_TYPE_COSTUME:
             return this->data.item.num;
         case USED_ITEM_TYPE_ATTACH:
-            if (item_type == ITEM_DATA_UNK_11) {
+            if (item_type == ITEM_DATA_SPECTOL) {
                 return 1;
             }
 
-            if (item_type == ITEM_DATA_UNK_22) {
+            if (item_type == ITEM_DATA_MONSTER_DROP) {
                 return 1;
             }
 
@@ -1027,7 +1027,7 @@ void CGameDataUsed::GetMsgAddInfo(char **message, char **extra_message, int *val
 
     switch (used_type) {
         case USED_ITEM_TYPE_ITEM:
-            if (item_no == 0x137) {
+            if (item_no == ITEM_ID_MEDAL_HOLDER) {
                 values[0] = GetUserDataMan()->GetYarikomiMedal();
             }
 
@@ -1486,7 +1486,7 @@ void CGameDataUsed::ToSpectolTrans(CGameDataUsed *attach, int num) {
                 spectol->spectol_type = SPECTOL_TYPE_ATTACH;
                 spectol->spectol_value = count;
 
-                if (item_no == 0x17F) {
+                if (item_no == ITEM_ID_MONSTER_DROP) {
                     spectol->spectol_value = source->spectol_value;
                 }
 
@@ -1561,7 +1561,7 @@ void CGameDataUsed::GetStatusParam(short *param) {
 void CGameDataUsed::GetStatusParam(short *param, float time) {
     this->GetStatusParam(param);
 
-    if (this->item_no == 0x38) {
+    if (this->item_no == ITEM_ID_LAMBS_SWORD) {
         if (GetTimeBand(time) == MAP_TIME_BAND_NIGHT) {
             *param = *param + (*param >> 1);
         } else {
@@ -3862,7 +3862,7 @@ int CUserDataManager::GetFishInAquarium(int fish_no, float size, float weight) {
         return FISH_STORE_KEPT;
     }
 
-    if (GetNumSameItem(0x135) != 0) {
+    if (GetNumSameItem(ITEM_ID_AQUARIUM) != 0) {
         if (FishInAquarium(&fish, AQUARIUM_TANK_FIRST) != 0) {
             return FISH_STORE_KEPT;
         }
@@ -4324,7 +4324,7 @@ int CUserDataManager::GetItem(int item_no, int count) {
     over = count - fit;
     common = GetCommonItemData(item_no);
 
-    if (common != NULL && (common->attribute & 0x40)) {
+    if (common != NULL && (common->attribute & ITEM_ATTRIBUTE_UNIQUE)) {
         limit = common->max_num;
 
         if (limit <= GetNumSameItem(item_no)) {
@@ -4346,7 +4346,7 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
         return 0;
     }
 
-    if (item_no == 0xF6) {
+    if (item_no == ITEM_ID_CORE) {
         int robo_part_no[4] = {0x87, 0x91, 0x9B, 0xA5};
 
         for (int i = 0; i < 4; i++) {
@@ -4364,17 +4364,17 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
 
     DNG_BATTLE_AREA *battle_area = &GetMainScene()->battle_area;
 
-    if (item_no == 0x131) {
+    if (item_no == ITEM_ID_MAP) {
         battle_area->minimap_reveal |= MINIMAP_REVEAL_ROOMS;
         return 1;
     }
 
-    if (item_no == 0x132) {
+    if (item_no == ITEM_ID_MAGIC_CRYSTAL) {
         battle_area->minimap_reveal |= MINIMAP_REVEAL_SYMBOLS;
         return 1;
     }
 
-    if (item_no == 0x134) {
+    if (item_no == ITEM_ID_BADGE_BOX) {
         CMonsterBox *box = &monster_box;
 
         if (box != NULL) {
@@ -5748,7 +5748,7 @@ void CBattleCharaInfo::Step() {
 
         switch (chr_no) {
             case USER_CHARA_MONICA:
-                if (equip->item_no == 0x38) {
+                if (equip->item_no == ITEM_ID_LAMBS_SWORD) {
                     CScene *scene = GetMainScene();
 
                     if (scene != NULL && BattleParamater_TimeBand != GetTimeBand(scene->time)) {
@@ -5824,11 +5824,11 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
         add_attr |= CHARA_STATUS_SLOW;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_4) {
+    if (attr & ITEM_USE_FLAG_ADD_CURSE) {
         add_attr |= CHARA_STATUS_UNK_4;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_8) {
+    if (attr & ITEM_USE_FLAG_ADD_STOP) {
         add_attr |= CHARA_STATUS_UNK_8;
     }
 
@@ -5836,11 +5836,11 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
         add_attr |= CHARA_STATUS_POWER;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_20) {
+    if (attr & ITEM_USE_FLAG_ADD_STONE) {
         add_attr |= CHARA_STATUS_UNK_20;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_40) {
+    if (attr & ITEM_USE_FLAG_ADD_DRY) {
         add_attr |= CHARA_STATUS_UNK_40;
     }
 
@@ -5852,19 +5852,19 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
         cure_attr |= CHARA_STATUS_SLOW;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_4) {
+    if (attr & ITEM_USE_FLAG_CURE_CURSE) {
         cure_attr |= CHARA_STATUS_UNK_4;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_8) {
+    if (attr & ITEM_USE_FLAG_CURE_STOP) {
         cure_attr |= CHARA_STATUS_UNK_8;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_20) {
+    if (attr & ITEM_USE_FLAG_CURE_STONE) {
         cure_attr |= CHARA_STATUS_UNK_20;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_40) {
+    if (attr & ITEM_USE_FLAG_CURE_DRY) {
         cure_attr |= CHARA_STATUS_UNK_40;
     }
 
@@ -6105,13 +6105,13 @@ int CheckGetItemLimmitOver(int item_no, int count) {
         take = limit;
     }
 
-    if (item_no == 0x132 || item_no == 0x131) {
+    if (item_no == ITEM_ID_MAGIC_CRYSTAL || item_no == ITEM_ID_MAP) {
         return count;
     }
 
     int type = ConvertUsedItemType(info->type);
 
-    if (type == USED_ITEM_TYPE_ITEM || (type == USED_ITEM_TYPE_ATTACH && item_no != ITEM_ID_SPECTOL && item_no != 0x17F)) {
+    if (type == USED_ITEM_TYPE_ITEM || (type == USED_ITEM_TYPE_ATTACH && item_no != ITEM_ID_SPECTOL && item_no != ITEM_ID_MONSTER_DROP)) {
         bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
         bag_room = 0;
         i = 0;
