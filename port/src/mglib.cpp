@@ -1,28 +1,48 @@
-#include "mglib.hpp"
+#define MGLIB_IMPLICIT_TEX0_ASSIGNMENT
 
 #include <cstring>
 
+// The game headers keep MWCC's pragmas, which clang names but ignores.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
 #include "mg_math.hpp"
+#include "mglib.hpp"
+#pragma clang diagnostic pop
+
 #include "platform/clock.hpp"
 
 // The VSync and timing group of ps2/src/mglib.cpp, moved onto the platform clock
-// (platform/clock.hpp) in place of the PS2's root counter and VSync interrupt. The count the game
-// reads is the clock's tick count and every wait pumps it, so the platform (window, input, audio)
-// keeps moving while the game waits for its next field. The rest of ps2/src/mglib.cpp - the draw
-// managers, the packet builders, the projection helpers, the VU program table - is left to it.
+// (platform/clock.hpp) in place of the PS2's root counter and VSync interrupt, plus the frame
+// path's packet-layer functions. The count the game reads is the clock's tick count and every
+// wait pumps it, so the platform (window, input, audio) keeps moving while the game waits for its
+// next field. The VIF1 packet builder has no host counterpart, so the frame functions keep the
+// manager and frame state the game reads and leave the packet bytes to ps2/src's weak copies
+// elsewhere in the unit (mgSetPkMoveImage, mgStoreImage, the direct-draw entry points).
 
 namespace {
 
 // A packet cursor with a home, so a write that lands before a mode has initialised the real
-// packet buffers cannot reach nothing.
+// packet buffers cannot reach nothing. The size is one frame's packet - the game's menu sizes its
+// buffers 0x27100 bytes - so a direct-draw write that still lands here corrupts nothing.
 sceVif1Packet g_null_packet;
-unsigned int  g_null_packet_words[4];
+unsigned int  g_null_packet_words[0x2710];
 
-// mgDBuffID of retail, kept here because both frame functions read and flip it.
+// The packet and draw-data stacks the game alternates between frames, as mgSetPacketBuffer and
+// mgSetDataBuffer were handed them. ps2/src/mglib.cpp keeps its own file-static copies; the
+// functions that need them are here.
+mgCMemory g_packet_buf[2];
+mgCMemory g_data_buf[2];
+
+// Index of the packet and data buffers used by the current frame (retail's mgDataID).
+int g_data_id;
+
+// Texture description of the frame buffer mgSetPkFrameBuffer last set (retail's frame_tex).
+mgCTexture g_frame_tex;
+
+// mgDBuffID of retail, kept here because the frame functions read and flip it.
 int g_display_buffer;
 
-// Vertical-sync count the previous frame ended at, and the mgFrameRate-tick interval the next one
-// waits for.
+// Vertical-sync count the previous frame ended at; the next frame waits mgFrameRate ticks past it.
 int g_old_vcount;
 
 // mgPerformanceMeter's switch, the same file-static ps2/src/mglib.cpp keeps.
@@ -95,6 +115,7 @@ void mgInit(int screen_mode, int video_mode) {
 
     mgAntialiasing = true;
     g_display_buffer = 0;
+    g_data_id = 0;
     std::memset(&mgRenderInfo, 0, sizeof(mgRenderInfo));
     mgVif1Packet = &g_null_packet;
     g_null_packet.pBase = reinterpret_cast<u_int *>(g_null_packet_words);
@@ -171,6 +192,241 @@ void mgInit(int screen_mode, int video_mode) {
     mgCreateSinTable();
 }
 
+void mgInitVif1Packet(u_long128 *buffer_a, u_long128 *buffer_b, int size) {
+    // The two VIF1 cursors retail built here wrote GS packets; the host renderer builds its own
+    // state, so there is nothing to initialize. The callers keep their shape.
+    (void) buffer_a;
+    (void) buffer_b;
+    (void) size;
+}
+
+void mgSetPacketBuffer(mgCMemory *pool_a, mgCMemory *pool_b) {
+    g_packet_buf[0] = *pool_a;
+    g_packet_buf[1] = *pool_b;
+    g_packet_buf[0].stack_used = 0;
+    g_packet_buf[0].lock = 0;
+    g_packet_buf[1].stack_used = 0;
+    g_packet_buf[1].lock = 0;
+}
+
+void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_header) {
+    u_char *base = (u_char *) pool_a->stAllocTest(1);
+    int     size = pool_a->stack_size - pool_a->stack_used;
+
+    if (skip_header != 0) {
+        base += 0x4000;
+        size -= 0x800;
+    }
+
+    g_data_buf[0].stSetBuffer((u_long128 *) base, size);
+    base = (u_char *) pool_b->stAllocTest(1);
+    size = pool_b->stack_size - pool_b->stack_used;
+
+    if (skip_header != 0) {
+        base += 0x4000;
+        size -= 0x800;
+    }
+
+    g_data_buf[1].stSetBuffer((u_long128 *) base, size);
+    g_data_buf[0].stack_used = 0;
+    g_data_buf[0].lock = 0;
+    g_data_buf[1].stack_used = 0;
+    g_data_buf[1].lock = 0;
+}
+
+mgCMemory *mgGetDataBuffer() {
+    return &g_data_buf[g_data_id];
+}
+
+// The frame buffer the current display buffer shows, decoded as the texture description the game
+// reads it as. The packet retail also built here had no reader without a GS.
+void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
+    sceGsFrame *default_frame;
+    int         screen_width;
+    int         screen_height;
+    int         aligned_width;
+    int         width_shift;
+    int         height_shift;
+    int         size;
+    int         bpp;
+    int         bit;
+
+    default_frame = g_display_buffer != 0 ? &mgDBuff.draw0.frame1 : &mgDBuff.draw1.frame1;
+
+    if (fbp < 0) {
+        fbp = default_frame->FBP;
+    }
+
+    if (psm < 0) {
+        psm = default_frame->PSM;
+    }
+
+    GetScreenSize(mgScreenMode, &screen_width, &screen_height, &mgScreenNX, &mgScreenNY, &mgScreenMX, &mgScreenMY);
+
+    if (width < 0) {
+        width = screen_width;
+    }
+
+    if (height < 0) {
+        height = screen_height;
+    }
+
+    mgScreenWidth = width;
+    mgScreenHeight = height;
+    mgScreenNX = -width / 2;
+    mgScreenNY = -height / 2;
+    mgScreenMX = mgScreenNX + width;
+    mgScreenMY = mgScreenNY + height;
+    aligned_width = width;
+
+    if (aligned_width % 64 != 0) {
+        aligned_width += 64 - aligned_width % 64;
+    }
+
+    sceGsFrame frame = *default_frame;
+    frame.FBP = fbp;
+    frame.FBW = aligned_width / 64;
+    frame.PSM = psm;
+    frame.bits.fbmsk = 0;
+    mgFRAME_1 = frame;
+    mgScreenOffx = 0x800 - width / 2;
+    mgScreenOffy = 0x800 - height / 2;
+    bpp = 0;
+
+    switch (psm) {
+        case SCE_GS_PSMCT32:
+            bpp = 32;
+            break;
+        case SCE_GS_PSMCT24:
+            bpp = 24;
+            break;
+        case SCE_GS_PSMCT16:
+            bpp = 16;
+            break;
+        case SCE_GS_PSMCT16S:
+            bpp = 16;
+            break;
+    }
+
+    g_frame_tex.Initialize();
+    g_frame_tex.width = width;
+    g_frame_tex.height = height;
+    g_frame_tex.bpp = bpp;
+    g_frame_tex.vram_size = bpp * (width * height) / 8 / 256;
+    g_frame_tex.clut_size = 0;
+    g_frame_tex.image_blocks = g_frame_tex.vram_size;
+    g_frame_tex.tex0.value = 0;
+    g_frame_tex.tex0.TBP0 = fbp << 5;
+    g_frame_tex.tex0.TBW = width / 64;
+    g_frame_tex.tex0.PSM = psm;
+    width_shift = 0;
+    height_shift = 0;
+
+    for (size = width; size > 1; size >>= 1) {
+        width_shift++;
+    }
+
+    size = 1;
+
+    for (bit = 0; bit < width_shift; bit++) {
+        size *= 2;
+    }
+
+    if (width != size) {
+        width_shift++;
+    }
+
+    for (size = height; size > 1; size >>= 1) {
+        height_shift++;
+    }
+
+    size = 1;
+
+    for (bit = 0; bit < height_shift; bit++) {
+        size *= 2;
+    }
+
+    if (height != size) {
+        height_shift++;
+    }
+
+    g_frame_tex.tex0.bits.tw = width_shift;
+    g_frame_tex.tex0.bits.th = height_shift;
+    g_frame_tex.tex0.bits.tcc = 1;
+    g_frame_tex.tex0.bits.tfx = 0;
+    *(u_long *) &g_frame_tex.tex1 = SCE_GS_SET_TEX1(1, 0, 1, 1, 1, 0, 0);
+}
+
+void mgGetFrameBuffer(mgCTexture *texture) {
+    *texture = g_frame_tex;
+}
+
+void mgGetFrameBackBuffer(mgCTexture *texture) {
+    sceGsFrame *draw_env;
+
+    if (g_display_buffer != 0) {
+        draw_env = &mgDBuff.draw1.frame1;
+    } else {
+        draw_env = &mgDBuff.draw0.frame1;
+    }
+
+    *texture = g_frame_tex;
+    texture->tex0.TBP0 = draw_env->FBP * 32;
+}
+
+void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
+    // The clear's colour and enable are already in mgBackColor and mgClearBackFlag, which the
+    // renderer's frame begin reads; the GS registers and vertices retail wrote here are the
+    // renderer's own.
+    (void) red;
+    (void) green;
+    (void) blue;
+    (void) alpha;
+}
+
+void mgSetPkTextureRepeat(int mode) {
+    // The sampler's wrap mode is renderer state on the host; the CLAMP register retail wrote is
+    // not.
+    (void) mode;
+}
+
+void mgSetPkTextureRepeat(sceGsClamp clamp) {
+    (void) clamp;
+}
+
+void mgFlushRenderInfo() {
+    // Retail wrote the fog coefficient and guard values into the frame's packet; they live in
+    // mgRenderInfo for the renderer, so there is nothing to flush.
+}
+
+void mgBeginPacket(mgCDrawManager *manager) {
+    if (manager == NULL) {
+        manager = &mgDrawManager;
+    }
+
+    // The VIF1 builder retail reset here has no host counterpart; the packet cursor parks on the
+    // null packet and the draw managers allocate from the stacks the game set up.
+    mgVif1Packet = &g_null_packet;
+    g_packet_buf[g_data_id].stack_used = 0;
+    g_packet_buf[g_data_id].lock = 0;
+    g_data_buf[g_data_id].stack_used = 0;
+    g_data_buf[g_data_id].lock = 0;
+    manager->packet_memory = &g_packet_buf[g_data_id];
+    manager->data_memory = &g_data_buf[g_data_id];
+    manager->SetSortTable(1);
+}
+
+void mgSendPacket(mgCDrawManager *manager) {
+    // The DMA send has no host counterpart; the flip to the other frame's stacks still happens.
+    (void) manager;
+    g_data_id = !g_data_id;
+}
+
+void mgEndPacket(mgCDrawManager *manager) {
+    // sceVif1PkEnd and sceVif1PkTerminate wrote the packet's DMA tag; there is no host packet.
+    (void) manager;
+}
+
 void mgBeginFrame(mgCDrawManager *manager) {
     if (manager == NULL) {
         mgDrawManager.texture_manager = &mgTexManager;
@@ -178,8 +434,8 @@ void mgBeginFrame(mgCDrawManager *manager) {
         mgDrawManager.render_info = &mgRenderInfo;
     }
 
-    // Retail sampled TIMER0 here to price the frame at its end; the frame's time comes from the
-    // clock now.
+    // Retail sampled TIMER0 here to price the frame at its end and opened the frame's VIF1
+    // packet; the frame's time comes from the clock now, and the packet has no host counterpart.
     int red = (int) mgBackColor[0];
     int green = (int) mgBackColor[1];
     int blue = (int) mgBackColor[2];
@@ -193,17 +449,6 @@ void mgBeginFrame(mgCDrawManager *manager) {
     mgDBuff.clear0.rgbaq.bytes.alpha = alpha;
     mgDBuff.clear1.rgbaq.bytes.alpha = alpha;
     mgBeginPacket(manager);
-    *(u_long128 *) &mgGiftagAD = 0;
-    mgGiftagAD.EOP = 1;
-    mgGiftagAD.NREG = 1;
-    mgGiftagAD.REGS0 = SCE_GIF_PACKED_AD;
-    sceVif1PkCnt(mgVif1Packet, 0);
-    sceVif1PkOpenDirectCode(mgVif1Packet, 0);
-    sceVif1PkOpenGifTag(mgVif1Packet, *(u_long128 *) &mgGiftagAD);
-    sceVif1PkAddGsAD(mgVif1Packet, SCE_GS_SCANMSK, 0);
-    sceVif1PkAddGsAD(mgVif1Packet, SCE_GS_TEXFLUSH, 0);
-    sceVif1PkCloseGifTag(mgVif1Packet);
-    sceVif1PkCloseDirectCode(mgVif1Packet);
     mgSetPkTextureRepeat(1);
     sceGsFrame *draw_env;
 

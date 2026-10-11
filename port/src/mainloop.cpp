@@ -1,10 +1,12 @@
-#include "mainloop.hpp"
-
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+// The game headers keep MWCC's pragmas, which clang names but ignores.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#include "mainloop.hpp"
 #include "charaviewlp.hpp"
 #include "convviewlp.hpp"
 #include "dataread.hpp"
@@ -47,6 +49,7 @@
 #include "visualmotion.hpp"
 #include "vlgr_info.hpp"
 #include "water.hpp"
+#pragma clang diagnostic pop
 
 // The main loop and the state it owns, as the host can run it: every wait retail made on the PS2's
 // VSync interrupt goes through the platform clock (platform/clock.hpp) instead. The functions the
