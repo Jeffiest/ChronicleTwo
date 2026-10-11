@@ -53,7 +53,6 @@ bool g_frame_redirected;
 // The render-target texture the manager has placed at a frame buffer page, or NULL. Retail points the
 // frame buffer at a texture by its VRAM address; the host draws into the texture itself.
 mgCTexture *FindFrameTarget(int fbp) {
-    const u_int         tbp = static_cast<u_int>(fbp) << 5;
     mgCTextureManager  *managers[2] = {mgDrawManager.texture_manager, &mgTexManager};
 
     for (mgCTextureManager *manager : managers) {
@@ -65,7 +64,10 @@ mgCTexture *FindFrameTarget(int fbp) {
             mgCTexture *texture = block < manager->block_max ? manager->blocks[block].texture : manager->fix_block.texture;
 
             for (; texture != NULL; texture = texture->next) {
-                if ((texture->tex0.value & 0x3FFF) == tbp && texture->image[0] == NULL && texture->bpp > 8) {
+                // Retail passes TBP0 / 32, so a texture placed off a 32-page boundary is named by the page
+                // it starts in.
+                if (((texture->tex0.value & 0x3FFF) >> 5) == static_cast<u_int>(fbp) && texture->image[0] == NULL &&
+                    texture->bpp > 8) {
                     return texture;
                 }
             }
@@ -396,6 +398,15 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     // as a texture afterwards. Without the redirect their clears and model draws land on the screen.
     mgCTexture *target = fbp != default_frame->FBP ? FindFrameTarget(fbp) : NULL;
     gfx::TextureBinding binding;
+
+    if (target == NULL && fbp != default_frame->FBP) {
+        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        static int        reported;
+        if (trace && reported++ < 8) {
+            std::fprintf(stderr, "frame buffer fbp %d (default %d) has no render-target texture\n", fbp,
+                         (int) default_frame->FBP);
+        }
+    }
 
     if (target != NULL && PortMgTextureBinding(target, binding) && binding.texture != gfx::kNullTexture) {
         gfx::SetRenderTarget(binding.texture);
