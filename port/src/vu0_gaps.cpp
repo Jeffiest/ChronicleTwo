@@ -300,11 +300,17 @@ static int LogDrawRect(const mgCFrame *frame, const mgVu0FBOX *rect, int visible
     static const bool dump = std::getenv("DC_DUMP_DRAWS") != nullptr;
     static int        printed;
 
-    if (dump && depth == 1 && printed < 200) {
+    if (dump && depth == 1 && printed < 600) {
         printed++;
-        std::fprintf(stderr, "drawrect frame %p vis %d max [%.1f %.1f %.1f %.1f] min [%.1f %.1f %.1f %.1f]\n",
+        sceVu0FMATRIX lw;
+        const_cast<mgCFrame *>(frame)->GetLWMatrixTopBottom(lw);
+        const mgCVisual *visual = frame->visual;
+        std::fprintf(stderr,
+                     "drawrect frame %p vis %d max [%.1f %.1f %.1f %.1f] min [%.1f %.1f %.1f %.1f] visual %p kind %d "
+                     "world [%.1f %.1f %.1f]\n",
                      (const void *) frame, visible, rect->max[0], rect->max[1], rect->max[2], rect->max[3],
-                     rect->min[0], rect->min[1], rect->min[2], rect->min[3]);
+                     rect->min[0], rect->min[1], rect->min[2], rect->min[3], (const void *) visual,
+                     visual != NULL ? (int) const_cast<mgCVisual *>(visual)->Iam() : -1, lw[3][0], lw[3][1], lw[3][2]);
     }
     return visible;
 }
