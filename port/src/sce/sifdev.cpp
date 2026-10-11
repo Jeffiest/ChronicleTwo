@@ -123,7 +123,12 @@ int HostFlags(int flags) {
     if (flags & kExclusive) {
         host |= O_EXCL;
     }
+#ifdef _WIN32
+    // CRT text mode translates CR/LF and treats Ctrl-Z as EOF, corrupting binary game files.
+    return host | O_BINARY | O_NOINHERIT;
+#else
     return host | O_CLOEXEC;
+#endif
 }
 
 bool Known(int fd) {
@@ -148,7 +153,11 @@ extern "C" int sceOpen(const char *name, int flags, ...) {
     } else if (!Resolve(root, relative, path)) {
         return -ENOENT;
     }
+#ifdef _WIN32
+    int fd = ::_wopen(path.c_str(), HostFlags(flags), 0644);
+#else
     int fd = ::open(path.c_str(), HostFlags(flags), 0644);
+#endif
     if (fd < 0) {
         return -errno;
     }
