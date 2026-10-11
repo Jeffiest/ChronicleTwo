@@ -212,10 +212,6 @@ FACES_ID *mgCShadowMDT::CreateFace(FACES_ID *source, mgCMemory *face_memory, mgC
     return (FACES_ID *) vertex;
 }
 
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
-
 u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
 
     GetTextureManager();
@@ -263,10 +259,6 @@ u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
     return (int) packet_start & 0x0FFFFFFF;
 }
 
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
-
 int mgCShadowMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
                                 mgCTextureManager *textures) {
     if (header == NULL) {
@@ -289,10 +281,6 @@ int mgCShadowMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
 
     return 1;
 }
-
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
 
 int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     sceVu0FMATRIX world_screen;

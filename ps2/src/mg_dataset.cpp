@@ -170,9 +170,6 @@ int conv_new_text(char *dst, char *src) {
  * Reads a string of hexadecimal digits and returns its value; any other character counts as zero.
  *
  */
-#pragma global_optimizer reset
-#pragma global_optimizer off
-
 static int htoi(char *text) {
     char *end = text;
     s32   length = 0;
@@ -208,9 +205,6 @@ static int htoi(char *text) {
 
     return value;
 }
-
-#pragma global_optimizer reset
-#pragma global_optimizer off
 
 void mgSetFrameAttr(mgCFrame *input_frame, int input_recursive) {
     mgCFrameAttr *attr;
@@ -438,7 +432,6 @@ void mgSetFrameAttr(mgCFrame *input_frame, int input_recursive) {
  * Finds the entry of a visual type table that applies to an object name, or NULL if none does.
  *
  */
-
 mgCreateVisualType *SearchVisualType(mgCreateVisualType *table, char *name) {
     mgCreateVisualType *entry;
     mgCreateVisualType *found;
@@ -775,10 +768,6 @@ mgCFrame *mgLoadMDSFile(mgLoadData *load) {
     return frames;
 }
 
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
-
 void mgCreateBBoxSphere(float *max, float *min, float *sphere, float (*vertex)[4], int vertex_num) {
     if (vertex == 0) {
         min[0] = 0;
@@ -832,7 +821,6 @@ void mgCreateBBoxSphere(float *max, float *min, float *sphere, float (*vertex)[4
  * visual when asked; a copied motion model follows the given frame table.
  *
  */
-
 void CopyFrame(mgCFrame *dst, mgCFrame *src, mgCMemory *memory, int copy_visual, mgCFrame **frame_table) {
     *dst = *src;
 
@@ -901,7 +889,6 @@ mgCVisual *mgCVisual::Copy(mgCMemory *memory) {
  * the frame, or NULL if memory ran out.
  *
  */
-
 mgCFrame *CopyFrameSub(mgCFrame *src, mgCMemory *memory, int copy_visual, mgCFrame **frame_table) {
     mgCFrame *frame;
 

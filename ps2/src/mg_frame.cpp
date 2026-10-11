@@ -883,10 +883,6 @@ void mgCFrame::GetBBoardMatrix(int mode, float (*matrix)[4], mgRENDER_INFO *info
     ClearChildFlag();
 }
 
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
-
 void mgCFrame::GetLWMatrix(float (*matrix)[4]) {
     float parent_matrix[4][4];
     float local_matrix[4][4];
