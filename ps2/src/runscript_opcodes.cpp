@@ -3221,7 +3221,7 @@ int _SET_DEAD_START(RS_STACKDATA *args, int argc) {
         money_rate += 0.3f;
     }
 
-    if (nowMonster->last_hit_attr & 0x2) {
+    if (nowMonster->last_hit_attr & WEAPON_SPECIAL_LESS_MONEY) {
         money_rate -= 0.3f;
     }
 

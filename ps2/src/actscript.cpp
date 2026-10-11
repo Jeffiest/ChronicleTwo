@@ -1755,7 +1755,7 @@ int _SET_SHOT(RS_STACKDATA *stack, int argc) {
         }
 
         equip = info->equip;
-        attack_type = equip[1].GetAttackType();
+        attack_type = equip[CHARA_EQUIP_SUB].GetAttackType();
 
         if (whp[0] > 0) {
             if (attack_type == WEAPON_ATTACK_GUN || attack_type == WEAPON_ATTACK_GUN_2) {
@@ -1778,15 +1778,15 @@ int _SET_SHOT(RS_STACKDATA *stack, int argc) {
             if (attack_type == WEAPON_ATTACK_LASER) {
                 laser_type = LASER_VISUAL_GREEN;
 
-                if (equip[1].item_no == 0x1F) {
+                if (equip[CHARA_EQUIP_SUB].item_no == 0x1F) {
                     laser_type = LASER_VISUAL_GREEN;
                 }
 
-                if (equip[1].item_no == 0x20) {
+                if (equip[CHARA_EQUIP_SUB].item_no == 0x20) {
                     laser_type = LASER_VISUAL_BLUE;
                 }
 
-                if (equip[1].item_no == 0x22) {
+                if (equip[CHARA_EQUIP_SUB].item_no == 0x22) {
                     laser_type = LASER_VISUAL_PURPLE;
                 }
 
