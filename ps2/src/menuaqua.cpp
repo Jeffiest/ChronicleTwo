@@ -246,18 +246,6 @@ struct aqua_param_icon {
 
 /**
  *
- * Bits of a fish's flags marking the race classes that it has won.
- *
- */
-enum GYORACE_FISH_FLAG {
-    GYORACE_FISH_FLAG_WON_CLASS0 = 0x04, /**< Won the first race class. */
-    GYORACE_FISH_FLAG_WON_CLASS1 = 0x08, /**< Won the second race class. */
-    GYORACE_FISH_FLAG_WON_CLASS2 = 0x10, /**< Won the third race class. */
-    GYORACE_FISH_FLAG_WON_CLASS3 = 0x20, /**< Won the fourth race class. */
-};
-
-/**
- *
  * Bits of the race classes that the chosen fish may enter, as MenuGyoraceFishSelKey reports them in MenuArg.result[1].
  *
  */
@@ -6815,15 +6803,15 @@ int MenuGyoraceFishSelKey() {
                 selected = &fish[MenuArg.result[0]];
 
                 if (selected != NULL) {
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS0)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_0)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_0;
                     }
 
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS1)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_1)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_1;
                     }
 
-                    if (!(selected->data.fish.flags & GYORACE_FISH_FLAG_WON_CLASS2)) {
+                    if (!(selected->data.fish.flags & BREEDFISH_FLAG_WON_CLASS_2)) {
                         MenuArg.result[1] |= GYORACE_CLASS_OPEN_2;
                     }
 
@@ -6950,21 +6938,21 @@ void SetGyoRaceRanking(int rank) {
         flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS0;
 
         if (race_class == 0) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS0;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_0;
         }
 
         if (race_class == 1) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS1;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_1;
             flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS1;
         }
 
         if (race_class == 2) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS2;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_2;
             flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS2;
         }
 
         if (race_class == 3) {
-            fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS3;
+            fish->data.fish.flags |= BREEDFISH_FLAG_WON_CLASS_3;
             flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS3;
         }
 
