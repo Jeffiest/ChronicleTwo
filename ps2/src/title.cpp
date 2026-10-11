@@ -983,7 +983,7 @@ int TitleLoop() {
 
                 if (MenuArg.end_code == MENU_END_LOAD) {
                     next_loop = 2;
-                } else if (MenuArg.end_code == 12) {
+                } else if (MenuArg.end_code == MENU_END_COSTUME) {
                     next_loop = 1;
                 } else if (MenuArg.end_code == MENU_END_SUBGAME_LOAD) {
                     next_loop = 11;
