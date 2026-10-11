@@ -381,7 +381,7 @@ void CEditMap::LoadData(CEditData *data) {
                             place_rot[1] = GetEditAngle(saved->angle);
                             placed = GetePlaceParts(no);
 
-                            if (placed != NULL && placed->GetPartsType() == 0xB) {
+                            if (placed != NULL && placed->GetPartsType() == EDIT_PARTS_TYPE_RIVER) {
                                 placed->state = EDIT_PARTS_STATE_RIVER;
                                 placed->SetPosition(0.0f, -10000.0f, 0.0f);
                             } else {
@@ -1127,13 +1127,13 @@ int GetMaxPolyn(int map_no) {
         max_polygons = 0x1770;
 
         switch (map_no) {
-            case 0:
+            case EDIT_ANALYZE_MAP_SHARLOT:
                 return 0xFA0;
-            case 1:
+            case EDIT_ANALYZE_MAP_STERA:
                 return 0x1770;
-            case 2:
+            case EDIT_ANALYZE_MAP_BENIETIO:
                 return 0x1770;
-            case 3:
+            case EDIT_ANALYZE_MAP_HEIM:
                 return max_polygons;
             default:
                 return 0;
@@ -1150,13 +1150,13 @@ int GetMaxDrawMem(int map_no) {
         max_draw_memory = 0xD2F0;
 
         switch (map_no) {
-            case 0:
+            case EDIT_ANALYZE_MAP_SHARLOT:
                 return 0xBB80;
-            case 1:
+            case EDIT_ANALYZE_MAP_STERA:
                 return 0xC350;
-            case 2:
+            case EDIT_ANALYZE_MAP_BENIETIO:
                 return 0xD2F0;
-            case 3:
+            case EDIT_ANALYZE_MAP_HEIM:
                 return max_draw_memory;
             default:
                 return 0;

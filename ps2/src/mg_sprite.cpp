@@ -205,7 +205,7 @@ int mgC3DSprite::CreateRenderInfoPacket(u_int         *dest, float (*matrix)[4],
     fog_color |= render_info->fog.g << 8;
     fog_color |= render_info->fog.b << 16;
 
-    if (render_info->attr->fog > 1) {
+    if (render_info->attr->fog > MG_FOG_SCENE) {
         fog_color = 0;
     }
 

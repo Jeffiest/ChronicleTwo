@@ -1673,7 +1673,7 @@ void EditDrawChara(CScene *scene) {
     scene->DrawChara(scene->player_chara, 0);
 
     for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
-        if (scene->GetType(SCENE_DATA_CHARA, slot) != EDIT_CHARA_TYPE_EFFECT) {
+        if (scene->GetType(SCENE_DATA_CHARA, slot) != SCENE_CHARA_TYPE_EFFECT) {
             scene->DrawChara(slot, 1);
         }
     }
@@ -1683,7 +1683,7 @@ void EditDrawEffectChara(CScene *scene) {
     int slot;
 
     for (slot = EDIT_CHARA_SLOT_OTHER; slot < EDIT_CHARA_SLOT_OTHER_END; slot++) {
-        if (scene->GetType(SCENE_DATA_CHARA, slot) == EDIT_CHARA_TYPE_EFFECT) {
+        if (scene->GetType(SCENE_DATA_CHARA, slot) == SCENE_CHARA_TYPE_EFFECT) {
             scene->DrawChara(slot, 2);
         }
     }
