@@ -43,6 +43,7 @@
 #include "mapparts.hpp"
 #include "mapselect.hpp"
 #include "menuaqua.hpp"
+#include "menuchr.hpp"
 #include "menucommon.hpp"
 #include "menudraw.hpp"
 #include "menumain.hpp"
@@ -3702,7 +3703,7 @@ int _LOAD_CHARA_sub(int stack_no, char **name, int chara_no, u32 *pack, int mode
         manager->name_suffix[0] = 0;
     }
 
-    EventScene->SetType(SCENE_DATA_CHARA, chara_no, 2);
+    EventScene->SetType(SCENE_DATA_CHARA, chara_no, SCENE_CHARA_TYPE_EVENT);
     return result;
 }
 
@@ -8134,7 +8135,7 @@ static int _DEL_MONSTER(RS_STACKDATA *stack, int argc) {
     FxScriptMan->ClearBaseFromLevel(3, NULL, -1);
     manager = &mgTexManager;
 
-    for (j = area->free_texb; j < 0xAA; j++) {
+    for (j = area->free_texb; j < MONSTER_TEXB_FREE_END; j++) {
         manager->DeleteBlock(j);
     }
 
@@ -18418,7 +18419,7 @@ static int _DNG_SETUP_MAIN_UNIT(RS_STACKDATA *stack, int argc) {
 
     FxScriptMan->AllClearEffSpt();
     FxScriptMan->ClearBaseFromLevel(2, NULL, -1);
-    manager->DeleteBlock(0xAA);
+    manager->DeleteBlock(MONSTER_EFFECT_TEX_BLOCK);
     DngUserData->SetActiveChrNo(chara_no);
     SetupMainUnit(read_buffer, &BuffCharacter, BaseCharacter, 0x10, EventScene, user_data, chara_no, 0);
 
@@ -20166,7 +20167,7 @@ static int _COPY_MONS2SCNCHR(RS_STACKDATA *stack, int argc) {
     EventScene->SetStatus(SCENE_DATA_CHARA, slot, SCENE_DATA_LOADED | SCENE_DATA_ASSIGNED);
     CCharacter2 *dest = GetCharacter(dst_no);
     CCharacter2(ActiveMonster->refer[monster_index].chara).Copy(*dest, memory);
-    EventScene->SetCharaTexb(dst_no, monster_index + 0x28);
+    EventScene->SetCharaTexb(dst_no, monster_index + MONSTER_TEXB_REFER);
     return true;
 }
 
