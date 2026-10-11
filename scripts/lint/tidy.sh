@@ -54,7 +54,7 @@ if [ "${1:-}" = "--fix" ]; then
     shift
 fi
 if [ $# -eq 0 ]; then
-    set -- $(find ps2/src -name '*.cpp' ! -name 'tmp*' | sort)
+    set -- $(find ps2/src -name '*.cpp' | sort)
 fi
 
 for f in "$@"; do
