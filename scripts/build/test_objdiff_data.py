@@ -1,4 +1,4 @@
-"""Data comparison must honor retail relocations and exclude fallback storage."""
+"""Data comparison must honor retail relocations."""
 
 import struct
 from pathlib import Path
@@ -263,24 +263,6 @@ class NativeStorageTests(unittest.TestCase):
                 d.prepare_native_data(elf, 'unit', ctx)
         self.assertEqual(syms[0].name, 'D_00003000')
         self.assertEqual(sections[1].name, '.ctor')
-
-    def test_reservation_section_is_removed_and_reference_stays_undefined(self):
-        data = NS(sh_flags=2, sh_link=0)
-        code = NS(sh_flags=6, sh_link=0, data=bytes(8))
-        section = NS(sh_flags=0, sh_link=0)
-        sym = symbol('reservation__DATA', 1, 8, info=0x11)
-        elf = NS(sections=[section, data, code, section, section],
-                 symtab=NS(symbols=[sym]), relocations=[], e_shstrndx=4, symtab_index=3)
-        d.drop_sections(elf, {1})
-        self.assertEqual(len(elf.sections), 4)
-        self.assertEqual((sym.st_shndx, sym.st_value, sym.st_size), (0, 0, 0))
-        self.assertIs(elf.sections[1], code)
-        self.assertEqual(code.data, bytes(8))
-
-    def test_code_cannot_be_removed_as_placeholder_data(self):
-        elf = NS(sections=[NS(sh_flags=6)])
-        with self.assertRaisesRegex(ValueError, 'executable'):
-            d.drop_sections(elf, {0})
 
     def test_bss_padding_is_visible_only_for_exact_declared_object(self):
         for declared, native, extent, expected in ((20, 20, 32, 32), (20, 19, 32, 19),

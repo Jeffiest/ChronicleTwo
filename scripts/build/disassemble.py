@@ -265,7 +265,7 @@ def write_if_changed(path, text):
     path.write_text(text, encoding="utf-8")
 
 
-def write_unit_files(pieces, retail, resolve, unit):
+def write_unit_files(pieces, unit):
     lay = pieces.layout
     directory = ROOT / NONMATCHINGS / unit
     directory.mkdir(parents=True, exist_ok=True)
@@ -407,11 +407,10 @@ def main():
     retail = layout.Retail()
     restore_raw_vu_words(lay, retail)
     pieces = Pieces(lay)
-    resolve = Resolver(pieces.defined())
     units = args.units or lay.units("cpp")
     total = 0
     for unit in units:
-        total += write_unit_files(pieces, retail, resolve, unit)
+        total += write_unit_files(pieces, unit)
     print(f"wrote {total} files for {len(units)} units")
     return 0
 

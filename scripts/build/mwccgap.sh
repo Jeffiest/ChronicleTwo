@@ -23,7 +23,7 @@ esac
 
 # A submodule; a clone without --recursive leaves the directory empty and the
 # failure is otherwise a confusing "No such file or directory" from python.
-if [ ! -f "$MWCCGAP_DIR/mwccgap.py" ]; then
+if [ ! -f "$MWCCGAP_DIR/mwccgap/elf.py" ]; then
     echo "$0: $MWCCGAP_DIR is empty -- run: git submodule update --init" >&2
     exit 1
 fi
