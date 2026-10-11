@@ -175,6 +175,24 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
     BuildSkinMatrices(visual, frame, slot_count, skin_matrix);
 
+    // Diagnostic: per slot of a 115-vertex (hand) visual, the diagonal and translation of the bind matrix, the
+    // current bone matrix and the skin matrix. Counted per visual so nothing aliases.
+    static std::unordered_map<const void *, int> hand_seen;
+    if (std::getenv("DC_DUMP_DRAWS") != nullptr && visual->vertex_num == 115 && hand_seen[visual]++ < 2) {
+        for (int k = 0; k < slot_count; k++) {
+            float cur[4][4];
+            visual->frame[visual->bone[k]]->GetLWMatrix(cur);
+            const float (*b)[4] = visual->base_matrix[visual->bone[k]];
+            const float (*m)[4] = skin_matrix[k];
+            std::fprintf(stderr,
+                         "handbone visual %p slot %d bone %d bind diag [%.2f %.2f %.2f] t [%.1f %.1f %.1f]  cur diag "
+                         "[%.2f %.2f %.2f] t [%.1f %.1f %.1f]  skin diag [%.2f %.2f %.2f] t [%.1f %.1f %.1f]\n",
+                         (const void *) visual, k, visual->bone[k], b[0][0], b[1][1], b[2][2], b[3][0], b[3][1], b[3][2],
+                         cur[0][0], cur[1][1], cur[2][2], cur[3][0], cur[3][1], cur[3][2], m[0][0], m[1][1], m[2][2],
+                         m[3][0], m[3][1], m[3][2]);
+        }
+    }
+
     // Diagnostic: DC_DUMP_DRAWS=1 prints the bone matrices' health every few skin passes.
     static const bool dump_skin = std::getenv("DC_DUMP_DRAWS") != nullptr;
     static int        skin_calls;
