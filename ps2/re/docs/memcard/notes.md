@@ -29,7 +29,7 @@ Ctor just calls `Initialize(NULL)`.
 | 0x058 | s32 step | every operation's switch |
 | 0x05C | s32 fd | sceMcSync result after sceMcOpen; Initialize = -1 |
 | 0x060 | unk 0x20 | never touched |
-| 0x080 | MC_DIR_ENTRY dir_table[17] | sceMcGetDir(..., 0x11 or 0xD, this+0x80); InitSaveFileInfoTable/GetOpenAttribute loop 17 x 0x40, name at +0x20 |
+| 0x080 | sceMcTblGetDir dir_table[17] | sceMcGetDir(..., 0x11 or 0xD, this+0x80); InitSaveFileInfoTable/GetOpenAttribute loop 17 x 0x40, name at +0x20 |
 | 0x4C0 | s32 dir_entries | GetDir sync result (count, or -4) |
 | 0x4C4 | s32 album_buffer_set | SetBuff_Album sets 1; MakeDir skips retitling icon.sys when set |
 | 0x4C8 | s32 port | every sceMc call; inventmn/title/menuop write it |
@@ -75,10 +75,10 @@ Ctor just calls `Initialize(NULL)`.
 
 ## Matched functions
 
-- `InitSaveFileInfoTable` clears all 17 `MC_DIR_ENTRY` records, then explicitly clears the first
+- `InitSaveFileInfoTable` clears all 17 `sceMcTblGetDir` records, then explicitly clears the first
   byte of each name. Its two loop variables are a record count and a byte offset; keeping both
   preserves the retail loop and register allocation. The latter is used only while clearing this
-  contiguous table, where the same `sizeof(MC_DIR_ENTRY)` governs the stride and `memset` size.
+  contiguous table, where the same `sizeof(sceMcTblGetDir)` governs the stride and `memset` size.
 - `GetSaveDataSize` independently checks each `MC_DATA_SIZE_TYPE` value and returns zero for any
   unrecognized value. The save image and bonus data file sizes are `sizeof(SAVEDATA_FORMAT)` and
   `sizeof(CSubGameData)`. The album file size is the documented `CDC2AlbumData` size, 0x64CB0.
@@ -114,7 +114,7 @@ menuop: loop no 2 (dungeon) maps dungeon_no through a table to a map title; prog
 +0x14 free (KB, menuop compares with save KB), +0x1C last sync result. +0x10, +0x18 never used.
 sceMcGetInfo(port, 1, &type, &free, &formatted). McCheckMCPs2Boot: PS2 card and (unformatted or free > size).
 
-## MC_DIR_ENTRY (0x40)
+## sceMcTblGetDir (0x40)
 sceMcTblGetDir layout: +0x10 u32 file size (CheckAlbum reads dir_table[0].file_size; CheckOmakeFile
 reads dir_table[6].file_size, i.e. this+0x210), +0x20 name. Rest unused.
 

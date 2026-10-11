@@ -29,7 +29,7 @@ suffixes and diagnostic formats are inline strings.
 | `ConvertFileNum` | 0x37EA84 | 4 | `int`, directories renamed. |
 | `ConvertResult` | 0x37EA88 | 4 | `SAVEDATA_CONVERT_RESULT` (0, 1, 100, 101). |
 | `ConvertResultDispTime` | 0x37EA8C | 4 (piece 0x34) | `int` (only 4-byte accesses; set to 0x1E in convert mode, 0 on reset; only written in this unit). Its .sbss piece runs to the next piece at 0x37EAC0; the 0x30 zero tail is linker alignment, not part of the object. |
-| `SaveFileInfoTablePtr` | 0x37EAC0 | 4 | `sceMcTblGetDir*` (0x40-byte entries): `new[]` of 0x800 bytes (32 entries) from the main stack; `memcpy` of 0x40 per entry; `EntryName` at +0x20 is cleared/compared/printed. NB: the copy loop allows up to 0x40 entries although only 32 fit. `sceMcTblGetDir` is not declared in `ps2/include/sce/libmc.h` yet (`sceMcGetDir` takes `void*`). |
+| `SaveFileInfoTablePtr` | 0x37EAC0 | 4 | `sceMcTblGetDir*` (0x40-byte entries): `new[]` of 0x800 bytes (32 entries) from the main stack; `memcpy` of 0x40 per entry; `EntryName` at +0x20 is cleared/compared/printed. NB: the copy loop allows up to 0x40 entries although only 32 fit. |
 | `SAVEDATA_BUFFER` | 0x37EAC4 | 4 | Pointer to a 0x659C0-byte object (`operator new(0x659c0, Alloc(0x659e))`); constructs 5 x `CEditData` (stride 0x5510) at +0x1CA4..+0x1C5F4, `CUserDataManager` at +0x1D320, `CQuestData::Initialize` at +0x62AC0, `CMenuSystemData` at +0x64140. Identical allocation is in `CMemoryCardManager::Initialize` (memcard, stored at +0x8EC). `CSaveData::GetEditData` uses edit data at +0x1C24, so this object likely holds a `CSaveData` at +0x80 -- type unresolved; owned by memcard/savedata. Only written here. |
 | (guards) | 0x37EAC8.. | 1 each | compiler-generated guard flags for the function-local statics `buf0`, `buf1`, `dbuf0`, `dbuf1` (the first three own four-byte pieces, the last one byte). |
 | `DataBuffer` | 0x1F646B0 | 0x30 | `mgCMemory`, 100000-byte texture/data buffer, passed to `SetTextureTable(100, 0x14, ...)`. |
@@ -72,7 +72,7 @@ a different symbol from mainloop's 4-byte `GamePad` (0x37CF44).
 
 ## Source status
 All six game functions are native, including the conversion loop; the unit has no `NONMATCHING`
-guards, `INCLUDE_ASM` gaps, or data markers. The source uses `MC_DIR_ENTRY` (a 0x40-byte
+guards, `INCLUDE_ASM` gaps, or data markers. The source uses `sceMcTblGetDir` (a 0x40-byte
 directory entry with the name at +0x20) and `SAVE_CONVERT_WORK` (the save image at +0x80 of the
 conversion allocation). `sceMcEnd` and `sceMcRename` are declared in the SDK memory-card header.
 
