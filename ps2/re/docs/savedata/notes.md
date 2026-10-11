@@ -59,7 +59,9 @@ InitSV_CONFIG_OPTION: null check, memset 0x40, +0x14 = 1. Option menu map (menuo
 +0x10 fast_time (TimeStep 1.5 vs 1.0 in DngStep/EditLoop); +0x14 map (gcOPTION "Map"; DngMainKey
 cycles 0..2; DngMainDraw draws minimap if !=0, 1 small rect / 2 large rect); +0x18 unused;
 +0x1C enemy_hp (gcOPTION "EnemyHP", DrawLifeGage arg); +0x20 damage_off (damage scores drawn when 0);
-+0x24 only set by the menu; +0x28 monster_name ("MonsterName"); +0x2C anger_counter ("AngerCounter",
++0x24 unk_24: option menu line 9 (OPTION_ITEM_UNK_9, listed between ANGER_COUNTER and MONSTER_NAME)
+writes it through the menu's value[] pointer with two choices (choice_num 2); UpdateOptionForm enables
+the choice row that matches the value. No other reader found; +0x28 monster_name ("MonsterName"); +0x2C anger_counter ("AngerCounter",
 DrawLifeGage arg); +0x30 dof_off (DepthOfField when 0; EditDraw); +0x34 u8 caption_off
 (GetConfigCaptionOff); +0x35 u8 read in nowload PauseLoop (unnamed); +0x36 u8 eye_reverse
 (EyeCamera negates stick Y when 0); +0x37 u8 inverted into camera fields in EditCameraControl and

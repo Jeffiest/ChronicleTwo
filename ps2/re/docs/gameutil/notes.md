@@ -31,7 +31,9 @@ Size: CCharacter2 holds `tagMOTION_TYPE[8]` at 0x3C0 and another `[8]` at 0x460 
 - 0x00 base_matrices: CreateAnimeDataEX memcpy of file 0; MotionProc2/3 index `* 0x40` by frame.
 - 0x04 motion_list: built by CreateAnimeDataEX from file 1; walked by SetMotionTime/ChangeMotion.
 - 0x08 skin_list: built from file 2; walked by DeformMesh, AnimeDataInit.
-- 0x0C unknown (copied as a word by `_MOTION`).
+- 0x0C unk_0C: zeroed with the struct by the memset in `_MOTION` and `_SHADOW_MOTION`. `_MOTION` copies
+  it, with base_matrices, motion_list and skin_list, from shadow_motion[0] to shadow_motion[now_motion_id]
+  when now_motion_id > 0 (character.cpp). No other reader or writer found.
 - 0x10 frame_info: `_SHADOW_MOTION` stores the tagFRAME_INF* (chr+0x470); `_SKIN_MOTION` reads
   chr+0x3D0 as tagFRAME_INF*.
 First game's tagMOTION_TYPE was 0x80 with an embedded MOTION_STATE; this game moved state into

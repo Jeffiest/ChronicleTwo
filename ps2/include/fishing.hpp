@@ -47,6 +47,7 @@ enum FISH_AFFINITY {
  */
 enum FISH_PLACE_AREA {
     FISH_PLACE_AREA_CIRCLE = 2, /**< A circle on the ground plane; every other shape covers the whole map. */
+    FISH_PLACE_AREA_COUNT = 5,  /**< Number of area shapes; a shape below 0 or at or above this value is read as shape 0. */
 };
 
 /**

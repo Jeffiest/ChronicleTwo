@@ -52,15 +52,6 @@ struct Vec4 {
 
 static void StepDataLoading(void *arg);
 
-/**
- *
- * Number of shapes that a fish appearance place can take.
- *
- */
-enum FishPlaceAreaCount {
-    FISH_PLACE_AREA_COUNT = 5, /**< Shapes at or above this value are read as shape 0. */
-};
-
 const int kFishPlaceValueCount = 5;
 const int kFishPlaceMaxFish = 8;
 
@@ -77,20 +68,6 @@ enum FISHING_UKI_MODE {
     FISHING_UKI_MODE_REELED_IN = 4, /**< The line is reeled in and the casting ends after a short delay. */
     FISHING_UKI_MODE_CHARGE = 5,    /**< The lure is worked by button presses until a fish bites. */
     FISHING_UKI_MODE_BITE = 6,      /**< A fish has bitten the lure and the player can hook it. */
-};
-
-/**
- *
- * Logical buttons that the fishing code reads from its CPadControl.
- *
- */
-enum FISHING_PAD_BTN {
-    FISHING_PAD_BTN_CAMERA_TOGGLE = 6, /**< Switches the camera between the float view and the player view. */
-    FISHING_PAD_BTN_DEBUG_JUMP = 1,    /**< Debug jump of the player during the debug movement. */
-    FISHING_PAD_BTN_CAST = 0x78,       /**< Starts a cast and confirms the casting point. */
-    FISHING_PAD_BTN_ACTION = 0x78,     /**< Charges the lure and confirms the fish result messages. */
-    FISHING_PAD_BTN_REEL = 0x79,       /**< Reels the line in. */
-    FISHING_PAD_BTN_REEL_FAST = 0x7A,  /**< Reels the line in quickly. */
 };
 
 int                InitUkiWait(CScene *scene);
@@ -176,7 +153,7 @@ static char *lure_file[4] = {"supina.chr", "kaeru.chr", "lure01.chr", "fork.chr"
  * Index limit of the FishParam table.
  *
  */
-enum FishParamLimit {
+enum FISH_PARAM_LIMIT {
     FISH_PARAM_LAST_INDEX = 18, /**< Index of the last FishParam entry. */
 };
 
@@ -185,7 +162,7 @@ enum FishParamLimit {
  * Scheduling priority of the fishing data loading thread.
  *
  */
-enum FishingLoadPriority {
+enum FISHING_LOAD_PRIORITY {
     FISHING_LOAD_THREAD_PRIORITY = 10, /**< Priority of the thread that loads fishing data. */
 };
 
@@ -2146,7 +2123,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                     move_z *= 3.0f;
                 }
 
-                if (pad->Btn(FISHING_PAD_BTN_DEBUG_JUMP) != 0) {
+                if (pad->Btn(PAD_BTN_CANCEL) != 0) {
                     velocity[1] = 8.0f;
                 }
             }
@@ -2198,7 +2175,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
             if (can_cast != 0 && CheckCasting(scene, position, cast_dir) != 0) {
                 ShowHelpMes(0x65, 1);
 
-                if (pad->Btn(FISHING_PAD_BTN_CAST) != 0 && InitSelectCastingPoint(scene) != 0) {
+                if (pad->Btn(PAD_BTN_FISH_ACTION) != 0 && InitSelectCastingPoint(scene) != 0) {
                     SetNextMode(FISHING_CHARA_MODE_SELECT_POINT);
                 }
             }
@@ -2431,7 +2408,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
 
     ReadBG();
 
-    if (CastOKFlag != 0 && pad->Btn(FISHING_PAD_BTN_CAST) != 0) {
+    if (CastOKFlag != 0 && pad->Btn(PAD_BTN_FISH_ACTION) != 0) {
         if (InitCasting(scene) != 0) {
             SetNextMode(FISHING_CHARA_MODE_CASTING);
         }
@@ -2723,11 +2700,11 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     reel_held = 0;
     reel_sound = 7;
 
-    if (pad->Btn(FISHING_PAD_BTN_REEL) != 0) {
+    if (pad->Btn(PAD_BTN_FISH_REEL) != 0) {
         reel_sound = 7;
         reel_result = ExtendLine(-1.0f);
         moved = reel_held = 1;
-    } else if (pad->Btn(FISHING_PAD_BTN_REEL_FAST) != 0) {
+    } else if (pad->Btn(PAD_BTN_FISH_REEL_FAST) != 0) {
         reel_result = ExtendLine(-2.5f);
         moved = 1;
         reel_held = moved;
@@ -2881,7 +2858,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                     charge_point = 0;
                 }
 
-                if (pushed != 0 || pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
+                if (pushed != 0 || pad->Btn(PAD_BTN_FISH_ACTION) != 0) {
                     if (act_interval < 3) {
                         RodActionPoint = RodActionPoint + fptosi(3.0f * mgRnd());
                     } else {
@@ -2955,7 +2932,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
     }
 
     if (GetFishingMode() == FISHING_MODE_BAIT) {
-        if (pad->Btn(FISHING_PAD_BTN_CAMERA_TOGGLE) != 0) {
+        if (pad->Btn(PAD_BTN_R2) != 0) {
             if (UkiCameraFlag == 0) {
                 UkiCamOldRot = camera->GetAngle();
                 UkiCameraFlag = 1;
@@ -3184,7 +3161,7 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
 
     reel_result = 0;
 
-    if (pad->Btn(FISHING_PAD_BTN_REEL) != 0) {
+    if (pad->Btn(PAD_BTN_FISH_REEL) != 0) {
         scene->loop_se.SeLoopPlayStop(FishSnd, 7, 2, 100);
         reel_result = ExtendLine(-1.0f);
         WindReel = 1;
@@ -3192,7 +3169,7 @@ void BattleLoop(CScene *scene, CPadControl *pad) {
         WindReel = 0;
     }
 
-    if (pushed || pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
+    if (pushed || pad->Btn(PAD_BTN_FISH_ACTION) != 0) {
         ActionCount += 1;
         ActionDecCount = 10;
     }
@@ -3381,7 +3358,7 @@ void FalseLoop(CScene *scene, CPadControl *pad) {
         FalseMotionCount = 40;
     }
 
-    if (FalseStep > 0 && FalseMotionCount <= 0 && pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
+    if (FalseStep > 0 && FalseMotionCount <= 0 && pad->Btn(PAD_BTN_FISH_ACTION) != 0) {
         ExtendLine(-1000.0f);
         ResetLineVelo();
         EndSelectCastingPoint(scene);
@@ -3569,7 +3546,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
     static int font_h = 0;
 
     if (FalseStep == 1) {
-        if (FalseMotionCount <= 0 && pad->Btn(FISHING_PAD_BTN_ACTION) != 0) {
+        if (FalseMotionCount <= 0 && pad->Btn(PAD_BTN_FISH_ACTION) != 0) {
             if (message->select < 0) {
                 message->cursor_time = 0;
             }
@@ -3612,7 +3589,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
     if (FalseStep == 2) {
         ClsMes *result_message = scene->GetMessage(1);
         int     state = result_message->State();
-        int     confirm = pad->Btn(FISHING_PAD_BTN_ACTION);
+        int     confirm = pad->Btn(PAD_BTN_FISH_ACTION);
 
         switch (FalseStep2) {
             case 0:

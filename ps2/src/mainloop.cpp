@@ -153,10 +153,10 @@ static PAD_TABLE_ENTRY pad_table[] = {
     {13,                         PAD_CTRL_TRIGGER_ON,   PAD_RIGHT   },
     {14,                         PAD_CTRL_TRIGGER_ON,   PAD_LEFT    },
     {PAD_BTN_START,              PAD_CTRL_TRIGGER_DOWN, PAD_START   },
-    {16,                         PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {17,                         PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
+    {PAD_BTN_CONFIRM_2,          PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
+    {PAD_BTN_CANCEL_2,           PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
     {19,                         PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
-    {20,                         PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
+    {PAD_BTN_EVENT_SKIP_2,       PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
     {PAD_BTN_PAUSE,              PAD_CTRL_TRIGGER_DOWN, PAD_START   },
     {PAD_BTN_EVENT_SKIP,         PAD_CTRL_TRIGGER_DOWN, PAD_TRIANGLE},
     {PAD_BTN_QUICK_CHANGE,       PAD_CTRL_TRIGGER_DOWN, PAD_L3      },
@@ -179,9 +179,9 @@ static PAD_TABLE_ENTRY pad_table[] = {
     {18,                         PAD_CTRL_TRIGGER_DOWN, PAD_R1      },
     {PAD_BTN_EDIT_SWITCH,        PAD_CTRL_TRIGGER_DOWN, PAD_SELECT  },
     {PAD_BTN_EDIT_MAGNET,        PAD_CTRL_TRIGGER_DOWN, PAD_SQUARE  },
-    {120,                        PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {121,                        PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
-    {122,                        PAD_CTRL_TRIGGER_ON,   PAD_SQUARE  },
+    {PAD_BTN_FISH_ACTION,        PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
+    {PAD_BTN_FISH_REEL,          PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
+    {PAD_BTN_FISH_REEL_FAST,     PAD_CTRL_TRIGGER_ON,   PAD_SQUARE  },
     {-1,                         -1,                    -1          },
 };
 /**
@@ -390,19 +390,19 @@ static void InitPadTable(int language) {
     for (i = 0; pad_table[i].no >= 0; i++) {
         switch (pad_table[i].no) {
             case PAD_BTN_CONFIRM:
-            case 0x10:
-            case 0x14:
+            case PAD_BTN_CONFIRM_2:
+            case PAD_BTN_EVENT_SKIP_2:
             case PAD_BTN_ACTION_CONFIRM:
             case PAD_BTN_ACTION_HELD:
             case PAD_BTN_EDIT_PLACE:
             case PAD_BTN_EDIT_REMOVE:
             case PAD_BTN_EDIT_PAINT:
-            case 0x78:
-            case 0x79:
+            case PAD_BTN_FISH_ACTION:
+            case PAD_BTN_FISH_REEL:
                 pad_table[i].button = confirm[language_index];
                 break;
             case PAD_BTN_CANCEL:
-            case 0x11:
+            case PAD_BTN_CANCEL_2:
             case PAD_BTN_ACTION_CANCEL:
                 pad_table[i].button = cancel[language_index];
                 break;

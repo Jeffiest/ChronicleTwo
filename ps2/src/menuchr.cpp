@@ -2941,7 +2941,7 @@ int CMenuChrCngMenu::MenuLocalLoop() {
             message_id = 0x194;
         }
 
-        if (CheckBitFlagMenu(0x36) == 0 && select == USER_CHARA_MONICA && OmakeFlag == 0) {
+        if (CheckBitFlagMenu(SAVE_FLAG_EARLY_GAME_DONE) == 0 && select == USER_CHARA_MONICA && OmakeFlag == 0) {
             message_id = 0x199;
         }
     }
