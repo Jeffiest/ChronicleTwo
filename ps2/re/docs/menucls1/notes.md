@@ -24,7 +24,7 @@ and the item-use checker. No first-game (`chronicle`) counterpart exists for any
 Size: `new(0x2A50)` before every `__ct__7CDC2MesFv` call (17 sites).
 | Off | Field | Evidence |
 |---|---|---|
-| 0x2958 | `u8 msg_change` | set to 1 by SetMsgItemNo/SetMsgVolumeNo when a value differs; StepMsg then sets `mes_no`(ClsMes 0x1E3C) = -1 and clears it. MenuItemKey (menusys) sets it too. |
+| 0x2958 | `s8 msg_change` | set to 1 by SetMsgItemNo/SetMsgVolumeNo when a value differs; StepMsg then sets `mes_no`(ClsMes 0x1E3C) = -1 and clears it. MenuItemKey (menusys) sets it too. |
 | 0x2959 | `s8 cursor` | `lb`; SetMsgCursor/AddMsgCursor; StepMsg copies to ClsMes `select` (0x225C); ctor 0xFF |
 | 0x295A/0x295C | `s16 text_off_x/y` | ctor -1; SetPutPos(int*) copies to `abs_text_off_x/y` (0x1AC/0x1B0) when `abs_win.w` (0x1A4) > 0; MsgPreset 3/8 set 0x10 |
 | 0x295E | `s16 mes_no` | MakeMsg(int) stores; MakeMsg(char*) stores -1; StepMsg calls `MakeMesWin(int)` with it when `str[0]==0`; menuop compares with 0xBEB/0xC5C |
@@ -60,7 +60,7 @@ line_w, 0x294C buff (StepMsg/DrawMsg do nothing when NULL).
   0, full-screen scissor, then a switch on preset 0..0x13 (SetWindowMode values 0,2,3,4,5,6,8 —
   `MesWindowMode`), finally `value_half = 1` if `CheckNowEurope()`. Preset 0x13 calls
   `ClsMes::Preset(0)`. Preset 9 calls `SetFontColor(6,6,6,0x80)`; preset 7 `SetDefColor(0x80141414)`.
-  Preset values are not named anywhere; left as int.
+  The preset values are `MenuScriptMessagePreset` values (menucommon.hpp).
 - `MsgPreset(int, int)`: second parameter unused (asm never reads $a2). Sets `value_half` when
   `LanguageCode == LANG_ENGLISH`.
 - `AddMsgCursor(step, min, max, loop)`: loop==1 wraps, else clamps; returns `old != new`
@@ -68,7 +68,7 @@ line_w, 0x294C buff (StepMsg/DrawMsg do nothing when NULL).
   `MenuSePlay(0)` on move; returns cursor (lb -> char). `CommandMsgCursor`: max = count of
   `item_mes[i] > 0` minus 1 (min 0), loop 1. `YesNoCursor`: pad 0x8000 (left) -1, 0x2000 (right)
   +1, range 0..1 clamp. `YesNoCursor2(int alt)`: same, then `MenuCheckPushButton()` bit 1 confirms
-  (1 if cursor 0 else 2), bit 4 confirms too when alt==1, bit 2 gives 2, else 0 -> `MesYesNoResult`.
+  (1 if cursor 0 else 2), bit 4 confirms too when alt==1, bit 2 gives 2, else 0 -> `MesYesNoResult` (MES_YESNO_YES, MES_YESNO_NO, MES_YESNO_NONE).
 - `SetMsgItemNo(int*, n)`: up to 16; copies into item_mes; a negative entry fills the rest with -1.
   `SetMsgItemNo(char**, n)`: strcpy into name[i]; NULL entry -> empty string (`at_1328`) and fills
   the rest with empty strings.
