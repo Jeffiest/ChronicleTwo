@@ -130,9 +130,10 @@ StartMode start_mode;
  */
 u_long128 SystemSeBuff[400];
 /**
- * Memory backing configuration and villager data.
+ * Memory backing configuration and villager data. Retail's 5000 quadwords sized 28-byte
+ * villager records; a host record is 48 bytes, so the arena is grown to fit the same tables.
  */
-u_long128 InfoBuff[5000];
+u_long128 InfoBuff[0x4000];
 
 /**
  * Language-adjusted mappings from logical controls to pad buttons.
@@ -423,7 +424,7 @@ void MainLoop() {
     LoadFontTblBin();
     LoadFontTex2Img();
     LoadNPCCfg();
-    InfoStack.stSetBuffer(InfoBuff, 5000);
+    InfoStack.stSetBuffer(InfoBuff, 0x4000);
     LoadGameInfo(&InfoStack);
     InitPauseData();
     InitSaveData();
