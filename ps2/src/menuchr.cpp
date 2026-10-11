@@ -1112,10 +1112,10 @@ void CMenuChrCngMenu::EnterDataMenu(u_char *pack) {
     if (npc_no > 0) {
         party_info = MenuUserDataManPtr->GetPartyCharaInfo(npc_no);
         npc_data = GetPartyNPCData(npc_no);
-        npc_mes_talk = GetPartyCharaMessage(npc_no, 1, 0);
-        npc_mes_cmd = GetPartyCharaMessage(npc_no, 0, 0);
-        npc_mes_cancel = GetPartyCharaMessage(npc_no, 3, 0);
-        int first_message = GetPartyCharaMessage(npc_no, 5, 0);
+        npc_mes_talk = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_TALK, 0);
+        npc_mes_cmd = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_CMD_QUESTION, 0);
+        npc_mes_cancel = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_CANCEL, 0);
+        int first_message = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_FIRST_CMD, 0);
 
         // Each ability's command takes the message after the previous one; unused slots stay empty.
         for (i = 0; i < npc_data->ability_num; i++) {
@@ -2112,7 +2112,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             last_select = select;
             MenuSePlay(se_sndtbl[select]);
 
-            if (MenuLoadInfo.alternate_model == 1) {
+            if (MenuLoadInfo.town_model == 1) {
                 EditCharaPrepare();
             }
 
@@ -2188,7 +2188,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             if (!MenuUserDataManPtr->UseNpcAbility(npc_no, SelectedCmdNo, 0)) {
                 step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
-                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
+                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, PARTY_MESSAGE_REFUSED, 0) + SelectedCmdNo);
                 npc_mes->StepMsg();
                 AdjustNPCTalk(npc_mes, npc_chara);
                 break;
@@ -2210,7 +2210,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                 }
 
                 if (dungeon_only) {
-                    npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
+                    npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, PARTY_MESSAGE_REFUSED, 0) + SelectedCmdNo);
                     npc_mes->StepMsg();
                     AdjustNPCTalk(npc_mes, npc_chara);
                     MenuSePlay(SYSTEM_SE_CANCEL);
@@ -2220,7 +2220,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             }
 
             {
-                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 6, 0) + SelectedCmdNo);
+                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, PARTY_MESSAGE_ABILITY_QUESTION, 0) + SelectedCmdNo);
                 npc_mes->StepMsg();
                 int widest;
 
@@ -2255,7 +2255,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
             if (party_info->point - npc_data->ability_cost[SelectedCmdNo] < 0) {
                 step = CHR_CNG_NPC_STEP_NO_POINT;
                 ExeScript("POINT\x95\x73\x91\xAB");
-                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, 8, 0) + SelectedCmdNo);
+                npc_mes->MakeMsg(GetPartyCharaMessage(npc_no, PARTY_MESSAGE_REFUSED, 0) + SelectedCmdNo);
                 break;
             }
 
@@ -2291,14 +2291,14 @@ int CMenuChrCngMenu::KeyChangeMain() {
 
             step = CHR_CNG_NPC_STEP_RESULT;
             int volume[8] = {0};
-            int message = GetPartyCharaMessage(npc_no, 7, 0) + SelectedCmdNo;
+            int message = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_ABILITY_DONE, 0) + SelectedCmdNo;
 
             switch (npc_no) {
                 case PARTY_NPC_CEDRIC:
                     if (SelectedCmdNo == 2) {
                         if (1.0f <= MenuUserDataManPtr->robo_data.AddPoint(0.0f)) {
                             used = false;
-                            message = GetPartyCharaMessage(PARTY_NPC_CEDRIC, 8, 0);
+                            message = GetPartyCharaMessage(PARTY_NPC_CEDRIC, PARTY_MESSAGE_REFUSED, 0);
                         } else {
                             MenuUserDataManPtr->robo_data.AddPoint(999.0f);
                             se = 10;
@@ -2326,7 +2326,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 10;
                         used = true;
                     } else {
-                        message = GetPartyCharaMessage(PARTY_NPC_JULIA, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_JULIA, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2349,7 +2349,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     if (used) {
                         close_on_end = true;
                     } else {
-                        message = GetPartyCharaMessage(PARTY_NPC_PARN, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PARN, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2358,12 +2358,12 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         used = true;
                         se = 0x56;
                         sound_mode = 1;
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(PARTY_NPC_DR_DELL, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_DR_DELL, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2373,13 +2373,13 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 10;
                         MenuUserDataManPtr->AddHp(USER_CHARA_MAX, 999);
                         MenuUserDataManPtr->AddHp(USER_CHARA_MONICA, 999);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
-                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, 1);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MAX, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
+                        MenuUserDataManPtr->SetCharaStatusAttirbute(USER_CHARA_MONICA, CHARA_STATUS_ALL & ~CHARA_STATUS_POWER, CHARA_STATUS_ATTR_MODE_CLEAR);
                         UpdataLife();
                     }
 
                     if (!used) {
-                        message = GetPartyCharaMessage(PARTY_NPC_MINA, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_MINA, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2403,7 +2403,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         se = 0x56;
                         UpdataLife();
                     } else {
-                        message = GetPartyCharaMessage(PARTY_NPC_PRIEST_BRUNO, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_PRIEST_BRUNO, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2424,7 +2424,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         sound_mode = 1;
                         se = 0x56;
                     } else {
-                        message = GetPartyCharaMessage(PARTY_NPC_OLIVIE, 8, 0);
+                        message = GetPartyCharaMessage(PARTY_NPC_OLIVIE, PARTY_MESSAGE_REFUSED, 0);
                     }
 
                     break;
@@ -2475,7 +2475,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                     npc_mes->SetMsgVolumeNoOne(volume[0]);
 
                     if (gift_num == 0) {
-                        message = GetPartyCharaMessage(npc_no, 0xB, 0);
+                        message = GetPartyCharaMessage(npc_no, PARTY_MESSAGE_GIFT_OVER_LIMIT, 0);
                     } else {
                         used = true;
                         got_item = true;
@@ -2797,7 +2797,7 @@ int CMenuChrCngMenu::CheckChrChange() {
                     chara->effect_man = FxScriptMan;
                 }
 
-                if (chara != NULL && MenuLoadInfo.alternate_model == 0) {
+                if (chara != NULL && MenuLoadInfo.town_model == 0) {
                     chara->InitScript();
                 }
 
@@ -3204,13 +3204,13 @@ int MenuCharaChangeInit(mgCMemory *stack, int *tex_block, int mode) {
     MenuChangeNpcMemory.Align64();
     size = stack_free_size(&MenuChangeNpcMemory);
     MenuCharaLoadStack.stSetBuffer((u_long128 *) stack_free_top(&MenuChangeNpcMemory), size);
-    MenuLoadInfo.alternate_model = false;
+    MenuLoadInfo.town_model = false;
     MenuCharaLoadStack.stack_used = 0;
     MenuCharaLoadStack.lock = 0;
 
     switch (mode) {
         case MENU_OPEN_MAIN_TOWN:
-            MenuLoadInfo.alternate_model = true;
+            MenuLoadInfo.town_model = true;
             break;
     }
 
@@ -3261,7 +3261,7 @@ int MenuCharaChangeKey() {
                     MenuCharaLoadStack.stack_used = 0;
                     MenuCharaLoadStack.lock = 0;
 
-                    if (MenuLoadInfo.alternate_model == 1) {
+                    if (MenuLoadInfo.town_model == 1) {
                         mode = 0;
                     }
 
@@ -5142,14 +5142,14 @@ int MenuItemCharaDataLoad(mgCMemory *stack, int chara_no, MENU_BGREAD_INFO2 **in
 
             break;
         case 2:
-            path_kind[0] = pathtbl[MenuLoadInfo.alternate_model];
+            path_kind[0] = pathtbl[MenuLoadInfo.town_model];
 
-            if (MenuLoadInfo.alternate_model == 0) {
+            if (MenuLoadInfo.town_model == 0) {
                 path_kind[0] = 4;
                 GetMainCharaModelName(chara_no, name[0], 0);
             }
 
-            if (MenuLoadInfo.alternate_model == 1) {
+            if (MenuLoadInfo.town_model == 1) {
                 path_kind[0] = 5;
                 GetMainCharaModelName(chara_no, name[0], 1);
             }
@@ -5169,7 +5169,7 @@ int MenuItemCharaDataLoad(mgCMemory *stack, int chara_no, MENU_BGREAD_INFO2 **in
 
                 strcpy(name[6], menu_chara_cfg_chrtbl[chara_no]);
 
-                if (MenuLoadInfo.alternate_model == 1) {
+                if (MenuLoadInfo.town_model == 1) {
                     name[2][0] = 0;
 
                     if (chara_no == 0) {
@@ -5312,7 +5312,7 @@ int MenuItemCharaDataLoadEndCheck(MENU_BGREAD_INFO2 **info, mgCMemory *stack, CA
             scene_chara[0] = NULL;
         }
 
-        if (MenuLoadInfo.alternate_model == 1) {
+        if (MenuLoadInfo.town_model == 1) {
             scene_chara[1] = NULL;
 
             if (chara_no == 0) {
@@ -6222,14 +6222,14 @@ void InitMainCharaBG(int chara_no, mgCMemory *stack, int mode) {
     NowMainCharaChngTexMoveX = -0x100;
     MenuMainScene = GetMainScene();
     MorattaStack = MenuArg.base_chara_stack;
-    MenuLoadInfo.mode = 2;
-    MenuLoadInfo.load_all = 1;
-    MenuLoadInfo.alternate_model = mode;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_SCENE;
+    MenuLoadInfo.load_all = true;
+    MenuLoadInfo.town_model = mode;
     MenuLoadInfo.chara_no = NowReadMainCharaNo;
     MenuLoadInfo.request_phase = -1;
     MenuLoadInfo.load_phase = 0;
     MenuLoadInfo.target_flags = 0;
-    MenuLoadInfo.update_scene = 1;
+    MenuLoadInfo.update_scene = true;
     NowReadMainChara = (CActionChara *) MenuMainScene->GetCharacter(0);
 
     if (NowReadMainChara != NULL) {
@@ -6258,7 +6258,7 @@ void InitMainCharaBG(int chara_no, mgCMemory *stack, int mode) {
     switch (NowReadMainCharaNo) {
         case 0:
         case 1:
-            if (MenuLoadInfo.alternate_model == 1) {
+            if (MenuLoadInfo.town_model == 1) {
                 EditCharaPrepare();
             }
 
@@ -6382,7 +6382,7 @@ int ReadMainCharaBG() {
                 MenuCharaLoadStack.Alloc(blocks_for(size + 0x2800));
             }
 
-            if (MenuLoadInfo.alternate_model == 0 && NowReadMainCharaNo < 3) {
+            if (MenuLoadInfo.town_model == 0 && NowReadMainCharaNo < 3) {
                 MenuCharaLoadStack.Align64();
                 LoadFileBG("img/allitem.img", MenuCharaLoadStack.stGetTop(), &script_size);
             }
@@ -6394,7 +6394,7 @@ int ReadMainCharaBG() {
                 case 0:
                 case 1:
                 case 2:
-                    if (MenuLoadInfo.alternate_model != 1) {
+                    if (MenuLoadInfo.town_model != 1) {
                         mgTexManager.EnterIMGFile((u_char *) GetReadBGFile(1)->buffer, MenuCommonInfo->tex_block[1],
                                                   NULL, NULL);
                         CopyActiveItemAndWeapon(NowReadMainCharaNo, -1);
@@ -6406,7 +6406,7 @@ int ReadMainCharaBG() {
                     break;
             }
 
-            if (MenuLoadInfo.alternate_model == 0) {
+            if (MenuLoadInfo.town_model == 0) {
                 NowReadMainChara->effect_man = FxScriptMan;
                 NowReadMainChara->InitScript();
             }
@@ -6415,7 +6415,7 @@ int ReadMainCharaBG() {
             NowReadMainChara->SetRotation(NowMainReadRotation);
             MenuCharaSoundEnter(GetMainScene(), NowReadMainChara, 1);
             NowMainCharaChngTexMovePhase = 1;
-            MenuArg.end_code = 0x15;
+            MenuArg.end_code = MENU_END_CHARA_CHANGE_FADE;
             NowReadMainCharaPhase++;
             break;
         case 3:
@@ -6430,7 +6430,7 @@ int KeyMainCharaBG() {
 
     read_state = ReadMainCharaBG();
 
-    if (MenuLoadInfo.alternate_model == 1) {
+    if (MenuLoadInfo.town_model == 1) {
         NowMainCharaChngTexMoveX = NowMainCharaChngTexMoveX + 0x12;
     } else {
         NowMainCharaChngTexMoveX += 0xC;
@@ -6650,13 +6650,13 @@ void CMenuCostumeSel::LoadMenuData(mgCMemory *stack, int *tex_block) {
     MenuDCMsg[7]->SetAbsPos(8);
     MenuDrawEnv->speed = 2.0f;
     MenuBGReadInfo2Malloc(stack, tbl);
-    MenuLoadInfo.mode = 3;
-    MenuLoadInfo.alternate_model = 1;
-    MenuLoadInfo.load_all = 1;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_THINK;
+    MenuLoadInfo.town_model = true;
+    MenuLoadInfo.load_all = true;
     MenuLoadInfo.load_phase = 0;
     MenuLoadInfo.request_phase = -1;
     MenuLoadInfo.chara_no = USER_CHARA_MAX;
-    MenuLoadInfo.update_scene = 0;
+    MenuLoadInfo.update_scene = false;
     MenuLoadInfo.target_flags = 1;
     free_size = stack->stGetRest();
     this->stack.stSetBuffer(stack->stGetTop(), free_size);
@@ -6697,7 +6697,7 @@ int CMenuCostumeSel::KeyStep() {
             break;
         case 2:
             if (fade_end) {
-                if (MenuArg.end_code == 12) {
+                if (MenuArg.end_code == MENU_END_COSTUME) {
                     MenuArg.result[0] = costume_list[1][costume_select[0]];
                     MenuArg.result[1] = costume_list[0][costume_select[1]];
                     MenuArg.result[2] = costume_list[2][costume_select[2]];
@@ -6840,7 +6840,7 @@ int CMenuCostumeSel::KeyStep() {
                     if (buttons & MENU_PUSH_BUTTON_CANCEL) {
                         wait_load = 0;
                         mode = 2;
-                        MenuArg.end_code = 0;
+                        MenuArg.end_code = MENU_END_NONE;
                         MenuCommonInfo->key_enable = 0;
                         FadeOutMenu(40, 0.0f);
                         MenuSePlay(SYSTEM_SE_CANCEL);
@@ -6885,7 +6885,7 @@ int CMenuCostumeSel::KeyStep() {
                             change_chara = 1;
                             wait_load = 0;
                             mode = 2;
-                            MenuArg.end_code = 12;
+                            MenuArg.end_code = MENU_END_COSTUME;
                             MenuCommonInfo->key_enable = 0;
                             FadeOutMenu(40, 0.0f);
                             MenuSePlay(SYSTEM_SE_DECIDE);
@@ -6901,8 +6901,8 @@ int CMenuCostumeSel::KeyStep() {
                             costume_select[0] = CosutmeSelDefaultSet(0x7F, costume_list[1]);
                             costume_select[1] = CosutmeSelDefaultSet(0x10A, costume_list[0]);
                             costume_select[2] = CosutmeSelDefaultSet(0x85, costume_list[2]);
-                            MenuLoadInfo.mode = 0;
-                            MenuLoadInfo.load_all = 1;
+                            MenuLoadInfo.mode = MENU_LOAD_MODE_MENU;
+                            MenuLoadInfo.load_all = true;
                             MenuLoadInfo.load_phase = 0;
                             MenuLoadInfo.request_phase = -1;
                             loading = 1;
@@ -6913,7 +6913,7 @@ int CMenuCostumeSel::KeyStep() {
                         } else {
                             wait_load = 0;
                             mode = 2;
-                            MenuArg.end_code = 12;
+                            MenuArg.end_code = MENU_END_COSTUME;
                             MenuCommonInfo->key_enable = 0;
                             FadeOutMenu(40, 0.0f);
                             MenuSePlay(SYSTEM_SE_DECIDE);
@@ -6952,7 +6952,7 @@ int CMenuCostumeSel::KeyStep() {
                 MenuItemCharaDataLoadEndCheck(MenuCharaBuild2, &MenuCharaLoadStack, MenuActionChara, chara,
                                               tex_block[3], -1);
                 MenuItemCharaDataLoadEndCheckAfter(MenuCharaBuild2, chara);
-                MenuLoadInfo.load_all = 0;
+                MenuLoadInfo.load_all = false;
                 model->SetPosition(chara_pos);
                 model->SetRotation(costume_rotation);
                 model->Step();
@@ -7053,7 +7053,7 @@ void CMenuCostumeSel::Draw() {
     int         i;
     int         cursor_y_pos = select * 0x42 + 0x6E;
     int         y = 0x50;
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(tile_tex);
 
@@ -7157,7 +7157,7 @@ void CMenuCostumeSel::Draw() {
         CMenuFont font;
 
         for (i = 0; i < COSTUME_LIST_NUM; i++) {
-            char *name = chara_data->equip[convtbl[i]].GetName(1);
+            char *name = chara_data->equip[convtbl[i]].GetName(ITEM_NAME_TYPE_LEVEL);
 
             if (name != NULL) {
                 font.SetStr(name);
@@ -7250,7 +7250,7 @@ void MenuCostumeInit(mgCMemory *stack, int *tex_block, int mode) {
     MenuCosPtr->UpdateCostumeList(0, CostumeAttr);
     MenuCosPtr->LoadMenuData(&MenuChangeMemory, tex_block);
     MenuCosPtr->FadeInMenu(0x28, 0.0f);
-    MenuArg.end_code = 0;
+    MenuArg.end_code = MENU_END_NONE;
     MenuArg.result[0] = 0;
     MenuArg.result[1] = 0;
     MenuArg.result[2] = 0;
@@ -7518,7 +7518,7 @@ void CMosBookMenu::Draw() {
     mgCTextureManager *tex_manager = &mgTexManager;
     tex_manager->ReloadTexture(Tex_MBase->block, (sceVif1Packet *) NULL);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     DrawMenuTilePattern(prim, Tex_MBg, bg_scroll, bg_scroll,
                         mgRect<int>(0, 0, 0x100, 0x100), 0, NULL);
     prim->Begin(MG_PRIM_SPRITE);
@@ -7539,7 +7539,7 @@ void CMosBookMenu::Draw() {
     }
 
     DrawMenuFillBox(52.0f, 101.0f, (float) model_width, 220.0f, 0x80, 0xD, 0xD, 0xD);
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_MBase);
     prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -7633,7 +7633,7 @@ void CMosBookMenu::Draw() {
         frame_width = 0xDA;
     }
 
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_MBase);
     prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -7880,10 +7880,10 @@ void MonsterBookInit(mgCMemory *stack, int *tex_block, int mode) {
     MonsterBookPtr = (u8 *) &GetSaveData()->monster_book;
     MonsterBookBootMode = mode;
     MenuBGReadInfo2Malloc(&MosBookStack, tbl);
-    MenuLoadInfo.mode = 4;
-    MenuLoadInfo.load_all = 1;
-    MenuLoadInfo.update_scene = 0;
-    MenuLoadInfo.alternate_model = 0;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_BOOK;
+    MenuLoadInfo.load_all = true;
+    MenuLoadInfo.update_scene = false;
+    MenuLoadInfo.town_model = false;
     MenuLoadInfo.request_phase = -1;
     MenuLoadInfo.load_phase = 0;
     MosBookStack.Align64();
