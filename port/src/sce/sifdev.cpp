@@ -133,7 +133,7 @@ bool Known(int fd) {
 
 void sceFsReset() {}
 
-int sceOpen(const char *name, int flags) {
+extern "C" int sceOpen(const char *name, int flags) {
     fs::path    root;
     std::string relative;
     if (!SplitPath(name, root, relative)) {
