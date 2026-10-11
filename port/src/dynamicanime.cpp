@@ -82,13 +82,17 @@ void BuildSkinMatrices(const mgCVisualMotionMDT *visual, mgCFrame *frame, int sl
     mgMulMatrix(inverse_root, root_matrix, visual->base_matrix[visual->frame_id]);
     mgInversMatrix(root_local, inverse_root);
 
+    // The frame table is indexed by frame number, and the hands and ankles sit well past 32 (Max's are
+    // 41..78); only the bone count is capped at 32, not the frame numbers the bones name.
+    const int frame_num = visual->frame[0]->frame_num;
+
     for (int i = 0; i < slot_count; i++) {
         int slot = visual->bone[i];
         float frame_matrix[4][4];
         float slot_matrix[4][4];
         float slot_inverse[4][4];
 
-        if (slot < 0 || slot >= 32 || visual->frame[slot] == NULL) {
+        if (slot < 0 || slot >= frame_num || visual->frame[slot] == NULL) {
             continue;
         }
 
