@@ -118,7 +118,7 @@ enum SAVE_BIT_FLAG {
     SAVE_FLAG_SPHEDA_UNLOCKED = 0x13D,          /**< Enables floor spheda challenges and unrestricted club commands. */
     SAVE_FLAG_FISHING_CONTEST_UNLOCKED = 0x158, /**< Enables Fishing Contest tournaments. */
     SAVE_FLAG_FINNY_FRENZY_UNLOCKED = 0x1A8,    /**< Enables Finny Frenzy tournaments and the fish-race bonus. */
-    SAVE_FLAG_EDIT_BLOCKED = 0x208,             /**< Disables Heim's fire powder and is checked by the Heim town analysis. */
+    SAVE_FLAG_HEIM_FIRE_OUT = 0x208,            /**< Heim's fires are out: its parts no longer burn and its fire powder is gone. */
     SAVE_FLAG_WORLD_MAP_2 = 0x258,              /**< The world map uses its second layout (wmap2). */
     SAVE_FLAG_WORLD_MAP_4 = 0x268,              /**< The world map uses its fourth layout (wmap4) and area 8 is closed. */
     SAVE_FLAG_WORLD_MAP_3 = 0x280,              /**< The world map uses its third layout (wmap3). */
