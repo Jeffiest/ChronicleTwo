@@ -133,10 +133,9 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
         own.resize(static_cast<size_t>(visual->vertex_num) * 4);
         std::memcpy(own.data(), visual->vertex, own.size() * sizeof(float));
         // The base pose was never skinned into the shared array, so capture it from there first.
-        MotionBase &shared_base = MotionBaseOf(visual);
+        MotionBase shared_base = MotionBaseOf(visual);
         visual->vertex = reinterpret_cast<sceVu0FVECTOR *>(own.data());
-        MotionBase &private_base = g_motion_bases[visual->vertex];
-        private_base = shared_base;
+        g_motion_bases[visual->vertex] = std::move(shared_base);
     }
 
     MotionBase &base = MotionBaseOf(visual);
