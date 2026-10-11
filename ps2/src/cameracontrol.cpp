@@ -142,7 +142,7 @@ void CCameraControl::MoveCamera(CPadControl *pad, float *player_rot, CCPoly *pol
         float turn = 0.0f;
 
         if (!(rot_cancel & CAMERA_ROT_CANCEL_ANALOG)) {
-            turn = 0.05f * -pad->Analog(6);
+            turn = 0.05f * -pad->Analog(PAD_ANALOG_RIGHT_X_2);
         }
 
         if (!(rot_cancel & CAMERA_ROT_CANCEL_BUTTON)) {
@@ -160,8 +160,8 @@ void CCameraControl::MoveCamera(CPadControl *pad, float *player_rot, CCPoly *pol
         }
 
         control.rot = turn;
-        control.height = 2.0f * -pad->Analog(7);
-        int swing_back = pad->Btn(4) != 0;
+        control.height = 2.0f * -pad->Analog(PAD_ANALOG_RIGHT_Y_2);
+        int swing_back = pad->Btn(PAD_BTN_L2) != 0;
 
         if (!swing_back) {
             swing_back = pad->Btn(PAD_BTN_CANCEL) != 0;

@@ -53,7 +53,7 @@ foreach(row IN LISTS unit_rows)
                 SATANSFIDDLE=${SATANSFIDDLE} SATANSFIDDLE_CONFIG=${SATANSFIDDLE_CONFIG}
                 SATANSFIDDLE_TRANSLATION_UNIT=${logical_source}
                 ${PYTHON} ${SCRIPTS_DIR}/build/satansfiddle-wibo.py
-                ${MW_CC_DIR}/mwccps2.exe ${CC_FLAGS} -lang c++
+                ${MW_CC_DIR}/mwccps2.exe ${CC_FLAGS} ${UNIT_CC_FLAGS_${unit}} -lang c++
                 -o ${base} ${source}
         DEPENDS ${CMAKE_SOURCE_DIR}/${source} ${PROJECT_HEADERS}
                 ${SATANSFIDDLE_DEPENDENCIES}

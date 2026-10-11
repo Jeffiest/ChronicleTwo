@@ -316,8 +316,6 @@ static inline u_int align16_blocks(u_int n) {
     return n >> 4;
 }
 
-#pragma schedule off
-
 /**
  *
  * Gives the VRAM block address of the Z buffer and stores the GS blocks
@@ -332,9 +330,6 @@ static int GetZBufVram(int *size) {
     *size = frame.width * frame.width * 4 / 256;
     return mgZBUF_1.bits.zbp << 5;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 /**
  *
@@ -353,15 +348,9 @@ static int CheckCopyToZBufVram(mgCTexture *texture, int *size) {
     return 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 mgCTexture::mgCTexture() {
     Initialize();
 }
-
-#pragma schedule reset
-#pragma optimization_level 2
 
 void mgCTexture::Initialize() {
     name[0] = '\0';
@@ -386,9 +375,6 @@ void mgCTexture::Initialize() {
     clut_size = 0;
     next = NULL;
 }
-
-#pragma optimization_level reset
-#pragma schedule off
 
 void mgCTexture::Bilinear(int mode) {
     if (tex1.MXL == 0) {
@@ -420,15 +406,9 @@ void mgCTexture::Bilinear(int mode) {
     }
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 mgCTextureBlock::mgCTextureBlock() {
     Initialize();
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 void mgCTextureBlock::Initialize() {
     unk_4 = 0;
@@ -437,8 +417,6 @@ void mgCTextureBlock::Initialize() {
     texture = NULL;
 }
 
-#pragma schedule reset
-#pragma schedule off
 #pragma global_optimizer off
 
 void mgCTextureBlock::Add(mgCTexture *texture) {
@@ -463,11 +441,6 @@ void mgCTextureBlock::Add(mgCTexture *texture) {
     }
 }
 
-#pragma global_optimizer reset
-#pragma schedule reset
-#pragma schedule off
-#pragma global_optimizer off
-
 void mgCTextureBlock::Delete(mgCTexture *texture) {
     mgCTexture *node = this->texture;
     mgCTexture *prev = NULL;
@@ -487,16 +460,12 @@ void mgCTextureBlock::Delete(mgCTexture *texture) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma schedule off
 
 mgCTextureManager::mgCTextureManager() : texture_max(0), hash_max(0) {
     block_max = 0;
     blocks = NULL;
 }
 
-#pragma schedule reset
-#pragma schedule off
 #pragma global_optimizer off
 
 void mgCTextureManager::SetTableBuffer(int texture_count, int block_total, mgCMemory *memory) {
@@ -538,11 +507,6 @@ void mgCTextureManager::SetTableBuffer(int texture_count, int block_total, mgCMe
 
     hash_num = 0;
 }
-
-#pragma global_optimizer reset
-#pragma schedule reset
-#pragma schedule off
-#pragma global_optimizer off
 
 void mgCTextureManager::Initialize(int start, int end) {
     int i;
@@ -591,8 +555,6 @@ void mgCTextureManager::Initialize(int start, int end) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma optimization_level 2
 
 int mgCTextureManager::hash(char *name) {
     u_char value;
@@ -603,10 +565,6 @@ int mgCTextureManager::hash(char *name) {
 
     return value;
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 2
 
 void mgCTextureManager::AddHash(mgCTexture *texture) {
     mgTEXTURE_HASH *node;
@@ -695,9 +653,6 @@ mgCTexture *mgCTextureManager::SearchHash(char *name, int mode) {
     return NULL;
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 mgCTexture *mgCTextureManager::SearchTextureName(char *name, int block) {
     char full_name[128];
 
@@ -709,9 +664,6 @@ mgCTexture *mgCTextureManager::SearchTextureName(char *name, int block) {
 
     return SearchHash(name, block);
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 mgCTexture *mgCTextureManager::SearchTexture(char *name) {
     mgCTexture *slot;
@@ -729,15 +681,9 @@ mgCTexture *mgCTextureManager::SearchTexture(char *name) {
     return slot;
 }
 
-#pragma schedule reset
-#pragma optimization_level 1
-
 mgCTexture *mgCTextureManager::GetTexture(char *name, int block) {
     return SearchTextureName(name, block);
 }
-
-#pragma optimization_level reset
-#pragma schedule off
 
 mgCTextureBlock *mgCTextureManager::GetTextureBlock(int block) {
     if (block == MG_TEXTURE_BLOCK_FIX) {
@@ -751,8 +697,6 @@ mgCTextureBlock *mgCTextureManager::GetTextureBlock(int block) {
     return &blocks[block];
 }
 
-#pragma schedule reset
-#pragma schedule off
 #pragma global_optimizer off
 
 int mgCTextureManager::GetRemainVRAM(int block) {
@@ -785,8 +729,6 @@ int mgCTextureManager::GetRemainVRAM(int block) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma optimization_level 2
 
 mgCTexture *mgCTextureManager::EnterTexture(int block, char *name, u_long128 **image, int width,
                                             int height, int bpp, u_long128 *clut, u_long tex1,
@@ -1004,9 +946,6 @@ mgCTexture *mgCTextureManager::EnterTexture(int block, char *name, u_long128 **i
     return texture;
 }
 
-#pragma optimization_level reset
-#pragma optimization_level 2
-
 mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM2_head *head, int reload,
                                             int no_image) {
     u_char       magic[8];
@@ -1082,11 +1021,7 @@ mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM2_head *head, 
                         reload);
 }
 
-#pragma optimization_level reset
-
 static inline int FirstBlock(int block) { return block; }
-
-#pragma optimization_level 2
 
 int mgCTextureManager::EnterIMGFile(u_char *img, int block, mgCMemory *stack,
                                     mgCEnterIMGInfo *info) {
@@ -1246,9 +1181,6 @@ int mgCTextureManager::EnterIMGFile(u_char *img, int block, mgCMemory *stack,
     return last_block_used - current_block;
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 /**
  *
  * Identifies the archive format of an IMG texture archive from its
@@ -1279,9 +1211,6 @@ static int GetIMGVersion(char *img) {
     return MG_IMG_VERSION_NONE;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 int mgGetIMGHeaderNum(char *img) {
     int *words = (int *) img;
 
@@ -1305,9 +1234,6 @@ int mgGetIMGHeaderNum(char *img) {
 
     return 0;
 }
-
-#pragma schedule reset
-#pragma optimization_level 2
 
 mgIMG_HEADER mgGetIMGHeader(char *img, int index) {
     mgIMG_HEADER header;
@@ -1376,9 +1302,6 @@ mgIMG_HEADER mgGetIMGHeader(char *img, int index) {
     return header;
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
     mgCTextureBlock *block;
 
@@ -1399,9 +1322,6 @@ void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
     }
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCTextureManager::DeleteTexture(char *name, int block) {
     mgCTexture *texture = GetTexture(name, block);
 
@@ -1410,8 +1330,6 @@ void mgCTextureManager::DeleteTexture(char *name, int block) {
     }
 }
 
-#pragma schedule reset
-#pragma schedule off
 #pragma global_optimizer off
 
 void mgCTextureManager::DeleteBlock(int block) {
@@ -1432,15 +1350,10 @@ void mgCTextureManager::DeleteBlock(int block) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma optimization_level 1
 
 void mgCTextureManager::EndEnterTexture(int block) {
     ReloadTexture(block, (u_int *) NULL);
 }
-
-#pragma optimization_level reset
-#pragma optimization_level 2
 
 int mgLoadImage(u_int *packet, int base, int format, int width, u_long128 *image, int quadwords,
                 int pos_x, int pos_y, int size_w, int size_h) {
@@ -1513,9 +1426,6 @@ int mgLoadImage(u_int *packet, int base, int format, int width, u_long128 *image
     return length;
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 /**
  *
  * Writes the DMA chain flushing the GS texture cache, when given a
@@ -1534,8 +1444,6 @@ static int SetTexFlush_TagCnt(u_int *buffer) {
     return 3;
 }
 
-#pragma schedule reset
-#pragma schedule off
 #pragma global_optimizer off
 
 void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
@@ -1576,8 +1484,6 @@ void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-#pragma optimization_level 2
 
 int mgCTextureManager::ReloadTexture(int block, u_int *packet) {
     sceGsTex0   tex0;
@@ -1688,16 +1594,10 @@ int mgCTextureManager::ReloadTexture(int block, u_int *packet) {
     return (packet - start) / 4;
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 sceGsTex0 &sceGsTex0::operator=(const sceGsTex0 &src) {
     value = src.value;
     return *this;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 int mgCTextureManager::ReloadCLUT(mgCTexture *texture, u_int *buffer) {
     int     result;
@@ -1730,9 +1630,6 @@ int mgCTextureManager::ReloadCLUT(mgCTexture *texture, u_int *buffer) {
     return result;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCTextureManager::ReloadCLUT(mgCTexture *texture, sceVif1Packet *packet) {
     u_int *cursor;
     u_int *start;
@@ -1749,9 +1646,6 @@ void mgCTextureManager::ReloadCLUT(mgCTexture *texture, sceVif1Packet *packet) {
     sceVif1PkReserve(packet, cursor - start);
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCTextureManager::TexAnimeOn(int block, char *group_name) {
     mgCTextureBlock *texture_block = GetTextureBlock(block);
     mgCTextureAnime *anime;
@@ -1761,9 +1655,6 @@ void mgCTextureManager::TexAnimeOn(int block, char *group_name) {
     }
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCTextureManager::TexAnimeOff(int block, char *group_name) {
     mgCTextureBlock *texture_block = GetTextureBlock(block);
     mgCTextureAnime *anime;
@@ -1772,9 +1663,6 @@ void mgCTextureManager::TexAnimeOff(int block, char *group_name) {
         anime->Disable(anime->SearchGroupName(group_name));
     }
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 void mgCTextureManager::TexAnimeAllOff(int block) {
     mgCTextureBlock *texture_block = GetTextureBlock(block);
@@ -1803,9 +1691,6 @@ char **mgCTextureManager::GetGroupNameList(int block, int *num) {
     return anime->name;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 void mgCTextureManager::DeleteTexAnimeGroup(int block, int group) {
     mgCTextureBlock *texture_block = GetTextureBlock(block);
     mgCTextureAnime *anime;
@@ -1823,9 +1708,6 @@ void mgCTextureManager::DeleteTexAnime(int block) {
     }
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 mgCTextureAnime *mgCTextureManager::GetTexAnime(int index) {
     mgCTextureBlock *block = GetTextureBlock(index);
 
@@ -1835,9 +1717,6 @@ mgCTextureAnime *mgCTextureManager::GetTexAnime(int index) {
 
     return NULL;
 }
-
-#pragma schedule reset
-#pragma optimization_level 1
 
 /**
  *
@@ -1871,9 +1750,6 @@ static int BlockConv32to8(u_char *src, u_char *dst) {
 
     return 0;
 }
-
-#pragma optimization_level reset
-#pragma optimization_level 2
 
 /**
  *
@@ -1938,9 +1814,6 @@ static int PageConv32to8(int width, int height, u_char *src, u_char *dst) {
 
     return 0;
 }
-
-#pragma optimization_level reset
-#pragma optimization_level 1
 
 /**
  *
@@ -2018,5 +1891,3 @@ static int Conv32To8(int width, int height, u_char *image) {
     memcpy(image, conv_work, size);
     return 1;
 }
-
-#pragma optimization_level reset

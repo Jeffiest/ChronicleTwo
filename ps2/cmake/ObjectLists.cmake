@@ -62,14 +62,14 @@ endfunction()
 # Compile one game unit. tools/mwccgap puts retail's assembly wherever the
 # source has an INCLUDE_ASM or INCLUDE_RODATA marker, reading the per-symbol
 # files the split wrote, so every object depends on the split.
-function(add_cpp_object obj src)
+function(add_cpp_object obj src unit)
     add_custom_command(
         OUTPUT ${CMAKE_SOURCE_DIR}/${obj}
         COMMAND ${CMAKE_COMMAND} -E env
                 MW_DIR=${MW_CC_DIR} MIPS_TOOL_PREFIX=${MIPS_TOOL_PREFIX}
                 SATANSFIDDLE=${SATANSFIDDLE} SATANSFIDDLE_CONFIG=${SATANSFIDDLE_CONFIG}
                 sh ${SCRIPTS_DIR}/build/mwccgap.sh ${obj} ${obj}.d ${src}
-                ${CC_FLAGS} ${CC_DEP_FLAGS}
+                ${CC_FLAGS} ${UNIT_CC_FLAGS_${unit}} ${CC_DEP_FLAGS}
         COMMAND sh ${SCRIPTS_DIR}/build/fixup_sections.sh ${obj}
         DEPENDS ${CMAKE_SOURCE_DIR}/${src}
                 ${CMAKE_SOURCE_DIR}/${SPLIT_STAMP}

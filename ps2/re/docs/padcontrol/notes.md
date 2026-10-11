@@ -49,7 +49,10 @@ Initialize zeroes only `config` of each button and `axis` of each analog (offset
 - `PadCtrlAxis`: 0..4 as above; `analog_table` binds axes 0->1, 1->2, 2->3, 3->4, 4->2, 5->1.
 
 ## Unresolved
-- Logical button/axis numbers (e.g. 0, 1, 0x15, 0x34, 0x66..0x6d used by Btn callers;
-  analog 6, 7 in CCameraControl::MoveCamera) have no names; not enumerated.
+- The second bindings have names: buttons 4 (`PAD_BTN_L2`, read by CCameraControl::MoveCamera),
+  6 (`PAD_BTN_R2`, read by editctrl), 0x35 (`PAD_BTN_L1_HELD_2`) and 0x36 (`PAD_BTN_R1_HELD_2`,
+  read by pbuggy); analog 4 and 5 (`PAD_ANALOG_LEFT_Y_2` / `PAD_ANALOG_LEFT_X_2`, read by fishing,
+  editctrl and pbuggy) and analog 6 and 7 (`PAD_ANALOG_RIGHT_X_2` / `PAD_ANALOG_RIGHT_Y_2`, read by
+  CCameraControl::MoveCamera). The caller reads of these numbers in `ps2/src` use the names.
 - `PAD_TABLE_ENTRY::trigger` in mainloop.hpp is `int`; it could use `PadCtrlTrigger` (mainloop's
   header, not edited here).
