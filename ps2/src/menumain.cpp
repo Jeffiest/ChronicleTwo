@@ -1105,7 +1105,7 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
     MenuTimeBrdForm = NULL;
     TopicTex = NULL;
     InitMenuEtcSpecialFlag();
-    SetModeMenuDrawItemBoard(0);
+    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_BAG);
     TreeMapSaveFlag = false;
     TreeMapCallDungeonSubMap = false;
     TreeMapCalledWorldMap = false;
