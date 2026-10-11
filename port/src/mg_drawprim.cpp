@@ -399,6 +399,11 @@ void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
                 hi_y = std::max(hi_y, vertex.y);
             }
             gfx::DrawState current = CurrentState(owner);
+            bool           narrow = hi_x - lo_x < 120.0f && hi_y - lo_y > 150.0f;
+
+            if (!narrow && gfx::CurrentRenderTarget() == gfx::kMainTarget) {
+                goto skip_black;
+            }
             dumped_black++;
             std::fprintf(stderr,
                          "black2d prim %d verts %zu x %.1f..%.1f y %.1f..%.1f rgba %u %u %u %u target %#x blend %d "
@@ -409,6 +414,7 @@ void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
                          current.scissor);
         }
     }
+skip_black:
 
     gfx::Draw2D(primitive, state.vertices, binding, CurrentState(owner));
     state.vertices.clear();
