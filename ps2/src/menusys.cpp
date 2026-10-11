@@ -5374,7 +5374,7 @@ int CMenuItemInfo::IsCancelLoadItem() {
             MenuCommonInfo->have_item.CopyGameData(&carried_item);
 
             if (needs_load != 0) {
-                MenuLoadInfo.load_all = 0;
+                MenuLoadInfo.load_all = false;
 
                 if (ridepod == false) {
                     CheckLoadInfo(sub_view);
@@ -5477,11 +5477,11 @@ int CMenuItemInfo::ReturnActiveCharaViewMode(int mode) {
     key_arg_no = menuitem_initmenumode[active_character];
     view_mode = active_chara_view_mode;
     MenuCommonInfo->key_arg = &item_menu_argtbl[key_arg_no];
-    MenuLoadInfo.load_all = 1;
+    MenuLoadInfo.load_all = true;
     MenuLoadInfo.load_phase = 0;
     MenuLoadInfo.request_phase = -1;
     CheckLoadInfo(active_character);
-    MenuLoadInfo.update_scene = 1;
+    MenuLoadInfo.update_scene = true;
     MenuMemoryAdjust(&MenuItemMemory, &MenuCharaLoadStack, MenuActionCharaBuffer, active_character);
     ModelReadStart(view_mode, 1, 1);
     return 1;
@@ -5624,7 +5624,7 @@ int CMenuItemInfo::EquipDirect(int chara, CGameDataUsed *item, int &slot) {
 
 void CMenuItemInfo::CheckLoadInfo(int chara) {
     if (CheckEquipListNo(1) && chara == GetActiveCharaNo()) {
-        MenuLoadInfo.update_scene = 1;
+        MenuLoadInfo.update_scene = true;
 
         if (chara == USER_CHARA_MAX || chara == USER_CHARA_MONICA) {
             s16 weapon_no = MenuUserParam.chara[GetActiveCharaNo()]->equip[1].item_no;
@@ -5638,7 +5638,7 @@ void CMenuItemInfo::CheckLoadInfo(int chara) {
             sound_load = true;
         }
     } else {
-        MenuLoadInfo.update_scene = 0;
+        MenuLoadInfo.update_scene = false;
     }
 }
 
@@ -5696,7 +5696,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         CheckLoadInfo(ret->chara);
                         MenuLoadInfo.request_phase = ConvertCharaLoadDataPhase(sub_view, ret->result);
                         MenuLoadInfo.load_phase = MenuLoadInfo.request_phase;
-                        MenuLoadInfo.load_all = 0;
+                        MenuLoadInfo.load_all = false;
                         ModelReadStart(view_mode, 1, 1);
                         GameDataSwap(ret->item2, ask_para.item, 0);
                         int movement[2][4] = {
@@ -5715,7 +5715,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         CheckLoadInfo(USER_CHARA_ROBO);
                         MenuLoadInfo.request_phase = 2;
                         MenuLoadInfo.load_phase = 2;
-                        MenuLoadInfo.load_all = 0;
+                        MenuLoadInfo.load_all = false;
                         ModelReadStart(view_mode, 1, 1);
                     }
 
@@ -5744,7 +5744,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         CheckLoadInfo(USER_CHARA_ROBO);
                         MenuLoadInfo.request_phase = ConvertCharaLoadDataPhase(USER_CHARA_ROBO, ret->result);
                         MenuLoadInfo.load_phase = MenuLoadInfo.request_phase;
-                        MenuLoadInfo.load_all = 0;
+                        MenuLoadInfo.load_all = false;
                         ModelReadStart(view_mode, 1, 1);
                         GameDataSwap(ret->item2, ask_para.item, 0);
                         int movement[2][4] = {
@@ -5792,7 +5792,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         view_mode = MENU_ITEM_VIEW_ROBO;
                         key_arg_no = ITEM_MENU_PANEL_RIDEPOD;
                         MenuLoadInfo.request_phase = -1;
-                        MenuLoadInfo.load_all = 0;
+                        MenuLoadInfo.load_all = false;
                         MenuLoadInfo.load_phase = 0;
                         CheckLoadInfo(USER_CHARA_ROBO);
                         MenuMemoryAdjust(&MenuItemMemory, load_stack, MenuActionCharaBuffer, 2);
@@ -7679,18 +7679,18 @@ int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
         CMenuItemInfoPt->equipped_model_no = MenuUserParam.chara[chara_no]->equip[0].GetModelNo();
     }
 
-    MenuLoadInfo.alternate_model = 0;
+    MenuLoadInfo.town_model = false;
 
     if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-        MenuLoadInfo.alternate_model = 1;
+        MenuLoadInfo.town_model = true;
         CMenuItemInfoPt->equipped_model_no = -1;
     }
 
-    MenuLoadInfo.mode = 0;
+    MenuLoadInfo.mode = MENU_LOAD_MODE_MENU;
     MenuLoadInfo.load_phase = 0;
     MenuLoadInfo.request_phase = -1;
-    MenuLoadInfo.update_scene = 1;
-    MenuLoadInfo.load_all = 1;
+    MenuLoadInfo.update_scene = true;
+    MenuLoadInfo.load_all = true;
     s8 view_mode = menuitem_initviewtbl[chara_no];
     CMenuItemInfoPt->view_mode = view_mode;
     CMenuItemInfoPt->active_chara_view_mode = view_mode;
@@ -9190,14 +9190,14 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                                             MenuLoadInfo.request_phase =
                                                 ConvertCharaLoadDataPhase(this->sub_view, cursor);
                                             MenuLoadInfo.load_phase = MenuLoadInfo.request_phase;
-                                            MenuLoadInfo.load_all = 0;
+                                            MenuLoadInfo.load_all = false;
                                             this->ModelReadStart(this->view_mode, 1, 1);
                                             break;
                                         case MENU_SWAP_TYPE_ROBO_PART:
                                             this->CheckLoadInfo(USER_CHARA_ROBO);
                                             MenuLoadInfo.request_phase = ConvertCharaLoadDataPhase(
                                                 2, MenuRoboEquipTable[cursor]);
-                                            MenuLoadInfo.load_all = 0;
+                                            MenuLoadInfo.load_all = false;
                                             this->ModelReadStart(this->view_mode, 1, 1);
                                             break;
                                     }
@@ -9289,7 +9289,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                                 MenuLoadInfo.request_phase =
                                     ConvertCharaLoadDataPhase(this->sub_view, equip_slot);
                                 MenuLoadInfo.load_phase = MenuLoadInfo.request_phase;
-                                MenuLoadInfo.load_all = 0;
+                                MenuLoadInfo.load_all = false;
                                 this->ModelReadStart(this->view_mode, 1, 1);
                             }
 
@@ -9358,7 +9358,7 @@ int CMenuItemInfo::PushKey(int pad, int trigger) {
                                 MenuSePlay(SYSTEM_SE_EQUIP);
                                 MenuLoadInfo.request_phase =
                                     ConvertCharaLoadDataPhase(this->load_item_no, robo_equip_slot);
-                                MenuLoadInfo.load_all = 0;
+                                MenuLoadInfo.load_all = false;
                                 this->ModelReadStart(this->view_mode, 1, 1);
                             }
 
@@ -11379,7 +11379,7 @@ int CMenuItemInfo::LRCheck(int key) {
                     (held_type == USED_ITEM_TYPE_WEAPON || held_type == USED_ITEM_TYPE_COSTUME)) {
                 } else if (view_mode != MENU_ITEM_VIEW_ROBO || held_type != USED_ITEM_TYPE_ROBO_PART) {
                     MenuMemoryAdjust(item_memory, load_stack, MenuActionCharaBuffer, next_chara);
-                    MenuLoadInfo.load_all = 1;
+                    MenuLoadInfo.load_all = true;
                     MenuLoadInfo.request_phase = -1;
                     MenuLoadInfo.load_phase = 0;
                     view_mode = next_view;
@@ -12083,14 +12083,14 @@ int MenuItemKey() {
                 MenuMoveItemPtr->AttachForm();
                 AttachMessageForm();
                 MenuMainFrameModeSet(MENU_MAIN_FRAME_SLIDE_LEFT, 0);
-                MenuLoadInfo.mode = 0;
-                MenuLoadInfo.load_all = 0;
+                MenuLoadInfo.mode = MENU_LOAD_MODE_MENU;
+                MenuLoadInfo.load_all = false;
                 MenuLoadInfo.load_phase = 0;
                 MenuLoadInfo.request_phase = -1;
-                MenuLoadInfo.alternate_model = 0;
+                MenuLoadInfo.town_model = false;
 
                 if (GetMenuLoopType() == MENU_LOOP_TOWN) {
-                    MenuLoadInfo.alternate_model = 1;
+                    MenuLoadInfo.town_model = true;
                 }
 
                 {
@@ -12098,7 +12098,7 @@ int MenuItemKey() {
                     MenuLoadInfo.chara_no = chara;
 
                     if (MenuLoadInfo.chara_no == USER_CHARA_MAX || MenuLoadInfo.chara_no == USER_CHARA_MONICA) {
-                        MenuLoadInfo.load_all = 1;
+                        MenuLoadInfo.load_all = true;
                     }
 
                     CMenuItemInfoPt->view_mode = CMenuItemInfoPt->active_chara_view_mode;
