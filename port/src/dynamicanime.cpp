@@ -128,8 +128,10 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
     const float (*base_normal)[4] =
         base.normal_num > 0 ? reinterpret_cast<const float (*)[4]>(base.normal.data()) : NULL;
 
-    // Diagnostic: DC_NO_SKIN_NORMALS=1 leaves normals at their base pose, to tell bad lighting from bad UVs.
-    static const bool skip_normals = std::getenv("DC_NO_SKIN_NORMALS") != nullptr;
+    // The skinned normals come out wrong (clothes draw black) because the model's normals are indexed by
+    // face rather than by vertex, so they keep their base pose until that mapping is done properly.
+    // DC_SKIN_NORMALS=1 turns the broken skinning back on for comparison.
+    static const bool skip_normals = std::getenv("DC_SKIN_NORMALS") == nullptr;
 
     float skin_matrix[32][4][4];
 
