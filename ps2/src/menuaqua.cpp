@@ -246,28 +246,6 @@ struct aqua_param_icon {
 
 /**
  *
- * Short save flags of the fish race and the fishing tournament.
- *
- */
-enum GYORACE_SHORT_FLAG {
-    GYORACE_SHORT_FLAG_TOUR_COUNT = 0x15,  /**< Fishing tournaments held, which picks the prize group of the next. */
-    GYORACE_SHORT_FLAG_WINS_CLASS0 = 0x16, /**< Wins, up to two, in the first race class, which pick its prize group. */
-    GYORACE_SHORT_FLAG_WINS_CLASS1 = 0x17, /**< Wins, up to two, in the second race class. */
-    GYORACE_SHORT_FLAG_WINS_CLASS2 = 0x18, /**< Wins, up to two, in the third race class. */
-    GYORACE_SHORT_FLAG_WINS_CLASS3 = 0x19, /**< Wins, up to two, in the fourth race class. */
-};
-
-/**
- *
- * Bit save flags of the fishing tournament.
- *
- */
-enum GYORACE_BIT_FLAG {
-    GYORACE_BIT_FLAG_TOUR_CYCLED = 0x3F, /**< Set when the tournament count wraps; it then wraps one tournament earlier. */
-};
-
-/**
- *
  * Bits of a fish's flags marking the race classes that it has won.
  *
  */
@@ -6969,7 +6947,7 @@ void SetGyoRaceRanking(int rank) {
     }
 
     if (rank == 0 && fish != NULL) {
-        flag_no = GYORACE_SHORT_FLAG_WINS_CLASS0;
+        flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS0;
 
         if (race_class == 0) {
             fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS0;
@@ -6977,17 +6955,17 @@ void SetGyoRaceRanking(int rank) {
 
         if (race_class == 1) {
             fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS1;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS1;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS1;
         }
 
         if (race_class == 2) {
             fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS2;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS2;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS2;
         }
 
         if (race_class == 3) {
             fish->data.fish.flags |= GYORACE_FISH_FLAG_WON_CLASS3;
-            flag_no = GYORACE_SHORT_FLAG_WINS_CLASS3;
+            flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS3;
         }
 
         wins = save_data->GetShortFlag(flag_no) + 1;
@@ -7237,7 +7215,7 @@ int RefreshFishPrize() {
     save_data = GetSaveData();
 
     if (FishTournamentGoodsType == 0) {
-        for (race_class = 0, flag_no = GYORACE_SHORT_FLAG_WINS_CLASS0; race_class < 4; race_class++) {
+        for (race_class = 0, flag_no = SAVE_SHORT_FLAG_FISH_WINS_CLASS0; race_class < 4; race_class++) {
             s16 wins = save_data->GetShortFlag(flag_no);
             group = FishTournamentGoods + race_class * 3 + wins;
             flag_no++;
@@ -7256,7 +7234,7 @@ int RefreshFishPrize() {
         return 0;
     }
 
-    group = &FishTournamentGoods[save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT)];
+    group = &FishTournamentGoods[save_data->GetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT)];
     save_fish_prize_list = group->prizes;
     fish_save_present[0][0] = save_fish_prize_list->rank[0];
     fish_save_present[0][1] = save_fish_prize_list->rank[1];
@@ -7304,19 +7282,19 @@ void TuriTourCount() {
         return;
     }
 
-    count = save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT) + 1;
+    count = save_data->GetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT) + 1;
     last_tour = 9;
 
-    if (save_data->GetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED) != 0) {
+    if (save_data->GetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED) != 0) {
         last_tour = 8;
     }
 
     if (count > last_tour) {
         count = 1;
-        save_data->SetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED, count);
+        save_data->SetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED, count);
     }
 
-    save_data->SetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT, count);
+    save_data->SetShortFlag(SAVE_SHORT_FLAG_FISH_TOUR_COUNT, count);
 }
 
 /**
