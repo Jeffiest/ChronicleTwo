@@ -75,22 +75,22 @@ if(NOT menucls1_current STREQUAL menucls1_patched)
     file(WRITE ${MENUCLS1_COPY} "${menucls1_patched}")
 endif()
 
-# Windows' long is 32 bits where the PS2's is 64: scripts/port/llp64.py rewrites the literal
-# longs that hold 64-bit values in the copies of the units, and in a mirror of ps2/include that
-# the compiler is pointed at instead of ps2/include (a header found beside the one including it
-# would win over any other directory, so the mirror holds all of them).
-set(LLP64_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/llp64.py)
-set(LLP64_UNITS "")
+# Windows' long is 32 bits where the PS2's is 64, and COFF takes no strong-over-inline pair:
+# scripts/port/win_rewrite.py fixes both in the copies of the units, and in a mirror of
+# ps2/include that the compiler is pointed at instead of ps2/include (a header found beside the
+# one including it would win over any other directory, so the mirror holds all of them).
+set(WIN_REWRITE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/win_rewrite.py)
+set(WIN_REWRITE_UNITS "")
 set(PS2_INCLUDE ${CMAKE_SOURCE_DIR}/ps2/include)
 if(WIN32)
-    execute_process(COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} units
-        OUTPUT_VARIABLE LLP64_UNITS OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+    execute_process(COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} units
+        OUTPUT_VARIABLE WIN_REWRITE_UNITS OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
     set(PS2_INCLUDE ${CMAKE_BINARY_DIR}/ps2_include)
     file(GLOB_RECURSE PS2_HEADERS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/ps2/include/*)
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/ps2_include.stamp
-        COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} headers ${CMAKE_SOURCE_DIR}/ps2/include ${PS2_INCLUDE}
+        COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} headers ${CMAKE_SOURCE_DIR}/ps2/include ${PS2_INCLUDE}
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/ps2_include.stamp
-        DEPENDS ${PS2_HEADERS} ${LLP64_SCRIPT}
+        DEPENDS ${PS2_HEADERS} ${WIN_REWRITE_SCRIPT}
         COMMENT "Mirroring ps2/include with the 64-bit longs spelled out"
         VERBATIM)
     add_custom_target(dc_ps2_include DEPENDS ${CMAKE_BINARY_DIR}/ps2_include.stamp)
@@ -136,15 +136,15 @@ foreach(unit IN LISTS PS2_SOURCES)
         set(stubs "")
         set(header "")
     endif()
-    set(llp64 "")
-    if(unit IN_LIST LLP64_UNITS)
-        set(llp64 COMMAND ${Python3_EXECUTABLE} ${LLP64_SCRIPT} unit ${original} ${copy})
+    set(win_rewrite "")
+    if(unit IN_LIST WIN_REWRITE_UNITS)
+        set(win_rewrite COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} unit ${original} ${copy})
     endif()
     add_custom_command(OUTPUT ${copy}
         COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
             ${port_override_defines} ${original} ${copy}
-        ${llp64}
-        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${LLP64_SCRIPT} ${header}
+        ${win_rewrite}
+        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${WIN_REWRITE_SCRIPT} ${header}
         COMMENT "Removing overridden definitions from ps2/src/${unit}"
         VERBATIM)
     list(APPEND PS2_UNITS ${copy})

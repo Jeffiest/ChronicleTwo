@@ -219,7 +219,7 @@ def parameter_type(parameter):
         for i, word in enumerate(words)
     )
     # u_long is unsigned long where the PS2 and Linux have it and a 64-bit type on Windows, where
-    # llp64.py rewrites ps2/src's spelling: the port's definition has to be able to use either.
+    # win_rewrite.py rewrites ps2/src's spelling: the port's definition has to be able to use either.
     return re.sub(r"\bunsigned long\b(?! long)", "u_long", spelled)
 
 

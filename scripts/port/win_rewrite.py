@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Text rewrites for the Windows (LLP64) build of ps2/.
+"""Text rewrites for the Windows build of ps2/, which ps2/ itself cannot take.
 
 The PS2's long is 64 bits and Windows' is 32, so each literal `long` or `unsigned long` that holds a
 64-bit value (GS register words, MPEG time stamps, the costume mask) becomes s64 or u64 in the
-copies the port compiles. ps2/ is not edited.
+copies the port compiles. The rest are definitions that ELF links as the strong one of an inline
+pair and COFF reports as duplicates, and one function libc++ already declares.
 
-    llp64.py units
-    llp64.py unit ORIGINAL STRIPPED     rewrite a unit in place, after port_override.py stripped it
-    llp64.py headers SRC DST            mirror ps2/include into DST with the headers rewritten
+    win_rewrite.py units
+    win_rewrite.py unit ORIGINAL STRIPPED     rewrite a unit in place, after port_override.py stripped it
+    win_rewrite.py headers SRC DST            mirror ps2/include into DST with the headers rewritten
 
 Every rule states how many matches the original file has, and the run fails on any other count, so
-a change to ps2/ that moves a site is noticed instead of silently left at 32 bits. The count is
+a change to ps2/ that moves a site is noticed instead of silently left as it was. The count is
 taken on the original: the strip may already have removed a definition the rule would have reached.
 """
 
@@ -20,11 +21,30 @@ import sys
 
 U64 = r"\bunsigned long\b(?! long)"
 
+
+def blank(match):
+    """Replaces a span with as many empty lines, so the copy keeps the original's line numbers."""
+    return "\n" * match.group(0).count("\n")
+
+
 RULES = {
     "src/crandom.cpp": [
         # libc++'s stdlib.h declares abs(float) in the global namespace; a second one conflicts.
-        (r"float abs\(float value\) \{\n    return value < 0\.0f \? -value : value;\n\}\n", "", 1),
+        (r"float abs\(float value\) \{\n    return value < 0\.0f \? -value : value;\n\}\n", blank, 1),
     ],
+    # The unit defines out of line what every other unit sees inline: ELF lets the strong one win,
+    # COFF reports a duplicate. Left inline, the definitions agree.
+    "src/dng_debug.cpp": [
+        (r"^#define DNG_DEBUG_SOURCE$", "", 1),
+        (r"^void CTreasureBox::Initialize\(\) \{\n(?:    .*\n)*?\}\n", blank, 1),
+    ],
+    "src/dngmenu.cpp": [
+        (r"^#define MES_WINDOW_OUT_OF_LINE_INIT$", "", 1),
+        (r"^#undef MES_WINDOW_OUT_OF_LINE_INIT$", "", 1),
+    ],
+    # map.cpp keeps the out-of-line constructor these two unit-local inline copies duplicate.
+    "src/editeff.cpp": [(r"^inline CMapParts::CMapParts\(\) \{ Initialize\(\); \}$", "", 1)],
+    "src/editmap.cpp": [(r"^inline CMapParts::CMapParts\(\) \{ Initialize\(\); \}$", "", 1)],
     "src/inventmn.cpp": [(r"\(0x80UL << 32\)", "(0x80ULL << 32)", 1)],
     "src/memcard.cpp": [(U64, "u64", 4)],
     "src/menuchr.cpp": [(U64, "u64", 2)],
@@ -70,7 +90,7 @@ def check(key, original):
     for pattern, _, expected in RULES[key]:
         found = len(re.findall(pattern, original, re.MULTILINE))
         if found != expected:
-            sys.exit(f"{key}: {pattern!r} matches {found} times, not {expected}: update scripts/port/llp64.py")
+            sys.exit(f"{key}: {pattern!r} matches {found} times, not {expected}: update scripts/port/win_rewrite.py")
 
 
 def apply(key, text):
