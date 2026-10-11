@@ -57,5 +57,7 @@ template <class T> T &Ps2Lvalue(T &&value) {
 // The layouts STATIC_ASSERT checks are the PS2's: 32-bit pointers and longs as
 // MWCC lays them out. Once common.h is in, it checks nothing.
 #include "common.h"
+#ifndef _WIN32
 #undef STATIC_ASSERT
 #define STATIC_ASSERT(expr)
+#endif
