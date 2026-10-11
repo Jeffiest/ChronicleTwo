@@ -52,6 +52,32 @@ void StripToList(std::vector<uint32_t> &indices, uint32_t first, uint32_t count)
 
 } // namespace
 
+// A face whose indices fall outside its model's streams belongs to a model whose memory was reused
+// while the face was still listed; skipping it keeps the run alive and the log names the model.
+static bool FaceIndicesValid(const mgCVisualMDT *visual, const int *index, bool normal, bool uv, bool colour) {
+    auto in_range = [&](int slot, int count) { return index[slot] >= 0 && index[slot] < count; };
+    int  slot = 0;
+
+    if (!in_range(slot++, visual->vertex_num)) {
+        return false;
+    }
+    if (normal) {
+        if (visual->normal != nullptr && !in_range(slot, visual->normal_num)) {
+            return false;
+        }
+        slot++;
+    }
+    if (uv && visual->uv != nullptr) {
+        if (!in_range(slot++, visual->uv_num)) {
+            return false;
+        }
+    }
+    if (colour && visual->colour != nullptr && !in_range(slot, visual->colour_num)) {
+        return false;
+    }
+    return true;
+}
+
 // One face group (a material's primitives) into a triangle list. The ps2 loader built mgCFace
 // with an index stride that says which of position, normal, texture coordinate and colour each
 // vertex carries; the order is exactly that. Returns the number of vertices appended; *has_colour
@@ -94,8 +120,26 @@ int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
             *has_colour = true;
         }
 
+        bool stale = false;
+
         for (int i = 0; i < face->vertex_num; i++) {
             const int *index = face->index + i * stride;
+
+            if (!FaceIndicesValid(visual, index, normal, uv, colour)) {
+                static int reported;
+                if (reported++ < 16) {
+                    std::fprintf(stderr,
+                                 "mg: face of visual %p has indices outside its streams (vertex %d/%d, stride %d, "
+                                 "v=%d/%d n=%d/%d uv=%d/%d c=%d/%d); skipped\n",
+                                 (const void *) visual, i, face->vertex_num, stride, index[0], visual->vertex_num,
+                                 normal ? index[1] : -1, visual->normal_num, -1, visual->uv_num, -1,
+                                 visual->colour_num);
+                }
+                vertices.resize(offset);
+                stale = true;
+                break;
+            }
+
             gfx::Vertex3D vertex = {};
             int           cursor = 0;
 
@@ -126,6 +170,10 @@ int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
             }
 
             vertices.push_back(vertex);
+        }
+
+        if (stale) {
+            continue;
         }
 
         if (primitive == MG_PRIM_TRIANGLE_STRIP) {
