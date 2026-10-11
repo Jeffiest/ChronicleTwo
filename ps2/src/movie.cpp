@@ -939,7 +939,7 @@ int viBufStopDMA(ViBuf *buf) {
 
 /**
  *
- * Mask of the low bits of a saved DMA channel control word, below its mode field.
+ * Mask of the low bits of a saved DMA channel control word, below its upper tag bits.
  *
  */
 enum MovieChcrMask {
