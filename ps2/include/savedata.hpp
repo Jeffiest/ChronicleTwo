@@ -129,7 +129,7 @@ enum SAVE_BIT_FLAG {
     SAVE_FLAG_WORLD_MAP_4 = 0x268,              /**< The world map uses its fourth layout (wmap4) and area 8 is closed. */
     SAVE_FLAG_WORLD_MAP_3 = 0x280,              /**< The world map uses its third layout (wmap3). */
     SAVE_FLAG_WORLD_MAP_S12_REDIRECT = 0x2BC,   /**< The world map sends area s12 to s34. */
-    SAVE_FLAG_GEKKA_VIEW = 0x2BE,               /**< Moon Flower Palace only: its Georama title form draws part index14 and hides index4. */
+    SAVE_FLAG_GEKKA_VIEW = 0x2BE,               /**< In the Moon Flower Palace's Georama menu, the check-point page shows the palace murals (g_heki) instead. */
     SAVE_FLAG_CHAPTER_8 = 0x2E0,                /**< Chapter 8 has been reached. */
     SAVE_FLAG_COSTUME_UNLOCK = 0x31F,           /**< Switches the outfits to their alternate models and textures. */
     SAVE_FLAG_CHAPTER_8_STARTED = 0x320,        /**< The start of chapter 8 has been handled; world-map areas 6 and 7 are closed. */
