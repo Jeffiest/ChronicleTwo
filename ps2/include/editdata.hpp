@@ -85,6 +85,20 @@
 
 /**
  *
+ * Kind of culture point a placed part gives the town, as
+ * CEditPartsInfo::cpoint[0] holds it; the points are in cpoint[1].
+ *
+ */
+enum EditCultureKind {
+    EDIT_CULTURE_KIND_MAIN = 1,      /**< Main building: its own points count, with those of its territory and child parts. */
+    EDIT_CULTURE_KIND_TERRITORY = 2, /**< Part inside a main building's territory: its points count toward that building. */
+    EDIT_CULTURE_KIND_CHILD = 3,     /**< Part joined to a main building: its points count toward that building. */
+    EDIT_CULTURE_KIND_CHILD_2 = 4,   /**< Second kind of child part, counted like EDIT_CULTURE_KIND_CHILD. */
+    EDIT_CULTURE_KIND_ALONE = 6,     /**< Part standing on its own: only its own points count. */
+};
+
+/**
+ *
  * One request of a town's analysis: the conditions it needs, the share of
  * the town's future it is worth, and the map parts it shows and hides,
  * filled in by the ANALYZE, CON_NO, PERCENT, ON_PARTS and OFF_PARTS tags.
