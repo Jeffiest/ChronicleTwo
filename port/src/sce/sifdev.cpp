@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <libdev.h>
 #include <sifdev.h>
 #include <unistd.h>
 
@@ -220,3 +221,18 @@ int sceGetstat(const char *name, struct sce_stat *stat) {
     stat->st_hisize = static_cast<unsigned int>(size >> 32);
     return 0;
 }
+
+// The development kit's console drew its text into GS memory the port does not keep. It is
+// absent here, so the calls are stand-ins; the weak ps2/src/mglib.cpp font bodies (mgInitFont
+// opens one, the frame's draw fills it) still link and stay harmless.
+void sceDevConsInit() {}
+
+int sceDevConsOpen(u_int x, u_int y, u_int width, u_int height) {
+    return 0;
+}
+
+void sceDevConsClose(int handle) {}
+
+void sceDevConsAttribute(int handle, u_char attributes) {}
+
+void sceDevConsDraw(int handle) {}
