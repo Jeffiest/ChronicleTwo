@@ -259,15 +259,6 @@ enum GYORACE_SHORT_FLAG {
 
 /**
  *
- * Bit save flags of the fishing tournament.
- *
- */
-enum GYORACE_BIT_FLAG {
-    GYORACE_BIT_FLAG_TOUR_CYCLED = 0x3F, /**< Set when the tournament count wraps; it then wraps one tournament earlier. */
-};
-
-/**
- *
  * Bits of a fish's flags marking the race classes that it has won.
  *
  */
@@ -1646,7 +1637,7 @@ void CBubble::Draw() {
     int          right[4];
     unsigned int index;
     AQUA_BUBBLE *particle;
-    SetSpriteEnv(&prim, 4);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_ADD);
     prim.Coord(1);
     prim.DepthTestEnable(1);
     prim.Begin(6);
@@ -2513,7 +2504,7 @@ void CAquaFishEff::Draw() {
         int         right[4];
 
         fish->GetPosition(pos);
-        SetSpriteEnv(&prim, 0);
+        SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
         prim.Coord(1);
         prim.DepthTestEnable(1);
         prim.Bilinear(2);
@@ -2710,7 +2701,7 @@ void DrawEsaDropRoot(CFishFood *food, float bottom) {
         int         left[4];
         int         right[4];
 
-        SetSpriteEnv(&prim, 1);
+        SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR);
         prim.Coord(1);
         prim.DepthTestEnable(1);
         food->GetPosition(pos);
@@ -3125,7 +3116,7 @@ void CAquaMes::EatMessage(int id, CAquaFish *fish) {
     char *name;
     int   pos[2];
 
-    name = fish->data->GetName(0);
+    name = fish->data->GetName(ITEM_NAME_TYPE_PLAIN);
 
     if (name != NULL) {
         copy_name(fish_mes, 0, name);
@@ -3149,7 +3140,7 @@ static inline CGameDataUsed *fish_data(CAquaFish *fish) {
 
 void CAquaMes::ChangeManMessage(CAquaFish *fish) {
     CGameDataUsed *data = fish_data(fish);
-    char          *name = data->GetName(0);
+    char          *name = data->GetName(ITEM_NAME_TYPE_PLAIN);
     int            pos[2];
 
     if (name != NULL) {
@@ -3176,7 +3167,7 @@ void CAquaMes::DeadMessage(CAquaFish *fish) {
     int   pos[2];
 
     if (fish != NULL) {
-        name = fish->data->GetName(0);
+        name = fish->data->GetName(ITEM_NAME_TYPE_PLAIN);
         fish_mes->mes_no = -1;
         copy_name(fish_mes, 0, name);
         fish_mes->MakeMesWin(AQUA_MES_DEAD);
@@ -3551,7 +3542,7 @@ void DrawFishParam(int x, int y, mgCTexture *tex, CGameDataUsed *data) {
 
     mgCDrawPrim  prim;
     mgCDrawPrim *pen = &prim;
-    SetSpriteEnv(pen, 0);
+    SetSpriteEnv(pen, MENU_SPRITE_ENV_TEXTURE);
     pen->Begin(MG_PRIM_SPRITE);
     pen->Texture(tex);
 
@@ -3663,7 +3654,7 @@ void DrawFishParam(int x, int y, mgCTexture *tex, CGameDataUsed *data) {
         font.SetColor(0x803CA0A8);
     }
 
-    font.DrawDirect(data->GetName(1), name_x, name_y);
+    font.DrawDirect(data->GetName(ITEM_NAME_TYPE_LEVEL), name_x, name_y);
 }
 
 CAquarium::CAquarium() {
@@ -4951,7 +4942,7 @@ int CAquarium::ColCheck(int no) {
             if (me->eat_item == AQUA_FOOD_ITEM_ELECTRIC_WORM) {
                 target_fish = no;
                 result |= AQUA_FISH_RESULT_ELECTRIC_FOOD_EATEN;
-                strcpy(target_name, me->data->GetName(1));
+                strcpy(target_name, me->data->GetName(ITEM_NAME_TYPE_LEVEL));
             }
         }
     }
@@ -5184,8 +5175,8 @@ int CAquarium::Step() {
                     if (love_phase == AQUA_EVENT_BREED_COMBINE) {
                         mgTexManager.DeleteBlock(fish_tex_block[0]);
                         mgTexManager.DeleteBlock(fish_tex_block[1]);
-                        strcpy(target_name, fish[target_fish]->data->GetName(1));
-                        strcpy(partner_name, fish[partner_fish]->data->GetName(1));
+                        strcpy(target_name, fish[target_fish]->data->GetName(ITEM_NAME_TYPE_LEVEL));
+                        strcpy(partner_name, fish[partner_fish]->data->GetName(ITEM_NAME_TYPE_LEVEL));
                         CombineFish(target_fish, partner_fish);
                     }
 
@@ -5234,7 +5225,7 @@ int CAquarium::Step() {
                         }
 
                         if (child != NULL) {
-                            copy_name(menu->guide_mes, 2, child->data->GetName(1));
+                            copy_name(menu->guide_mes, 2, child->data->GetName(ITEM_NAME_TYPE_LEVEL));
                             menu->guide_id = AQUA_MES_BRED;
                             menu->guide_mes->MakeMesWin(menu->guide_id);
                             menu->guide_mes->fukidashi_pos = 5;
@@ -5258,7 +5249,7 @@ int CAquarium::Step() {
                         }
 
                         if (child != NULL) {
-                            copy_name(menu->guide_mes, 2, child->data->GetName(1));
+                            copy_name(menu->guide_mes, 2, child->data->GetName(ITEM_NAME_TYPE_LEVEL));
                             menu->guide_id = AQUA_MES_ELECTRIC;
                             menu->guide_mes->MakeMesWin(menu->guide_id);
                             menu->guide_mes->fukidashi_pos = 5;
@@ -6455,7 +6446,7 @@ void CAquarium::Draw() {
         mgCDrawPrim title_prim;
 
         DrawMenuFillBox(&title_prim, AQUA_TITLE_X + 10, AQUA_TITLE_Y + 12, AQUA_TITLE_W - 18, AQUA_TITLE_H - 22, 0x10, 0, 0xFF, 0xFF);
-        SetSpriteEnv(&title_prim, 0);
+        SetSpriteEnv(&title_prim, MENU_SPRITE_ENV_TEXTURE);
         title_prim.Begin(6);
         title_prim.Texture(Tex_Aqualium);
         title_prim.Color(0x80, 0x80, 0x80, 0x80);
@@ -6793,7 +6784,7 @@ int MenuGyoraceFishSelKey() {
 
                 for (i = 0; i < 6; i++, fish++) {
                     if (fish->item_no > 0) {
-                        names[GyoraceFishSelNum] = fish->GetName(1);
+                        names[GyoraceFishSelNum] = fish->GetName(ITEM_NAME_TYPE_LEVEL);
 
                         if (fish->data.fish.flags & BREEDFISH_FLAG_ELECTRIC) {
                             names[GyoraceFishSelNum] = NULL;
@@ -7307,13 +7298,13 @@ void TuriTourCount() {
     count = save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT) + 1;
     last_tour = 9;
 
-    if (save_data->GetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED) != 0) {
+    if (save_data->GetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED) != 0) {
         last_tour = 8;
     }
 
     if (count > last_tour) {
         count = 1;
-        save_data->SetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED, count);
+        save_data->SetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED, count);
     }
 
     save_data->SetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT, count);
@@ -7413,7 +7404,7 @@ static void GyoracerListUpdate() {
 
         if (0 <= data_index) {
             GYORACE_DATA *record = GyoraceData->GetData(data_index);
-            char         *name = record->fish.GetName(0);
+            char         *name = record->fish.GetName(ITEM_NAME_TYPE_PLAIN);
             CDC2Mes      *message = GyoraceFishMes;
 
             if (name != NULL) {
@@ -7849,7 +7840,7 @@ int GyoraceMenuKey() {
                 racer_fish = GetOmakeGyoracer2(save_now_space_racer_no);
 
                 if (racer_fish != NULL) {
-                    name = racer_fish->GetName(0);
+                    name = racer_fish->GetName(ITEM_NAME_TYPE_PLAIN);
                 }
 
                 if (name != NULL) {
@@ -7894,7 +7885,7 @@ int GyoraceMenuKey() {
                     MenuSePlay(SYSTEM_SE_CANCEL);
                 } else {
                     GyoraceQuestionMsgDrawFlag = true;
-                    name = racer->fish.GetName(0);
+                    name = racer->fish.GetName(ITEM_NAME_TYPE_PLAIN);
 
                     if (0 <= CheckSameRacerFish(GyoraceFishHaveListSelect.cursor)) {
                         GyoraceNowMode = GYORACE_MENU_ALREADY_ASSIGNED;
@@ -8028,7 +8019,7 @@ int GyoraceMenuKey() {
         case GYORACE_MENU_SAVE_FADE:
             if (MenuMainScene->fade.FadeCheck() != 0) {
                 GyoraceNowMode = GYORACE_MENU_SAVE;
-                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], 0x1E);
+                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], MENU_OPEN_GYORACE_LOAD);
             }
 
             break;
@@ -8042,7 +8033,7 @@ int GyoraceMenuKey() {
 
                 next = GYORACE_MENU_RETURN_FROM_SAVE;
                 MenuMainScene->fade.FadeIn(30);
-                MenuArg.end_code = 0;
+                MenuArg.end_code = MENU_END_NONE;
                 MenuArg.result[0] = 0;
             }
 
@@ -8155,10 +8146,10 @@ int GyoraceMenuKey() {
 
                     MenuLoadFishSelect = 0;
                     MenuLoadFishTopLine = 0;
-                    SetModeMenuDrawItemBoard(4);
-                    bag_max = GetNowBagMax(1);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
+                    bag_max = GetNowBagMax(ITEM_BOARD_ALL);
                     MenuItemBrdSetInfo(MenuLoadFishSelect, MenuLoadFishTopLine, bag_max / 6, 5);
-                    MenuItemBrdCalcManner = 0;
+                    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
                     list_update = true;
                     GyoraceMes->cursor_on = 0;
                     Gyoracemenu_CursorXY[0] = 206.0f;
@@ -8170,7 +8161,7 @@ int GyoraceMenuKey() {
 
                 break;
             case GYORACE_MENU_LOAD_FISH:
-                SetModeMenuDrawItemBoard(4);
+                SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
                 GyoraceQuestionMsgDrawFlag = false;
                 GyoraceFishHaveDrawFlag = true;
                 GyoraceHaveFishCursorDrawFlag = false;
@@ -8190,7 +8181,7 @@ int GyoraceMenuKey() {
                     ask->MakeMsg(0x1393);
 
                     if (MenuLoadFishSelectData != NULL) {
-                        name = MenuLoadFishSelectData->GetName(0);
+                        name = MenuLoadFishSelectData->GetName(ITEM_NAME_TYPE_PLAIN);
 
                         if (name != NULL) {
                             strcpy(ask->name[0], name);
@@ -8201,7 +8192,7 @@ int GyoraceMenuKey() {
                 break;
             case GYORACE_MENU_ASSIGN_RESULT:
                 GyoraceCFGAnalyze("\x8b\x9b\x93\x6f\x98\x5e\x8f\x49\x97\xb9");
-                name = MenuLoadFishSelectData->GetName(0);
+                name = MenuLoadFishSelectData->GetName(ITEM_NAME_TYPE_PLAIN);
 
                 if (name != NULL) {
                     strcpy(ask->name[0], name);
@@ -8233,7 +8224,7 @@ int GyoraceMenuKey() {
                 SetHaveName(GyoraceFishHave, k, name);
 
                 if (entry->IsUsed() != 0) {
-                    name = entry->fish.GetName(0);
+                    name = entry->fish.GetName(ITEM_NAME_TYPE_PLAIN);
                     SetHaveName(GyoraceFishHave, k, name);
                 }
             }
@@ -8528,7 +8519,7 @@ void DrawSubGameTitle(mgCTexture *texture, int large, int x, int y, int width) {
     }
 
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8560,7 +8551,7 @@ void DrawSubGameListFix(mgCTexture *texture, int x, int y, int width, int height
     mgRect<int>  frame_bottom;
     int          mid_height = height - 0x38;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8614,7 +8605,7 @@ void DrawSubGameScrlList(mgCTexture *texture, int *box, int *thumb) {
     int          y = box[1];
     int          width = box[2];
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8649,7 +8640,7 @@ void DrawSubGameUnderLine(mgCTexture *texture, int x, int y, int width) {
 
     mgRect<int>  rect;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0x80, 0x80, 0x80, 0x80);

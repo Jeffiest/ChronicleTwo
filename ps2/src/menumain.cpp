@@ -842,8 +842,8 @@ int CheckStartChapter8(CSaveData *save_data) {
         return false;
     }
 
-    if (save_data->GetBitFlag(0x2E0) == 1) {
-        if (!save_data->GetBitFlag(0x320)) {
+    if (save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8) == 1) {
+        if (!save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8_STARTED)) {
             return true;
         }
     }
@@ -1105,7 +1105,7 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
     MenuTimeBrdForm = NULL;
     TopicTex = NULL;
     InitMenuEtcSpecialFlag();
-    SetModeMenuDrawItemBoard(0);
+    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_BAG);
     TreeMapSaveFlag = false;
     TreeMapCallDungeonSubMap = false;
     TreeMapCalledWorldMap = false;
@@ -1884,7 +1884,7 @@ void DrawMenuTopic() {
         mgCTextureManager *manager = &mgTexManager;
         mgCDrawPrim       *prim = GetMenuPrim();
         manager->ReloadTexture(TopicTex->block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(TopicTex);
         prim->Color(0x80, 0x80, 0x80, MenuTopicAlpha);
@@ -1897,7 +1897,7 @@ void DrawMenuTopic() {
         PrimQuad(prim, 22.0f, 22.0f, mgRect<int>(0x66, 0, title_width, 0xC));
         prim->End();
         manager->ReloadTexture(MenuArg.mes_tex_block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 1);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Color(0x2A, 0x22, 0x1E, MenuTopicAlpha * 6 / 10);
         prim->Vertex(box.left - 2, box.top - 2, 0);
@@ -2031,7 +2031,7 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
     if (open_type != MENU_OPEN_INVENT) {
         MenuMainSubDataPackAdr = stack->stack + stack->stack_used;
         MenuCommonReadData(stack, fname_1858, 0);
-        MenuMainFrameModeSet(0, 1);
+        MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, true);
         int icon_count = 0;
 
         for (int k = 0; 0 <= CMenuInterPt->mode_list[k]; k++) {
@@ -2258,8 +2258,8 @@ void CMenuInter::PushOk() {
                 show_message = true;
                 message_no = 0x28;
 
-                if (CheckBitFlagMenu(0x258) == 1) {
-                    if (CheckBitFlagMenu(0x2E0) == 0) {
+                if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_2) == 1) {
+                    if (CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8) == 0) {
                         message_no = 0x2E;
                     }
                 }
@@ -2560,7 +2560,7 @@ int MenuInternSelectKey() {
                     }
 
                     ReturnMenuIntern(1);
-                    MenuMainFrameModeSet(1, 1);
+                    MenuMainFrameModeSet(MENU_MAIN_FRAME_CLOSE, true);
                     MenuMesForm[0]->SetAction("\x8A\x4F\x82\xD6");
                     MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
@@ -2670,8 +2670,8 @@ int CopyActiveIconTexture(mgCTexture **textures, int chara_no, u_int *unused) {
         items[6] = chara->equip[2].item_no;
         items[7] = chara->equip[3].item_no;
     } else if (chara_no == USER_CHARA_ROBO) {
-        items[4] = user->robo_data.parts[2].item_no;
-        items[5] = user->robo_data.parts[0].item_no;
+        items[4] = user->robo_data.parts[ROBO_PART_PACK].item_no;
+        items[5] = user->robo_data.parts[ROBO_PART_ARM].item_no;
     }
 
     for (int sheet = 0; sheet < 2; ++sheet) {

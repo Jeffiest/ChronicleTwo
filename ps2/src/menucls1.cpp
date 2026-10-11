@@ -770,7 +770,7 @@ void CDC2Mes::MakeMsg(CGameDataUsed *item) {
         if (0 < item_no) {
             message_no = GetItemMessageNo(item_no, 1);
 
-            if (item_no == 0x38) {
+            if (item_no == ITEM_ID_LAMBS_SWORD) {
                 if (GetTimeBand(MenuNowTime) == MAP_TIME_BAND_NIGHT) {
                     message_no = 0xA2;
                 }
@@ -789,7 +789,7 @@ void CDC2Mes::MakeMsg(CGameDataUsed *item) {
 
         if (item_no == ITEM_ID_SPECTOL) {
             value_sign = 0;
-        } else if (item_no == 0x137) {
+        } else if (item_no == ITEM_ID_MEDAL_HOLDER) {
             value_zero = 1;
             value_sign = 0;
         }
@@ -1001,7 +1001,7 @@ void CMenuMoveItem::SetMoveItemInfo(MENU_ITEM_MOVE_INFO *request, int *start, in
                 part->etc_info[2] = entry->item.GetSpectolNo();
             }
 
-            if (part->etc_info[1] == 0x1AA) {
+            if (part->etc_info[1] == ITEM_ID_BOILED_FISH) {
                 part->etc_info[2] = entry->item.data.item.num;
             }
 
@@ -1103,15 +1103,15 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 dead = true;
             }
 
-            if (dead == 1 && (effect.action_flags & 0x10)) {
+            if (dead == 1 && (effect.action_flags & ITEM_ACTION_EAT)) {
                 break;
             }
 
             int weapon_type = chara->equip[0].item_type;
 
-            if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & 0x10)) {
-                if (((MenuUsedItemNo == 0x184 && weapon_type == ITEM_DATA_MAX_MELEE) ||
-                     (MenuUsedItemNo == 0x185 && weapon_type == ITEM_DATA_MONICA_MELEE)) &&
+            if (!(chara->status_attr & CHARA_STATUS_DRY) || !(effect.action_flags & ITEM_ACTION_EAT)) {
+                if (((MenuUsedItemNo == ITEM_ID_POTATO_PIE && weapon_type == ITEM_DATA_MAX_MELEE) ||
+                     (MenuUsedItemNo == ITEM_ID_WITCH_PARFAIT && weapon_type == ITEM_DATA_MONICA_MELEE)) &&
                     chara->defence < 0x80) {
                     count++;
 
@@ -1127,7 +1127,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                     }
                 }
 
-                if (MenuUsedItemNo == 0x128 && chara->hp.max < 255.0f) {
+                if (MenuUsedItemNo == ITEM_ID_FRUIT_OF_EDEN && chara->hp.max < 255.0f) {
                     count++;
 
                     if (apply != 0) {
@@ -1146,7 +1146,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if (MenuUsedItemNo == 0x111) {
+            if (MenuUsedItemNo == ITEM_ID_RESURRECTION_POWDER) {
                 if (dead == 1) {
                     count++;
 
@@ -1162,7 +1162,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if ((chara->status_attr & CHARA_STATUS_DRY) && (effect.action_flags & 0x10) && item->item_no != 0x110) {
+            if ((chara->status_attr & CHARA_STATUS_DRY) && (effect.action_flags & ITEM_ACTION_EAT) && item->item_no != ITEM_ID_PLUM_RICE_BALL) {
                 MenuUsedNotErrorCode = true;
                 break;
             }
@@ -1191,7 +1191,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         battle->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
                     }
                 }
-            } else if (MenuUsedItemNo == 0x1AA) {
+            } else if (MenuUsedItemNo == ITEM_ID_BOILED_FISH) {
                 if (dead == 0 && chara->hp.GetRate() < 1.0f) {
                     count++;
 
@@ -1305,7 +1305,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 return 0;
             }
 
-            if (MenuUsedItemNo == 0x127) {
+            if (MenuUsedItemNo == ITEM_ID_LEVEL_UP_POWDER) {
                 if (weapon->used_type == USED_ITEM_TYPE_WEAPON && !weapon->IsLevelUp() && weapon->IsFishingRod() != 1) {
                     count++;
 
@@ -1315,10 +1315,10 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                         sound = 30;
                     }
                 }
-            } else if (MenuUsedItemNo == 0x1A7) {
+            } else if (MenuUsedItemNo == ITEM_ID_SHIELD_KIT) {
                 sound = CheckRoboShieldKit(user, weapon, apply, &count, &used);
             } else if (MenuUsedItemNo == ITEM_ID_RIDEPOD_FUEL) {
-                if (weapon == &user->robo_data.parts[2] && user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
+                if (weapon == &user->robo_data.parts[ROBO_PART_PACK] && user->robo_data.AddPoint(0.0f) < 1.0f && items_blocked == 0) {
                     count++;
 
                     if (apply != 0) {

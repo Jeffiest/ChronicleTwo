@@ -315,7 +315,7 @@ int DrawTakePhoto(USER_PICTURE_INFO *picture, float *distance) {
         if (picture != NULL) {
             memcpy(picture->image, image, 0x2000);
             picture->used = 1;
-            picture->is_new = 1;
+            picture->is_new = true;
             sndSePlay(GetSystemSndID(), 11, 0);
             taken = 1;
         }
