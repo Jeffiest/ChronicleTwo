@@ -20,13 +20,12 @@ are documented in [the design note](../../ps2/re/docs/satansfiddle/placement-new
 
 ```sh
 export SATANSFIDDLE=/absolute/path/to/satansfiddle
-export WIBO_PATH=/absolute/path/to/unstripped/wibo
 ./build.sh
 ```
 
 The default profile is `scripts/build/satansfiddle.json`, outside the generated
 `ps2/config` tree. `SATANSFIDDLE_CONFIG` can select another JSON profile. Its
-compiler version is a consistency check: Satan's Fiddle still verifies the
+compiler version is a consistency check: Satan's Fiddle verifies the
 compiler executable's SHA-256 and the hook signatures. The checked-in profile
 starts helper-call history at zero and initializes the floating-point
 evaluate-first annotation to false. These deterministic settings establish a

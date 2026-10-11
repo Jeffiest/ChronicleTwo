@@ -135,6 +135,6 @@ routine}, a tag-name hash, and binary ("BIN") scripts. Nothing in the layout was
 
 ## Compiler options
 
-The unit is compiled with `-inline off` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) added
-to the game's `-O3,p`, and with it the object is byte-identical to the build that used the former
-`dont_inline on` pragma. Without inlining, the header's inline members are called rather than expanded, as in retail.
+The unit is compiled with `-inline off` (`UNIT_CC_FLAGS_scriptinterpreter` in `ps2/cmake/Toolchain.cmake`)
+added to the game's `-O3,p`. The object is byte-identical to one built with a `dont_inline on` pragma.
+Without inlining, the header's inline members are called rather than expanded, as in retail.
