@@ -616,7 +616,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
         area->battle_clear = 1;
         area->battle_bgm_state = (int) DNG_BGM_MAP;
         area->battle_bgm_vol = 0.0f;
-        area->camera_mode = 0;
+        area->camera_mode = DNG_CAMERA_FOLLOW;
         area->pause_flag = 0;
         area->timer = 0;
         area->minimap_reveal = 0;
@@ -626,7 +626,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
         area->practice_actions = 0;
         area->floor_status = 0;
         area->weather = DNG_WEATHER_NORMAL;
-        area->lock_on_mode = 0;
+        area->lock_on_mode = DNG_LOCK_ON_NEAREST;
     }
 
     InitTitleOmakeFlag();
@@ -981,11 +981,11 @@ int TitleLoop() {
 
                 result = 0;
 
-                if (MenuArg.end_code == 10) {
+                if (MenuArg.end_code == MENU_END_LOAD) {
                     next_loop = 2;
-                } else if (MenuArg.end_code == 12) {
+                } else if (MenuArg.end_code == MENU_END_COSTUME) {
                     next_loop = 1;
-                } else if (MenuArg.end_code == 19) {
+                } else if (MenuArg.end_code == MENU_END_SUBGAME_LOAD) {
                     next_loop = 11;
                 } else {
                     memcpy(&TitleInfo->config, &GetSaveData()->config, sizeof(SV_CONFIG_OPTION));
