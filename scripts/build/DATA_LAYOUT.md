@@ -200,8 +200,8 @@ unresolved BSS list preserves the existing data metric, including previously
 credited reservation storage; unchanged credit is not independent proof of
 those gaps' compiler or linker cause.
 
-Reservation arrays are excluded from the source comparison. Native function bytes, declared sizes and relocation fields remain
-intact; function names use the existing template/initializer projection.
+Native function bytes, declared sizes and relocation fields remain intact;
+function names use the existing template/initializer projection.
 Reference copies resolve splat's undefined `D_<hex>` constant guesses below the
 retail image base only for zero-addend HI16/LO16 fields. The retail relocation
 table must contain no real reference to that symbol in the code section, the

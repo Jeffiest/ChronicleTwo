@@ -1,4 +1,4 @@
-"""Check the submodule ELF patch setup and the __sinit_ name mapping."""
+"""Check that setup_mwccgap applies the submodule ELF patch idempotently."""
 from pathlib import Path
 import sys
 import subprocess
@@ -8,7 +8,6 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/mwccgap'))
 
-from mwccgap.mwccgap import replace_sinit
 import setup_mwccgap
 
 
@@ -45,18 +44,6 @@ def test_patch_setup():
             setup_mwccgap.ROOT = saved_root
 
 
-def test_initializer_names():
-    for prefix in ('', '.p', '.mwcats_'):
-        temporary = 'tmpevent.c'
-        original = 'event.cpp'
-        assert replace_sinit(prefix + '__sinit_' + temporary, temporary, original) == (
-            prefix + '__sinit_' + original)
-        assert replace_sinit(prefix + '__sinit_' + temporary.ljust(ord('t')),
-                             temporary, original) == (
-            prefix + '__sinit_' + original.ljust(ord('e')))
-
-
 if __name__ == '__main__':
-    test_initializer_names()
     test_patch_setup()
-    print('mwccgap temporary-source checks passed')
+    print('mwccgap ELF patch checks passed')

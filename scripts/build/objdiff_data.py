@@ -1,4 +1,4 @@
-"""Prepare source-only comparisons without importing assembly fallbacks.
+"""Prepare source-only comparison objects from compiler output and retail's data layout.
 
 The raw objdiff objects remain compiler/assembler output. Comparison copies use
 the linker's data extents, actual retail relocations, and verified native data
@@ -318,7 +318,7 @@ def normalize_data_callbacks(elf, unit, ctx, function_identities, native_extents
 
 
 def prepare_native_data(elf, unit, ctx):
-    """Normalize only compiler-emitted data; reservation arrays supply no credit."""
+    """Normalize a native object's data to retail's layout, names and padding."""
     before = code_snapshot(elf)
     native_extents = p.native_data_extents(elf)
     function_names = [(symbol, symbol.name) for symbol in elf.symtab.symbols

@@ -37,7 +37,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import layout  # noqa: E402
 
 CODE_SECTIONS = (".text", ".init")
-BSS_SECTIONS = (".sbss", ".bss")
 
 NONMATCHINGS = layout.ASM / "nonmatchings"
 MATCHINGS = layout.ASM / "matchings"
@@ -64,12 +63,6 @@ TWIN_SUFFIX = "$b"
 
 def invented_name(address):
     return f"D_{address:08X}"
-
-
-def invented_address(name):
-    """The address an invented `D_<ADDR8>` name spells, or None."""
-    m = re.fullmatch(r"D_([0-9A-F]{8})", name)
-    return int(m.group(1), 16) if m else None
 
 
 def referenced_addresses(lay, *, retail=None):

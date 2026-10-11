@@ -143,12 +143,11 @@ rather than this merged state. Remaining draft measurements are in
 - The performance meter uses `ZMask(MG_Z_MASK_MASKED)` and `Begin(MG_PRIM_SPRITE)`;
   the `timer0_count - h_count` differences are already `u_int`.
 - The function-local statics `count`, `cpu_ratio`, `free_ratio` (with MWCC's
-  initialization guards) and `store_data` are native; `INCLUDE_BSS` reservations
-  at their retail `.sbss`/`.bss` positions (`count_580` … `init_587`,
-  `store_data_614`, like `image_num_1535`/`init_1536` for `StoreImage`) are
-  bound by the postprocessor by base name and extent, each guard spanning its
-  byte and the following alignment padding. `store_data_614` stays global for
-  the library-data reference in `e_rem_pio2`.
+  initialization guards) and `store_data` are native definitions at their retail
+  `.sbss`/`.bss` positions (`count_580` … `init_587`, `store_data_614`, like
+  `image_num_1535`/`init_1536` for `StoreImage`). Each guard spans its byte and
+  the following alignment padding. `store_data_614` stays global for the
+  library-data reference in `e_rem_pio2`.
 
 ## mgSetPkFrameBuffer source forms
 
@@ -195,7 +194,7 @@ The built ELF in `build/pal` marks everything GLOBAL; the retail ELF does not. U
   `store_data$614` (mgEndFrame, 0x1000 bytes = u_int[0x400] z read-back), `image_num$1535`
   (StoreImage). `@863` is a 16-byte .bss zero vector: the compiler's initializer for
   `float vector[4] = {red, green, blue, alpha}` in `mgSetBackGround(ffff)`.
-- Retail true sizes differ from the padded INCLUDE_BSS slots: VSyncField 4 (slot 8),
+- Retail true sizes differ from the padded slots in the retail `.bss` layout: VSyncField 4 (slot 8),
   mgChangeLight 4, draw_performance_meter 4, mgTexManager 0x21C (slot 0x220), gs_simage 0x70
   (slot 0xA0), prog_adr 12 (3 pointers).
 
@@ -203,8 +202,7 @@ Round 3 restores these private globals as typed file statics. The stable
 `dimx_281` file-static table replaces the compiler-ordinal local spelling.
 `store_data_614` retains external linkage because an existing generated
 library-data expression references that symbol. `gs_simage` and the
-function-local static reservations are `INCLUDE_BSS` markers bound to the
-native objects by the postprocessor.
+function-local statics are native definitions.
 
 ## Global types (evidence)
 - `DmaCH1/2/8` sceDmaChan* (sceDmaGetChan results; CH1 chcr.TTE set). DmaCH2 also used by movie,

@@ -60,15 +60,12 @@ class SourceClassificationGraphTests(ObjdiffGraphFixture):
         super().setUp()
         # Model splat's output placement for the linked rule's dependency.
         self.write('src/first.cpp', 'void restored__Fv() {}\n')
-        self.write('split.py', r"""import pathlib, re, shutil, sys
+        self.write('split.py', r"""import pathlib, shutil, sys
 root = pathlib.Path('.')
 for kind in ('matchings', 'nonmatchings'):
     shutil.rmtree(root / 'asm' / kind, ignore_errors=True)
 for unit in ('first', 'second'):
-    text = (root / f'src/{unit}.cpp').read_text()
-    fallback = bool(re.search(r'INCLUDE_ASM\([^,]*,\s*restored__Fv\)', text))
-    kind = 'nonmatchings' if fallback else 'matchings'
-    target = root / f'asm/{kind}/{unit}/restored__Fv.s'
+    target = root / f'asm/matchings/{unit}/restored__Fv.s'
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text('.section .text\nglabel restored__Fv\nnop\n')
 pathlib.Path(sys.argv[1]).write_text('split')

@@ -135,5 +135,6 @@ by the compiler.
 ## Compiler options
 
 The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
-of the game's `-O3,p`. With that option and none of its former `schedule off` / `optimization_level 2` pragmas the object is
-byte-identical to the build that used them. Its four `global_optimizer off` regions remain function-specific.
+of the game's `-O3,p`. The source has no `schedule` or `optimization_level` pragmas, and the object is
+byte-identical to one built with them. Its single `global_optimizer off` region, from `CreateFace` to
+`CreateRenderInfoPacket`, covers four functions.
