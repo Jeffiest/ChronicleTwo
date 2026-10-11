@@ -222,6 +222,12 @@ void InputScriptInstall(InputScript script) {
     for (int pad = 0; pad < kInputPadCount; ++pad) {
         InputSetOverride(pad, nullptr);
     }
+    if (!g_active) {
+        // Uninstalling must release the scripted keyboard and mouse as well, or a key the script
+        // held stays held for the host actions after the script is gone.
+        InputSetScriptedDevices(InputKeyboardMouse{});
+        return;
+    }
     InputScriptApply(0);
 }
 
