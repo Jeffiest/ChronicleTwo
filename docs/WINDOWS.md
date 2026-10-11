@@ -78,9 +78,9 @@ Without the disc image, an existing `rom\pal\extracted\iso` that holds `DATA.HD4
 with neither, the run stops and says where to put the image.
 
 The game is started with `--data rom\pal\extracted\iso --save .kazarov\save`
-unless the arguments already name `--data` or `--save`, or `DC_DATA` or
-`DC_SAVE` is set. Without those, the game would read and write
-`%LOCALAPPDATA%\chronicle-two`, a directory of its own: the first game's port keeps its
+unless the arguments already name `--data` or `--save`, or `DC2_DATA` or
+`DC2_SAVE` is set. Without those, the game would read and write
+`%LOCALAPPDATA%\chronicletwo`, a directory of its own: the first game's port keeps its
 config, saves and pipeline cache in `%LOCALAPPDATA%\chronicle`, and the two games must not share them.
 
 To extract by hand:
@@ -153,7 +153,7 @@ and a strong one of the same name as a duplicate, so the build compiles copies:
   `ps2/include`). Each rule counts its matches in the original and fails on any other number,
   so a change to `ps2/` is noticed. Linux compiles `ps2/` as it is.
 - `STATIC_ASSERT` checks nothing, as on Linux: the sizes are the PS2's, so every struct that
-  holds a pointer fails. `-DDC_STATIC_ASSERT=ON` turns the checks on; on Windows and Linux the
+  holds a pointer fails. `-DCMAKE_CXX_FLAGS=-DPORT_STATIC_ASSERT` turns the checks on; on Windows and Linux the
   same 310 assertions then fail, all of them through pointer widths.
 
 ## What is verified and what is not

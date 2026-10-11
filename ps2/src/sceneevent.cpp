@@ -294,14 +294,9 @@ void CScene::DrawSky(int sky_index) {
     float lighting_ratio[8];
     float sun_ratio[8];
 
-#ifdef PORT
-    alignas(CMapLightingInfo) u_char lighting_storage[sizeof(CMapLightingInfo)];
-    CMapLightingInfo &lighting = *reinterpret_cast<CMapLightingInfo *>(lighting_storage);
-#else
     union {
         CMapLightingInfo lighting;
     };
-#endif
 
     float      sky_color_a[4];
     float      sky_color_b[4];

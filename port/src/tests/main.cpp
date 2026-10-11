@@ -1,14 +1,21 @@
 #include <gtest/gtest.h>
 
 #include "identity.hpp"
-#include "platform/window.hpp"
 
-// A main of the tests' own rather than gtest_main's: the game's main is stripped from ps2/src's
-// unit by the tag on port/src/main.cpp's, which the tests do not link.
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
+#include <cstdlib>
+#endif
+
 int main(int argc, char **argv) {
-    // The shared host tests run as this game: its environment variables and window identity.
     GameSetIdentity();
-    WindowSetIdentity({.title = "Dark Chronicle tests", .app_id = "dcdecomp.darkchronicle.tests"});
+#ifdef _WIN32
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+    _set_abort_behavior(0, _WRITE_ABORT_MSG | _CALL_REPORTFAULT);
+#endif
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

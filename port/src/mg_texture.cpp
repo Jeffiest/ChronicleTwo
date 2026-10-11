@@ -312,9 +312,9 @@ void Sync(const mgCTexture *texture, Entry &entry) {
             gfx::UpdatePalette(entry.palette, rgba.data());
         }
 
-        // Diagnostic: DC_DUMP_TEXTURES=1 prints the palette and index usage of the costume textures when
+        // Diagnostic: DC2_DUMP_TEXTURES=1 prints the palette and index usage of the costume textures when
         // they change, to tell a wrong palette from a wrong draw.
-        static const bool dump_textures = std::getenv("DC_DUMP_TEXTURES") != nullptr;
+        static const bool dump_textures = std::getenv("DC2_DUMP_TEXTURES") != nullptr;
         static std::unordered_map<const void *, uint64_t> dumped;
 
         if (dump_textures && std::strncmp(texture->name, "c01", 3) == 0 && !levels.empty()) {

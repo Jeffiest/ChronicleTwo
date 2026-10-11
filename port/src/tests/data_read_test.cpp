@@ -273,8 +273,8 @@ TEST(DataRead, PathsFromArguments) {
 
 TEST(DataRead, PathsFromEnvironment) {
     fs::path dir = TempDir("paths_env");
-    setenv("DC_DATA", (dir / "env_data").c_str(), 1);
-    setenv("DC_SAVE", (dir / "env_save").c_str(), 1);
+    setenv("DC2_DATA", (dir / "env_data").c_str(), 1);
+    setenv("DC2_SAVE", (dir / "env_save").c_str(), 1);
     ASSERT_TRUE(PathsDataRoot() == dir / "env_data");
     ASSERT_TRUE(PathsSaveRoot() == dir / "env_save" && fs::is_directory(dir / "env_save"));
     PathsSetDataRoot(dir / "flag");
@@ -284,8 +284,8 @@ TEST(DataRead, PathsFromEnvironment) {
 
 TEST(DataRead, PathsDefaultToWorkingDirectory) {
     fs::path dir = TempDir("paths_cwd");
-    unsetenv("DC_DATA");
-    unsetenv("DC_SAVE");
+    unsetenv("DC2_DATA");
+    unsetenv("DC2_SAVE");
     fs::create_directories(dir / "data");
     fs::current_path(dir);
     ASSERT_TRUE(PathsDataRoot() == dir / "data");

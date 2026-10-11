@@ -30,7 +30,6 @@ static const int   kChildIdMax = 0x200;
  *
  */
 static void PlaneNormalXZ(float *normal, float *p0, float *p1, float *p2) {
-#ifndef PORT
     asm {
         lqc2 vf15, 0(p0)
         vsub.xyzw vf10, vf10, vf10
@@ -43,7 +42,6 @@ static void PlaneNormalXZ(float *normal, float *p0, float *p1, float *p2) {
         vopmsub.xyz vf12, vf11, vf10
         sqc2 vf12, 0(normal)
     }
-#endif
 }
 #endif
 float CEditMap::GetEditPartsAlt(CEditPartsInfo *info, sceVu0FVECTOR pos, float rot_y, CEditParts **parts, int num) {

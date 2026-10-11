@@ -1181,12 +1181,7 @@ int TitleLoop() {
             case TITLE_MODE_MC_CHECK:
                 TitleBootEventNo = 0;
                 GetMainScene()->read_buff = DataBuffer.stGetTop();
-#ifdef PORT
-                u_long128 *language_buffer;
-                language_buffer = DataBuffer.stGetTop();
-#else
-                u_long128 *language_buffer = DataBuffer.stGetTop();
-#endif
+                u_long128 *language_buffer; language_buffer = DataBuffer.stGetTop();
                 read_buffer = language_buffer;
                 LanguageChange(GetSelectLanguageNo(), language_buffer);
                 TitleBootInit();

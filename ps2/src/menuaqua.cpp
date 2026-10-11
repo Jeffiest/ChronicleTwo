@@ -2115,12 +2115,7 @@ void CAquaFish::NextThink(int think, NEXT_THINK_PARAM *param) {
 
     switch (think) {
         case AQUA_FISH_THINK_REST:
-#ifdef PORT
-            int timer;
-            timer = GetRandI(130) + 100;
-#else
-            int timer = GetRandI(130) + 100;
-#endif
+            int timer; timer = GetRandI(130) + 100;
             target_rot[0] = 0.0f;
             action.timer = timer;
             action.decel = 0.8f;

@@ -107,8 +107,8 @@ void BuildSkinMatrices(const mgCVisualMotionMDT *visual, mgCFrame *frame, int sl
 }
 
 void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
-    // Diagnostic: DC_DUMP_DRAWS=1 says once per visual why it is or is not skinned.
-    static const bool why = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    // Diagnostic: DC2_DUMP_DRAWS=1 says once per visual why it is or is not skinned.
+    static const bool why = std::getenv("DC2_DUMP_DRAWS") != nullptr;
     static std::unordered_map<const void *, int> why_seen;
     if (why && why_seen[visual]++ == 0) {
         int slots = 0;
@@ -168,8 +168,8 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
     // The skinned normals come out wrong (clothes draw black) because the model's normals are indexed by
     // face rather than by vertex, so they keep their base pose until that mapping is done properly.
-    // DC_SKIN_NORMALS=1 turns the broken skinning back on for comparison.
-    static const bool skip_normals = std::getenv("DC_SKIN_NORMALS") == nullptr;
+    // DC2_SKIN_NORMALS=1 turns the broken skinning back on for comparison.
+    static const bool skip_normals = std::getenv("DC2_SKIN_NORMALS") == nullptr;
 
     float skin_matrix[32][4][4];
 
@@ -182,7 +182,7 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
     // Diagnostic: per slot of a 115-vertex (hand) visual, the diagonal and translation of the bind matrix, the
     // current bone matrix and the skin matrix. Counted per visual so nothing aliases.
     static std::unordered_map<const void *, int> hand_seen;
-    if (std::getenv("DC_DUMP_DRAWS") != nullptr && visual->vertex_num == 115 && hand_seen[visual]++ < 2) {
+    if (std::getenv("DC2_DUMP_DRAWS") != nullptr && visual->vertex_num == 115 && hand_seen[visual]++ < 2) {
         for (int k = 0; k < slot_count; k++) {
             float cur[4][4];
             visual->frame[visual->bone[k]]->GetLWMatrix(cur);
@@ -197,8 +197,8 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
         }
     }
 
-    // Diagnostic: DC_DUMP_DRAWS=1 prints the bone matrices' health every few skin passes.
-    static const bool dump_skin = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    // Diagnostic: DC2_DUMP_DRAWS=1 prints the bone matrices' health every few skin passes.
+    static const bool dump_skin = std::getenv("DC2_DUMP_DRAWS") != nullptr;
     static int        skin_calls;
     static int        skin_printed;
     const bool        report = dump_skin && skin_printed < 160 && (skin_calls++ % 15) == 0;

@@ -12,7 +12,7 @@
             "generator": "Ninja",
             "cacheVariables": {
                 "PLATFORM": "PC",
-                "DC_BUILD_TESTS": "ON"
+                "CT_BUILD_TESTS": "ON"
             }
         },
         {

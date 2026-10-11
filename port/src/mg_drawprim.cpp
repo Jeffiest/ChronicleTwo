@@ -384,8 +384,8 @@ void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
         }
     }
 
-    // Diagnostic: DC_DUMP_DRAWS=1 prints untextured black runs with their extent, target and state.
-    static const bool dump_black = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    // Diagnostic: DC2_DUMP_DRAWS=1 prints untextured black runs with their extent, target and state.
+    static const bool dump_black = std::getenv("DC2_DUMP_DRAWS") != nullptr;
     static int        dumped_black;
 
     if (dump_black && dumped_black < 150 && owner.prim.TME == 0 && !state.vertices.empty()) {

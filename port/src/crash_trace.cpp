@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-// A crash prints nothing on its own and a killed run loses stderr's buffer. DC_CRASH_TRACE=1 installs
+// A crash prints nothing on its own and a killed run loses stderr's buffer. DC2_CRASH_TRACE=1 installs
 // a filter that writes the faulting instruction and a raw backtrace; each frame carries its
 // load-relative offset, which llvm-symbolizer resolves against the executable's DWARF symbols.
 //
@@ -43,7 +43,7 @@ LONG WINAPI CrashFilter(EXCEPTION_POINTERS *info) {
 } // namespace
 
 void InstallCrashTrace() {
-    if (std::getenv("DC_CRASH_TRACE") != nullptr) {
+    if (std::getenv("DC2_CRASH_TRACE") != nullptr) {
         SetUnhandledExceptionFilter(CrashFilter);
     }
 }

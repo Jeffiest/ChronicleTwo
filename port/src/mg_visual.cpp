@@ -213,8 +213,8 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
 
     gfx::DrawState state = PortMgDrawStateFromEnv(merged);
 
-    // Diagnostic: DC_RTT_NODEPTH=1 ignores depth for models drawn into an off-screen texture.
-    static const bool rtt_no_depth = std::getenv("DC_RTT_NODEPTH") != nullptr;
+    // Diagnostic: DC2_RTT_NODEPTH=1 ignores depth for models drawn into an off-screen texture.
+    static const bool rtt_no_depth = std::getenv("DC2_RTT_NODEPTH") != nullptr;
     if (rtt_no_depth && gfx::CurrentRenderTarget() != gfx::kMainTarget) {
         state.depth_test = gfx::DepthTest::Always;
     }
@@ -249,8 +249,8 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
     }
 
     bool ambient_boost = info->attr->ambient_boost != 0;
-    // Diagnostic: DC_NO_LIGHT=1 draws every model unlit, to tell bad lighting from bad textures.
-    static const bool force_unlit = std::getenv("DC_NO_LIGHT") != nullptr;
+    // Diagnostic: DC2_NO_LIGHT=1 draws every model unlit, to tell bad lighting from bad textures.
+    static const bool force_unlit = std::getenv("DC2_NO_LIGHT") != nullptr;
     bool lit = !(info->attr->no_light != 0 || info->lighting_enabled == 0 || ambient_boost || force_unlit);
     FillFog(constants, state, info);
 
@@ -276,8 +276,8 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
         gfx::TextureBinding binding;
         PortMgTextureBinding(entry != NULL ? entry->texture : NULL, binding);
 
-        // Diagnostic: DC_DUMP_DRAWS=1 prints each distinct material group once.
-        static const bool dump = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        // Diagnostic: DC2_DUMP_DRAWS=1 prints each distinct material group once.
+        static const bool dump = std::getenv("DC2_DUMP_DRAWS") != nullptr;
         static int        dumped;
         static std::set<std::tuple<const void *, int, size_t, size_t>> seen;
 

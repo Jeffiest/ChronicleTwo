@@ -467,6 +467,8 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     lister = commands.add_parser("list", help="write the names port/src's tagged definitions link under")
     lister.add_argument("port", type=pathlib.Path, help="port/src")
+    lister.add_argument("--exclude", type=pathlib.Path, action="append", default=[],
+                        help="source retained for reference but explicitly superseded by a native implementation")
     lister.add_argument("-o", "--output", type=pathlib.Path, required=True)
     stripper = commands.add_parser("strip", help="write a ps2/src unit without the overridden definitions")
     stripper.add_argument("--overrides", type=pathlib.Path, required=True)
@@ -484,8 +486,9 @@ def main():
     try:
         if options.command == "list":
             names = set()
+            excluded = {path.resolve() for path in options.exclude}
             for source in sorted(options.port.rglob("*.cpp")):
-                if "tests" in source.relative_to(options.port).parts:
+                if "tests" in source.relative_to(options.port).parts or source.resolve() in excluded:
                     continue
                 try:
                     names.update(tagged_names(read(source)))

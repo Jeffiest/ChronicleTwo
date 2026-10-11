@@ -85,7 +85,7 @@ bool SafeRelative(std::string_view path) {
 
 [[noreturn]] void NoData(const fs::path &root, const char *why) {
     std::fprintf(stderr,
-                 "no game data: %s %s; point --data (or DC_DATA) at the extracted disc, the "
+                 "no game data: %s %s; point --data (or DC2_DATA) at the extracted disc, the "
                  "directory holding DATA.HD4 and DATA.DAT\n",
                  root.c_str(), why);
     std::abort();
