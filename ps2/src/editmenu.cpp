@@ -1656,7 +1656,7 @@ void MenuGeoramaListDraw(int &tex_block, float *pos, int page, int alpha) {
             mgRect<int>  body_tex(0, 0x190, 0xF2, 0x40);
             mgRect<int>  foot_tex(0, 0x1D0, 0xF2, 0x59);
             mgCDrawPrim *prim = GetMenuPrim();
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_Georama);
             prim->Color(0, 0, 0, alpha >> 2);
@@ -1827,7 +1827,7 @@ void MenuGeoramaListDraw(int &tex_block, float *pos, int page, int alpha) {
                         break;
                     }
 
-                    SetSpriteEnv(prim, 0);
+                    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
                     prim->Bilinear(1);
                     prim->Begin(MG_PRIM_SPRITE);
                     prim->Texture(Tex_Georama);
@@ -1964,7 +1964,7 @@ void MenuGeoramaAnalyzeDraw(int &tex_block, float *pos, int alpha) {
     if (Tex_Georama != NULL && pos[0] >= -300.0f) {
         MenuReloadTexture(tex_block, Tex_Georama->block);
         mgCDrawPrim *prim = GetMenuPrim();
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         mgRect<int> head_tex(0, 0x72, 0x164, 0x5E);
         mgRect<int> body_tex(0, 0xD0, 0x164, 0x40);
         mgRect<int> foot_tex(0, 0x110, 0x164, 0x22);
@@ -2327,7 +2327,7 @@ void DrawDownLoadAnaunce() {
             RECT        shadow = {DownLoadWinRect.x + 5, DownLoadWinRect.y + 5, DownLoadWinRect.w, DownLoadWinRect.h};
             RGBAQ_TYPE  frame_color = {0x80, 0x80, 0x80, DownLoadMesAlpha, 0};
             RGBAQ_TYPE  shadow_color = {0, 0, 0, DownLoadMesAlpha >> 2, 0};
-            SetSpriteEnv(&prim, 0);
+            SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
             DrawVersatileWin_1(&prim, shadow, &shadow_color, shadow_color.a);
             DrawMenuFillBox(&prim, shadow.x, shadow.y, shadow.width - 10, shadow.height - 10, 0x40, 0, 0, 0);
             DrawVersatileWin_1(&prim, win, &frame_color, frame_color.a);
@@ -2808,7 +2808,7 @@ void MenuPlacedHouseDraw(int &tex_block) {
         if (pos[0] < 0x209) {
             MenuReloadTexture(tex_block, Tex_Georama->block);
             mgCDrawPrim *prim = GetMenuPrim();
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_Georama);
             int alpha = HouseInfoFormGrobal->rgba[3];
@@ -2877,7 +2877,7 @@ void MenuPlacedHouseDraw(int &tex_block) {
             int         line_y = pos[1] + 0x2C + HouseInfoSelectY;
             mgRect<int> line_tex(0, 0x229, 0xC0, 6);
             mgRect<int> line_rect(pos[0] + 0x18, line_y + 0x14, 0xCC, 6);
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_Georama);
             prim->Color(0x80, 0x80, 0x80, alpha);
@@ -2949,7 +2949,7 @@ void MenuPlacedHouseDraw(int &tex_block) {
             mgRect<int> arrow_up_tex(0x20, 0x84, 0x20, 0x17);
             mgRect<int> arrow_down_tex(0x40, 0x84, 0x20, 0x17);
             mgCTexture *arrow = mgTexManager.GetTexture("gaiji", -1);
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(arrow);
             prim->Color(0, 0, 0, arrow_shadow_alpha);
@@ -5389,7 +5389,7 @@ int CRemovalMenu::KeyStep() {
                                         case 0:
                                             MenuSePlay(SYSTEM_SE_DECIDE);
                                             action = REMOVAL_ACTION_CLOSE;
-                                            MenuArg.end_code = 9;
+                                            MenuArg.end_code = MENU_END_ENTER_HOUSE;
                                             break;
                                         case 1:
                                             MenuSePlay(SYSTEM_SE_DECIDE);
@@ -5586,8 +5586,8 @@ int CRemovalMenu::KeyStep() {
                     ExeScript("\x8FI\x97\xB9\x8F\x88\x97\x9D");
                     exit_wait = 0;
 
-                    if (MenuArg.end_code != 9 && house != NULL && first_npc != house->npc_no[0]) {
-                        MenuArg.end_code = 0xD;
+                    if (MenuArg.end_code != MENU_END_ENTER_HOUSE && house != NULL && first_npc != house->npc_no[0]) {
+                        MenuArg.end_code = MENU_END_RESIDENT_CHANGE;
                         MenuArg.result[0] = 1;
                         MenuArg.result[1] = house->npc_no[0];
                     }
@@ -5809,7 +5809,7 @@ void MenuRemovalInit(mgCMemory *stack, int *arg) {
         if (RemovalMenuPtr->parts != NULL) {
             RemovalMenuPtr->parts_info = RemovalMenuPtr->parts->info;
 
-            if (RemovalMenuPtr->parts_info->id == 0x49) {
+            if (RemovalMenuPtr->parts_info->id == EDIT_GEO_NPC_PARTS_ID) {
                 RemovalMenuPtr->special_house = 1;
             }
         }
