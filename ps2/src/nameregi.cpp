@@ -2002,7 +2002,7 @@ s32 CNameRegiMenu::KeyStep() {
                 }
 
                 if (CheckDeleteNameRegisteItem(Nameregi_Target.item) != 0) {
-                    GetUserDataMan()->DeleteItem(0x180, 1);
+                    GetUserDataMan()->DeleteItem(ITEM_ID_NAME_CHANGE_TICKET, 1);
                 }
 
                 if (LanguageCode > 0) {
