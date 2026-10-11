@@ -942,7 +942,7 @@ CActiveMonster *CMonsterMan::CheckThrowTarget(mgCFrame *frame) {
             if (mgDistVector(monster_pos, frame_pos) <= 30.0f) {
                 monster = active[i];
 
-                if (monster->tbl->lift_flags & 1) {
+                if (monster->tbl->lift_flags & MONSTER_LIFT_FORBIDDEN) {
                     MsgTaskMan.Print(dung_progtxt_notlift_mons[LanguageCode], 0x2D, 8, 0);
                     return NULL;
                 }
@@ -1988,7 +1988,7 @@ void CMonsterMan::CheckDamage() {
     se_id = now_scene->se_battle_id;
     player = (CActionChara *) now_scene->GetCharacter(0);
     chara_info = GetBattleCharaInfo();
-    gift_pack_num = GetUserItemHaveNum(0x134);
+    gift_pack_num = GetUserItemHaveNum(ITEM_ID_BADGE_BOX);
 
     for (i = 0; i < MONSTER_ACTIVE_MAX; i++) {
         monster = active[i];
@@ -2050,12 +2050,12 @@ void CMonsterMan::CheckDamage() {
 
             float damage = prim->damage - monster->defense;
 
-            if (prim->status & 0x1000) {
+            if (prim->status & WEAPON_SPECIAL_RATIO_DAMAGE) {
                 damage = (float) monster->max_life * (0.01f * (float) prim->param->damage);
                 damage *= 0.01f * (float) monster->tbl->ratio_damage_rate;
             }
 
-            if (prim->status & 0x40000) {
+            if (prim->status & WEAPON_SPECIAL_HOLY_WATER) {
                 if (monster->tbl->user_mons_id != 9) {
                     damage = 0.0f;
                 }
@@ -2150,21 +2150,21 @@ void CMonsterMan::CheckDamage() {
                     monster->status.poison_count = 120;
                 }
 
-                if ((prim->status & 0x8) && !(monster->status.attr & (MONSTER_STATUS_STOP | MONSTER_STATUS_STONE)) &&
-                    !(monster->tbl->resist_attr & 0x8) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_STOP) && !(monster->status.attr & (MONSTER_STATUS_STOP | MONSTER_STATUS_STONE)) &&
+                    !(monster->tbl->resist_attr & WEAPON_SPECIAL_STOP) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_STOP;
                     monster->status.grey_time = 300;
                     greyed = true;
                 }
 
-                if ((prim->status & 0x8000) && !(monster->status.attr & MONSTER_STATUS_STONE) &&
-                    !(monster->tbl->resist_attr & 0x8000) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_STONE) && !(monster->status.attr & MONSTER_STATUS_STONE) &&
+                    !(monster->tbl->resist_attr & WEAPON_SPECIAL_STONE) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_STONE;
                     monster->status.grey_time = 900;
                     greyed = true;
                 }
 
-                if ((prim->status & 0x10000) && !(monster->tbl->resist_attr & 0x10000) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_SLOW) && !(monster->tbl->resist_attr & WEAPON_SPECIAL_SLOW) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_SLOW;
                     monster->status.slow_time = 1800;
                 }
@@ -2429,11 +2429,11 @@ void CMonsterMan::CheckDamage() {
                 reaction = MONSTER_HIT_DEAD;
 
                 if (gift_pack_num != 0) {
-                    if (monster->monster_id >= 0xB0 && monster->monster_id < 0xB5 && (prim->status & 0x40000)) {
+                    if (monster->monster_id >= 0xB0 && monster->monster_id < 0xB5 && (prim->status & WEAPON_SPECIAL_HOLY_WATER)) {
                         monster->drop_badge = true;
                     }
 
-                    if (monster->monster_id == 0xDC && (prim->status & 0x80000)) {
+                    if (monster->monster_id == 0xDC && (prim->status & WEAPON_SPECIAL_BADGE_DROP)) {
                         monster->drop_badge = true;
                     }
                 }
@@ -2464,7 +2464,7 @@ void CMonsterMan::CheckDamage() {
                         break;
                     }
 
-                    if ((tbl->flags & 1) || monster->piyori_time > 0) {
+                    if ((tbl->flags & MONSTER_TBL_FLAG_NO_STAGGER) || monster->piyori_time > 0) {
                         break;
                     }
 
@@ -2483,7 +2483,7 @@ void CMonsterMan::CheckDamage() {
 
                     break;
                 case MONSTER_HIT_KNOCK:
-                    if (tbl->flags & 4) {
+                    if (tbl->flags & MONSTER_TBL_FLAG_NO_KNOCK) {
                         break;
                     }
 

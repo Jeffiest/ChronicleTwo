@@ -108,7 +108,7 @@ void GetCharacterSnd(CUserDataManager *user_data, int unit, char *path) {
 
     if (equip != NULL) {
         if (unit == USER_CHARA_MAX) {
-            int item_no = equip[1].item_no;
+            int item_no = equip[CHARA_EQUIP_SUB].item_no;
 
             if (item_no < 0x16 || item_no > 0x28) {
                 sprintf(path, "snd2/chara/CH_000.snd");
@@ -128,7 +128,7 @@ void GetCharacterSnd(CUserDataManager *user_data, int unit, char *path) {
 
         if (unit == USER_CHARA_ROBO) {
             char name[0x40];
-            user_data->robo_data.parts[0].GetRoboSoundFileName(name);
+            user_data->robo_data.parts[ROBO_PART_ARM].GetRoboSoundFileName(name);
             sprintf(path, "snd2/chara/%s.snd", name);
         }
     }
@@ -170,12 +170,12 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
         parts[0]->texture_block = texture;
         CGameDataUsed *equip = user_data->GetCharaDataPtr(chara_type)->equip;
         char          *item_path;
-        LoadFile(GetItemFilePath(equip[4].item_no, 0), read_buffer, NULL);
+        LoadFile(GetItemFilePath(equip[CHARA_EQUIP_CLOTHES].item_no, 0), read_buffer, NULL);
         parts[0]->LoadSkin((unsigned int *) read_buffer, "info.cfg", "", &stacks[1], texture);
 
         if (!edit_mode) {
-            if (equip[0].item_no > 0) {
-                item_path = GetItemFilePath(equip[0].item_no, 0);
+            if (equip[CHARA_EQUIP_MELEE].item_no > 0) {
+                item_path = GetItemFilePath(equip[CHARA_EQUIP_MELEE].item_no, 0);
                 parts[1]->Initialize(NULL);
                 LoadFile(item_path, read_buffer, NULL);
                 parts[1]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[2], &stacks[2], &stacks[2], texture, parts[0]);
@@ -185,8 +185,8 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
                 }
             }
 
-            if (equip[1].item_no > 0) {
-                item_path = GetItemFilePath(equip[1].item_no, 0);
+            if (equip[CHARA_EQUIP_SUB].item_no > 0) {
+                item_path = GetItemFilePath(equip[CHARA_EQUIP_SUB].item_no, 0);
                 parts[2]->Initialize(NULL);
                 LoadFile(item_path, read_buffer, NULL);
                 parts[2]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[3], &stacks[3], &stacks[3], texture, parts[0]);
@@ -199,7 +199,7 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
             SetSwordBlurEffect(parts[0], &stacks[2], chara_type);
         }
 
-        item_path = GetItemFilePath(equip[2].item_no, 0);
+        item_path = GetItemFilePath(equip[CHARA_EQUIP_HEAD].item_no, 0);
         parts[3]->Initialize(NULL);
         LoadFile(item_path, read_buffer, NULL);
         parts[3]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[4], &stacks[4], &stacks[4], texture, parts[0]);
@@ -208,7 +208,7 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
             printf("err wep1\n");
         }
 
-        LoadFile(GetItemFilePath(equip[3].item_no, 0), read_buffer, NULL);
+        LoadFile(GetItemFilePath(equip[CHARA_EQUIP_FEET].item_no, 0), read_buffer, NULL);
         parts[0]->LoadSkin((unsigned int *) read_buffer, "info.cfg", "", &stacks[5], texture);
 
         if (!edit_mode) {
@@ -244,11 +244,11 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
         parts[0]->texture_block = texture;
         CGameDataUsed *equip = user_data->GetCharaDataPtr(chara_type)->equip;
         char          *item_path;
-        LoadFile(GetItemFilePath(equip[4].item_no, 0), read_buffer, NULL);
+        LoadFile(GetItemFilePath(equip[CHARA_EQUIP_CLOTHES].item_no, 0), read_buffer, NULL);
         parts[0]->LoadSkin((unsigned int *) read_buffer, "info.cfg", "", &stacks[1], texture);
 
         if (!edit_mode) {
-            item_path = GetItemFilePath(equip[0].item_no, 0);
+            item_path = GetItemFilePath(equip[CHARA_EQUIP_MELEE].item_no, 0);
             parts[1]->Initialize(NULL);
             LoadFile(item_path, read_buffer, NULL);
             parts[1]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[2], &stacks[2], &stacks[2], texture, parts[0]);
@@ -260,7 +260,7 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
             SetSwordBlurEffect(parts[0], &stacks[2], chara_type);
         }
 
-        item_path = GetItemFilePath(equip[1].item_no, 0);
+        item_path = GetItemFilePath(equip[CHARA_EQUIP_SUB].item_no, 0);
         parts[2]->Initialize(NULL);
         LoadFile(item_path, read_buffer, NULL);
         parts[2]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[3], &stacks[3], &stacks[3], texture, parts[0]);
@@ -269,7 +269,7 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
             printf("err wep1\n");
         }
 
-        item_path = GetItemFilePath(equip[2].item_no, 0);
+        item_path = GetItemFilePath(equip[CHARA_EQUIP_HEAD].item_no, 0);
         parts[3]->Initialize(NULL);
         LoadFile(item_path, read_buffer, NULL);
         parts[3]->LoadPack((unsigned int *) read_buffer, "info.cfg", &stacks[4], &stacks[4], &stacks[4], texture, parts[0]);
@@ -278,7 +278,7 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
             printf("err wep1\n");
         }
 
-        LoadFile(GetItemFilePath(equip[3].item_no, 0), read_buffer, NULL);
+        LoadFile(GetItemFilePath(equip[CHARA_EQUIP_FEET].item_no, 0), read_buffer, NULL);
         parts[0]->LoadSkin((unsigned int *) read_buffer, "info.cfg", "", &stacks[5], texture);
 
         if (!edit_mode) {
@@ -345,10 +345,10 @@ int SetupMainUnit(u_long128 *read_buffer, mgCMemory *memory, mgCMemory *stacks, 
         char monster_model[32];
         int  monster_id = user_data->monster_id;
         GetCharaMemAllocPtr(memory, stacks, USER_CHARA_MONSTER, edit_mode);
-        GetMonsterModelFile(monster_id, 0, monster_model);
+        GetMonsterModelFile(monster_id, MONSTER_FILE_MODEL, monster_model);
         sprintf(monster_path, "dungeon/monster/%s", monster_model);
-        GetMonsterModelFile(monster_id, 3, monster_config);
-        GetMonsterModelFile(monster_id, 2, monster_model);
+        GetMonsterModelFile(monster_id, MONSTER_FILE_CONFIG, monster_config);
+        GetMonsterModelFile(monster_id, MONSTER_FILE_SCRIPT, monster_model);
         sprintf(monster_script, "dungeon/act_script/%s", monster_model);
         LoadFile(monster_path, read_buffer, NULL);
         parts[0]->Initialize(NULL);
@@ -592,10 +592,10 @@ static int SetupRobo(CScene *scene, CUserDataManager *user_data, ROBO_INFO_DATA 
     char           body_arm_frame[64];
     char           arm_attach_frame[64];
     CGameDataUsed *arm_item;
-    user_data->robo_data.parts[1].GetRoboJointName(body_arm_frame);
-    arm_item = &user_data->robo_data.parts[0];
+    user_data->robo_data.parts[ROBO_PART_BODY].GetRoboJointName(body_arm_frame);
+    arm_item = &user_data->robo_data.parts[ROBO_PART_ARM];
     arm_item->GetRoboJointName(arm_attach_frame);
-    int leg_type = user_data->robo_data.parts[3].GetRoboInfoType();
+    int leg_type = user_data->robo_data.parts[ROBO_PART_LEG].GetRoboInfoType();
     int arm_type = arm_item->GetRoboInfoType();
 
     for (int i = 0; i < 6; ++i) {
@@ -668,7 +668,7 @@ ROBO_INFO_DATA *GetRoboPartsInfo(CUserDataManager *user_data) {
     ROBO_DATA     *parts = &user_data->robo_data;
     CGameData     *game_data = GetGameDataPt();
     SetupPartOrder part_order = {
-        {3, 0, 1, 2}
+        {ROBO_PART_LEG, ROBO_PART_ARM, ROBO_PART_BODY, ROBO_PART_PACK}
     };
     CDataRoboPart *part_info[4];
 
@@ -686,13 +686,13 @@ ROBO_INFO_DATA *GetRoboPartsInfo(CUserDataManager *user_data) {
     robo_dat.model_name[ROBO_MODEL_BODY] = r_robo_pname[2];
     robo_dat.model_name[ROBO_MODEL_BPACK] = r_robo_pname[3];
     CHARA_DATA  *max_data = user_data->GetCharaDataPtr(USER_CHARA_MAX);
-    int          costume = max_data->equip[4].item_no;
+    int          costume = max_data->equip[CHARA_EQUIP_CLOTHES].item_no;
     static char  fname[64];
     static char *fname_tbl[6] = {
         "mints0%da.chr", "mints0%db.chr", "mints0%dc.chr", "mints0%dd.chr", "mints0%de.chr", "mints0%df.chr"};
     static char *fname_tbl2[6] = {
         "mints%da.chr", "mints%db.chr", "mints%dc.chr", "mints%dd.chr", "mints%de.chr", "mints%df.chr"};
-    costume -= game_data->GetDataTypeStartListNo(5);
+    costume -= game_data->GetDataTypeStartListNo(ITEM_DATA_MAX_CLOTHES);
 
     if (part_info[2] != NULL) {
         int body_type = part_info[2]->offset_no;
@@ -718,17 +718,17 @@ ROBO_INFO_DATA *GetRoboPartsInfo(CUserDataManager *user_data) {
     robo_dat.move_type = 0;
 
     if (part_info[0] != NULL) {
-        robo_dat.move_type = user_data->robo_data.parts[3].GetRoboInfoType();
+        robo_dat.move_type = user_data->robo_data.parts[ROBO_PART_LEG].GetRoboInfoType();
     }
 
     robo_dat.attack_type = 0;
 
     if (part_info[1] != NULL) {
-        robo_dat.attack_type = user_data->robo_data.parts[0].GetRoboInfoType();
+        robo_dat.attack_type = user_data->robo_data.parts[ROBO_PART_ARM].GetRoboInfoType();
     }
 
     max_data = user_data->GetCharaDataPtr(USER_CHARA_MAX);
-    robo_dat.hat_file = GetItemFilePath(max_data->equip[2].item_no, 0);
+    robo_dat.hat_file = GetItemFilePath(max_data->equip[CHARA_EQUIP_HEAD].item_no, 0);
     return &robo_dat;
 }
 
