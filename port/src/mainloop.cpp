@@ -51,6 +51,8 @@
 #include "water.hpp"
 #pragma clang diagnostic pop
 
+#include "mainloop_port.hpp"
+
 // The main loop and the state it owns, as the host can run it: every wait retail made on the PS2's
 // VSync interrupt goes through the platform clock (platform/clock.hpp) instead. The functions the
 // loop's file statics reach through (NextLoop and the accessors below) are the port's copies of
@@ -94,6 +96,34 @@ CSaveData *ActiveSaveData;
  * Save-data arena for the active extra game.
  */
 CSubGameData *SubGameSaveData;
+
+/**
+ * Whether the driver asked the loop to stop; read at the frame boundary (GameRequestStop).
+ */
+bool StopRequested;
+/**
+ * Frames the loop has run, one per mgEndFrame it calls; GameFrameCount's unit.
+ */
+s64 FrameCount;
+/**
+ * Frames the loop runs before it stops on its own, or negative for no budget
+ * (GameSetFrameBudget, the driver's --frames).
+ */
+s64 FrameBudget = -1;
+/**
+ * Driver's start mode (GameSetStartMode, the driver's --jump), or unset for retail's boot: the
+ * mode the loop starts in instead of the title, the argument its LoopInit is handed, the debug
+ * flag it starts with, and whether the boot's warm-up is skipped.
+ */
+struct StartMode {
+    int           loop_no;
+    INIT_LOOP_ARG arg;
+    int           debug_flag;
+    bool          skip_warmup;
+    bool          set;
+};
+
+StartMode start_mode;
 
 /**
  * Memory backing the system sound-effect loader.
@@ -232,6 +262,15 @@ void InitPadTable(int language) {
     }
 }
 
+/**
+ * Whether the loop leaves at this frame boundary: the driver asked for a stop, or its frame
+ * budget is spent. Checked at the top of a frame and again after a mode's exit, so the frame
+ * that was running when either happened ends first and the budget counts mgEndFrame calls.
+ */
+bool FrameBoundaryStop() {
+    return StopRequested || (FrameBudget >= 0 && FrameCount >= FrameBudget);
+}
+
 } // namespace
 
 int GetCaptureMode() {
@@ -271,6 +310,30 @@ int GetPlayTimeCountFlag() {
     return PlayTimeCountFlag;
 }
 
+void GameRequestStop() {
+    StopRequested = true;
+}
+
+bool GameStopRequested() {
+    return StopRequested;
+}
+
+s64 GameFrameCount() {
+    return FrameCount;
+}
+
+void GameSetFrameBudget(s64 frames) {
+    FrameBudget = frames;
+}
+
+void GameSetStartMode(int loop_no, INIT_LOOP_ARG arg, int debug_flag, bool skip_warmup) {
+    start_mode.loop_no = loop_no;
+    start_mode.arg = arg;
+    start_mode.debug_flag = debug_flag;
+    start_mode.skip_warmup = skip_warmup;
+    start_mode.set = true;
+}
+
 void MainLoop() {
     /**
      *
@@ -302,7 +365,14 @@ void MainLoop() {
     PlayTimeCountFlag = false;
     mgInitVSyncCallBack(PlayTimeTick);
     LanguageCode = LANG_FRENCH;
-    SCElogoFade(0, memory);
+
+    // A driver start mode with the warm-up skipped boots straight into its mode: the language
+    // and logo screens and the pad waits go, and the mode and debug flag are set after the
+    // retail block below so nothing overwrites them.
+    if (!start_mode.set || !start_mode.skip_warmup) {
+        SCElogoFade(0, memory);
+    }
+
     LoopNo = LOOP_TITLE;
     DebugFlag = false;
     DebugInfo.chara_move = 0;
@@ -314,23 +384,33 @@ void MainLoop() {
     static int pmeter_flag = false;
 
     pmeter_flag = false;
-    GamePad__2.WaitEnable();
-    ClockSyncV();
-    GamePad__2.UpDate();
-    MasterDebugCode = 0;
-    DebugFlag = false;
 
-    if (GamePad__2.On2(PAD_R1) && GamePad__2.On2(PAD_R2) && GamePad__2.On2(PAD_L1) && GamePad__2.On2(PAD_L2)) {
-        MasterDebugCode = MASTER_DEBUG_CODE;
+    if (!start_mode.set || !start_mode.skip_warmup) {
+        GamePad__2.WaitEnable();
+        ClockSyncV();
+        GamePad__2.UpDate();
+        MasterDebugCode = 0;
+        DebugFlag = false;
+
+        if (GamePad__2.On2(PAD_R1) && GamePad__2.On2(PAD_R2) && GamePad__2.On2(PAD_L1) && GamePad__2.On2(PAD_L2)) {
+            MasterDebugCode = MASTER_DEBUG_CODE;
+        }
+
+        GamePad__2.DebugKeyLock(1);
+        ClockSyncV();
+        GamePad__2.UpDate();
+        ClockSyncV();
+        GamePad__2.UpDate();
+        ClockSyncV();
+        GamePad__2.UpDate();
     }
 
-    GamePad__2.DebugKeyLock(1);
-    ClockSyncV();
-    GamePad__2.UpDate();
-    ClockSyncV();
-    GamePad__2.UpDate();
-    ClockSyncV();
-    GamePad__2.UpDate();
+    if (start_mode.set) {
+        LoopNo = start_mode.loop_no;
+        InitArg = start_mode.arg;
+        DebugFlag = start_mode.debug_flag != 0;
+    }
+
     mgSetUserVuProg(vu_prog, 16);
     mgSetUserVuProgAdr(0, Vu_prog_wtr);
     InitPadTable(LanguageCode);
@@ -400,7 +480,10 @@ void MainLoop() {
     CreateGamePadThread(&GamePad__2);
     LoadGameConfig(NULL);
     SetIoErrCallBack(EmergencyMessage);
-    SCElogoFade(1, memory);
+
+    if (!start_mode.set || !start_mode.skip_warmup) {
+        SCElogoFade(1, memory);
+    }
 
     while (1) {
         if (LoopNo == LOOP_TITLE || OmakeFlag != 0) {
@@ -460,6 +543,12 @@ void MainLoop() {
         NextLoop(LOOP_MENU, next_arg);
 
         while (1) {
+            // Leave between frames: the frame that was running when the driver asked for a stop
+            // or spent its budget has finished, and the mode leaves through LoopExit below.
+            if (FrameBoundaryStop()) {
+                break;
+            }
+
             if (GamePad__2.On(PAD_CIRCLE)) {
                 cat_start();
             }
@@ -513,6 +602,7 @@ void MainLoop() {
             frame_border.Vertex(0, 0, 0);
             frame_border.End();
             mgEndFrame(NULL);
+            FrameCount++;
 
             if (mode_finished != 0) {
                 PauseCancel();
@@ -567,6 +657,11 @@ void MainLoop() {
         }
 
         LoopExit[LoopNo]();
+
+        // A stop skips the mode transition and falls to the shutdown below, as quitting does.
+        if (FrameBoundaryStop()) {
+            break;
+        }
 
         if (LoopNo != LOOP_MENU) {
             if (CaptureMode != CAPTURE_OFF) {
