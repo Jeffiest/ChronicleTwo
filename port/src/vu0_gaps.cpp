@@ -321,6 +321,10 @@ static int LogDrawRect(const mgCFrame *frame, mgVu0FBOX *rect, int visible, int 
                      lw[0][0] * (lw[1][1] * lw[2][2] - lw[1][2] * lw[2][1]) -
                          lw[0][1] * (lw[1][0] * lw[2][2] - lw[1][2] * lw[2][0]) +
                          lw[0][2] * (lw[1][0] * lw[2][1] - lw[1][1] * lw[2][0]));
+        std::fprintf(stderr, "  frame data use_srt %d rot_type %d rotation [%.4f %.4f %.4f] scale [%.3f %.3f %.3f] position [%.2f %.2f %.2f]\n",
+                     (int) frame->use_srt, (int) frame->rot_type, frame->rotation[0], frame->rotation[1],
+                     frame->rotation[2], frame->scale[0], frame->scale[1], frame->scale[2], frame->position[0],
+                     frame->position[1], frame->position[2]);
         const mgCVisual *visual = frame->visual;
         std::fprintf(stderr,
                      "drawrect frame %p vis %d max [%.1f %.1f %.1f %.1f] min [%.1f %.1f %.1f %.1f] visual %p kind %d "
