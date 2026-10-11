@@ -19,13 +19,15 @@
 // manager and frame state the game reads and leave the packet bytes to ps2/src's weak copies
 // elsewhere in the unit (mgSetPkMoveImage, mgStoreImage, the direct-draw entry points).
 
-namespace {
-
 // A packet cursor with a home, so a write that lands before a mode has initialised the real
 // packet buffers cannot reach nothing. The size is one frame's packet - the game's menu sizes its
-// buffers 0x27100 bytes - so a direct-draw write that still lands here corrupts nothing.
+// buffers 0x27100 bytes - so a direct-draw write that still lands here corrupts nothing. The
+// packet is shared with the sce packet stubs, which pass quietly on it.
 sceVif1Packet g_null_packet;
-unsigned int  g_null_packet_words[0x2710];
+
+namespace {
+
+unsigned int g_null_packet_words[0x2710];
 
 // The packet and draw-data stacks the game alternates between frames, as mgSetPacketBuffer and
 // mgSetDataBuffer were handed them. ps2/src/mglib.cpp keeps its own file-static copies; the
@@ -564,4 +566,31 @@ void mgWaitFrame() {
 // renderer's readback is the port's to use, and belongs with the renderer's units; dropped until
 // then so the debug key cannot reach hardware-free memory.
 void mgStoreFrameImage() {
+}
+
+// Retail reset the frame's VIF1 builder around every direct draw; the builder has no host
+// counterpart (the draw goes through the port's visual path, which records renderer draws), so
+// the packet calls are skipped and the frame is drawn where it is.
+int mgDrawDirect(mgCFrame *frame) {
+    if (frame == NULL) {
+        return 0;
+    }
+
+    return frame->Draw(mgVif1Packet->pCurrent);
+}
+
+int mgDrawDirect(mgCVisual *visual, float (*matrix)[4]) {
+    if (visual == NULL) {
+        return 0;
+    }
+
+    return visual->Draw(mgVif1Packet->pCurrent, matrix, NULL);
+}
+
+void mgDrawDirectStart() {
+    ddraw_size = 0;
+}
+
+void mgDrawDirectEnd() {
+    // Nothing to reserve without a host packet.
 }
