@@ -52,6 +52,9 @@ access fits `PAD_STATUS` directly.
   only copied.
 - Size 0x4C: UpDate's struct copy is 0x4C bytes (0x04..0x50 -> 0x9C..0xE8 and
   0x50..0x9C -> 0xE8..0x134).
+- The vibration timers stay in an anonymous union with `int vibration_words[6]`. Flattening
+  them into plain `int vibration_timer[2]; int unk_3C..unk_48;` members keeps the layout but
+  changes the code generated for UpDate, so the union is kept.
 
 ## read_pad phases (same values as first game)
 - 0: if state is Stable(6)/FindCTP1(2) and InfoMode(CurID) != 0: id = InfoMode(CurExID) if >0
@@ -76,7 +79,7 @@ access fits `PAD_STATUS` directly.
 - 0x454 axis_threshold[2] (MenuModeOn/Off write [0]; UpDate ORs PAD_RIGHT/LEFT/DOWN/UP into
   pad[i].button when GetLX/GetLY exceed it - note GetLX/GetLY always read controller 0).
 - UpDate also clears Up+Down and Left+Right when both are set (masks 0xAFFF, 0x5FFF).
-- 0x45C key_lock: On/Down/Up/GetPad* return 0; On2/Down2 too.
+- 0x45C key_lock: On/Down/Up return false and GetPad* return 0 while set; On2/Down2 too.
 - 0x460 key_lock2: On2/Down2 return 0; UpDate zeroes pad[1] and previous_pad[1] buttons and
   centres their sticks.
 - 0x464 debug_key_lock: only written (DebugKeyLock writes both 0x464 and 0x460).
@@ -97,14 +100,15 @@ access fits `PAD_STATUS` directly.
   units; dev kit memory), `PAD_CAPTURE_FRAME[PAD_CAPTURE_FRAME_MAX]` with
   `PAD_CAPTURE_FRAME_MAX` = 0x2AAAA = 0x100000 / 6 (6 bytes each: u16 button, u8 left_y,
   left_x, right_y, right_x; struct name is not retail). Play reads the frame with lhu/lbu
-  (unsigned). SaveCapture: `WriteFile("host0:key_cap.bin", PAD_CAPTURE_BUFFER,
+  (unsigned). Capture and Play reach the frame by `frame += index` on a pointer copy of
+  `PAD_CAPTURE_BUFFER`; `&PAD_CAPTURE_BUFFER[index]` does not match. SaveCapture: `WriteFile("host0:key_cap.bin", PAD_CAPTURE_BUFFER,
   capture_frame * sizeof(PAD_CAPTURE_FRAME))`. LoadCapture: `SetCurrentDir("")`,
   `LoadFile2("key_cap.bin", PAD_CAPTURE_BUFFER, NULL, LOAD_FILE_READ)`, `SetCurrentDir(NULL)`.
 
 ## Return types / signatures
 - GetRX/RY/LX/LY/RX2 are `j AxisCalibration` with the raw axis (0x14/0x10/0x0C/0x08/0x60).
   AxisCalibration: dead zone -49..49 (|v-128| < 50) -> 0, else (v-78)*128/78 or (v-177)*128/78.
-- GetXXf = `(float)GetXX() / 128.0f`.
+- GetXXf = `GetXX() / 128.0f` (the int-to-float conversion is implicit).
 - AutoRepeatOff is `j CancelAutoRepeat` with mask -1.
 - On/On2/Down/Down2/Up/Connect/GetPad*: declared int (bool vs int not distinguishable from
   retail; first game uses int). Init/Step/WaitEnable: void.

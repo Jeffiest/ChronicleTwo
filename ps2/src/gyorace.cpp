@@ -98,7 +98,7 @@ static int WindowTexb;
  * Character model files selected for each racing fish species.
  *
  */
-char *fish_name[18] = {
+char *fish_name[GR_FISH_KIND_NUM] = {
     "f1a.chr",
     "f2a.chr",
     "f3a.chr",
@@ -270,7 +270,7 @@ static CHitEffectImage *battle_effect;
  * Primitive work blocks used by each race splash effect.
  *
  */
-static BattleEffectPrim (*battle_EffectPara)[32];
+static BattleEffectPrim (*battle_EffectPara)[GYORACE_EFFECT_SPARK_NUM];
 
 /**
  *
@@ -312,7 +312,7 @@ static int EffectTexb;
  * Ordered results retained from the most recent fish race.
  *
  */
-GYORACE_RESULT fish_game_data[6];
+GYORACE_RESULT fish_game_data[GR_FISH_MAX];
 
 /**
  *
@@ -326,28 +326,28 @@ grRACE_INFO RaceInfo;
  * Previous displayed progress of every racing fish.
  *
  */
-grRACE_PROGRESS old_prog[6];
+grRACE_PROGRESS old_prog[GR_FISH_MAX];
 
 /**
  *
  * Entrant indices ordered by current place.
  *
  */
-static int fish_rank[6];
+static int fish_rank[GR_FISH_MAX];
 
 /**
  *
  * Entrant order from the previous race update.
  *
  */
-static int old_fish_rank[6];
+static int old_fish_rank[GR_FISH_MAX];
 
 /**
  *
  * Game inventory records selected for the race entrants.
  *
  */
-static CGameDataUsed *game_data[6];
+static CGameDataUsed *game_data[GR_FISH_MAX];
 
 /**
  *
@@ -361,7 +361,7 @@ static float old_ambient[4];
  * Display, lap and result state of every racing fish.
  *
  */
-GYORACE_FISH_INF fish_inf[6];
+GYORACE_FISH_INF fish_inf[GR_FISH_MAX];
 
 int sgInitGyoRace(SubGameInfo *info) {
     mgCTextureManager *textures;
@@ -375,7 +375,7 @@ int sgInitGyoRace(SubGameInfo *info) {
     u_long128 *buffer = scene->read_buff;
     int        size;
     sndInitPort(SND_PORT_ENEMY);
-    LoadFile2("snd2/mon/EN_902.snd", buffer, &size, 0);
+    LoadFile2("snd2/mon/EN_902.snd", buffer, &size, LOAD_FILE_READ);
     gyore_snd_id = sndLoadSound(SND_PORT_ENEMY, (unsigned int *) buffer, memory);
     ChangeDir("/sg/gyo/");
     CGyoraceFishData fish_data;
@@ -383,7 +383,7 @@ int sgInitGyoRace(SubGameInfo *info) {
     u_long128 *texture_buffer = BuffTextureData.stack;
     char       path[0x100];
     sprintf(path, "gyore%d.mes", LanguageCode);
-    LoadFile2(path, texture_buffer, &size, 0);
+    LoadFile2(path, texture_buffer, &size, LOAD_FILE_READ);
     gyo_mes = new (memory->Alloc((sizeof(ClsMes) + 15) / 16 + 2)) ClsMes;
     gyo_mes->SetBuff((short *) texture_buffer);
     gyo_mes->SetBuff_system(GetSystemMesBuffer());
@@ -393,7 +393,7 @@ int sgInitGyoRace(SubGameInfo *info) {
     gyo_mes->draw_speed = 3.8f;
     gyo_mes->draw_speed_def = 3.8f;
     gyo_mes->push_button = 0;
-    gyo_mes->MakeMesWin(0);
+    gyo_mes->MakeMesWin(GYORACE_MES_INTRO);
     texture_buffer += (size / 16) + 1;
     race_mode = GYORACE_MODE_READY;
     hero_no = 0;
@@ -402,18 +402,18 @@ int sgInitGyoRace(SubGameInfo *info) {
     old_cam_no = -1;
     mgGetAmbient(old_ambient);
     win_alpha = 128.0f;
-    jyunkai_flg = 0;
-    hantei_flg = 0;
+    jyunkai_flg = false;
+    hantei_flg = false;
     goal_cnt = 0;
     mes_count = 0;
     rank_count = 0;
-    battle_EffectPara = new (memory->Alloc((sizeof(BattleEffectPrim) * 96 * 32 + 15) / 16 + 2)) BattleEffectPrim[96][32];
-    battle_effect = new (memory->Alloc((sizeof(CHitEffectImage) * 96 + 15) / 16 + 2)) CHitEffectImage[96];
+    battle_EffectPara = new (memory->Alloc((sizeof(BattleEffectPrim) * GYORACE_EFFECT_NUM * GYORACE_EFFECT_SPARK_NUM + 15) / 16 + 2)) BattleEffectPrim[GYORACE_EFFECT_NUM][GYORACE_EFFECT_SPARK_NUM];
+    battle_effect = new (memory->Alloc((sizeof(CHitEffectImage) * GYORACE_EFFECT_NUM + 15) / 16 + 2)) CHitEffectImage[GYORACE_EFFECT_NUM];
 
-    for (int effect = 0; effect < 96; effect++) {
+    for (int effect = 0; effect < GYORACE_EFFECT_NUM; effect++) {
         CHitEffectImage *image = &battle_effect[effect];
         image->spark = battle_EffectPara[effect];
-        image->spark_max = 32;
+        image->spark_max = GYORACE_EFFECT_SPARK_NUM;
         image->live_num = 0;
         image->spark_num = 0;
         image->kind = HIT_EFFECT_BOARD;
@@ -421,7 +421,7 @@ int sgInitGyoRace(SubGameInfo *info) {
 
     race_rank[0] = GetGyoRaceClass();
     race_rank[1] = GetGyoRaceNo();
-    int chosen[6];
+    int chosen[GR_FISH_MAX];
     int chosen_num = 0;
     int fish = 0;
 
@@ -483,7 +483,7 @@ int sgInitGyoRace(SubGameInfo *info) {
         }
 
         fish++;
-    } while (fish < 6);
+    } while (fish < GR_FISH_MAX);
 
     if (race_rank[1] > 0) {
         if (OmakeFlag == 0) {
@@ -499,7 +499,7 @@ int sgInitGyoRace(SubGameInfo *info) {
             }
         }
     } else {
-        for (int place = 0; place < 6; place++) {
+        for (int place = 0; place < GR_FISH_MAX; place++) {
             fish_game_data[place].fish_no = -1;
             fish_game_data[place].race_class = 0;
         }
@@ -510,21 +510,21 @@ int sgInitGyoRace(SubGameInfo *info) {
     if (OmakeFlag == 0) {
         lane = (int) (6.0f * mgRnd());
 
-        if (lane > 5) {
-            lane = 5;
+        if (lane > GR_FISH_MAX - 1) {
+            lane = GR_FISH_MAX - 1;
         }
     }
 
     memset(&RaceInfo, 0, sizeof(RaceInfo));
     RaceInfo.seed = 0;
     printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GYO RACE RndSeed=%d \n", RaceInfo.seed);
-    RaceInfo.fish_num = 6;
-    RaceInfo.step_max = 1000;
+    RaceInfo.fish_num = GR_FISH_MAX;
+    RaceInfo.step_max = GYORACE_STEP_MAX;
     RaceInfo.after_goal_step = 20;
     int racer = 0;
 
     do {
-        RaceInfo.progress[racer] = new (memory->Alloc((sizeof(grRACE_PROGRESS) * 1000 + 15) / 16 + 2)) grRACE_PROGRESS[1000];
+        RaceInfo.progress[racer] = new (memory->Alloc((sizeof(grRACE_PROGRESS) * GYORACE_STEP_MAX + 15) / 16 + 2)) grRACE_PROGRESS[GYORACE_STEP_MAX];
 
         if (OmakeFlag == 0 && racer == 0) {
             RaceInfo.fish[racer].tactics = GetGyoRaceAquariumNo();
@@ -571,17 +571,17 @@ int sgInitGyoRace(SubGameInfo *info) {
         fish_inf[racer].lane = lane;
         lane++;
 
-        if (lane >= 6) {
+        if (lane >= GR_FISH_MAX) {
             lane = 0;
         }
 
         printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>GYO RACE info GYO_NAME=%s  Operation=%d \n", name, RaceInfo.fish[racer].tactics);
         racer++;
-    } while (racer < 6);
+    } while (racer < GR_FISH_MAX);
 
     time_max = grGyoRaceSimulate(&RaceInfo);
 
-    for (int racer_no = 0; racer_no < 6; racer_no++) {
+    for (int racer_no = 0; racer_no < GR_FISH_MAX; racer_no++) {
         scene->GetCharacter(fish_inf[racer_no].chara_no);
         grGetFishProgress(&RaceInfo, racer_no, race_cnt, &old_prog[racer_no]);
     }
@@ -599,17 +599,17 @@ int sgInitGyoRace(SubGameInfo *info) {
         int kind = (*item)->item_no - FISH_ITEM_BOUBOU;
 
         if (kind < 0) {
-            kind = 17;
+            kind = GR_FISH_KIND_NUM - 1;
         }
 
-        if (LoadFile2(fish_name[kind], buffer, NULL, 0) == 0) {
+        if (LoadFile2(fish_name[kind], buffer, NULL, LOAD_FILE_READ) == 0) {
             return 0;
         }
 
         GYORACE_FISH_INF *state = &fish_inf[fish_index];
         state->chara_no = fish_index + 0x40;
         state->lap = 0;
-        state->unk_14 = 0;
+        state->second_lap = 0;
         state->lap_start = 0.0f;
         state->time = 0.0f;
         state->rank = 1;
@@ -638,7 +638,7 @@ int sgInitGyoRace(SubGameInfo *info) {
         FishIMGReplace(buffer, character, (*item)->item_no, &(*item)->data.fish);
         fish_index++;
         CharaTexb++;
-    } while (fish_index < 6);
+    } while (fish_index < GR_FISH_MAX);
 
     if (texture_buffer != NULL) {
         WindowTexb = CharaTexb;
@@ -680,7 +680,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
     CScene *scene = info->scene;
 
     switch ((unsigned int) race_mode) {
-        case 0:
+        case GYORACE_MODE_READY:
             scene->active_camera = camera_id;
             camera0.SetPos(225.0f, 38.0f, 168.0f);
             camera0.SetNextPos(225.0f, 38.0f, 168.0f);
@@ -688,7 +688,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
             camera0.SetNextRef(222.0f, 0.0f, 0.0f);
             camera0.SetSpeed(0.0f, 0.0f);
 
-            for (int fish = 0; fish < 6; fish++) {
+            for (int fish = 0; fish < GR_FISH_MAX; fish++) {
                 CCharacter2 *character = scene->GetCharacter(fish_inf[fish].chara_no);
                 character->SetMotion("\x92\xCA\x8F\xED", 0);
                 character->SetStep(0.3f);
@@ -698,7 +698,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
 
             if (race_proc_cnt <= 0) {
                 race_proc_cnt = 15;
-                race_mode = 1;
+                race_mode = GYORACE_MODE_GATE_OPEN;
                 sndSePlay(gyore_snd_id, 0, 0);
                 sndSePlayV(gyore_snd_id, 3, 0, 3);
                 sndSePlayV(gyore_snd_id, 4, 0, 4);
@@ -716,7 +716,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
             }
 
             break;
-        case 1: {
+        case GYORACE_MODE_GATE_OPEN: {
             scene->active_camera = camera_id;
             camera0.SetPos(225.0f, 38.0f, 168.0f);
             camera0.SetNextPos(225.0f, 38.0f, 168.0f);
@@ -749,29 +749,29 @@ int sgLoopGyoRace(SubGameInfo *info) {
 
             if (race_proc_cnt <= 0) {
                 race_proc_cnt = 0;
-                race_mode = 2;
+                race_mode = GYORACE_MODE_RACE;
             }
 
             break;
         }
-        case 2:
-        case 3: {
+        case GYORACE_MODE_RACE:
+        case GYORACE_MODE_FINISH: {
             int fish;
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 0; i < GR_FISH_MAX; i++) {
                 scene->GetCharacter(fish_inf[i].chara_no);
                 grGetFishProgress(&RaceInfo, i, race_cnt, &old_prog[i]);
             }
 
             race_cnt += 0.1f;
 
-            for (fish = 0; fish < 6; fish++) {
+            for (fish = 0; fish < GR_FISH_MAX; fish++) {
                 grRACE_PROGRESS progress;
                 grGetFishProgress(&RaceInfo, fish, race_cnt, &progress);
                 int rank = 1;
 
                 if (progress.state != GR_RACE_STATE_GOAL) {
-                    for (int other = 0; other < 6; other++) {
+                    for (int other = 0; other < GR_FISH_MAX; other++) {
                         if (other != fish) {
                             grRACE_PROGRESS other_progress;
                             grGetFishProgress(&RaceInfo, other, race_cnt, &other_progress);
@@ -797,7 +797,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
                 hero_no = fish_rank[0];
             }
 
-            for (fish = 0; fish < 6; fish++) {
+            for (fish = 0; fish < GR_FISH_MAX; fish++) {
                 GYORACE_FISH_INF *state = &fish_inf[fish];
                 CCharacter2      *character = scene->GetCharacter(fish_inf[fish].chara_no);
                 grRACE_PROGRESS   progress;
@@ -817,7 +817,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
                         if ((int) *lap_no > 1) {
                             *lap_no = 1;
                         } else {
-                            state->unk_14 = 1;
+                            state->second_lap = 1;
                             GetSaveData();
                             state->lap_start = race_cnt;
                         }
@@ -927,7 +927,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
                 image->SetTexRect(mgRect<int>(425, 85, 42, 42));
                 effect_cnt++;
 
-                if (effect_cnt >= 96) {
+                if (effect_cnt >= GYORACE_EFFECT_NUM) {
                     effect_cnt = 0;
                 }
 
@@ -942,7 +942,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
                 character->SetStep(0.3f + mgDistVector(position, previous) / 3.0f);
             }
 
-            if (race_mode == 3) {
+            if (race_mode == GYORACE_MODE_FINISH) {
                 race_proc_cnt--;
 
                 if (race_proc_cnt == 30) {
@@ -950,20 +950,20 @@ int sgLoopGyoRace(SubGameInfo *info) {
                 }
 
                 if (race_proc_cnt <= 0) {
-                    race_mode = 5;
+                    race_mode = GYORACE_MODE_END;
                     break;
                 }
             }
 
-            if (race_mode == 2 && unfinished == 0) {
-                race_mode = 3;
+            if (race_mode == GYORACE_MODE_RACE && unfinished == 0) {
+                race_mode = GYORACE_MODE_FINISH;
                 race_proc_cnt = 120;
             }
 
             AutoCam(info);
             break;
         }
-        case 4: {
+        case GYORACE_MODE_GOAL_VIEW: {
             scene->active_camera = camera_id;
             camera0.SetPos(270.0f, -40.0f, -10.0f);
             camera0.SetNextPos(270.0f, -40.0f, -10.0f);
@@ -971,7 +971,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
             camera0.SetNextRef(192.0f, 0.0f, 0.0f);
             camera0.SetSpeed(0.0f, 0.0f);
 
-            for (int fish = 0; fish < 6; fish++) {
+            for (int fish = 0; fish < GR_FISH_MAX; fish++) {
                 CCharacter2    *character = scene->GetCharacter(fish_inf[fish].chara_no);
                 grRACE_PROGRESS progress;
                 grGetFishProgress(&RaceInfo, fish, RaceInfo.goal_time[fish_rank[0]], &progress);
@@ -1036,20 +1036,20 @@ int sgLoopGyoRace(SubGameInfo *info) {
             race_proc_cnt--;
 
             if (race_proc_cnt <= 0) {
-                race_mode = 3;
+                race_mode = GYORACE_MODE_FINISH;
                 race_proc_cnt = 120;
             }
 
             break;
         }
-        case 5: {
+        case GYORACE_MODE_END: {
             scene->active_camera = camera_id;
-            race_mode = 2;
+            race_mode = GYORACE_MODE_RACE;
             race_proc_cnt = 0;
             SetGyoRaceRanking(RaceInfo.rank[hero_no] - 1);
             mgCTextureManager *textures = &mgTexManager;
 
-            for (int fish = 0; fish < 6; fish++) {
+            for (int fish = 0; fish < GR_FISH_MAX; fish++) {
                 CCharacter2 *character = scene->GetCharacter(fish_inf[fish].chara_no);
                 textures->DeleteBlock(character->texture_block);
                 strcpy(fish_game_data[RaceInfo.rank[fish] - 1].name, "                  ");
@@ -1062,7 +1062,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
                 sndSeStop(gyore_snd_id, fish + 9, fish + 9);
             }
 
-            for (int place = 0; place < 6; place++) {
+            for (int place = 0; place < GR_FISH_MAX; place++) {
                 printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@GYO RACE %d\x88\xCA\x81\x40%s \n", place + 1, fish_game_data[place].name);
             }
 
@@ -1088,7 +1088,7 @@ int sgLoopGyoRace(SubGameInfo *info) {
         }
     }
 
-    for (int fish = 0; fish < 6; fish++) {
+    for (int fish = 0; fish < GR_FISH_MAX; fish++) {
         scene->GetCharacter(fish_inf[fish].chara_no)->Step();
     }
 
@@ -1105,15 +1105,15 @@ int sgLoopGyoRace(SubGameInfo *info) {
 
     if (camera_pos.f[1] < 0.0f) {
         mgSetAmbient(ambient.f);
-        water_cam = 1;
+        water_cam = true;
     } else {
         mgSetAmbient(old_ambient);
-        water_cam = 0;
+        water_cam = false;
     }
 
     mgSetViewMatrix(camera_matrix, camera_pos.f);
 
-    for (int fish = 0; fish < 6; fish++) {
+    for (int fish = 0; fish < GR_FISH_MAX; fish++) {
         CCharacter2 *character = scene->GetCharacter(fish_inf[fish].chara_no);
         float        position[4];
         float        camera_pos[4];
@@ -1198,7 +1198,7 @@ int sgCharaDrawGyoRace(SubGameInfo *info) {
     do {
         scene->DrawChara(fish_inf[i].chara_no, 1);
         i++;
-    } while (i < 6);
+    } while (i < GR_FISH_MAX);
 
     mgTexManager.ReloadTexture(EffectTexb, (sceVif1Packet *) NULL);
     int              j = 0;
@@ -1207,13 +1207,13 @@ int sgCharaDrawGyoRace(SubGameInfo *info) {
     do {
         effect = &battle_effect[j];
 
-        if (effect != 0) {
+        if (effect != NULL) {
             effect->Step();
             effect->Draw();
         }
 
         j++;
-    } while (j < 0x60);
+    } while (j < GYORACE_EFFECT_NUM);
 
     return 0;
 }
@@ -1235,7 +1235,7 @@ static void DivSpriteScreen(mgCDrawPrim &prim) {
 
     if (!init_1763) {
         ras_off_1762 = 0.0f;
-        init_1763 = 1;
+        init_1763 = true;
     }
 
     prim.BeginPrim2(4, 0x43, 0, 2);
@@ -1399,7 +1399,7 @@ int sgSysDrawGyoRace(SubGameInfo *info) {
         }
 
         i += 1;
-    } while (i < 6);
+    } while (i < GR_FISH_MAX);
 
     mode = race_mode;
 
@@ -1685,7 +1685,7 @@ int sgSysDrawGyoRace(SubGameInfo *info) {
 int Jikkyou(SubGameInfo *info) {
     CFont           font;
     grRACE_PROGRESS lead;
-    grRACE_PROGRESS progress[6];
+    grRACE_PROGRESS progress[GR_FISH_MAX];
     grRACE_PROGRESS fish;
     float           position;
     int             index;
@@ -1717,29 +1717,29 @@ int Jikkyou(SubGameInfo *info) {
     position = lead.pos;
 
     if (!(position <= 0.0f) && position <= 1.0f) {
-        gyo_mes->MakeMesWin(5);
+        gyo_mes->MakeMesWin(GYORACE_MES_START);
         mes_count = 60;
         return 0;
     }
 
     if (!(position <= 1.0f) && position <= 2.0f) {
         grGetFishProgress(&RaceInfo, fish_rank[0], 0.5f, &progress[0]);
-        grGetFishProgress(&RaceInfo, fish_rank[5], 0.5f, &progress[1]);
+        grGetFishProgress(&RaceInfo, fish_rank[GR_FISH_MAX - 1], 0.5f, &progress[1]);
 
         if (!(progress[0].pos - progress[1].pos <= 0.01f)) {
-            gyo_mes->MakeMesWin(6);
+            gyo_mes->MakeMesWin(GYORACE_MES_SHAKY_START);
             mes_count = 60;
             return 0;
         }
 
-        gyo_mes->MakeMesWin(7);
+        gyo_mes->MakeMesWin(GYORACE_MES_GOOD_START);
         mes_count = 60;
         return 0;
     }
 
     if ((!(position <= 2.0f) && position < 8.0f) || (!(position <= 9.0f) && position < 16.0f)) {
         if (!jyunkai_flg) {
-            jyunkai_flg = 1;
+            jyunkai_flg = true;
             index = 0;
 
             do {
@@ -1757,15 +1757,15 @@ int Jikkyou(SubGameInfo *info) {
                         strcpy(name_mes->name[0], name);
                     }
 
-                    gyo_mes->MakeMesWin(29);
+                    gyo_mes->MakeMesWin(GYORACE_MES_BATTLE);
                     mes_count = 60;
-                    jyunkai_flg = 0;
+                    jyunkai_flg = false;
                     sndSePlay(gyore_snd_id, 0x16, 0);
                     break;
                 }
 
                 index++;
-            } while (index < 6);
+            } while (index < GR_FISH_MAX);
 
             return 0;
         }
@@ -1783,7 +1783,7 @@ int Jikkyou(SubGameInfo *info) {
         }
 
         if (rank_count == 0) {
-            gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + 9);
+            gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + GYORACE_MES_LEADER);
         } else if (rank_count < 5) {
             if (fish_rank[rank_count] == old_fish_rank[rank_count - 1]) {
                 fish_no = fish_rank[rank_count - 1];
@@ -1798,12 +1798,12 @@ int Jikkyou(SubGameInfo *info) {
                     strcpy(name_mes->name[0], name);
                 }
 
-                gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + 13);
+                gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + GYORACE_MES_CLOSE_SECOND);
             } else {
-                gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + 17);
+                gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + GYORACE_MES_THIRD);
             }
         } else {
-            gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + 21);
+            gyo_mes->MakeMesWin(RaceInfo.fish[fish_no].bonus_type + GYORACE_MES_LAST);
         }
 
         old_fish_rank[rank_count] = fish_rank[rank_count];
@@ -1822,9 +1822,9 @@ int Jikkyou(SubGameInfo *info) {
     }
 
     if (!(position <= 8.0f) && position <= 9.0f) {
-        jyunkai_flg = 0;
+        jyunkai_flg = false;
         rank_count = 0;
-        gyo_mes->MakeMesWin(30);
+        gyo_mes->MakeMesWin(GYORACE_MES_FINAL_LAP);
         sndSePlay(gyore_snd_id, 0x16, 0);
         mes_count = 60;
         return 0;
@@ -1841,7 +1841,7 @@ int Jikkyou(SubGameInfo *info) {
             strcpy(name_mes->name[0], name);
         }
 
-        gyo_mes->MakeMesWin(31);
+        gyo_mes->MakeMesWin(GYORACE_MES_FINISHED);
         mes_count = 6000;
         sndSePlay(gyore_snd_id, 0x16, 0);
         sndSePlay(gyore_snd_id, 0x17, 0);

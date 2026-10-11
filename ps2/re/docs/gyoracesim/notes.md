@@ -22,7 +22,7 @@ its six-way tactics switch, which m2c cannot resolve from the jump table.
   irnd, rnd, nrnd, GetRandomNumber.
 - Retail `StepGyoRace__FP15RACE_FISH_PARAMP11grRACE_INFO` is LOCAL at 0x323270 with declared
   size 0x32C; both source prototypes and the definition use static linkage.
-- All data is local: `fish_data` (.rodata 0x3630C0, `static grFISH_DATA[18]`, 0x1F8; the
+- All data is local: `fish_data` (.rodata 0x3630C0, `static grFISH_DATA[GR_FISH_KIND_NUM]`, 0x1F8; the
   payload is the retail table and its final eight alignment bytes carry no extra record),
   `jrand` (.sbss, `static int`, index into `ia`, starts at 0x37 after init), `ia` (.bss,
   `static int ia[56]`, 0xE0; Knuth subtractive generator, modulus 1000000000, 1-based with an
@@ -54,7 +54,7 @@ its six-way tactics switch, which m2c cannot resolve from the jump table.
 - 0x00C grFISH_PARAM fish[6]: stride 0x40 (strlen at +0xC, ints +0x24..+0x48 per entrant;
   SetRaceFishParam copies 0x40 bytes as 8 dword pairs = struct copy).
 - 0x18C step_max: sgInit writes 1000; progress buffers are `new[] 24000` = 1000*0x18.
-- 0x190 grRACE_PROGRESS* progress[6]: memset `step_max*0x18` in SetRaceFishParam.
+- 0x190 grRACE_PROGRESS* progress[GR_FISH_MAX]: memset `step_max*0x18` in SetRaceFishParam.
 - 0x1A8 after_goal_step: sgInit writes 0x14; StepGyoRace steps that many more after all goal.
 - 0x1AC int rank[6]: StepGyoRace, 1 + number of fish with smaller goal_time.
 - 0x1C4 float goal_time[6]: step - (pos-16)/velocity when StepFish first returns 1. gyorace
@@ -86,7 +86,8 @@ Jikkyou tests ==2 for push commentary), 0xD battle u8, 0xE pad, 0x10 battle_targ
 0x14 battle_hits int (copied from RACE_FISH_PARAM 0x60/0x64).
 
 `grGetFishProgress` copies between the progress record and the sample record, which are
-different types, as `*(RaceProgressCopy *) out = *(RaceProgressCopy *) &progress[index]`.
+different types, as `*(RaceProgressCopy *) out = *(RaceProgressCopy *) &progress[index]`. A plain
+`*out = progress[index]` struct copy changes the matched code, so the cast form is kept.
 
 ## RACE_FISH_PARAM (0xA0; memset 0xA0, stride 0xA0, grGyoRaceSimulate local array 0x3C0 = 6)
 - 0x00 speed[5]: StepFish target = speed[div]*0.0002 + 0.1, times rank_ratio[rank-1] if rank 1..6.
@@ -113,6 +114,14 @@ speed%[3] (+0xC..0x14 -> 0x2C..0x34), int affinity (+0x18). Type name is not ret
   grGetFishProgress (0 = no record). Names mine.
 - grCHARA_BONUS_TYPE from CharacterBonus: 0 first=1+|x|, last=1-|x|; 1 first=1-0.2|x|,
   last=1+|x|; 2 both 1; 3 both N(1,0.01); x = N(0,0.01). Names mine.
+- Sizes (gyoracesim.hpp): GR_FISH_MAX 6 (entrants and lanes), GR_DIVISION_NUM 5 (course
+  divisions), GR_FISH_KIND_NUM 18 (fish kinds).
+
+## Reverted source forms
+- `RACE_FISH_PARAM::state` retyped from `s8` to `u8` with the `(u_char)` casts dropped in
+  LaneBattleStep: StepFish differs by one byte. The signed field and its casts are kept.
+- `*out = progress[index];` in grGetFishProgress: the struct copy differs in .text and .rodata.
+  The `RaceProgressCopy` cast form is kept.
 
 ## Race state signedness
 

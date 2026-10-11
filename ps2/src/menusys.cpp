@@ -1455,7 +1455,7 @@ void CBaseMenuClass::SetItemCmdMsgPos(int *item_pos) {
             return;
         }
 
-        if (item->item_no == 0x130) {
+        if (item->item_no == ITEM_ID_GIFT_CAPSULE) {
             fishing_rod = true;
         }
     }
@@ -1699,7 +1699,7 @@ int CBaseMenuClass::CheckSpectolFusion(CGameDataUsed *item, int panel, CMenuPosD
         return 0;
     }
 
-    if (held_type == ITEM_DATA_UNK_11) {
+    if (held_type == ITEM_DATA_SPECTOL) {
         mode = MENU_ASK_MODE_FUSION;
         form->draw_flag = true;
         message = MenuDCMsg[panel];
@@ -3200,7 +3200,7 @@ static int MenuDataSwap(CGameDataUsed *destination, CGameDataUsed *source, int q
     dst_common = GetCommonItemData(dst_no);
     src_common = GetCommonItemData(src_no);
 
-    if (dst_used == USED_ITEM_TYPE_GIFT_BOX && destination->GetGiftBoxItemNum() < 3 && src_common != NULL && (src_common->attribute & ITEM_ATTRIBUTE_TRUSH) && ((src_used == USED_ITEM_TYPE_ITEM && src_type != ITEM_DATA_AQUARIUM && src_type != ITEM_DATA_FISH && src_type != ITEM_DATA_UNK_15 && src_type != ITEM_DATA_DUNGEON_KEY && src_type != ITEM_DATA_UNK_1B) || (src_used == USED_ITEM_TYPE_ATTACH && src_type != ITEM_DATA_UNK_11 && src_type != ITEM_DATA_UNK_22))) {
+    if (dst_used == USED_ITEM_TYPE_GIFT_BOX && destination->GetGiftBoxItemNum() < 3 && src_common != NULL && (src_common->attribute & ITEM_ATTRIBUTE_TRUSH) && ((src_used == USED_ITEM_TYPE_ITEM && src_type != ITEM_DATA_AQUARIUM && src_type != ITEM_DATA_FISH && src_type != ITEM_DATA_BADGE_BOX && src_type != ITEM_DATA_DUNGEON_KEY && src_type != ITEM_DATA_KEY_ITEM) || (src_used == USED_ITEM_TYPE_ATTACH && src_type != ITEM_DATA_SPECTOL && src_type != ITEM_DATA_MONSTER_DROP))) {
         if (destination->SetGiftBoxItem(src_no, -1) >= 0) {
             source->DeleteNum(1);
         }
@@ -3705,7 +3705,7 @@ int CMenuKeyFunc::EnableSwapNowPos(MENU_SWAPITEM_INFO *swap) {
                 break;
             }
 
-            if (common->type == 0x20 || (common->attribute & 4)) {
+            if (common->type == ITEM_DATA_LURE || (common->attribute & ITEM_ATTRIBUTE_BAIT)) {
                 result = MENU_SWAP_CHECK_OK;
 
                 if (have_item.GetNum() > 1 && 0 < esa->GetNum() && have_item.item_no != esa->item_no) {
@@ -3714,11 +3714,11 @@ int CMenuKeyFunc::EnableSwapNowPos(MENU_SWAPITEM_INFO *swap) {
 
                 int rod_no = GetUserDataMan()->GetFishingRodNo();
 
-                if (rod_no == ITEM_ID_LURE_ROD && (common->attribute & 4)) {
+                if (rod_no == ITEM_ID_LURE_ROD && (common->attribute & ITEM_ATTRIBUTE_BAIT)) {
                     result = MENU_SWAP_CHECK_INVALID;
                 }
 
-                if (rod_no == ITEM_ID_FISHING_ROD && common->type == 0x20) {
+                if (rod_no == ITEM_ID_FISHING_ROD && common->type == ITEM_DATA_LURE) {
                     result = MENU_SWAP_CHECK_INVALID;
                 }
             } else {
@@ -3769,13 +3769,13 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
     CDataCommon *common = GetCommonItemData(item_no);
     int          human = true;
 
-    if (item_no == 0x184 || item_no == 0x185) {
+    if (item_no == ITEM_ID_POTATO_PIE || item_no == ITEM_ID_WITCH_PARFAIT) {
         human = false;
     }
 
     int robo_parts = false;
 
-    if (0 < GetUserItemHaveNum(0x180) && (item->used_type == USED_ITEM_TYPE_ROBO_PART || item->used_type == USED_ITEM_TYPE_WEAPON)) {
+    if (0 < GetUserItemHaveNum(ITEM_ID_NAME_CHANGE_TICKET) && (item->used_type == USED_ITEM_TYPE_ROBO_PART || item->used_type == USED_ITEM_TYPE_WEAPON)) {
         robo_parts = true;
     }
 
@@ -3913,7 +3913,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
     if (MenuUserDataManPtr->SearchEquip(0, ITEM_ID_FISHING_ROD)) {
         int bait = false;
 
-        if (common->attribute & 4) {
+        if (common->attribute & ITEM_ATTRIBUTE_BAIT) {
             bait = true;
         }
 
@@ -3929,7 +3929,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
         }
     }
 
-    if (common->type == 0x20 && !MenuUserDataManPtr->SearchEquip(0, ITEM_ID_LURE_ROD)) {
+    if (common->type == ITEM_DATA_LURE && !MenuUserDataManPtr->SearchEquip(0, ITEM_ID_LURE_ROD)) {
         i = 0;
         local_sort1(i, &num, cmds);
     }
@@ -4009,7 +4009,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
         spectol_ng = trush_ng;
     }
 
-    if ((common->attribute & 0x40) && GetUserItemHaveNum(item_no) > 1) {
+    if ((common->attribute & ITEM_ATTRIBUTE_UNIQUE) && GetUserItemHaveNum(item_no) > 1) {
         cmds[num] = ITEM_MENU_COMMAND_MSG_BASE + ITEM_MENU_COMMAND_THROW_AWAY;
         num++;
     }
@@ -4034,7 +4034,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
                             colors[i] = 0x80202020;
                         }
 
-                        if (item_no == 0x11F && !(chara_data->status_attr & 8)) {
+                        if (item_no == ITEM_ID_HEART_THROB_CHERRY && !(chara_data->status_attr & 8)) {
                             colors[i] = 0x80202020;
                         }
                     }
@@ -4180,7 +4180,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
             if (chara < 2) {
                 CGameDataUsed *equip = &MenuUserParam.chara[chara]->equip[cmds[i] - (ITEM_MENU_COMMAND_MSG_BASE + ITEM_MENU_COMMAND_USE_ON_PRIMARY_WEAPON)];
 
-                if (item_no == 0x127) {
+                if (item_no == ITEM_ID_LEVEL_UP_POWDER) {
                     if (equip->IsLevelUp() || equip->IsFishingRod()) {
                         colors[i] = 0x80202020;
                     }
@@ -4202,7 +4202,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
                     continue;
                 }
 
-                if (item_no == 0x127) {
+                if (item_no == ITEM_ID_LEVEL_UP_POWDER) {
                     local_sort1(i, &num, cmds);
                     continue;
                 }
@@ -11186,7 +11186,7 @@ void CMenuItemInfo::SetItemEffect() {
     int          weapon_effect = false;
     int          repair_effect = false;
     int          level_effect = false;
-    u8           always = item_no == 0x10F || item_no == 0x111 || item_no == 0x1AA || item_no == 0x124;
+    u8           always = item_no == ITEM_ID_DOUBLE_PUDDING || item_no == ITEM_ID_RESURRECTION_POWDER || item_no == ITEM_ID_BOILED_FISH || item_no == ITEM_ID_MELLOW_BANANA;
 
     if (((view_mode == MENU_ITEM_VIEW_MAX || view_mode == MENU_ITEM_VIEW_MONICA) && target_type == ITEM_USE_TARGET_CHARA &&
          MenuUsedTarget.target.data == MenuUserParam.chara[sub_view]) ||
@@ -11210,7 +11210,7 @@ void CMenuItemInfo::SetItemEffect() {
         }
     }
 
-    if (target_type == ITEM_USE_TARGET_ITEM && MenuUsedTarget.target.item != NULL && item_no == 0x127) {
+    if (target_type == ITEM_USE_TARGET_ITEM && MenuUsedTarget.target.item != NULL && item_no == ITEM_ID_LEVEL_UP_POWDER) {
         level_effect = true;
     }
 
@@ -11220,8 +11220,8 @@ void CMenuItemInfo::SetItemEffect() {
 
     u32 use_type = MenuUsedItemType;
 
-    if ((use_type & ITEM_USE_FLAG_RESTORE_HP) || (use_type & ITEM_USE_FLAG_CURE_STATUS_UNK_8) || (use_type & ITEM_USE_FLAG_CURE_POISON) || (use_type & ITEM_USE_FLAG_CURE_STATUS_UNK_4) ||
-        (use_type & ITEM_USE_FLAG_CURE_SLOW) || (use_type & ITEM_USE_FLAG_CURE_STATUS_UNK_20) || (use_type & ITEM_USE_FLAG_ADD_POWER) || (use_type & ITEM_USE_FLAG_CURE_STATUS_UNK_40)) {
+    if ((use_type & ITEM_USE_FLAG_RESTORE_HP) || (use_type & ITEM_USE_FLAG_CURE_STOP) || (use_type & ITEM_USE_FLAG_CURE_POISON) || (use_type & ITEM_USE_FLAG_CURE_CURSE) ||
+        (use_type & ITEM_USE_FLAG_CURE_SLOW) || (use_type & ITEM_USE_FLAG_CURE_STONE) || (use_type & ITEM_USE_FLAG_ADD_POWER) || (use_type & ITEM_USE_FLAG_CURE_DRY)) {
         if (chara_effect == true) {
             float position[4];
             MenuActionChara[0]->GetPosition(position);
@@ -12526,11 +12526,11 @@ void CItemSelect::Draw() {
             num = item_list[index]->GetNum();
             item_no = item_list[index]->item_no;
 
-            if (item_no == 0x137) {
+            if (item_no == ITEM_ID_MEDAL_HOLDER) {
                 num = GetUserDataMan()->yarikomi_medal;
             }
 
-            if (num >= 2 || item_no == 0x137) {
+            if (num >= 2 || item_no == ITEM_ID_MEDAL_HOLDER) {
                 prim->Bilinear(1);
                 prim->Begin(MG_PRIM_SPRITE);
                 prim->Texture(number_tex);
@@ -12541,7 +12541,7 @@ void CItemSelect::Draw() {
                     prim->Color(0x80, 0x80, 0x80, alpha);
                 }
 
-                if (item_no == 0x137) {
+                if (item_no == ITEM_ID_MEDAL_HOLDER) {
                     prim->Color(0xA4, 0xA4, 0x40, alpha);
                 }
 
