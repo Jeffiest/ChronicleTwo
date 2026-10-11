@@ -1,3 +1,6 @@
+#include <cstdio>
+#include <cmath>
+#include <algorithm>
 #include "common.h"
 
 #include <libvu0.h>
@@ -142,6 +145,34 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
     BuildSkinMatrices(visual, frame, slot_count, skin_matrix);
 
+    // Diagnostic: DC_DUMP_DRAWS=1 prints the bone matrices' health every few skin passes.
+    static const bool dump_skin = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    static int        skin_calls;
+    static int        skin_printed;
+    const bool        report = dump_skin && skin_printed < 160 && (skin_calls++ % 15) == 0;
+
+    if (report) {
+        skin_printed++;
+        int  nonfinite = 0;
+        char dets[256] = "";
+        int  at = 0;
+        for (int k = 0; k < slot_count; k++) {
+            const float (*m)[4] = skin_matrix[k];
+            float det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+                        m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+            for (int r = 0; r < 4; r++) {
+                for (int c = 0; c < 4; c++) {
+                    nonfinite += !std::isfinite(m[r][c]);
+                }
+            }
+            if (at < 230) {
+                at += std::snprintf(dets + at, sizeof(dets) - at, " b%d=%d:%.2f", k, visual->bone[k], det);
+            }
+        }
+        std::fprintf(stderr, "skin visual %p slots %d verts %d weights %d nonfinite %d dets%s\n", (const void *) visual,
+                     slot_count, visual->vertex_num, visual->weight_num, nonfinite, dets);
+    }
+
     // A vertex without weights keeps its base position, as VU1 left it.
     int count = visual->vertex_num < visual->weight_num ? visual->vertex_num : visual->weight_num;
 
@@ -201,6 +232,34 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
             vu0::Copy(visual->normal[i], normal);
         }
+    }
+
+    if (report) {
+        float lo[3] = {1e30f, 1e30f, 1e30f};
+        float hi[3] = {-1e30f, -1e30f, -1e30f};
+        int   bad = 0;
+        for (int i = 0; i < visual->vertex_num; i++) {
+            for (int k = 0; k < 3; k++) {
+                float v = visual->vertex[i][k];
+                if (!std::isfinite(v)) {
+                    bad++;
+                    continue;
+                }
+                lo[k] = std::min(lo[k], v);
+                hi[k] = std::max(hi[k], v);
+            }
+        }
+        float bo[3] = {1e30f, 1e30f, 1e30f};
+        float bh[3] = {-1e30f, -1e30f, -1e30f};
+        for (int i = 0; i < base.vertex_num; i++) {
+            for (int k = 0; k < 3; k++) {
+                bo[k] = std::min(bo[k], base.vertex[i * 4 + k]);
+                bh[k] = std::max(bh[k], base.vertex[i * 4 + k]);
+            }
+        }
+        std::fprintf(stderr,
+                     "skin   out bbox [%.1f %.1f %.1f]..[%.1f %.1f %.1f] nonfinite %d   base bbox [%.1f %.1f %.1f]..[%.1f %.1f %.1f]\n",
+                     lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], bad, bo[0], bo[1], bo[2], bh[0], bh[1], bh[2]);
     }
 }
 
