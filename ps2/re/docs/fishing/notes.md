@@ -114,8 +114,8 @@ to the FPRs.
   `{0, 0, 0, 1}` then sets its Z distance. The ripple and splash effects use zero-filled
   four-float scale initializers whose templates the compiler emits.
 - Unresolved: RodStatus (0/1/2, BattleLoop and LineTensionStep: 1 raises tension and drains
-  vigour, 2 lowers tension) and UkiMode (0..4) were not turned into enums; the meaning of
-  FISH_PARAM 0x18 and FISH_PLACE_MAP area_param[3..4]; names of the rod attributes.
+  vigour, 2 lowers tension) has no enum yet. UkiMode is FISHING_UKI_MODE (0..6). Open: the
+  meaning of FISH_PARAM 0x18 and FISH_PLACE_MAP area_param[3..4]; names of the rod attributes.
 - SetFishPlace's merge branch reads `place[i]` with the map's fish index (retail quirk: uses the
   outer index's byte offset into `place`), keep it when matching.
 

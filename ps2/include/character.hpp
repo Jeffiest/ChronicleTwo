@@ -315,7 +315,7 @@ STATIC_ASSERT(sizeof(CCharaFrameMatching) == 0xC);
 enum CHARA_SE_POSITIONAL {
     CHARA_SE_POSITIONAL_CHAINED = 0, /**< A part chained behind the head; its sounds are not positional. */
     CHARA_SE_POSITIONAL_HEAD = 1,    /**< The head of the chain, and the default of a lone character; only its sounds are positional. */
-    CHARA_SE_POSITIONAL_LEADER = 2,  /**< The leader of the chain; CActionChara::Step leaves this role alone. */
+    CHARA_SE_POSITIONAL_FIXED = 2,   /**< Set by the monster script; Step keeps it and its sounds are not positional. */
 };
 
 /**
