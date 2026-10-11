@@ -2851,7 +2851,7 @@ void IsEventRun() {
             pallet->duration = 45;
             pallet->elapsed = 0;
             pallet->repeats = 0;
-            sndSePlay(GetSystemSndID(), 10, 0);
+            sndSePlay(GetSystemSndID(), SYSTEM_SE_RECOVER, 0);
             BattleAreaScene->practice_actions |= DNG_PRACTICE_ACTION_HEAL;
         }
     }
@@ -2934,7 +2934,7 @@ void IsEventRun() {
 
     if (!DngSaveData->GetBitFlag(SAVE_FLAG_GUIDE_RANDOM_STONE) && (info->chr_no == USER_CHARA_MAX || info->chr_no == USER_CHARA_MONICA)) {
         if (AutoMapGen.SearchRandomStone(pos, 30.0f)) {
-            if (button == 1) {
+            if (button == MAP_EVENT_CHECK_ACTION) {
                 *event_no = DNG_EVENT_RANDOM_STONE;
                 return;
             }
@@ -2950,7 +2950,7 @@ void IsEventRun() {
     }
 
     if (GeoStone.CheckEvent(pos)) {
-        if (button == 1) {
+        if (button == MAP_EVENT_CHECK_ACTION) {
             *event_no = DNG_EVENT_GEOSTONE;
             return;
         }
@@ -2965,7 +2965,7 @@ void IsEventRun() {
     }
 
     if (TreasureBoxMan->CheckEvent(pos, dist) >= 0 && !near) {
-        if (button == 1) {
+        if (button == MAP_EVENT_CHECK_ACTION) {
             *event_no = DNG_EVENT_TREASURE_BOX;
             return;
         }
@@ -2976,7 +2976,7 @@ void IsEventRun() {
     int talk = ActiveMonster->CheckMonsterTolk(pos);
 
     if (talk != -1) {
-        if (button == 1 || button == 2) {
+        if (button == MAP_EVENT_CHECK_ACTION || button == MAP_EVENT_CHECK_ITEM) {
             *event_no = DNG_EVENT_MONSTER_TALK;
             EdEventInfo.monster_talk[0] = talk + DNG_CHARA_SLOT_MONSTER;
             EdEventInfo.monster_talk[2] = ActiveMonster->active[talk]->locate_param;
