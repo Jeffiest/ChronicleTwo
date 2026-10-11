@@ -3,6 +3,10 @@
 #include <cstdio>
 #include <cstring>
 
+#ifdef PORT
+#include <cstdarg>
+#endif
+
 #include "dbg_font.hpp"
 #include "mg_drawprim.hpp"
 #include "mg_math.hpp"

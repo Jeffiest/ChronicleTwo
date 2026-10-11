@@ -8710,6 +8710,7 @@ static void MenuItemDebugDraw() {
             font->SetStr("Change Abs");
             font->SetPos(236, 120);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
+            int   i;
             int   build_item[3];
             char *build_name[3];
 
