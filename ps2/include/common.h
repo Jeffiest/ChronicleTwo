@@ -3,10 +3,9 @@
 
 /**
  * @file
- * Provides the integer aliases, assembly inclusion markers and size assertion used by game code.
+ * Provides the integer aliases, math constants and size assertion used by game code.
  */
 
-#include "include_asm.h"
 #include "types.h"
 
 #define PI         3.1415927f   /**< Pi. */
