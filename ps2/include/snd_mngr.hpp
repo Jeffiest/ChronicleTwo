@@ -30,6 +30,7 @@ enum SYSTEM_SE {
     SYSTEM_SE_ITEM_MOVE = 3,    /**< Splits or moves a carried item stack. */
     SYSTEM_SE_ITEM_RETURN = 4,  /**< Puts a carried item back. */
     SYSTEM_SE_CANCEL = 5,       /**< Cancels or rejects the current menu selection. */
+    SYSTEM_SE_ITEM_DISCARD = 7, /**< Throws a carried item away. */
     SYSTEM_SE_EQUIP = 8,        /**< Changes a character's equipment. */
     SYSTEM_SE_REVIVE = 0xA,     /**< A fallen character is revived. */
     SYSTEM_SE_IDEA = 0xE,       /**< Announces that a photo has captured an idea. */
