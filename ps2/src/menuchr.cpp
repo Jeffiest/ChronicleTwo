@@ -2456,7 +2456,7 @@ int CMenuChrCngMenu::KeyChangeMain() {
                         if (count > 0) {
                             gift_item = esa[GetRandI(count)];
 
-                            if (gift_item == 0x168) {
+                            if (gift_item == ITEM_ID_ELECTRIC_WORM) {
                                 gift_item = 0x138;
                             }
                         } else {
@@ -4569,7 +4569,7 @@ int CMenuMosSelect::KeyStep() {
                                     CGameDataUsed reward;
                                     reward.Init();
                                     int badge_index = select;
-                                    reward.item_no = 0x17F;
+                                    reward.item_no = ITEM_ID_MONSTER_DROP;
                                     reward.used_type = USED_ITEM_TYPE_ATTACH;
                                     reward.item_type = ITEM_DATA_MONSTER_DROP;
                                     reward.data.attach.spectol_value = select_badge->class_level + 1;

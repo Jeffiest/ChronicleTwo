@@ -359,7 +359,7 @@ void CShop::CheckEventItem() {
             cursor -= 1;
         }
 
-        if (item_no[cursor] == 0x1A7 && (once_item_chosen == 1 || user_data->special_item_bought >= 0x15)) {
+        if (item_no[cursor] == ITEM_ID_SHIELD_KIT && (once_item_chosen == 1 || user_data->special_item_bought >= 0x15)) {
             local_sort1(cursor, &item_num, item_no);
         }
 
@@ -371,14 +371,14 @@ void CShop::CheckEventItem() {
             local_sort1(cursor, &item_num, item_no);
         }
 
-        if (item_no[cursor] == 0x166 && user_data->GetNumSameItem(0x166) > 0) {
+        if (item_no[cursor] == ITEM_ID_COOKING_STOVE && user_data->GetNumSameItem(ITEM_ID_COOKING_STOVE) > 0) {
             local_sort1(cursor, &item_num, item_no);
         }
 
         if (GetItemDataType(item_no[cursor]) == (int) ITEM_DATA_ROBO_CORE) {
             int core = CheckRobotCore();
 
-            if (core >= 0xF6 && core < 0xFC) {
+            if (core >= ITEM_ID_CORE && core < ITEM_ID_MASTER_GRADE_CORE) {
                 item_no[cursor] = core + 1;
             } else {
                 local_sort1(cursor, &item_num, item_no);
@@ -434,7 +434,7 @@ void CShop::GetPrice(CGameDataUsed *item, int *buy, int *sell) {
         }
     }
 
-    if (buy != NULL && item_id == 0x1A7) {
+    if (buy != NULL && item_id == ITEM_ID_SHIELD_KIT) {
         int   bought = GetUserDataMan()->special_item_bought;
         float scaled = (float) *buy;
 
@@ -447,7 +447,7 @@ void CShop::GetPrice(CGameDataUsed *item, int *buy, int *sell) {
     }
 
     if (sell != NULL) {
-        if (item->item_no == 0x130) {
+        if (item->item_no == ITEM_ID_GIFT_CAPSULE) {
             for (int slot = 0; slot < 3; slot++) {
                 int box_item = item->GetGiftBoxItemNo(slot);
                 int box_price = 0;
@@ -1086,7 +1086,7 @@ int CShopMenu::KeyStep() {
                 MENUFORMPARTS_TYPE *icon = trade_brd->GetPartInfo("item");
 
                 if (item != NULL && item_no != 0x1A6 && item_no != 0x1A8) {
-                    if (item_no == 0x1AA) {
+                    if (item_no == ITEM_ID_BOILED_FISH) {
                         MenuFormPartsPresetItem(icon, 1, item_no, item->data.item.num);
                     } else {
                         MenuFormPartsPresetItem(icon, 1, item_no, item->GetSpectolNo());
@@ -1172,7 +1172,7 @@ int CShopMenu::KeyStep() {
                     num_cursor = 0;
                     num_max = can_have;
 
-                    if (item_no == 0x1A7) {
+                    if (item_no == ITEM_ID_SHIELD_KIT) {
                         num_max = 1;
                         CShopPtr->once_item_chosen = 1;
                     }
@@ -1225,7 +1225,7 @@ int CShopMenu::KeyStep() {
                     CShopPtr->AddMoney(-total);
                     ExeScript("\x94\x84\x94\x83\x90\xAC\x97\xA7");
 
-                    if (item_no == 0x1A7) {
+                    if (item_no == ITEM_ID_SHIELD_KIT) {
                         user->special_item_bought++;
                     }
 

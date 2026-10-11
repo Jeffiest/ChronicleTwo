@@ -654,8 +654,8 @@ void MENU_BASETEXINFO_Init(MENU_BASETEXINFO *info);
  *
  */
 enum MENU_ICON_ITEM {
-    MENU_ICON_ITEM_SPECTRUM = 0xB9,     /**< Spectrumised attachment whose original item supplies the icon. */
-    MENU_ICON_ITEM_BOILED_FISH = 0x1AA, /**< Boiled fish whose original fish supplies the icon. */
+    MENU_ICON_ITEM_SPECTRUM = ITEM_ID_SPECTOL,        /**< Spectrumised attachment whose original item supplies the icon. */
+    MENU_ICON_ITEM_BOILED_FISH = ITEM_ID_BOILED_FISH, /**< Boiled fish whose original fish supplies the icon. */
 };
 
 /**
@@ -1733,7 +1733,7 @@ void DrawOneItem(mgCDrawPrim *prim, mgRect<float> rect, int item, int mode, MENU
                 prim->Bilinear(0);
             }
 
-            if (item == 0x137) {
+            if (item == ITEM_ID_MEDAL_HOLDER) {
                 prim->Begin(MG_PRIM_SPRITE);
                 prim->Texture(MenuPosData->item_icon_tex[0][0]);
                 prim->Color(0x80, 0x80, 0x80, rgba[3]);

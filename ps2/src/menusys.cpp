@@ -3942,7 +3942,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
 
     int aquarium_item = false;
 
-    if (MenuUserDataManPtr->SearchItemOnItemBrd(0x135, 0)) {
+    if (MenuUserDataManPtr->SearchItemOnItemBrd(ITEM_ID_AQUARIUM, ITEM_BOARD_MAIN)) {
         aquarium_item = true;
     }
 
@@ -3954,7 +3954,7 @@ int GetItemCommandMsg(CGameDataUsed *item, int *cmds, u32 *colors, short *values
 
     int item_166 = false;
 
-    if (MenuUserDataManPtr->SearchItemOnItemBrd(0x166, 0)) {
+    if (MenuUserDataManPtr->SearchItemOnItemBrd(ITEM_ID_COOKING_STOVE, ITEM_BOARD_MAIN)) {
         item_166 = true;
     }
 
@@ -4624,7 +4624,7 @@ void CMenuKeyFunc::SetHaveItemInfo(int visible, int detail) {
         if (have_shadow->etc_info[1] == ITEM_ID_SPECTOL) {
             have_icon->etc_info[2] = have_item.GetSpectolNo();
             Func_MenuItemIconSetEffectOne(have_icon);
-        } else if (have_shadow->etc_info[1] == 0x1AA) {
+        } else if (have_shadow->etc_info[1] == ITEM_ID_BOILED_FISH) {
             have_icon->etc_info[2] = have_item.data.item.num;
         }
     }
@@ -4643,7 +4643,7 @@ void CMenuKeyFunc::SetHaveItemInfo(int visible, int detail) {
         have_num->rgba[1] = 0x80;
         have_num->rgba[2] = 0x80;
 
-        if (have_icon->etc_info[1] == 0x137) {
+        if (have_icon->etc_info[1] == ITEM_ID_MEDAL_HOLDER) {
             have_num->etc_info[1] = GetUserDataMan()->yarikomi_medal;
             have_num->etc_info[2] = 0;
             have_num->rgba[0] = 0xA4;
@@ -5982,11 +5982,11 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         SetItemEffect();
                         CheckEnableHaveItemNum();
 
-                        if (MenuItemCmdRet.detail == 0x184 || MenuItemCmdRet.detail == 0x185) {
+                        if (MenuItemCmdRet.detail == ITEM_ID_POTATO_PIE || MenuItemCmdRet.detail == ITEM_ID_WITCH_PARFAIT) {
                             step = 2;
                             int msg = 0xB8;
 
-                            if (MenuItemCmdRet.detail == 0x185) {
+                            if (MenuItemCmdRet.detail == ITEM_ID_WITCH_PARFAIT) {
                                 msg = 0xB9;
                             }
 
@@ -6007,7 +6007,7 @@ int CMenuItemInfo::ItemCmdAfter(int cmd_ret, ITEMCMD_RET_PARA *ret) {
                         step = 2;
                         int msg_no[2] = {10, -1};
 
-                        if (MenuItemCmdRet.detail == 0x185) {
+                        if (MenuItemCmdRet.detail == ITEM_ID_WITCH_PARFAIT) {
                             msg_no[0] = 11;
                         }
 

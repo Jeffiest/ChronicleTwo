@@ -775,7 +775,7 @@ int CheckPhotoDataNoNeed(USER_PICTURE_INFO *photos, int count, int *unneeded) {
 int IsTakePhoto() {
     CUserDataManager *user = GetUserDataMan();
 
-    if (user != NULL && user->active_chr_no == USER_CHARA_MAX && user->SearchEquip(USER_CHARA_MAX, 0x171) != 0) {
+    if (user != NULL && user->active_chr_no == USER_CHARA_MAX && user->SearchEquip(USER_CHARA_MAX, ITEM_ID_CAMERA) != 0) {
         return true;
     }
 
@@ -2790,7 +2790,7 @@ void CMenuInvent::InitEnd() {
     read_info = InventSubDataReadBGInfo;
     album_enable = true;
 
-    if (GetUserDataMan()->GetNumSameItem(0x165) <= 0) {
+    if (GetUserDataMan()->GetNumSameItem(ITEM_ID_PHOTO_ALBUM) <= 0) {
         album_enable = false;
     }
 
@@ -3730,7 +3730,7 @@ int CMenuInvent::IsMakeObject(int keys, int button) {
                             step = INVENT_MAKE_STEP_ERROR;
                             ExeScript("\x8b\xf3\x82\xab\x96\xb3\x82\xb5");
                         } else {
-                            if (make_item_no == 0xA5) {
+                            if (make_item_no == ITEM_ID_ENERGY_PACK) {
                                 GetSaveData()->SetBitFlag(13, true);
                             }
 
