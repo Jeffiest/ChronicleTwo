@@ -344,7 +344,7 @@ int CScene::DrawCharaShadow(int index) {
         return 0;
     }
 
-    chara->GetEntryObjectPos(1, position);
+    chara->GetEntryObjectPos(CHARA_ENTRY_GROUP_SHADOW, position);
     position[1] -= 20.0f;
     mgSetDropShadowMatrix(direction, position, color);
     chara->DrawShadowDirect();
