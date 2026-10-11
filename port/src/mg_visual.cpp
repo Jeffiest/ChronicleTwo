@@ -307,6 +307,12 @@ PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawMana
                     }
                 }
             }
+            std::fprintf(stderr, "drawmat visual %p rows [%.2f %.2f %.2f] [%.2f %.2f %.2f] [%.2f %.2f %.2f] pos [%.1f %.1f %.1f] v0 [%.2f %.2f %.2f]\n",
+                         (const void *) this, matrix[0][0], matrix[0][1], matrix[0][2], matrix[1][0], matrix[1][1],
+                         matrix[1][2], matrix[2][0], matrix[2][1], matrix[2][2], matrix[3][0], matrix[3][1],
+                         matrix[3][2], vertices.empty() ? 0.0f : vertices[0].position[0],
+                         vertices.empty() ? 0.0f : vertices[0].position[1],
+                         vertices.empty() ? 0.0f : vertices[0].position[2]);
             std::fprintf(stderr,
                          "draw %p mat %d verts %zu idx %zu bad %d bbox [%.1f %.1f %.1f]..[%.1f %.1f %.1f] tex 0x%x "
                          "pal 0x%x entry %d diff %.2f %.2f %.2f a %.2f lit %d colour %d uv [%.2f %.2f]..[%.2f %.2f] tex0 0x%llx\n",
