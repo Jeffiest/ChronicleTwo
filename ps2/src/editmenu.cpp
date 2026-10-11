@@ -10,6 +10,7 @@
 #include "drawwin.hpp"
 #include "editanalyze.hpp"
 #include "editdata.hpp"
+#include "editevent.hpp"
 #include "editmap.hpp"
 #include "editmenu.hpp"
 #include "editparts.hpp"
