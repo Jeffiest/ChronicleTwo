@@ -604,8 +604,12 @@ void MenuManualDraw() {
         case MANUAL_STEP_PLAY:
         case MANUAL_STEP_CLOSE:
         case MANUAL_STEP_END:
+#ifdef PORT
             mgCTextureManager *textures;
             textures = &mgTexManager;
+#else
+            mgCTextureManager *textures = &mgTexManager;
+#endif
 
             if (menu->pict_mode) {
                 picture = MnOnePictTex[menu->pict_page];
@@ -3765,9 +3769,13 @@ int SubGameSaveKey() {
                 break;
             case SUB_SAVE_SPACE_ASK:
                 SubGameCFGAnalyze("OM_ISNEWSAVE");
+#ifdef PORT
                 int values[2];
                 values[0] = 0;
                 values[1] = 0;
+#else
+                int values[2] = {0, 0};
+#endif
                 values[0] = slot_no;
                 values[1] = SubCheckTotalSaveFileSize;
                 window->SetMsgVolumeNo(values, 2);
