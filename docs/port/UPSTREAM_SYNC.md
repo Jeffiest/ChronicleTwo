@@ -26,7 +26,8 @@ will be conflict-free.
 ## Results
 
 Compatibility checkpoint: `563cb177`. Integration branch: `port/master-sync-2026-10-11`.
-The merge includes upstream `4ee90030` as a parent; it does not rewrite either main branch.
+Merge commit `bb0eaf491df3d1d051f451eb05ccec4954066a98` has checkpoint `563cb177` and upstream
+`4ee90030` as parents; it does not rewrite either main branch.
 
 ### Conflict decisions
 
@@ -67,6 +68,7 @@ The merge includes upstream `4ee90030` as a parent; it does not rewrite either m
 Linux/macOS execution, hosted CI and retail byte matching were not run here. No gameplay launch or
 automated gameplay occurred. Items, attacks and recording-time photo/effect capture remain open.
 
-Publish this branch to `Jeffiest/ChronicleTwo`, then verify the remote hash and both merge ancestors.
+Published to `Jeffiest/ChronicleTwo:port/master-sync-2026-10-11`; the remote merge hash matched
+`bb0eaf49`, both ancestor checks passed and upstream still pointed to `4ee90030` after publication.
 The separate fork-master divergence still requires its own integration before a conflict-free merge
 into that branch can be claimed.
