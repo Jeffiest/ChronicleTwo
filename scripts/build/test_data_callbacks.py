@@ -119,7 +119,7 @@ class DataCallbackTests(unittest.TestCase):
     def test_held_callback_table_keeps_no_native_storage_or_alias(self):
         compiled, ctx = self.fixture()
         before = d.code_snapshot(compiled)
-        self.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", table__DATA);')
+        self.prepare(compiled, ctx, 'INCLUDE_BSS(table, 4);')
         self.assertEqual(compiled.symtab.symbols[2].st_shndx, 0)
         self.assertFalse(any(symbol.name == 'helper__Fv__2' for symbol in compiled.symtab.symbols))
         self.assertEqual(d.code_snapshot(compiled), before)

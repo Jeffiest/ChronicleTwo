@@ -73,7 +73,7 @@ class TerminalComparisonTests(unittest.TestCase):
         helper = fixtures.AlignmentFragmentTests()
         compiled, ctx = helper.fixture()
         before = d.code_snapshot(compiled)
-        helper.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", first__DATA);')
+        helper.prepare(compiled, ctx, 'INCLUDE_BSS(first, 24);')
         self.assertEqual(compiled.symtab.symbols[1].st_shndx, 0)
         self.assertEqual(d.code_snapshot(compiled), before)
 

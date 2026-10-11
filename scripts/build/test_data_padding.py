@@ -99,7 +99,7 @@ class AlignmentFragmentTests(unittest.TestCase):
 
     def test_held_alignment_marker_supplies_no_native_credit(self):
         compiled, ctx = self.fixture()
-        self.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", D_0000301C__DATA);')
+        self.prepare(compiled, ctx, 'INCLUDE_BSS(D_0000301C, 4);')
         self.assertEqual(compiled.symtab.symbols[3].st_shndx, 0)
 
     def test_native_alignment_evidence_fails_closed(self):

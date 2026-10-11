@@ -439,7 +439,7 @@ def prepare_native_data(elf, unit, ctx):
 
 
 def fallback_data_names(source):
-    """Recognize marker tokens outside comments and quoted literal contents."""
+    """Recognize INCLUDE_BSS reservation tokens outside comments and literals."""
     pattern = re.compile(
         r'(?P<comment>/\*.*?\*/|//[^\n]*)|'
         r'(?P<string>(?:u8|u|U|L)?R"(?P<delimiter>[^ ()\\\t\r\n]{0,16})'
@@ -452,17 +452,10 @@ def fallback_data_names(source):
     for index, (kind, token) in enumerate(tokens):
         if kind != 'identifier':
             continue
-        arguments = tokens[index + 1:index + 6]
+        arguments = tokens[index + 1:index + 4]
         if token == 'INCLUDE_BSS' and len(arguments) >= 3:
             if arguments[0][1] == '(' and arguments[1][0] == 'identifier' and arguments[2][1] == ',':
                 names.add(arguments[1][1])
-        elif token == 'INCLUDE_RODATA' and len(arguments) == 5:
-            if (arguments[0][1] == '(' and arguments[1][0] == 'string'
-                    and arguments[2][1] == ',' and arguments[3][0] == 'identifier'
-                    and arguments[4][1] == ')' and arguments[3][1].endswith('__DATA')):
-                name = arguments[3][1][:-len('__DATA')]
-                if name:
-                    names.add(name)
     return names
 
 
