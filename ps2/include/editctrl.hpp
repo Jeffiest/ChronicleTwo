@@ -104,15 +104,6 @@ enum EditCharaSlot {
 
 /**
  *
- * Type of a scene character slot, as CScene::GetType gives it, that the edit map draws apart.
- *
- */
-enum EditCharaType {
-    EDIT_CHARA_TYPE_EFFECT = 4, /**< The slot holds an effect character, drawn in a pass of its own. */
-};
-
-/**
- *
  * Extra collision polygons handed to EditMoveChara, and what the move ran into.
  *
  */

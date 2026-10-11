@@ -466,7 +466,7 @@ int CEditEvent::Step(CScene *scene) {
             case EDIT_TREASURE_BOX_STEP_MESSAGE:
                 if (pad->Btn(PAD_BTN_CONFIRM) || pad->Btn(PAD_BTN_CANCEL)) {
                     close_message(message);
-                    sndSePlay(GetSystemSndID(), 0x19, 0);
+                    sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                     ++step;
                 }
 
@@ -478,7 +478,7 @@ int CEditEvent::Step(CScene *scene) {
             case EDIT_TREASURE_BOX_STEP_FULL_MESSAGE:
                 if (pad->Btn(PAD_BTN_CONFIRM) || pad->Btn(PAD_BTN_CANCEL)) {
                     close_message(message);
-                    sndSePlay(GetSystemSndID(), 0x19, 0);
+                    sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                     ++step;
                 }
 
@@ -506,7 +506,7 @@ int CEditEvent::Step(CScene *scene) {
                     case 5:
                         if (button) {
                             message->GoNextPage();
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                         }
 
                         break;
@@ -514,7 +514,7 @@ int CEditEvent::Step(CScene *scene) {
                         if (button) {
                             step = EDIT_BOOK_STEP_DONE;
                             count = 5;
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                         }
 
                         break;
