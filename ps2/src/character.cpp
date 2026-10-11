@@ -887,7 +887,7 @@ void CCharacter2::SePlay() {
     sound_info.se_pan = 0.0f;
     i = 0;
 
-    if (sound_info.se_positional == true) {
+    if (sound_info.se_positional == CHARA_SE_POSITIONAL_HEAD) {
         GetEntryObjectPos(0, pos);
         float far_dist = 1200.0f;
         float near_dist = 160.0f;
@@ -1652,7 +1652,7 @@ void CCharacter2::Initialize() {
     shape_anime = 0;
     sound_info.foot_sound_id = -1;
     sound_info.foot_sound_enable = true;
-    sound_info.se_positional = true;
+    sound_info.se_positional = CHARA_SE_POSITIONAL_HEAD;
     sound_info.se_volume = 1.0f;
     sound_info.se_pan = 0.0f;
     sound_info.foot_effect_wait = -1;

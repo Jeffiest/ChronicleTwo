@@ -3655,8 +3655,8 @@ void CActionChara::Step() {
 
     StepParam();
 
-    if (self->sound_info.se_positional != 2) {
-        self->sound_info.se_positional = 1;
+    if (self->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+        self->sound_info.se_positional = CHARA_SE_POSITIONAL_HEAD;
     }
 
     self->CCharacter2::Step();
@@ -3666,8 +3666,8 @@ void CActionChara::Step() {
         do {
             chained = link;
 
-            if (chained->sound_info.se_positional != 2) {
-                chained->sound_info.se_positional = 0;
+            if (chained->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+                chained->sound_info.se_positional = CHARA_SE_POSITIONAL_CHAINED;
             }
 
             chained->CCharacter2::Step();
