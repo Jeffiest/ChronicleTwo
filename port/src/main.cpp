@@ -289,6 +289,8 @@ void DisableAudioForHeadless() {
 } // namespace
 
 PORT_OVERRIDE int main(int argc, char **argv) {
+    // The game logs with printf; redirected to a file it is block-buffered and a hung or killed run loses it all.
+    std::setvbuf(stdout, nullptr, _IONBF, 0);
     ConfigureHost();
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);
