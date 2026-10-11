@@ -1319,14 +1319,14 @@ int EditLoop() {
             if (LoopMode == EDIT_LOOP_WALK_MENU) {
                 LoopMode = EDIT_LOOP_WALK;
 
-                if (MenuInfo->end_code != 11 && SubGameRunning() != 0 && GetSubGameNo() == SUBGAME_FISHING) {
+                if (MenuInfo->end_code != MENU_END_FISHING && SubGameRunning() != 0 && GetSubGameNo() == SUBGAME_FISHING) {
                     sgExitSubGame();
                 }
 
                 int end_code = MenuInfo->end_code;
 
-                if (end_code == 21 || end_code == 1) {
-                    if (end_code == 21) {
+                if (end_code == MENU_END_CHARA_CHANGE_FADE || end_code == MENU_END_CHARA_CHANGE) {
+                    if (end_code == MENU_END_CHARA_CHANGE_FADE) {
                         MainScene->fade.CaptureScreen();
                         MainScene->fade.CrossFade(20, 1.0f);
                     }
@@ -1341,7 +1341,7 @@ int EditLoop() {
                     }
 
                     EditControlStatusInit(MainScene);
-                } else if (end_code == 11) {
+                } else if (end_code == MENU_END_FISHING) {
                     SubGameInfo fishing;
                     fishing.scene = MainScene;
                     fishing.rod_no = MenuInfo->result[0];
@@ -1350,20 +1350,20 @@ int EditLoop() {
                     FishingBuff.stSetBuffer(CharaBufs[0].stack + CharaBufs[0].stack_used, fishing_size);
                     fishing.menu_buff = &MenuBuffer__2;
                     fishing.load_buff = &FishingBuff;
-                    MenuInfo->end_code = 0;
+                    MenuInfo->end_code = MENU_END_NONE;
                     current_subgame = GetNowSubGameInfo();
 
                     if (SubGameRunning() != 0 && current_subgame->rod_no != fishing.rod_no) {
                         fishing.keep_bgm = 1;
                     }
 
-                    if ((GetMenuEtcFlag() & 0x1) != 0 || SubGameRunning() == 0 || current_subgame->rod_no != fishing.rod_no) {
+                    if ((GetMenuEtcFlag() & MENU_ETC_FLAG_CHARA_RELOAD) != 0 || SubGameRunning() == 0 || current_subgame->rod_no != fishing.rod_no) {
                         ResetViewMode(MainScene);
                         sgInitSubGame(SUBGAME_FISHING, &fishing);
                     } else {
                         sgRestartSubGame(&fishing);
                     }
-                } else if (end_code == 6) {
+                } else if (end_code == MENU_END_WORLD_MOVE) {
                     SetEventScript(NULL, NULL, NULL);
 
                     if (ControlMode == EDIT_CONTROL_EVENT) {
@@ -2528,7 +2528,7 @@ int EditDraw() {
                 idea_no = subject->invent.neta_no;
             }
 
-            if (idea_no == 196 && MainScene->GetMainMapNo() == 2) {
+            if (idea_no == 196 && MainScene->GetMainMapNo() == EDIT_ANALYZE_MAP_BENIETIO) {
                 idea_no = 2006;
             }
 
@@ -2639,7 +2639,7 @@ int BurnEditParts() {
         return 0;
     }
 
-    if (MainScene->GetMainMapNo() == 3) {
+    if (MainScene->GetMainMapNo() == EDIT_ANALYZE_MAP_HEIM) {
         map = (CEditMap *) MainScene->GetMap(MainScene->active_map);
 
         if (map != NULL) {

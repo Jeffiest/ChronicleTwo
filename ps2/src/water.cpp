@@ -553,11 +553,11 @@ int CWater::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_I
     fog_color |= info->fog.b << 16;
 
     if (info->attr->fog > 1) {
-        if (info->attr->fog == 2) {
+        if (info->attr->fog == MG_FOG_BLACK) {
             fog_color = 0;
         }
 
-        if (info->attr->fog == 3) {
+        if (info->attr->fog == MG_FOG_WHITE) {
             fog_color = 0xFFFFFF;
         }
     }

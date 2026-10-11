@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "dataread.hpp"
+#include "editanalyze.hpp"
 #include "editdata.hpp"
 #include "editmap.hpp"
 #include "editriver.hpp"
@@ -1122,7 +1123,7 @@ int eaEND_GEO_ANALYZE(SPI_STACK *, int) {
 int GetMaxPolyn(int map_no) {
     int max_polygons = 0xFA0;
 
-    if (map_no != 4) {
+    if (map_no != EDIT_ANALYZE_MAP_MOON_FLOWER) {
         max_polygons = 0x1770;
 
         switch (map_no) {
@@ -1145,7 +1146,7 @@ int GetMaxPolyn(int map_no) {
 int GetMaxDrawMem(int map_no) {
     int max_draw_memory = 0xBB80;
 
-    if (map_no != 4) {
+    if (map_no != EDIT_ANALYZE_MAP_MOON_FLOWER) {
         max_draw_memory = 0xD2F0;
 
         switch (map_no) {

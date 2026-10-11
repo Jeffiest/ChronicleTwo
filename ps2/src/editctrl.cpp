@@ -552,8 +552,8 @@ void EditMoveChara(CScene *scene, sceVu0FVECTOR velocity, EditMoveCharaInfo *inf
         if (GetFootPoly(ground_query, 80.0f, &ground_poly, ground_position, polys, poly_count, 0)) {
             sceVu0Normalize(ground_normal, ground_poly.normal);
 
-            if (!(ground_normal[1] <= 0.6f) && (ground_poly.parts_no & 0x1000)) {
-                parts = edit_map->GetePlaceParts(ground_poly.parts_no & 0xFFF);
+            if (!(ground_normal[1] <= 0.6f) && (ground_poly.parts_no & CCPOLY_PARTS_EDIT)) {
+                parts = edit_map->GetePlaceParts(ground_poly.parts_no & CCPOLY_PARTS_SLOT_MASK);
 
                 if (parts != NULL && parts->info != NULL && (parts->info->attr & 0x800)) {
                     ignore_mask = 0x10;
@@ -1051,14 +1051,14 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
     character->GetPosition(event_position);
     character->GetRotation(event_rotation);
     CSceneEventData event;
-    event_check = 0;
+    event_check = MAP_EVENT_CHECK_TOUCH;
 
     if (pad->Btn(PAD_BTN_CONFIRM)) {
-        event_check = 1;
+        event_check = MAP_EVENT_CHECK_ACTION;
     }
 
     if (pad->Btn(PAD_BTN_ACTION_SQUARE)) {
-        event_check = 2;
+        event_check = MAP_EVENT_CHECK_ITEM;
     }
 
     if (scene->GetMapEvent(event_position, event_check, &event)) {
