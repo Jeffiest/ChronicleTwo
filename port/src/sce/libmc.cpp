@@ -36,6 +36,7 @@ enum McFunction {
     kFuncGetInfo = 0x01,
     kFuncOpen = 0x02,
     kFuncClose = 0x03,
+    kFuncSeek = 0x04,
     kFuncRead = 0x05,
     kFuncWrite = 0x06,
     kFuncFlush = 0x0A,
@@ -45,6 +46,7 @@ enum McFunction {
     kFuncDelete = 0x0F,
     kFuncFormat = 0x10,
     kFuncUnformat = 0x11,
+    kFuncRename = 0x13,
 };
 
 enum McOpenFlag {
@@ -85,6 +87,7 @@ struct McDirEntry {
 };
 
 static_assert(sizeof(McDirEntry) == 0x40);
+static_assert(sizeof(McDirEntry) == sizeof(sceMcTblGetDir));
 
 struct Card {
     std::string cwd = "/";
@@ -231,6 +234,12 @@ int sceMcInit() {
     return sceMcIniSucceed;
 }
 
+// The host card layer holds no module to unload, so ending the library only
+// has to succeed: a result the game has not synced yet stays readable.
+int sceMcEnd(void) {
+    return sceMcIniSucceed;
+}
+
 int sceMcSync(int mode, int *cmd, int *result) {
     if (!g_pending.active) {
         return -1;
@@ -259,7 +268,7 @@ int sceMcGetInfo(int port, int slot, int *type, int *free_size, int *formatted) 
     return Finish(kFuncGetInfo, g_cards[port].unformatted ? sceMcResNoFormat : sceMcResSucceed);
 }
 
-int sceMcOpen(int port, int slot, char *name, int flag) {
+int sceMcOpen(int port, int slot, const char *name, int flag) {
     if (!ValidPort(port)) {
         return -1;
     }
@@ -326,6 +335,20 @@ int sceMcWrite(int fd, void *buffer, int size) {
     return Finish(kFuncWrite, static_cast<int>(std::fwrite(buffer, 1, size, open->file)));
 }
 
+// SCE_SEEK_SET, SCE_SEEK_CUR and SCE_SEEK_END are the host's SEEK_SET,
+// SEEK_CUR and SEEK_END, so the origin passes straight through.
+int sceMcSeek(int fd, int offset, int origin) {
+    OpenFile *open = FileFor(fd);
+    if (open == nullptr) {
+        return Finish(kFuncSeek, sceMcResNoEntry);
+    }
+    if (std::fseek(open->file, offset, origin) != 0) {
+        return Finish(kFuncSeek, sceMcResDeniedPermit);
+    }
+    // The command's result is the offset the file position landed on.
+    return Finish(kFuncSeek, static_cast<int>(std::ftell(open->file)));
+}
+
 int sceMcFlush(int fd) {
     OpenFile *open = FileFor(fd);
     if (open == nullptr) {
@@ -334,7 +357,7 @@ int sceMcFlush(int fd) {
     return Finish(kFuncFlush, std::fflush(open->file) == 0 ? sceMcResSucceed : sceMcResFailReplace);
 }
 
-int sceMcChdir(int port, int slot, char *name, char *current) {
+int sceMcChdir(int port, int slot, const char *name, char *current) {
     if (!ValidPort(port)) {
         return -1;
     }
@@ -353,7 +376,32 @@ int sceMcChdir(int port, int slot, char *name, char *current) {
     return Finish(kFuncChdir, sceMcResSucceed);
 }
 
-int sceMcMkdir(int port, int slot, char *name) {
+int sceMcRename(int port, int slot, char *old_name, char *new_name) {
+    if (!ValidPort(port)) {
+        return -1;
+    }
+    if (int status = CardStatus(port); status != 0) {
+        return Finish(kFuncRename, status);
+    }
+    std::vector<std::string> old_parts = Components(port, old_name);
+    std::vector<std::string> new_parts = Components(port, new_name);
+    fs::path                 old_path = HostPath(port, old_parts);
+    fs::path                 new_path = HostPath(port, new_parts);
+    std::error_code          error;
+    if (old_parts.empty() || !fs::exists(old_path, error)) {
+        return Finish(kFuncRename, sceMcResNoEntry);
+    }
+    if (fs::exists(new_path, error)) {
+        return Finish(kFuncRename, sceMcResFailReplace);
+    }
+    if (!fs::is_directory(new_path.parent_path(), error)) {
+        return Finish(kFuncRename, sceMcResNoEntry);
+    }
+    fs::rename(old_path, new_path, error);
+    return Finish(kFuncRename, error ? sceMcResDeniedPermit : sceMcResSucceed);
+}
+
+int sceMcMkdir(int port, int slot, const char *name) {
     if (!ValidPort(port)) {
         return -1;
     }
@@ -387,7 +435,7 @@ int sceMcDelete(int port, int slot, char *name) {
     return Finish(kFuncDelete, sceMcResSucceed);
 }
 
-int sceMcGetDir(int port, int slot, char *name, unsigned int mode, int count, void *table) {
+int sceMcGetDir(int port, int slot, const char *name, int mode, int count, sceMcTblGetDir *table) {
     if (!ValidPort(port)) {
         return -1;
     }
@@ -429,7 +477,7 @@ int sceMcGetDir(int port, int slot, char *name, unsigned int mode, int count, vo
     }
     int written = 0;
     for (; card.listed < entries.size() && written < count; ++card.listed, ++written) {
-        std::memcpy(static_cast<McDirEntry *>(table) + written, &entries[card.listed], sizeof(McDirEntry));
+        std::memcpy(table + written, &entries[card.listed], sizeof(McDirEntry));
     }
     return Finish(kFuncGetDir, written);
 }
