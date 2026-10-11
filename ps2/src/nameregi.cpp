@@ -1988,7 +1988,7 @@ s32 CNameRegiMenu::KeyStep() {
                     CopyJisToAscii(name, ascii);
                     item_no = SearchItemByName(ascii);
 
-                    if (item_no == 0x12E || item_no == 0x12F) {
+                    if (item_no == ITEM_ID_FISHING_ROD || item_no == ITEM_ID_LURE_ROD) {
                         message_type = 0x1E;
                         message->MsgPreset(0xA);
                         message->SetAbsPos(5);

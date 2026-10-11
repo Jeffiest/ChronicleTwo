@@ -209,7 +209,7 @@ int MenuChapterKey() {
             menu_chap_error_check_cnt += 1;
             voice_state = CSnd.StreamGetState(1);
 
-            if (voice_state == 0x8000 || menu_chap_error_check_cnt > 1500) {
+            if (voice_state == SND_STREAM_STATE_END || menu_chap_error_check_cnt > 1500) {
                 voiceflag = true;
             }
 

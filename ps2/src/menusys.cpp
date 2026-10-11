@@ -1221,7 +1221,7 @@ int CBaseMenuClass::MenuItemCommandSelect(int select_key, int push_button) {
                             MenuItemCmdRet.result = MenuItemUse.UseItem(ask_para.item, ITEM_USE_TARGET_CHARA, target_chara);
 
                             if (0 < MenuItemCmdRet.result &&
-                                (MenuItemCmdRet.detail == 0x124 || MenuItemCmdRet.detail == 0x110)) {
+                                (MenuItemCmdRet.detail == ITEM_ID_MELLOW_BANANA || MenuItemCmdRet.detail == ITEM_ID_PLUM_RICE_BALL)) {
                                 MenuItemCmdRet.result = 1;
                             }
                         }
