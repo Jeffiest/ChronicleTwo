@@ -98,9 +98,14 @@ void MenuChapterInit(mgCMemory *stack, int *tex_block, int open_type, int chapte
     };
     char image_path[96];
 
+#ifdef PORT
+    alignas(mgCMemory) u_char sound_memory_storage[sizeof(mgCMemory)];
+    mgCMemory &sound_memory = *reinterpret_cast<mgCMemory *>(sound_memory_storage);
+#else
     union {
         mgCMemory sound_memory;
     };
+#endif
 
     char       voice_path[140];
     u_int      file_size;

@@ -60,6 +60,7 @@ asm void mgZeroVectorW(float *vector) {
     sqc2 vf0, 0x0(a0)
 }
 #endif
+#ifndef PORT
 asm int mgClipBoxVertex(float *point, float *max, float *min) {
     .set noreorder
     lqc2 vf1, 0x0(a0)
@@ -79,6 +80,8 @@ asm int mgClipBoxVertex(float *point, float *max, float *min) {
     jr ra
     sltiu v0, v0, 0x1
 }
+#endif
+#ifndef PORT
 asm int mgClipBox(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -99,6 +102,8 @@ asm int mgClipBox(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
+#endif
+#ifndef PORT
 asm int mgClipBoxW(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -119,6 +124,8 @@ asm int mgClipBoxW(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
+#endif
+#ifndef PORT
 asm int mgClipInBox(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -139,6 +146,8 @@ asm int mgClipInBox(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
+#endif
+#ifndef PORT
 asm int mgClipInBoxW(float *max0, float *min0, float *max1, float *min1) {
     .set noreorder
     lqc2 vf10, 0x0(a0)
@@ -159,6 +168,7 @@ asm int mgClipInBoxW(float *max0, float *min0, float *max1, float *min1) {
     jr ra
     sltiu v0, v0, 0x1
 }
+#endif
 #ifndef PORT
 asm void mgAddVector(float *vector, float *add) {
     .set noreorder
@@ -547,6 +557,7 @@ int Check_Point_Poly3(float x, float y, float x0, float y0, float x1, float y1, 
     return MG_POINT_POLY3_OUTSIDE;
 }
 
+#ifndef PORT
 asm float mgDistVector(float *vector) {
     .set noreorder
     lqc2 vf4, 0x0(a0)
@@ -562,6 +573,8 @@ asm float mgDistVector(float *vector) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVectorXZ(float *vector) {
     .set noreorder
     lqc2 vf4, 0x0(a0)
@@ -576,6 +589,8 @@ asm float mgDistVectorXZ(float *vector) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVector2(float *vector) {
     .set noreorder
     lqc2 vf4, 0x0(a0)
@@ -589,6 +604,8 @@ asm float mgDistVector2(float *vector) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVector(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -606,6 +623,8 @@ asm float mgDistVector(float *a, float *b) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVectorXZ(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -622,6 +641,8 @@ asm float mgDistVectorXZ(float *a, float *b) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVector2(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -637,6 +658,8 @@ asm float mgDistVector2(float *a, float *b) {
     jr ra
     nop
 }
+#endif
+#ifndef PORT
 asm float mgDistVectorXZ2(float *a, float *b) {
     .set noreorder
     lqc2 vf2, 0x0(a0)
@@ -651,6 +674,7 @@ asm float mgDistVectorXZ2(float *a, float *b) {
     jr ra
     nop
 }
+#endif
 #ifndef PORT
 asm void mgUnitMatrix(float (*matrix)[4]) {
     .set noreorder

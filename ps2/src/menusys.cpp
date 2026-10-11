@@ -1952,7 +1952,8 @@ int CBaseMenuClass::IsSpectolFusion(int select_key, int push_button) {
 
     switch (step) {
         case 0:
-            int choice = message->YesNoCursor();
+            int choice;
+            choice = message->YesNoCursor();
 
             switch (push_button) {
                 case MENU_PUSH_BUTTON_DECIDE:
@@ -6411,7 +6412,8 @@ int CMenuItemInfo::IsAskExtend(int select_key, int push_button) {
                     break;
                 }
                 case MENU_BUILD_UP_CONFIRM: {
-                    int choice = message->YesNoCursor();
+                    int choice;
+            choice = message->YesNoCursor();
 
                     switch (push_button) {
                         case MENU_PUSH_BUTTON_DECIDE:
@@ -8650,7 +8652,7 @@ static void MenuItemDebugDraw() {
 
             break;
         }
-        case ITEM_MENU_PANEL_CHARA:
+        case ITEM_MENU_PANEL_CHARA: {
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 200.0f, 0x80, 0, 0, 0);
             font->SetStr("HP control");
             font->SetPos(236, 60);
@@ -8693,6 +8695,7 @@ static void MenuItemDebugDraw() {
             font->SetPos(236, 200);
             font->DrawDirect(font->str, font->pos_x, font->pos_y);
             break;
+        }
         case ITEM_MENU_PANEL_WEAPON: {
             DrawMenuFillBox(236.0f, 60.0f, 230.0f, 300.0f, 0x80, 0, 0, 0);
             font->SetStr("WHP control");
@@ -12321,7 +12324,7 @@ int CItemSelect::KeyStep() {
         default: {
             int select_key = MenuCommonInfo->CheckSelectKey();
             int push_button = MenuCommonInfo->CheckPushButton();
-            int max = (int) (ITEM_SELECT_COLUMNS * line_num);
+            int max = (int) ((float) ITEM_SELECT_COLUMNS * line_num);
             int old_cursor = cursor;
 
             if (select_key & MENU_SELECT_KEY_UP) {

@@ -423,11 +423,11 @@ void mgCTextureAnime::TexAnime(int texb, sceVif1Packet *packet) {
                         offset_x = (float) data->dest_w *
                                    ((float) data->amplitude_x *
                                     ((1.0f + sinf(TWO_PI * (float) data->phase_x / (float) data->period_x)) / 2.0f) /
-                                    MG_TEX_ANIME_AMPLITUDE_FULL);
+                                    (float) MG_TEX_ANIME_AMPLITUDE_FULL);
                         offset_y = (float) data->dest_h *
                                    ((float) data->amplitude_y *
                                     ((1.0f + sinf(TWO_PI * (float) data->phase_y / (float) data->period_y)) / 2.0f) /
-                                    MG_TEX_ANIME_AMPLITUDE_FULL);
+                                    (float) MG_TEX_ANIME_AMPLITUDE_FULL);
                     }
 
                     src_end_x = data->src_x + data->src_w;
