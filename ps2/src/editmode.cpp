@@ -1942,7 +1942,7 @@ void EditMode(CScene *scene) {
                         eCurPos[1] = eCurPos[1] > probe[1] ? eCurPos[1] : probe[1];
                         CEditPartsInfo *remove_info = map->GetePartsInfoAtPlaceID(parts_no);
 
-                        if (remove_info != NULL && !(remove_info->attr & EDIT_PARTS_ATR_NO_REMOVE_FOCUS)) {
+                        if (remove_info != NULL && !(remove_info->attr & EDIT_PARTS_ATR_NO_REMOVE)) {
                             map->focus_parts = parts_no;
                         }
 
