@@ -3710,7 +3710,7 @@ int CheckFishing(float *pos, CCPoly *polys, int count) {
         float height = hit_point[i][1];
         pos[1] = height;
 
-        if (polys[index].area_kind == 7) {
+        if (polys[index].area_kind == COL_AREA_FISHING_WATER) {
             return 1;
         }
     }

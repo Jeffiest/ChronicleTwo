@@ -90,8 +90,8 @@ void CFragment::Step(CCPoly *polys, int poly_count) {
                     s16 kind = polys[hit_indices[i]].area_kind;
 
                     switch (kind) {
-                        case 1:
-                        case 7: {
+                        case COL_AREA_WATER:
+                        case COL_AREA_FISHING_WATER: {
                             CEffectScriptMan *effects =
                                 GetMainScene()->GetEffect(0);
 
@@ -407,8 +407,8 @@ int CPot::FlyStep() {
         if (hit_count != 0) {
             for (int i = 0; i < hit_count; i++) {
                 switch (polys[hit_indices[i]].area_kind) {
-                    case 1:
-                    case 7: {
+                    case COL_AREA_WATER:
+                    case COL_AREA_FISHING_WATER: {
                         CEffectScriptMan *effects = GetMainScene()->GetEffect(0);
 
                         if (effects != NULL) {

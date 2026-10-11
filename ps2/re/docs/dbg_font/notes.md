@@ -45,14 +45,15 @@ assignments retain the retail store sequence while sharing each constant load.
   become `prev_serno+1`/`+2`, x moves back by `char_width-8`, `prev_serno` cleared.
   ASCII: 'E' starts a check of 5 bytes against "ESC[$" / "ESC[#" -- the
   literal letters E,S,C,[ , not the 0x1B control code; `\t`, `\n`; anything else is
-  `__putc(c + 0x204D)`.
+  `__putc(c + DBG_FONT_SERNO_ASCII)`, where `DBG_FONT_SERNO_ASCII` (0x204D) is the serial number of
+  ASCII code 0 in the half-width sheet.
 - `__putc(serno)`: serno >= 0x2285 draws nothing. <0x1000 sheet 0, <0x2000 sheet 1 (serno-0x1000),
   else sheet 2 (serno-0x2000, glyph width 9 instead of 16). Cell = serno&0x3F column,
   serno>>6 row, 16 px cells; edge cells clamp UV to 0x3FF. Uses a stack `mgCDrawPrim`
   (`Begin(6)` = sprite prim). x advances by `char_width - (16 - (w-1)) + 2`.
 
 ## File-local functions (static, belong in the .cpp, not the header)
-Listed local in `build/re/local_symbols.tsv`. All return 64-bit values (`daddu`/`daddiu` results):
+Listed local in `build/re/local_symbols.tsv`; all three are `static` in `dbg_font.cpp`. All return 64-bit values (`daddu`/`daddiu` results):
 - `static unsigned long SjisToJis(unsigned long sjis)` -- standard SJIS -> JIS X 0208.
 - `static unsigned long SjisToSerno(unsigned long sjis)` -- `(jis>>8)*94 + (jis&0xFF) - 0xC3F`
   (row-major index of 94-cell rows from JIS 0x2121).
@@ -66,6 +67,7 @@ Listed local in `build/re/local_symbols.tsv`. All return 64-bit values (`daddu`/
 
 ## Enums
 `DbgFontSerno` values all seen in `__putc`/`PrintDirect`/`ascii2serno` as above.
+`DBG_FONT_SERNO_ASCII` is the ASCII base above.
 `DbgFontSheet` indexes the three sheets (order from `InitTexture` args and `__putc` ranges).
 
 ## First game
