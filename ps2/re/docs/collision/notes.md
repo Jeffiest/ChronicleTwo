@@ -143,9 +143,9 @@ definitions; their zero tails are piece alignment.
   before the loop; nothing in this function reads them. A typed volatile view of the box's
   maximum bounds makes MWCC reload its X lane after the early overlap tests, as retail does.
 - MDT layout: `CreateCollisionMDT` reads `MDT_HEADER` (mg_dataset.hpp) vertex_ofs/faces_ofs/
-  material_ofs; `MDT_FACES::prim_num`, records from `faces + 1`; `FACES_ID::face_num` is used as
-  an INDEX count here (triangles = face_num / 3 with *signed* division although the field is
-  declared unsigned; the next record is `&index[face_num]`), so mg_dataset.hpp's "Number of
+  material_ofs; `MDT_FACES::prim_num`, records from `faces + 1`; `FACES_ID::vertex_num` is used as
+  an INDEX count here (triangles = vertex_num / 3 with *signed* division although the field is
+  declared unsigned; the next record is `&index[vertex_num]`), so mg_dataset.hpp's "Number of
   faces" comment is likely wrong. Material attrs come from `MDT_MATERIAL_::diffuse[0..3]`. The
   16-byte zeroing of CCPoly 0x40-0x4F suggests the original had a 16-byte attribute struct
   there (first game: union `info`/`attr`). Vertex, material and face tables are byte offsets
