@@ -1,3 +1,4 @@
+#include "common.h"
 #include "menucommon.hpp"
 #include "mw_runtime.h"
 
@@ -38,16 +39,27 @@
  * Number of item categories used by the menu sorting order.
  *
  */
-static const int sort_type_count = 0x24;
+static const int sort_type_count = 36;
 
 /**
  *
  * Default number of miscellaneous-information entries in a menu layout.
  *
  */
-static const int default_etc_count = 0x60;
+static const int default_etc_count = 96;
 
-static inline unsigned int align16_blocks(unsigned int n);
+/**
+ *
+ * Rounds a byte count up to the number of 16-byte allocation blocks.
+ *
+ */
+static inline unsigned int align16_blocks(unsigned int n) {
+    if (n & 0xF) {
+        return (n >> 4) + 1;
+    }
+
+    return n >> 4;
+}
 
 int menu_dtype_init(CMenuPosDataForm *form, SPI_STACK *stack, int argc);
 
@@ -223,11 +235,6 @@ int _MENU_EXE_RESET_TEXINFO(SPI_STACK *stack, int argc);
 
 int _MENU_DEBUG_PRINTF(SPI_STACK *stack, int argc);
 
-/**
- *
- * Rounds a byte count up to the number of 16-byte allocation blocks.
- *
- */
 int _MENU_FORM_RGBA_BIT(SPI_STACK *stack, int argc);
 
 int _MENU_FILLBOX(SPI_STACK *stack, int argc);
@@ -241,7 +248,7 @@ int _MENU_EXE_MSGSETBUFF(SPI_STACK *stack, int argc);
  * Sort rank of each item category, with an empty slot ordered last.
  *
  */
-static signed char sort_table[0x24] = {
+static signed char sort_table[sort_type_count] = {
     sort_type_count, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
     11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
     23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 0};
@@ -426,14 +433,14 @@ mgCMemory *MenuSpiStack;
  * First miscellaneous-information slot of the current script block.
  *
  */
-static u16 Menu_Target_No;
+static short Menu_Target_No;
 
 /**
  *
  * Miscellaneous-information offset within the current script block.
  *
  */
-static u16 Menu_Target_No_local;
+static short Menu_Target_No_local;
 
 /**
  *
@@ -500,16 +507,6 @@ static char MenuSpiTextureName[0x20];
 
 MENU_COMMAND_ANALYZE_INFO MenuCommandAnalyzeInfo;
 
-static inline unsigned int align16_blocks(unsigned int n) {
-    if (n & 0xF) {
-        return (n >> 4) + 1;
-    }
-
-    return n >> 4;
-}
-
-#include "common.h"
-
 int GetRandI(int range) {
     return rand() % range;
 }
@@ -544,7 +541,7 @@ float MenuAdjustPolygonScale(mgCFrame *frame, float size) {
         return 1.0f;
     }
 
-    (frame)->GetWorldBBox(&box);
+    frame->GetWorldBBox(&box);
     return MenuAdjustPolygonScale(box, size);
 }
 
@@ -621,21 +618,21 @@ void MenuSePlay(int sound_no, unsigned int *bank, mgCMemory *memory) {
 
     memory->stack_used = 0;
     memory->lock = 0;
-    sndInitPort(8);
-    sndSePlay(sndLoadSound((int) SND_PORT_MENU, bank, memory), sound_no, 0);
-    MenuSePlayUsedFlag = 1;
+    sndInitPort(SND_PORT_MENU);
+    sndSePlay(sndLoadSound(SND_PORT_MENU, bank, memory), sound_no, 0);
+    MenuSePlayUsedFlag = true;
 }
 
 void StopEnvSoundMenu(int event_port) {
-    SndPortVol_Ob = sndGetPortVol((int) SND_PORT_OB);
-    SndPortVol_Base = sndGetPortVol((int) SND_PORT_BASE);
-    sndSetPortVol((int) SND_PORT_OB, 0.0f);
-    sndSetPortVol((int) SND_PORT_BASE, 0.0f);
+    SndPortVol_Ob = sndGetPortVol(SND_PORT_OB);
+    SndPortVol_Base = sndGetPortVol(SND_PORT_BASE);
+    sndSetPortVol(SND_PORT_OB, 0.0f);
+    sndSetPortVol(SND_PORT_BASE, 0.0f);
     SndPortCheck_EventPort = event_port;
 
     if (event_port != 0) {
-        SndPortVol_Event = sndGetPortVol((int) SND_PORT_EVENT);
-        sndSetPortVol((int) SND_PORT_EVENT, 0.0f);
+        SndPortVol_Event = sndGetPortVol(SND_PORT_EVENT);
+        sndSetPortVol(SND_PORT_EVENT, 0.0f);
     }
 
     SndPortCheck_EventPort = event_port;
@@ -644,11 +641,11 @@ void StopEnvSoundMenu(int event_port) {
 }
 
 void ReStartEnvSoundMenu() {
-    sndSetPortVol((int) SND_PORT_OB, SndPortVol_Ob);
-    sndSetPortVol((int) SND_PORT_BASE, SndPortVol_Base);
+    sndSetPortVol(SND_PORT_OB, SndPortVol_Ob);
+    sndSetPortVol(SND_PORT_BASE, SndPortVol_Base);
 
     if (SndPortCheck_EventPort != 0) {
-        sndSetPortVol((int) SND_PORT_EVENT, SndPortVol_Event);
+        sndSetPortVol(SND_PORT_EVENT, SndPortVol_Event);
     }
 
     GetMainScene()->SetEnvBGMVol(SndPortVol_Env);
@@ -732,13 +729,13 @@ int SeitonItemBoardSub(CGameDataUsed *items, int count) {
     }
 
     sort_table[0] = sort_type_count;
-    swapped = 0;
+    swapped = false;
 
     for (i = 0; i < count - 1; i++) {
         for (j = i + 1; j < count; j++) {
             if (CompGameData(board[i].item_no, board[j].item_no) > 0) {
                 GameDataSwap(&board[i], &board[j], 1);
-                swapped = 1;
+                swapped = true;
             }
         }
     }
@@ -809,7 +806,7 @@ int GetSameAdrressUserData(CGameDataUsed *item, int kind) {
 
     if (kind == 0) {
         entry = MenuUserParam.used_data;
-        bag_max = GetNowBagMax(1);
+        bag_max = GetNowBagMax(ITEM_BOARD_ALL);
 
         for (i = 0; i < bag_max; i++, entry++) {
             if (entry == item) {
@@ -896,19 +893,23 @@ int LoadFileMenu(char *name, u_long128 *buffer, int mode) {
     strcat(path, langdirpathTable[LanguageCode]);
     strcat(path, name);
 
-    if (mode == 0) {
+    if (mode == MENU_FILE_LOAD_BG) {
         LoadFileBG(path, buffer, &size);
     }
 
-    if (mode == 1) {
-        LoadFile2(path, buffer, &size, 0);
+    if (mode == MENU_FILE_LOAD_DIRECT) {
+        LoadFile2(path, buffer, &size, LOAD_FILE_READ);
     }
 
     return size;
 }
 
 void ConvertFontCode(char *source, char *destination) {
-    // Hexadecimal digits and their nibble values for bracketed font codes.
+    /**
+     *
+     * Hexadecimal digits and their nibble values for bracketed font codes.
+     *
+     */
     static s8 mes_cord_conv[16][2] = {
         {'0', 0 },
         {'1', 1 },
@@ -1000,11 +1001,11 @@ void ConvertFontCode(char *source, char *destination) {
 }
 
 int CheckNowEurope() {
-    if (LanguageCode > 0 && LanguageCode < 6) {
-        return 1;
+    if (LanguageCode > LANG_JAPANESE && LanguageCode < LANG_CHINESE) {
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 int MenuCommonReadData(mgCMemory *memory, char **names, int mode) {
@@ -1241,13 +1242,13 @@ int _MENU_ETCINFO(SPI_STACK *stack, int arg_count) {
     int           i;
     MENU_ETCINFO *entry;
 
-    index = (short) Menu_Target_No + (short) Menu_Target_No_local;
+    index = Menu_Target_No + Menu_Target_No_local;
 
     if (index >= MenuPosData->etc_tbl_num) {
         return 1;
     }
 
-    entry = MenuPosData->etc_tbl + index;
+    entry = &MenuPosData->etc_tbl[index];
     name = spiGetStackString(stack++);
 
     if (entry->name != NULL) {
@@ -1264,7 +1265,7 @@ int _MENU_ETCINFO(SPI_STACK *stack, int arg_count) {
     entry->name = mgCopyString(name, MenuSpiStack);
     entry->value[0] = spiGetStackInt(stack++);
     entry->value[1] = spiGetStackInt(stack);
-    Menu_Target_No_local = (short) Menu_Target_No_local + 1;
+    Menu_Target_No_local++;
     return 1;
 }
 
@@ -1340,13 +1341,13 @@ int _MENU_ETCINFO2(SPI_STACK *stack, int arg_count) {
     int            j;
     MENU_ETCINFO2 *entry;
 
-    index = (short) Menu_Target_No + (short) Menu_Target_No_local;
+    index = Menu_Target_No + Menu_Target_No_local;
 
     if (index >= MenuPosData->etc_tbl2_num) {
         return 1;
     }
 
-    entry = MenuPosData->etc_tbl2 + index;
+    entry = &MenuPosData->etc_tbl2[index];
     name = spiGetStackString(stack++);
 
     if (entry->name != NULL) {
@@ -1363,7 +1364,7 @@ int _MENU_ETCINFO2(SPI_STACK *stack, int arg_count) {
         entry->value[j] = spiGetStackFloat(stack++);
     }
 
-    Menu_Target_No_local = (short) Menu_Target_No_local + 1;
+    Menu_Target_No_local++;
     return 1;
 }
 
@@ -1432,7 +1433,7 @@ int _MENU_TEXDATA_CLEAR(SPI_STACK *stack, int argc) {
     CPosDataManage *pos_data = MenuPosData;
     int             count = pos_data->tex_info_num;
 
-    if (!(argc > 1) || count < to) {
+    if (argc <= 1 || count < to) {
         to = count;
     }
 
@@ -1473,13 +1474,9 @@ int _MENU_TEXDATA_MALLOC(SPI_STACK *stack, int argc) {
         count = spiGetStackInt(stack);
     }
 
-    bytes = count * 0x20;
+    bytes = count * sizeof(MENU_BASETEXINFO);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     MENU_BASETEXINFO *table = (MENU_BASETEXINFO *) MenuSpiStack->Alloc(blocks);
     CPosDataManage   *pos_data = MenuPosData;
@@ -1503,16 +1500,7 @@ int _MENU_TEXNAME(SPI_STACK *stack, int argc) {
 
     int index = spiGetStackInt(block_arg);
 
-    struct {
-        u8 prefix[0xC];
-
-        struct {
-            short block;
-            short tail;
-        } entries[16];
-    } *common = (typeof(common)) MenuCommonInfo;
-
-    menu_analyze_texblock = common->entries[index].block;
+    menu_analyze_texblock = MenuCommonInfo->tex_block[index];
     return 1;
 }
 
@@ -1553,12 +1541,12 @@ int _MENU_TEXDATA(SPI_STACK *stack, int argc) {
         return 0;
     }
 
-    if (MenuPosData->GetTexGetInfo(name) != 0) {
+    if (MenuPosData->GetTexGetInfo(name) != NULL) {
         return 0;
     }
 
     slot->tex_name = mgCopyString(MenuSpiTextureName, MenuSpiStack);
-    slot->tex_block = (signed char) menu_analyze_texblock;
+    slot->tex_block = menu_analyze_texblock;
     slot->tbl_no = no;
     slot->name = mgCopyString(name, MenuSpiStack);
     slot->rect.Set(x, y, w, h);
@@ -1573,14 +1561,10 @@ int _MENU_TEXDATA(SPI_STACK *stack, int argc) {
  */
 int _MENU_FORM_MALLOC(SPI_STACK *stack, int argc) {
     int          count = spiGetStackInt(stack);
-    unsigned int bytes = count << 7;
+    unsigned int bytes = count * sizeof(CMenuPosDataForm);
     unsigned int blocks;
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     u_long128        *block = MenuSpiStack->Alloc(blocks + 2);
     CMenuPosDataForm *table = (CMenuPosDataForm *) operator new[](bytes, block);
@@ -1619,7 +1603,7 @@ int _MENU_FORM_SET(SPI_STACK *stack, int argc) {
 
     menu_formPt = NULL;
 
-    if (MenuPosData->GetFormInfo(name) != 0) {
+    if (MenuPosData->GetFormInfo(name) != NULL) {
         return 0;
     }
 
@@ -1630,8 +1614,8 @@ int _MENU_FORM_SET(SPI_STACK *stack, int argc) {
         menu_formPt->name = mgCopyString(name, MenuSpiStack);
     }
 
-    menu_formPt->active = 1;
-    menu_formPt->draw_flag = 1;
+    menu_formPt->active = true;
+    menu_formPt->draw_flag = true;
     menu_form_partsno = 0;
     menu_analyze_formno_offset += 1;
     return 1;
@@ -1654,11 +1638,7 @@ int _MENU_FORM_PARTNUM(SPI_STACK *stack, int argc) {
     menu_formPt->parts_num = spiGetStackInt(stack);
     bytes = menu_formPt->parts_num * sizeof(MENUFORMPARTS_TYPE);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     menu_formPt->parts = (MENUFORMPARTS_TYPE *) MenuSpiStack->Alloc(blocks);
 
@@ -1751,7 +1731,11 @@ int menu_dtype_init(CMenuPosDataForm *form, SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FORM_DTYPE(SPI_STACK *stack, int argc) {
-    // Drawing-type keywords accepted by the menu form script.
+    /**
+     *
+     * Drawing-type keywords accepted by the menu form script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"normal",    MENUFORM_DTYPE_NORMAL   },
         {"itembrd",   MENUFORM_DTYPE_ITEMBRD  },
@@ -1805,7 +1789,11 @@ int _MENU_FORM_DTYPE(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FORM_MTYPE(SPI_STACK *stack, int argc) {
-    // Movement keywords ordered by their MENUFORM_MTYPE value plus one.
+    /**
+     *
+     * Movement keywords ordered by their MENUFORM_MTYPE value plus one.
+     *
+     */
     static char *tbl[6] = {"n", "d", "l", "i", "ir", NULL};
 
     char *name = spiGetStackString(stack);
@@ -1813,7 +1801,7 @@ int _MENU_FORM_MTYPE(SPI_STACK *stack, int argc) {
     int   i = 0;
     char *entry;
 
-    while ((entry = tbl[i]) != 0) {
+    while ((entry = tbl[i]) != NULL) {
         if (strcmp(name, entry) == 0) {
             type = i - 1;
             break;
@@ -1892,7 +1880,7 @@ int _MENU_FORM_SETEND(SPI_STACK *stack, int argc) {
 int _MENU_FORM_MOVERATE(SPI_STACK *stack, int argc) {
     SPI_STACK *next_slot = stack + 1;
 
-    if (menu_formPt == 0) {
+    if (menu_formPt == NULL) {
         return 0;
     }
 
@@ -1909,12 +1897,12 @@ int _MENU_FORM_MOVERATE(SPI_STACK *stack, int argc) {
 int _MENU_FORM_PUTXY(SPI_STACK *stack, int argc) {
     SPI_STACK *next_slot = stack + 1;
 
-    if (menu_formPt == 0) {
+    if (menu_formPt == NULL) {
         return 0;
     }
 
-    menu_formPt->x = (float) spiGetStackInt(stack);
-    menu_formPt->y = (float) spiGetStackInt(next_slot);
+    menu_formPt->x = spiGetStackInt(stack);
+    menu_formPt->y = spiGetStackInt(next_slot);
     return 1;
 }
 
@@ -1939,9 +1927,9 @@ int _MENU_FORM_RGBA(SPI_STACK *stack, int argc) {
 
     if (argc == 3) {
         form = menu_formPt;
-        form->rgba[0] = (signed char) values[0];
-        form->rgba[1] = (signed char) values[1];
-        form->rgba[2] = (signed char) values[2];
+        form->rgba[0] = values[0];
+        form->rgba[1] = values[1];
+        form->rgba[2] = values[2];
         form->rgba[3] = 0x80;
 
         for (step = 0; step < 4; step++) {
@@ -1951,10 +1939,10 @@ int _MENU_FORM_RGBA(SPI_STACK *stack, int argc) {
 
     if (argc == 4) {
         form = menu_formPt;
-        form->rgba[0] = (signed char) values[0];
-        form->rgba[1] = (signed char) values[1];
-        form->rgba[2] = (signed char) values[2];
-        form->rgba[3] = (signed char) values[3];
+        form->rgba[0] = values[0];
+        form->rgba[1] = values[1];
+        form->rgba[2] = values[2];
+        form->rgba[3] = values[3];
 
         for (i = 0; i < 4; i++) {
             form->SetRGBACalcParam(i, 0, 0x80);
@@ -1981,19 +1969,19 @@ int _MENU_FORM_RGBA_BIT(SPI_STACK *stack, int argc) {
         u8 bit = 0;
 
         if (channel == 'r') {
-            bit = 1;
+            bit = MENUFORM_RGBA_BIT_RED;
         }
 
         if (channel == 'g') {
-            bit = 2;
+            bit = MENUFORM_RGBA_BIT_GREEN;
         }
 
         if (channel == 'b') {
-            bit = 4;
+            bit = MENUFORM_RGBA_BIT_BLUE;
         }
 
         if (channel == 'a') {
-            bit = 8;
+            bit = MENUFORM_RGBA_BIT_ALPHA;
         }
 
         if (mask != 0) {
@@ -2023,13 +2011,9 @@ int _MENU_ACTION_TABLE_NUM(SPI_STACK *stack, int argc) {
     }
 
     count = spiGetStackInt(stack);
-    bytes = count * 0x14;
+    bytes = count * sizeof(MENU_FORM_ACTION);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     table = (MENU_FORM_ACTION *) MenuSpiStack->Alloc(blocks);
     menu_formPt->action = table;
@@ -2099,7 +2083,7 @@ int _MENU_PARTVIBER(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_SHADOW_ONOFF(SPI_STACK *stack, int argc) {
-    menu_form_part->shadow = 1;
+    menu_form_part->shadow = true;
     menu_form_part->shadow_offset = 4;
 
     if (argc > 0) {
@@ -2197,7 +2181,7 @@ int _MENU_PART_ETCINFO(SPI_STACK *stack, int argc) {
     int i;
     int index;
 
-    if (menu_form_part == 0) {
+    if (menu_form_part == NULL) {
         return 0;
     }
 
@@ -2206,7 +2190,7 @@ int _MENU_PART_ETCINFO(SPI_STACK *stack, int argc) {
     for (i = 0; i < pairs; i++) {
         index = spiGetStackInt(stack++);
 
-        (&menu_form_part->etc_info[0])[index] = spiGetStackInt(stack++);
+        menu_form_part->etc_info[index] = spiGetStackInt(stack++);
     }
 
     return 1;
@@ -2252,7 +2236,11 @@ void MakePartsName(SPI_STACK *stack, MENUFORMPARTS_TYPE *part) {
  *
  */
 int _MENU_PART_DTYPE(SPI_STACK *stack, int argc) {
-    // Additional drawing-type keywords accepted by the menu part script.
+    /**
+     *
+     * Additional drawing-type keywords accepted by the menu part script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"clut_reload",                      MENUFORMPARTS_DTYPE_CLUT_RELOAD},
         {"\x94\xAD\x96\xBE\x83l\x83^",       MENUFORMPARTS_DTYPE_IDEA_BOARD },
@@ -2277,11 +2265,11 @@ int _MENU_PART_DTYPE(SPI_STACK *stack, int argc) {
     part->dtype = menu_spi_analyze_func_strcut1(tbl, spiGetStackString(stack++));
     MakePartsName(stack++, part);
 
-    if (part->dtype == 'O') {
+    if (part->dtype == MENUFORMPARTS_DTYPE_CLUT_RELOAD) {
         for (i = 0; i < argc - 2; i++) {
-            (&part->etc_info[0])[i] = spiGetStackInt(stack++);
+            part->etc_info[i] = spiGetStackInt(stack++);
         }
-    } else if (part->dtype == 'L') {
+    } else if (part->dtype == MENUFORMPARTS_DTYPE_RANDOM_LINE) {
         part->x = spiGetStackInt(stack++);
         part->y = spiGetStackInt(stack++);
         part->w = spiGetStackInt(stack++);
@@ -2319,8 +2307,8 @@ int _MENU_NORMAL(SPI_STACK *stack, int argc) {
         menu_texdata_to_formpart_copy(part);
     }
 
-    part->dtype = 0;
-    part->active = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_NORMAL;
+    part->active = true;
     return 1;
 }
 
@@ -2344,8 +2332,8 @@ int _MENU_NORMAL2(SPI_STACK *stack, int argc) {
         menu_texdata_to_formpart_copy(part);
     }
 
-    part->dtype = 1;
-    part->active = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_NORMAL2;
+    part->active = true;
     return 1;
 }
 
@@ -2360,9 +2348,9 @@ int _MENU_CURSOR(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 2;
-    part->active = 1;
-    part->draw_flag = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_CURSOR;
+    part->active = true;
+    part->draw_flag = true;
     return 1;
 }
 
@@ -2377,9 +2365,9 @@ int _MENU_FUNCINFO(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 3;
-    part->active = 1;
-    part->draw_flag = 0;
+    part->dtype = MENUFORMPARTS_DTYPE_FUNCINFO;
+    part->active = true;
+    part->draw_flag = false;
     return 1;
 }
 
@@ -2402,8 +2390,8 @@ int _MENU_NUMBER1(SPI_STACK *stack, int argc) {
         part->h = spiGetStackInt(stack);
     }
 
-    part->dtype = 5;
-    part->active = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_NUMBER1;
+    part->active = true;
     return 1;
 }
 
@@ -2427,8 +2415,8 @@ int _MENU_NUMBER2(SPI_STACK *stack, int argc) {
     }
 
     part->etc_info[1] = 0;
-    part->dtype = 6;
-    part->active = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_NUMBER2;
+    part->active = true;
     return 1;
 }
 
@@ -2461,7 +2449,7 @@ int _MENU_FRMIMG(SPI_STACK *stack, int argc) {
         part->bilinear = 1;
     }
 
-    part->active = 1;
+    part->active = true;
     return 1;
 }
 
@@ -2477,8 +2465,8 @@ int _MENU_FORM(SPI_STACK *stack, int argc) {
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack);
-    part->dtype = 0x19;
-    part->active = 1;
+    part->dtype = MENUFORMPARTS_DTYPE_FORM;
+    part->active = true;
     return 1;
 }
 
@@ -2510,8 +2498,8 @@ int _MENU_ITEM(SPI_STACK *stack, int argc) {
         part->h = spiGetStackInt(stack);
     }
 
-    part->active = 1;
-    part->draw_flag = 1;
+    part->active = true;
+    part->draw_flag = true;
     return 1;
 }
 
@@ -2523,7 +2511,7 @@ int _MENU_ITEM(SPI_STACK *stack, int argc) {
 int _MENU_ITEM_CHECKMARK(SPI_STACK *stack, int argc) {
     MENUFORMPARTS_TYPE *part = menu_formPt->GetEnableEnterPart();
     menu_form_part = part;
-    part->dtype = 0x39;
+    part->dtype = MENUFORMPARTS_DTYPE_CHECKMARK;
     part->tex_info_no = (s8) MenuCommonInfo->tex_block[0];
     MakePartsName(stack++, part);
     part->x = spiGetStackInt(stack++);
@@ -2536,8 +2524,8 @@ int _MENU_ITEM_CHECKMARK(SPI_STACK *stack, int argc) {
         menu_texdata_to_formpart_copy(part);
     }
 
-    part->active = 1;
-    part->draw_flag = 1;
+    part->active = true;
+    part->draw_flag = true;
     return 1;
 }
 
@@ -2547,7 +2535,11 @@ int _MENU_ITEM_CHECKMARK(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FILLBOX(SPI_STACK *stack, int argc) {
-    // Filled-box drawing keywords accepted by the menu script.
+    /**
+     *
+     * Filled-box drawing keywords accepted by the menu script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"sq_beta", MENUFORMPARTS_DTYPE_SQ_BETA},
         {NULL,      -1                         },
@@ -2562,8 +2554,8 @@ int _MENU_FILLBOX(SPI_STACK *stack, int argc) {
     part->w = spiGetStackInt(stack++);
     part->h = spiGetStackInt(stack++);
     part->etc_info[0] = spiGetStackInt(stack);
-    part->active = 1;
-    part->draw_flag = 1;
+    part->active = true;
+    part->draw_flag = true;
     u8 effect_counts[4] = {1, 2, 2, 4};
     part->effect = (MENU_PARTS_EFFECT_STRUCT1 *) MenuSpiStack->Alloc(
         align16_blocks(effect_counts[part->etc_info[0]] * sizeof(MENU_PARTS_EFFECT_STRUCT1)));
@@ -2577,7 +2569,7 @@ int _MENU_FILLBOX(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_FILLBOXINFO(SPI_STACK *stack, int argc) {
-    menu_parts_effect_ptr->type = 1;
+    menu_parts_effect_ptr->type = MENU_PARTS_EFFECT_FILLBOX;
 
     for (int i = 0; i < 4; i++) {
         menu_parts_effect_ptr->param[i] = spiGetStackInt(stack++);
@@ -2597,13 +2589,13 @@ int _MENU_WAKU_RECT(SPI_STACK *stack, int argc) {
     menu_form_part = part;
     part->tex_info_no = MenuPosData->GetTexGetInfoTblNo(spiGetStackString(stack++));
     MakePartsName(stack++, part);
-    part->dtype = 0xD;
+    part->dtype = MENUFORMPARTS_DTYPE_WAKU_RECT;
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack++);
     part->w = spiGetStackInt(stack++);
     part->h = spiGetStackInt(stack);
-    part->active = 1;
-    part->draw_flag = 1;
+    part->active = true;
+    part->draw_flag = true;
     return 1;
 }
 
@@ -2617,13 +2609,13 @@ int _MENU_WAKU_CIRCLE(SPI_STACK *stack, int argc) {
     menu_form_part = part;
     part->tex_info_no = MenuPosData->GetTexGetInfoTblNo(spiGetStackString(stack++));
     MakePartsName(stack++, part);
-    part->dtype = 0xE;
+    part->dtype = MENUFORMPARTS_DTYPE_WAKU_CIRCLE;
     part->x = spiGetStackInt(stack++);
     part->y = spiGetStackInt(stack++);
     part->w = spiGetStackInt(stack++);
     part->h = spiGetStackInt(stack);
-    part->active = 1;
-    part->draw_flag = 1;
+    part->active = true;
+    part->draw_flag = true;
     return 1;
 }
 
@@ -2637,18 +2629,14 @@ int _MENU_PARTS_EFF_NUM(SPI_STACK *stack, int argc) {
     unsigned int bytes;
     unsigned int blocks;
 
-    if (menu_form_part == 0 || count <= 0) {
+    if (menu_form_part == NULL || count <= 0) {
         return 0;
     }
 
     menu_form_part->effect_num = count;
-    bytes = count * 0x24;
+    bytes = count * sizeof(MENU_PARTS_EFFECT_STRUCT1);
 
-    if (bytes & 0xF) {
-        blocks = (bytes >> 4) + 1;
-    } else {
-        blocks = bytes >> 4;
-    }
+    blocks = align16_blocks(bytes);
 
     menu_form_part->effect = (MENU_PARTS_EFFECT_STRUCT1 *) MenuSpiStack->Alloc(blocks);
     menu_parts_effect_ptr = menu_form_part->effect;
@@ -2661,7 +2649,11 @@ int _MENU_PARTS_EFF_NUM(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_PARTS_EFFECT(SPI_STACK *stack, int argc) {
-    // Animation-effect keywords accepted by the menu part script.
+    /**
+     *
+     * Animation-effect keywords accepted by the menu part script.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"blink",       MENU_PARTS_EFFECT_BLINK      },
         {"rot",         MENU_PARTS_EFFECT_ROT        },
@@ -2678,13 +2670,13 @@ int _MENU_PARTS_EFFECT(SPI_STACK *stack, int argc) {
     name = spiGetStackString(stack++);
     effect = menu_parts_effect_ptr;
 
-    if (effect == NULL || name == 0) {
+    if (effect == NULL || name == NULL) {
         return 0;
     }
 
     effect->type = menu_spi_analyze_func_strcut1(tbl, name);
-    effect->active = 1;
-    effect->repeat = 1;
+    effect->active = true;
+    effect->repeat = true;
 
     for (i = 0; i < argc - 1; i++) {
         effect->param[i] = spiGetStackInt(stack++);
@@ -2716,10 +2708,10 @@ int _MENU_EXE_COMMAND_NAME(SPI_STACK *stack, int argc) {
     char *name;
 
     name = spiGetStackString(stack);
-    SpiMenuExeCommandFlag = 0;
+    SpiMenuExeCommandFlag = false;
 
     if (strcmp(MenuCommandAnalyzeInfo.command_name, name) == 0) {
-        SpiMenuExeCommandFlag = 1;
+        SpiMenuExeCommandFlag = true;
     }
 
     return 1;
@@ -2820,7 +2812,7 @@ int _MENU_EXE_FORM_CALCRGBAPARAM(SPI_STACK *stack, int argc) {
 
     form = MenuPosData->GetFormInfo(spiGetStackString(stack++));
 
-    if (form == 0) {
+    if (form == NULL) {
         return 1;
     }
 
@@ -2846,7 +2838,7 @@ int _MENU_EXE_FORM_FADE(SPI_STACK *stack, int argc) {
 
     form = MenuPosData->GetFormInfo(spiGetStackString(stack++));
 
-    if (form == 0) {
+    if (form == NULL) {
         return 1;
     }
 
@@ -2913,7 +2905,7 @@ int _MENU_EXE_FORM_SETACTION(SPI_STACK *stack, int argc) {
 
     form = MenuPosData->GetFormInfo(spiGetStackString(stack));
 
-    if (form == 0) {
+    if (form == NULL) {
         return 1;
     }
 
@@ -2936,7 +2928,7 @@ int _MENU_EXE_FORM_PARTSONOFF(SPI_STACK *stack, int argc) {
 
     form = MenuPosData->GetFormInfo(spiGetStackString(stack++));
 
-    if (form == 0) {
+    if (form == NULL) {
         return 0;
     }
 
@@ -2968,7 +2960,7 @@ int _MENU_EXE_FORM_PARTSONOFF_GRP(SPI_STACK *stack, int argc) {
 
     form = MenuPosData->GetFormInfo(spiGetStackString(stack++));
 
-    if (form == 0) {
+    if (form == NULL) {
         return 0;
     }
 
@@ -3033,7 +3025,11 @@ int _MENU_EXE_FORM_GROUP_SWAP(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_EXE_MSGENV(SPI_STACK *stack, int argc) {
-    // Message preset keywords accepted by menu command scripts.
+    /**
+     *
+     * Message preset keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"default",              MENU_SCRIPT_MES_DEFAULT             },
         {"default_black",        MENU_SCRIPT_MES_DEFAULT_BLACK       },
@@ -3161,7 +3157,11 @@ int _MENU_EXE_MSGSETBUFF(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_EXE_MSGSETFUCHI(SPI_STACK *stack, int argc) {
-    // Font-outline keywords accepted by menu command scripts.
+    /**
+     *
+     * Font-outline keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"default", FUCHI_SHADOW_BLACK_WIDE},
         {"none",    FUCHI_NONE             },
@@ -3364,7 +3364,11 @@ int _MENU_SCENE_FADE(SPI_STACK *stack, int argc) {
  *
  */
 int _MENU_SE_PLAY(SPI_STACK *stack, int argc) {
-    // System sound keywords accepted by menu command scripts.
+    /**
+     *
+     * System sound keywords accepted by menu command scripts.
+     *
+     */
     static MENU_SPI_ANALYZE_STRUCT1 tbl[] = {
         {"OK",     SYSTEM_SE_DECIDE},
         {"CANCEL", SYSTEM_SE_CANCEL},
