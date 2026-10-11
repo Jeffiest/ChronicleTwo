@@ -1256,7 +1256,7 @@ int DistCheck_Action2(CScene *scene, float unused, float range, float *out_dist,
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT && target->state == ACTIVE_MONSTER_LIVE &&
             target->catch_state != ACTION_CATCH_HELD &&
             !(target->attrib & MONSTER_ATTRIB_NO_LOCK_ON)) {
-            target->GetEntryObjectPos(0, 0, entry_pos);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, entry_pos);
             dist = target->target_dist;
 
             if (dist < range || target->tbl->boss != 0) {
@@ -1364,7 +1364,7 @@ int Check_LockOn(CScene *scene, float range, int index) {
         return true;
     }
 
-    target->GetEntryObjectPos(0, 0, target_pos);
+    target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
     own_pos[3] = 1.0f;
     target_pos[3] = 1.0f;
     out_of_range = true;
@@ -1407,8 +1407,8 @@ void CActionChara::CollisionCheck(float *pos, float *velocity, float *out_veloci
 
         int body_no = 0;
 
-        for (body = monster->GetEntryObjectPos(4, body_no, body_position); body != NULL;
-             body = monster->GetEntryObjectPos(4, body_no, body_position)) {
+        for (body = monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_BODY, body_no, body_position); body != NULL;
+             body = monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_BODY, body_no, body_position)) {
             if (body->enable == 0) {
                 body_no++;
                 continue;
@@ -1465,7 +1465,7 @@ void CActionChara::RockOn() {
         target = static_cast<CActiveMonster *>(nowScene__2->GetCharacter(target_no));
 
         if (target != NULL) {
-            target->GetEntryObjectPos(0, 0, target_pos);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
             sceVu0SubVector(to_target, target_pos, own_pos);
             sceVu0Normalize(to_target, to_target);
             sceVu0Normalize(front_vec, velocity);
@@ -1659,7 +1659,7 @@ int CActionChara::HumanMoveIF() {
         }
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             facing = unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f);
             SetRotation(0.0f, facing, 0.0f);
 
@@ -1727,7 +1727,7 @@ int CActionChara::HumanMoveIF() {
         }
 
         if (target != NULL && boss != 0 && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f), 0.0f);
         }
     }
@@ -1832,7 +1832,7 @@ int CActionChara::HumanShrowMoveIF() {
         target = static_cast<CActionChara *>(nowScene__2->GetCharacter(target_no));
 
         if (target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             rotation = unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f);
             SetRotation(0.0f, rotation, 0.0f);
         }
@@ -1915,7 +1915,7 @@ int CActionChara::HumanGunMoveIF(char *stand_motion, char *move_motion) {
         target = static_cast<CActionChara *>(nowScene__2->GetCharacter(target_no));
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             float target_angle = atan2f(target_position[0] - position[0], target_position[2] - position[2]);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, target_angle, 5.0f), 0.0f);
 
@@ -2749,7 +2749,7 @@ int CActionChara::MonsterMoveIF() {
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
             sceVu0FVECTOR target_position;
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f), 0.0f);
         }
     } else {
@@ -3693,7 +3693,7 @@ void CActionChara::Step() {
 
         if (lock_on != 0 && dir_gun != 0) {
             monster_index = target_no - MONSTER_ACTIVE_MAX;
-            ActiveMonster->active[monster_index]->GetEntryObjectPos(0, target_pos);
+            ActiveMonster->active[monster_index]->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, target_pos);
             sceVu0SubVector(gun_pos, target_pos, gun_pos);
             sceVu0CopyVector(target_pos, gun_pos);
             target_pos[3] = 1.0f;
