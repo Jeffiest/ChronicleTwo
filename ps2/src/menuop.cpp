@@ -669,7 +669,7 @@ void MenuManualDraw() {
                         StaticMenuLocalStack2.Align64();
                         StaticMenuLocalStack2.Alloc(0x280);
                         effect_buffer = StaticMenuLocalStack2.stGetTop();
-                        MonsterEffectEnter(GetMainScene(), effect_buffer, 0xAA);
+                        MonsterEffectEnter(GetMainScene(), effect_buffer, MONSTER_EFFECT_TEX_BLOCK);
                     }
 
                     if (!is_town) {
