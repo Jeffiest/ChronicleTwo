@@ -1146,7 +1146,7 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int apply)
                 break;
             }
 
-            if (MenuUsedItemNo == 0x111) {
+            if (MenuUsedItemNo == ITEM_ID_RESURRECTION_POWDER) {
                 if (dead == 1) {
                     count++;
 
