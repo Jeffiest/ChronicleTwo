@@ -9,7 +9,7 @@ No first-game counterpart (Dark Cloud 1 headers have no movie player).
 the frame free after the second transfer. If no frame is ready it increments
 `frd`. `handler_endimage` decrements the queued frame count when `isFrameEnd`
 was set by that second transfer. Both handlers reenable interrupts before
-returning zero. Guarded drafts compile with the current SDK declarations. The pinned compiler
+returning zero. The pinned compiler
 measurements and remaining blockers are in
 [matching-20261008.md](matching-20261008.md).
 
@@ -33,7 +33,7 @@ measurements and remaining blockers are in
 | Cb | 0x37DFB0 | 4 | int, vblank parity (0 = send v[0], 1 = send v[1]); toggled with `^= 1` |
 | stepMainStatus / stepMainExitFlag | 0x37DFB4/B8 | 4 | int, stepMain handshake with Term |
 | cnt_513 / init_514 | | | function-local static in stepMain (`static int cnt = 0;`) |
-| videoDec | 0x1F351C0 | 0xB8 | VideoDec (INCLUDE_BSS says 0xC0: padding to next object) |
+| videoDec | 0x1F351C0 | 0xB8 | VideoDec (retail reserves 0xC0: padding to next object) |
 | audioDec | 0x1F35280 | 0x5C | AudioDec |
 | voBuf | 0x1F352E0 | 0x18 | VoBuf |
 | infile | 0x1F35300 | 0x34 | StrFile |
@@ -41,8 +41,8 @@ measurements and remaining blockers are in
 | at_344 / at_349 | 0x1F35B40/60 | 0x18 | compiler-generated, referenced by Load |
 | at_468 | .sdata | 4 | the 4-byte MPEG end code 0x000001B7 used by videoDecFlush (ghidra shows it as a float) |
 | at_1276 / at_1287 | .data | 0x10 each | GIF tags (u_long128) copied in setImageTag |
-Only `videoDec` and the sbss objects appear in `movie.cpp`'s INCLUDE_BSS list; audioDec, voBuf,
-infile, _0_buf lie after videoDec in .bss but are not listed in the .cpp.
+`videoDec`, `audioDec`, `voBuf`, `infile` and `_0_buf` are file-local `static` definitions in
+`movie.cpp`; retail places audioDec, voBuf, infile and _0_buf after videoDec in .bss.
 External data used: `DmaCH2` (mglib.hpp, `sceDmaChan *`), `iop_bd_addr` (sound.hpp, `void *`),
 `mgTexManager`.
 
@@ -148,9 +148,8 @@ decoder type. These functions remain exact in objdiff.
 indexing changes its object by one or two instructions. `audioDecBeginPut`
 likewise changes its object when the header offset uses array indexing.
 
-`vblankHandler` and `handler_endimage` retain guarded C++ drafts and retail
-`INCLUDE_ASM` entries. The promoted versions required inline `sync` and `ei`
-instructions, so they do not count as C++ matches.
+`vblankHandler` and `handler_endimage` are native C++ functions whose exits are the inline
+`sync.l; ei` of `ExitHandler()`.
 
 ## viBufRestartDMA
 
@@ -214,7 +213,7 @@ twenty-two diagnostics and path literals are inline. The two `Load` overloads us
 zero-initialized `MoviePools` locals (the 0x18-byte templates). `stepMain` has a
 function-local `static int cnt = 0` that nothing reads (retail `cnt_513`/
 `init_514`). `at_1276__2` and `at_1287__2`, the packed GIF tags of `setImageTag`,
-stay `INCLUDE_RODATA` markers: the 128-bit shift initializer is rejected by MWCC
+are 16-byte-aligned `u_int[4]` statics. A 128-bit shift initializer is rejected by MWCC
 (`illegal data size`) and a typed pair of 64-bit words copied with `memcpy`
 changes `setImageTag`.
 
@@ -311,5 +310,5 @@ defines as GCC inline assembly (`sync.l; ei`); this is the source of the
 retail `sync; ei` in `handler_endimage` and both `vblankHandler` exits. The
 pinned compiler's per-instruction intrinsics include `__I_c0`, `__I_mtc0`
 and `__I_eret` but no `__I_sync` or `__I_ei`, and no source in the tree uses
-`__I_*` intrinsics. Without an accepted non-assembly form the handlers stay
-guarded.
+`__I_*` intrinsics. The handlers are native C++ and keep the
+`ExitHandler()` macro as their inline `sync.l; ei` assembly.

@@ -107,10 +107,8 @@ Ctor `__ct__16CMapLightingInfoFv` (0x1670B0, defined in this unit) is `memset(th
 
 ## Drafting (job mapinfo.1)
 - All 37 functions drafted; the 7 matching `CCameraInfo`/`CMapInfo` accessors are promoted.
-- The matching static tag handlers stay in the `UNMATCHING` shape: retail's `mapinfo_tag` /
-  `add_mapinfo_tag` are still `INCLUDE_RODATA`, so nothing in C references the handlers and MWCC
-  drops an unreferenced `static` function (the link then misses them). They can be promoted only
-  together with C definitions of both tag tables (and every handler they name).
+- The static tag handlers are referenced by the two C tag tables `mapinfo_tag` and
+  `add_mapinfo_tag` in `mapinfo.cpp`, which `SetTag` receives.
 - `__ct__16CMapLightingInfoFv` is the inline ctor from `mapload.hpp`, emitted here because
   `LoadMapInfo`'s `new CMapLightingInfo[16]` takes its address; it is emitted only once `LoadMapInfo`
   is C.

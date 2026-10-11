@@ -101,9 +101,9 @@ CEditMap (editmap*) overrides some of these.
   unresolved (no enum declared).
 - `SaerchEffectIndex` (0x10 bytes in index) reads CEffectList internals; probably an inline
   CEffectList accessor. Check effectlist.hpp when writing it.
-- Static locals: `ft_1248` (CFuncPoint[8], 0x1C0 each, constructed on first use with `init_1249`)
-  in SetFuncPLight; `attr_1300` (mgCFrameAttr, 0x90, guard `init_1301`) in DrawEffect. These stay
-  as INCLUDE_BSS.
+- Static locals: `ft` (retail `ft_1248`; CFuncPoint[8], 0x1C0 each, constructed on first use with
+  `init_1249`) in SetFuncPLight; `attr` (retail `attr_1300`; mgCFrameAttr, 0x90, guard `init_1301`)
+  in DrawEffect. Both are function-local statics.
 
 ## CMapFlagData (0x10)
 `u32 flag[4]`, 128 flags. Size from `CSaveData::GetMapFlag`: `this + 0x200 + no*0x10`, 256 maps.
@@ -222,9 +222,9 @@ Both methods have native explicit specializations: `PartsGroupData` at
 0x15DB50 and `CMapParts *` at 0x15E3D0 (each size 0xC). Each clears
 `prev` at offset 4, then `next` at offset 0, leaving the stored data unchanged. `decompile.sh` confirms those
 two stores. The specializations use the documented `CList` fields and let
-MWCC generate their template symbols naturally. The earlier complete `map`
-object comparison matched 0x4734 bytes and 418 resolved relocations with the
-allocation callers still guarded; that measured the initializers independently.
+MWCC generate their template symbols naturally. The complete `map`
+object comparison that measured the initializers independently matched 0x4734
+bytes and 418 resolved relocations.
 Current complete-object acceptance also includes both native allocation callers.
 
 `CPartsGroup::Add` and `CMap::AddParts` reproduce PAL code in the pre-merge

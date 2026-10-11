@@ -89,8 +89,8 @@ CopyParam. All fields float except +0x28.
 `CameraCtrlParam::operator=` has an optional retail declaration under
 `CAMERA_CONTROL_USE_RETAIL_ASSIGNMENT` in `cameracontrol.hpp`;
 `cameracontrol.cpp` enables it for its assignment callers. Other includers
-use the implicit operation. The retail out-of-line body at 0x1ACEE0 is an
-`INCLUDE_ASM` gap in `editloop.cpp` with no C++ body. It copies the ten scalar
+use the implicit operation. The retail out-of-line body at 0x1ACEE0 has no separate C++
+definition; the compiler emits it as the implicit copy assignment. It copies the ten scalar
 float limits and the integer `no_check` field.
 
 ## Enums
