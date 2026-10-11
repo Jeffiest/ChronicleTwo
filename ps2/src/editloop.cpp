@@ -54,8 +54,6 @@ static const int kEventDataCallFlag = 8;
 
 static const int kKeyOpenEvent = 0x96;
 
-static const int kCameraKindEvent = 0x3E8;
-
 /**
  *
  * Request to skip the next town draw.
@@ -2065,7 +2063,7 @@ int EditStep() {
             if (EditEvent.StartEvent(event_data) != 0) {
                 camera = (CCameraControl *) MainScene->GetCamera(MainScene->active_camera);
 
-                if (camera == NULL || camera->Iam() != kCameraKindEvent) {
+                if (camera == NULL || camera->Iam() != CAMERA_KIND_CONTROL) {
                     return 0;
                 }
 
