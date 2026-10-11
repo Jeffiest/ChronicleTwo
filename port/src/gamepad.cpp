@@ -184,7 +184,7 @@ int read_pad(PAD_STATUS *status, int port, int slot) {
     return valid;
 }
 
-void CGamePad::WaitEnable() {
+PORT_OVERRIDE void CGamePad::WaitEnable() {
     sceGsSyncV(0);
 
     while (!read_pad(&pad[0], 0, 0)) {
@@ -204,7 +204,7 @@ void CGamePad::WaitEnable() {
     }
 }
 
-void CGamePad::UpDate() {
+PORT_OVERRIDE void CGamePad::UpDate() {
     int i;
     int j;
 
@@ -320,31 +320,31 @@ int AxisCalibration(int axis) {
     return ((calibrated + 50) << 7) / 78;
 }
 
-int CGamePad::GetLX() {
+PORT_OVERRIDE int CGamePad::GetLX() {
     InputNoteLeftStickRead();
     return AxisCalibration(pad[0].left_x);
 }
 
-int CGamePad::GetLY() {
+PORT_OVERRIDE int CGamePad::GetLY() {
     InputNoteLeftStickRead();
     return AxisCalibration(pad[0].left_y);
 }
 
 // The PS2 yielded to its controller thread here. The host runs the game on one thread, and UpDate
 // has already stepped vibration in the thread's place.
-void SwitchGamePadThread() {
+PORT_OVERRIDE void SwitchGamePadThread() {
 }
 
 // The PS2's controller thread ran on a second thread; the host has nothing to create, and UpDate
 // steps vibration in the thread's place.
-void CreateGamePadThread(CGamePad *game_pad) {
+PORT_OVERRIDE void CreateGamePadThread(CGamePad *game_pad) {
 }
 
 // The PS2 kept the input recording at a fixed development-kit address (PAD_CAPTURE_BUFFER,
 // gamepad.hpp); the host keeps it in its own storage, so recording and replaying cannot fault.
 static PAD_CAPTURE_FRAME capture_buffer[PAD_CAPTURE_FRAME_MAX];
 
-void CGamePad::Capture(PAD_STATUS *status) {
+PORT_OVERRIDE void CGamePad::Capture(PAD_STATUS *status) {
     PAD_CAPTURE_FRAME *frame = capture_buffer;
     u32                index = capture_frame;
 
@@ -359,7 +359,7 @@ void CGamePad::Capture(PAD_STATUS *status) {
     }
 }
 
-void CGamePad::Play(PAD_STATUS *status) {
+PORT_OVERRIDE void CGamePad::Play(PAD_STATUS *status) {
     PAD_CAPTURE_FRAME *frame;
     u32                index = capture_frame;
 
@@ -375,13 +375,13 @@ void CGamePad::Play(PAD_STATUS *status) {
     }
 }
 
-void CGamePad::SaveCapture() {
+PORT_OVERRIDE void CGamePad::SaveCapture() {
     // The data layer's paths are the PS2's writable char *; the port keeps its own.
     static char path[] = "host0:key_cap.bin";
     WriteFile(path, capture_buffer, capture_frame * sizeof(PAD_CAPTURE_FRAME));
 }
 
-void CGamePad::LoadCapture() {
+PORT_OVERRIDE void CGamePad::LoadCapture() {
     static char path[] = "key_cap.bin";
     static char empty[] = "";
     SetCurrentDir(empty);

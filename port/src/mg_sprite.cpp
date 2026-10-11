@@ -98,7 +98,7 @@ uint8_t VertexFog(const mgRENDER_INFO *info, bool fog, float eye_w) {
 
 // ---- mgCSprite ---------------------------------------------------------------------------------
 
-int mgCSprite::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *manager) {
+PORT_OVERRIDE int mgCSprite::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *manager) {
     (void) tag;
     (void) matrix;
 
@@ -186,21 +186,21 @@ int mgCSprite::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *manager) {
     return 0;
 }
 
-u_int mgCSprite::CreatePacket(mgCDrawManager *manager) {
+PORT_OVERRIDE u_int mgCSprite::CreatePacket(mgCDrawManager *manager) {
     (void) manager;
     return 0;
 }
 
 // ---- mgC3DSprite -------------------------------------------------------------------------------
 
-int mgC3DSprite::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
+PORT_OVERRIDE int mgC3DSprite::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     (void) packet;
     (void) matrix;
     (void) info;
     return 0;
 }
 
-void mgC3DSprite::BeginCreatePacket(int mode, mgCDrawManager *manager) {
+PORT_OVERRIDE void mgC3DSprite::BeginCreatePacket(int mode, mgCDrawManager *manager) {
     (void) manager;
     SpriteState &state = g_sprites[this];
     state.billboards.clear();
@@ -213,7 +213,7 @@ void mgC3DSprite::BeginCreatePacket(int mode, mgCDrawManager *manager) {
     prog_started = 0;
 }
 
-void mgC3DSprite::CPSetDrawEnv(mgCDrawEnv *env) {
+PORT_OVERRIDE void mgC3DSprite::CPSetDrawEnv(mgCDrawEnv *env) {
     if (env != NULL) {
         SpriteState &state = g_sprites[this];
         state.env = *env;
@@ -221,13 +221,13 @@ void mgC3DSprite::CPSetDrawEnv(mgCDrawEnv *env) {
     }
 }
 
-void mgC3DSprite::CPSetTexture(mgCTexture *texture) {
+PORT_OVERRIDE void mgC3DSprite::CPSetTexture(mgCTexture *texture) {
     g_sprites[this].texture = texture;
 }
 
-void mgC3DSprite::BeginCPSprite() {}
+PORT_OVERRIDE void mgC3DSprite::BeginCPSprite() {}
 
-void mgC3DSprite::CPSetSprite(float *first, float *second, float *third, float *fourth, float *fifth) {
+PORT_OVERRIDE void mgC3DSprite::CPSetSprite(float *first, float *second, float *third, float *fourth, float *fifth) {
     SpriteState  &state = g_sprites[this];
     Billboard     billboard = {};
     std::memcpy(billboard.position, first, sizeof(billboard.position));
@@ -239,14 +239,14 @@ void mgC3DSprite::CPSetSprite(float *first, float *second, float *third, float *
     sprite_num++;
 }
 
-void mgC3DSprite::EndCPSprite() {}
+PORT_OVERRIDE void mgC3DSprite::EndCPSprite() {}
 
-void mgC3DSprite::EndCreatePacket() {
+PORT_OVERRIDE void mgC3DSprite::EndCreatePacket() {
     packet_start = nullptr;
     packet_cur = nullptr;
 }
 
-int mgC3DSprite::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *manager) {
+PORT_OVERRIDE int mgC3DSprite::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *manager) {
     (void) tag;
 
     if (manager == NULL) {

@@ -177,7 +177,7 @@ void movie_port::ScanPssSpan(const std::uint8_t *data, std::size_t size, PssTimi
     }
 }
 
-void CMovie::Load(char *name, mgCMemory **memory, int width, int height, bool with_audio, bool loop,
+PORT_OVERRIDE void CMovie::Load(char *name, mgCMemory **memory, int width, int height, bool with_audio, bool loop,
                   bool init_sound) {
     (void) with_audio;
     (void) init_sound;
@@ -225,20 +225,20 @@ void CMovie::Load(char *name, mgCMemory **memory, int width, int height, bool wi
     }
 }
 
-void CMovie::Load(char *name, mgCMemory *memory, int width, int height, bool with_audio, bool loop) {
+PORT_OVERRIDE void CMovie::Load(char *name, mgCMemory *memory, int width, int height, bool with_audio, bool loop) {
     mgCMemory *pools[6] = {memory, memory, memory, memory, memory, memory};
 
     Load(name, pools, width, height, with_audio, loop, true);
 }
 
-void CMovie::Load(char *name, mgCMemory *memory, int width, int height, bool with_audio, bool loop,
+PORT_OVERRIDE void CMovie::Load(char *name, mgCMemory *memory, int width, int height, bool with_audio, bool loop,
                   bool init_sound) {
     mgCMemory *pools[6] = {memory, memory, memory, memory, memory, memory};
 
     Load(name, pools, width, height, with_audio, loop, init_sound);
 }
 
-void CMovie::Play(char *path) {
+PORT_OVERRIDE void CMovie::Play(char *path) {
     if (player != this) {
         return;
     }
@@ -252,7 +252,7 @@ void CMovie::Play(char *path) {
     is_playing = true;
 }
 
-void CMovie::SwitchThread() {
+PORT_OVERRIDE void CMovie::SwitchThread() {
     if (player != this || !playback.playing || playback.ended) {
         return;
     }
@@ -280,7 +280,7 @@ void CMovie::SwitchThread() {
     playback.start_tick += period * (std::int64_t) (elapsed / playback.duration);
 }
 
-void CMovie::Term() {
+PORT_OVERRIDE void CMovie::Term() {
     if (player == this) {
         if (playback.decoded && video_source != nullptr) {
             video_source->Close();
@@ -294,35 +294,35 @@ void CMovie::Term() {
     is_playing = false;
 }
 
-int CMovie::EndCheck() {
+PORT_OVERRIDE int CMovie::EndCheck() {
     return player == this && playback.ended ? 1 : 0;
 }
 
-int CMovie::IsStarted() {
+PORT_OVERRIDE int CMovie::IsStarted() {
     return player == this && playback.started ? 1 : 0;
 }
 
-int CMovie::GetVoBufDataSize() {
+PORT_OVERRIDE int CMovie::GetVoBufDataSize() {
     return 0x1C0000;
 }
 
-int CMovie::GetViBufDataSize() {
+PORT_OVERRIDE int CMovie::GetViBufDataSize() {
     return 0x80000;
 }
 
-int CMovie::GetViBufTagSize() {
+PORT_OVERRIDE int CMovie::GetViBufTagSize() {
     return 0x1010;
 }
 
-int CMovie::GetMpegWorkSize(int width, int height) {
+PORT_OVERRIDE int CMovie::GetMpegWorkSize(int width, int height) {
     return width * height * 9 / 2 + 0x1768;
 }
 
-int CMovie::GetReadBufSize() {
+PORT_OVERRIDE int CMovie::GetReadBufSize() {
     return 0x50050;
 }
 
-int CMovie::GetTagProgSize(int width, int height) {
+PORT_OVERRIDE int CMovie::GetTagProgSize(int width, int height) {
     int macroblocks = (width >> 4) * height;
     int groups = macroblocks >> 4;
     int bytes = ((groups * 6) + 0x6E) * 4 + 0x3F;
@@ -330,7 +330,7 @@ int CMovie::GetTagProgSize(int width, int height) {
     return (bytes >> 6) << 8;
 }
 
-int CMovie::videoDecCreate(VideoDec *dec, u_char *mpeg_buffer, int mpeg_size, u_long128 *data,
+PORT_OVERRIDE int CMovie::videoDecCreate(VideoDec *dec, u_char *mpeg_buffer, int mpeg_size, u_long128 *data,
                            u_long128 *tag, int sectors, TimeStamp *ts, int ts_count) {
     (void) data;
     (void) tag;
@@ -345,18 +345,18 @@ int CMovie::videoDecCreate(VideoDec *dec, u_char *mpeg_buffer, int mpeg_size, u_
     return sceMpegCreate(&dec->mpeg, mpeg_buffer, mpeg_size);
 }
 
-int CMovie::videoDecSetStream(VideoDec *dec, int id, int param,
+PORT_OVERRIDE int CMovie::videoDecSetStream(VideoDec *dec, int id, int param,
                               int (*callback)(sceMpeg *, sceMpegCbData *, void *), void *user) {
     sceMpegAddStrCallback(&dec->mpeg, (sceMpegStrType) (id & 0xFF), param, callback, user);
     return 1;
 }
 
-int CMovie::videoDecDelete(VideoDec *dec) {
+PORT_OVERRIDE int CMovie::videoDecDelete(VideoDec *dec) {
     dec->state = VIDEO_DEC_STATE_END;
     return sceMpegDelete(&dec->mpeg);
 }
 
-int CMovie::videoDecFlush(VideoDec *dec) {
+PORT_OVERRIDE int CMovie::videoDecFlush(VideoDec *dec) {
     if (dec->state == VIDEO_DEC_STATE_NORMAL) {
         dec->state = VIDEO_DEC_STATE_FLUSH;
     }

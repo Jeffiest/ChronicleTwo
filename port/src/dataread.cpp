@@ -454,22 +454,22 @@ static int GetFullPath(char *path, char *out_path) {
     return device;
 }
 
-int GetMainFileDev() {
+PORT_OVERRIDE int GetMainFileDev() {
     return DefaultFileDev;
 }
 
-int ChangeHddFile() {
+PORT_OVERRIDE int ChangeHddFile() {
     // The host keeps no hard-drive installation: every file is on the extracted disc, which is
     // already the default device. Failing the mount is how a console without an HDD answers.
     return 0;
 }
 
-int ChangeDefaultFile() {
+PORT_OVERRIDE int ChangeDefaultFile() {
     // Nothing to undo: the disc never stopped being the default device.
     return 0;
 }
 
-void SetCurrentDir(char *dir) {
+PORT_OVERRIDE void SetCurrentDir(char *dir) {
     if (dir) {
         if (*dir == '/') {
             dir++;
@@ -482,11 +482,11 @@ void SetCurrentDir(char *dir) {
     strcpy(CurrentDir, TopDir);
 }
 
-void GetCurrentDir(char *out_dir) {
+PORT_OVERRIDE void GetCurrentDir(char *out_dir) {
     strcpy(out_dir, CurrentDir);
 }
 
-void ChangeDir(char *dir) {
+PORT_OVERRIDE void ChangeDir(char *dir) {
     strcpy(CurrentDir, TopDir);
 
     if (dir) {
@@ -498,13 +498,13 @@ void ChangeDir(char *dir) {
     }
 }
 
-void InitReadBG() {
+PORT_OVERRIDE void InitReadBG() {
     for (int i = 0; i < BG_READ_MAX; i++) {
         bg_read_info[i].busy = 0;
     }
 }
 
-int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
+PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     BG_READ_INFO *info;
 
     if (out_size != NULL) {
@@ -591,7 +591,7 @@ int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     return true;
 }
 
-BG_READ_INFO *GetReadBGFile(char *name) {
+PORT_OVERRIDE BG_READ_INFO *GetReadBGFile(char *name) {
     BG_READ_INFO *info = bg_read_info;
 
     for (int i = 0; i < BG_READ_MAX; i++, info++) {
@@ -603,7 +603,7 @@ BG_READ_INFO *GetReadBGFile(char *name) {
     return NULL;
 }
 
-BG_READ_INFO *GetReadBGFile(int index) {
+PORT_OVERRIDE BG_READ_INFO *GetReadBGFile(int index) {
     if (index < 0 || index >= BG_READ_MAX) {
         return NULL;
     }
@@ -611,15 +611,15 @@ BG_READ_INFO *GetReadBGFile(int index) {
     return bg_read_info[index].busy ? &bg_read_info[index] : NULL;
 }
 
-void StartReadBG() {
+PORT_OVERRIDE void StartReadBG() {
     InitReadBG();
 }
 
-void ReadBG() {
+PORT_OVERRIDE void ReadBG() {
     // Every host read finishes as it is queued, so there is never a sector left to fetch.
 }
 
-int ReadBGSync() {
+PORT_OVERRIDE int ReadBGSync() {
     ReadBG();
     int i = 0;
 
@@ -632,7 +632,7 @@ int ReadBGSync() {
     return (i == BG_READ_MAX) ^ 1;
 }
 
-void BreakReadBG() {
+PORT_OVERRIDE void BreakReadBG() {
     if (!ReadBGSync()) {
         return; // nothing is still running; the finished buffers stay readable
     }
@@ -649,11 +649,11 @@ void BreakReadBG() {
     InitReadBG();
 }
 
-void InitCDFile() {
+PORT_OVERRIDE void InitCDFile() {
     cdvd::LoadIndex();
 }
 
-int LoadFile(char *path, void *buffer, int *out_size) {
+PORT_OVERRIDE int LoadFile(char *path, void *buffer, int *out_size) {
     if (!LoadFile2(path, buffer, out_size, LOAD_FILE_READ)) {
         printf("File open error \"%s\"\n \n \n", path);
         Exit__2(0);
@@ -662,7 +662,7 @@ int LoadFile(char *path, void *buffer, int *out_size) {
     return true;
 }
 
-int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
+PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
     if (out_size) {
         *out_size = 0;
     }
@@ -754,7 +754,7 @@ int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
     return 1;
 }
 
-void InitFileCache(u_long128 *address, int type) {
+PORT_OVERRIDE void InitFileCache(u_long128 *address, int type) {
     CacheAddress = NULL;
 
     for (int i = 0; i < FILE_CACHE_MAX; i++) {
@@ -775,11 +775,11 @@ void InitFileCache(u_long128 *address, int type) {
     }
 }
 
-void DeleteFileCache() {
+PORT_OVERRIDE void DeleteFileCache() {
     InitFileCache(NULL, FILE_CACHE_NONE);
 }
 
-int LoadFileCacheBG(char *path) {
+PORT_OVERRIDE int LoadFileCacheBG(char *path) {
     if (path == NULL || *path == '\0') {
         return false;
     }
@@ -820,7 +820,7 @@ int LoadFileCacheBG(char *path) {
     return EntryFileCache(path, buffer, size);
 }
 
-u_long128 *SearchFileCache(char *path, int *out_size) {
+PORT_OVERRIDE u_long128 *SearchFileCache(char *path, int *out_size) {
     if (out_size) {
         *out_size = 0;
     }
@@ -838,7 +838,7 @@ u_long128 *SearchFileCache(char *path, int *out_size) {
     return entry->address;
 }
 
-int WriteFile(char *path, void *buffer, int size) {
+PORT_OVERRIDE int WriteFile(char *path, void *buffer, int size) {
     // Only development builds wrote files, through the host server; a colon device is dropped and
     // the rest lands under save/host0/.
     std::string_view name = path;

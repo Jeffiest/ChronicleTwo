@@ -102,18 +102,18 @@ bool PortMgShadowVisualDraw(const mgCVisualMDT *visual, float (*matrix)[4], cons
     return true;
 }
 
-int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
+PORT_OVERRIDE int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
     (void) packet;
     (void) face;
     return 0;
 }
 
-u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
+PORT_OVERRIDE u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
     (void) draw_manager;
     return 0;
 }
 
-int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
+PORT_OVERRIDE int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     (void) packet;
     (void) matrix;
     (void) info;
@@ -147,7 +147,7 @@ gfx::TextureHandle ShadowTarget(const mgCTexture *shadow) {
 
 } // namespace
 
-void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
+PORT_OVERRIDE void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
     (void) unused;
 
     gfx::TextureHandle target = ShadowTarget(shadow);
@@ -162,7 +162,7 @@ void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
     gfx::Clear(true, black, false, 0.0f);
 }
 
-void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
+PORT_OVERRIDE void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
     (void) unused;
 
     gfx::SetRenderTarget(gfx::kMainTarget);

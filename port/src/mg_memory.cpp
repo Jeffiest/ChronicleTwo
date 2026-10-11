@@ -44,15 +44,15 @@ void *PlaceRun(size_t size, u_long128 *block) {
 
 } // namespace
 
-void *operator new(size_t size, u_long128 *block) {
+PORT_OVERRIDE void *operator new(size_t size, u_long128 *block) {
     return PlaceRun(size, block);
 }
 
-void *operator new[](size_t size, u_long128 *block) {
+PORT_OVERRIDE void *operator new[](size_t size, u_long128 *block) {
     return PlaceRun(size, block);
 }
 
-u_long128 *mgCMemory::Alloc(int size) {
+PORT_OVERRIDE u_long128 *mgCMemory::Alloc(int size) {
     if (lock != 0) {
         return 0;
     }
@@ -76,7 +76,7 @@ u_long128 *mgCMemory::Alloc(int size) {
     return data;
 }
 
-u_long128 *mgCMemory::stAlloc(int size) {
+PORT_OVERRIDE u_long128 *mgCMemory::stAlloc(int size) {
     if (lock != 0) {
         return 0;
     }

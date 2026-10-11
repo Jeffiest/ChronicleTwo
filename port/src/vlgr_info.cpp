@@ -43,7 +43,7 @@ static CVillagerInfo *VlgrInfo;
  * Villager placement schedules indexed by villager number.
  *
  */
-CVillagerPlace VlgrPlace[VLGR_PLACE_MAX];
+PORT_OVERRIDE CVillagerPlace VlgrPlace[VLGR_PLACE_MAX];
 
 /**
  *
@@ -148,7 +148,7 @@ static int ProgressNum;
  * Story progress points loaded from the configuration script.
  *
  */
-GAME_PROGRESS_INFO ProgressInfo[GAME_PROGRESS_MAX];
+PORT_OVERRIDE GAME_PROGRESS_INFO ProgressInfo[GAME_PROGRESS_MAX];
 
 /**
  *
@@ -236,7 +236,7 @@ static SPI_TAG_PARAM gi_tag[] = {
     {NULL,        NULL       },
 };
 
-CVillagerPlaceInfo *GetVlgrPlaceInfo(int index) {
+PORT_OVERRIDE CVillagerPlaceInfo *GetVlgrPlaceInfo(int index) {
     if (index < 0 || index >= PlaceInfoNum) {
         return NULL;
     }
@@ -244,12 +244,12 @@ CVillagerPlaceInfo *GetVlgrPlaceInfo(int index) {
     return PlaceInfo + index;
 }
 
-CVillagerPlace *GetVlgrPlaceTable(int *count) {
+PORT_OVERRIDE CVillagerPlace *GetVlgrPlaceTable(int *count) {
     *count = VLGR_PLACE_MAX;
     return VlgrPlace;
 }
 
-CVillagerInfo *GetVillagerInfo(int villager_no) {
+PORT_OVERRIDE CVillagerInfo *GetVillagerInfo(int villager_no) {
     CVillagerInfo *table = VlgrInfo;
     int            low;
     int            high;
@@ -281,7 +281,7 @@ CVillagerInfo *GetVillagerInfo(int villager_no) {
     return NULL;
 }
 
-int GetVillagerModelName(int villager_no, char *path) {
+PORT_OVERRIDE int GetVillagerModelName(int villager_no, char *path) {
     CVillagerInfo *info;
 
     info = GetVillagerInfo(villager_no);
@@ -473,7 +473,7 @@ static int niNPC_INFO_NUM(SPI_STACK *stack, int argument_count) {
     return 1;
 }
 
-CVillagerInfo::CVillagerInfo() {
+PORT_OVERRIDE CVillagerInfo::CVillagerInfo() {
     vlgr_id = -1;
     model_name = NULL;
     house_type = 0;
@@ -530,7 +530,7 @@ static int niNPC_INFO(SPI_STACK *stack, int argument_count) {
     return 1;
 }
 
-void LoadNPCInfo(char *script, int length, mgCMemory *memory) {
+PORT_OVERRIDE void LoadNPCInfo(char *script, int length, mgCMemory *memory) {
     CVillagerPlace::ProgressInfo progress_table[GAME_PROGRESS_MAX];
 
     niProgInfo = progress_table;
@@ -546,7 +546,7 @@ void LoadNPCInfo(char *script, int length, mgCMemory *memory) {
     interpreter.Run();
 }
 
-void LoadPlaceInfo(char *script, int length, mgCMemory *memory) {
+PORT_OVERRIDE void LoadPlaceInfo(char *script, int length, mgCMemory *memory) {
     vpiStack = memory;
     vpiInfo = NULL;
     CScriptInterpreter interpreter;
@@ -587,7 +587,7 @@ static int vpiNPC_PLACE_NUM(SPI_STACK *stack, int argc) {
     return 1;
 }
 
-CVillagerPlaceInfo::CVillagerPlaceInfo() {
+PORT_OVERRIDE CVillagerPlaceInfo::CVillagerPlaceInfo() {
     memset(this, 0, sizeof(CVillagerPlaceInfo));
     map_no = -1;
 }
@@ -785,7 +785,7 @@ static int vpiSHADOW(SPI_STACK *stack, int argc) {
  * Maps a villager motion name to its motion number.
  *
  */
-int vpiGetMotionID(char *name) {
+PORT_OVERRIDE int vpiGetMotionID(char *name) {
     if (name == NULL || *name == '\0') {
         return -1;
     }
@@ -833,7 +833,7 @@ static int giPROG_INFO(SPI_STACK *stack, int argument_count) {
     return 1;
 }
 
-void LoadGameInfo(mgCMemory *memory) {
+PORT_OVERRIDE void LoadGameInfo(mgCMemory *memory) {
     int  script_size;
     char script[0x19000];
 
@@ -865,7 +865,7 @@ void LoadGameInfo(mgCMemory *memory) {
     printf("rm %d\n", memory->stack_size - memory->stack_used);
 }
 
-GAME_PROGRESS_INFO *GetGameProgressInfo(int index) {
+PORT_OVERRIDE GAME_PROGRESS_INFO *GetGameProgressInfo(int index) {
     if (index < 0 || index >= ProgressNum) {
         return NULL;
     }
@@ -873,7 +873,7 @@ GAME_PROGRESS_INFO *GetGameProgressInfo(int index) {
     return &ProgressInfo[index];
 }
 
-int GetGameChapter(int index) {
+PORT_OVERRIDE int GetGameChapter(int index) {
     GAME_PROGRESS_INFO *info = GetGameProgressInfo(index);
 
     if (info != NULL) {
@@ -883,10 +883,10 @@ int GetGameChapter(int index) {
     return 0;
 }
 
-int GetGameProgressNum() {
+PORT_OVERRIDE int GetGameProgressNum() {
     return ProgressNum;
 }
 
-CVillagerPlace::CVillagerPlace() {
+PORT_OVERRIDE CVillagerPlace::CVillagerPlace() {
     memset(this, 0, sizeof(CVillagerPlace));
 }

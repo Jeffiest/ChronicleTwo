@@ -84,33 +84,33 @@ int GetScreenSize(int mode, int *width, int *height, int *left, int *top, int *r
 
 } // namespace
 
-void mgPerformanceMeter(int enable) {
+PORT_OVERRIDE void mgPerformanceMeter(int enable) {
     g_display_performance_meter = enable;
 }
 
-int mgGetPerformanceMeterFlag() {
+PORT_OVERRIDE int mgGetPerformanceMeterFlag() {
     return g_display_performance_meter;
 }
 
 // The game's per-field callback, which retail's VSync interrupt ran. The clock runs it once for
 // every tick a pump elapses, with the count already advanced to that tick.
-void mgInitVSyncCallBack(int (*callback)(int)) {
+PORT_OVERRIDE void mgInitVSyncCallBack(int (*callback)(int)) {
     ClockSetTickCallback(callback);
 }
 
 // Retail's loop rotated the ready queue on the EE while it watched vcount; the port waits on the
 // clock, which pumps the platform as it sleeps and counts the tick itself.
-void WaitVSync(int start, int frames) {
+PORT_OVERRIDE void WaitVSync(int start, int frames) {
     while (mgGetVSyncCount() - start < frames) {
         ClockSyncV();
     }
 }
 
-int mgGetVSyncCount() {
+PORT_OVERRIDE int mgGetVSyncCount() {
     return static_cast<int>(ClockTickCount());
 }
 
-void mgInit(int screen_mode, int video_mode) {
+PORT_OVERRIDE void mgInit(int screen_mode, int video_mode) {
     // Retail's mgInit resets DMA and the GS, clears video memory, builds the double buffer and
     // loads the microprograms over the VIF1 path, then installs its VSync handler. The host has
     // none of that; what remains is the state the rest of the game reads.
@@ -195,7 +195,7 @@ void mgInit(int screen_mode, int video_mode) {
     mgCreateSinTable();
 }
 
-void mgInitVif1Packet(u_long128 *buffer_a, u_long128 *buffer_b, int size) {
+PORT_OVERRIDE void mgInitVif1Packet(u_long128 *buffer_a, u_long128 *buffer_b, int size) {
     // The two VIF1 cursors retail built here wrote GS packets; the host renderer builds its own
     // state, so there is nothing to initialize. The callers keep their shape.
     (void) buffer_a;
@@ -203,7 +203,7 @@ void mgInitVif1Packet(u_long128 *buffer_a, u_long128 *buffer_b, int size) {
     (void) size;
 }
 
-void mgSetPacketBuffer(mgCMemory *pool_a, mgCMemory *pool_b) {
+PORT_OVERRIDE void mgSetPacketBuffer(mgCMemory *pool_a, mgCMemory *pool_b) {
     g_packet_buf[0] = *pool_a;
     g_packet_buf[1] = *pool_b;
     g_packet_buf[0].stack_used = 0;
@@ -212,7 +212,7 @@ void mgSetPacketBuffer(mgCMemory *pool_a, mgCMemory *pool_b) {
     g_packet_buf[1].lock = 0;
 }
 
-void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_header) {
+PORT_OVERRIDE void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_header) {
     u_char *base = (u_char *) pool_a->stAllocTest(1);
     int     size = pool_a->stack_size - pool_a->stack_used;
 
@@ -237,13 +237,13 @@ void mgSetDataBuffer(mgCMemory *pool_a, mgCMemory *pool_b, int skip_header) {
     g_data_buf[1].lock = 0;
 }
 
-mgCMemory *mgGetDataBuffer() {
+PORT_OVERRIDE mgCMemory *mgGetDataBuffer() {
     return &g_data_buf[g_data_id];
 }
 
 // The frame buffer the current display buffer shows, decoded as the texture description the game
 // reads it as. The packet retail also built here had no reader without a GS.
-void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
+PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     sceGsFrame *default_frame;
     int         screen_width;
     int         screen_height;
@@ -360,11 +360,11 @@ void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     *(u_long *) &g_frame_tex.tex1 = SCE_GS_SET_TEX1(1, 0, 1, 1, 1, 0, 0);
 }
 
-void mgGetFrameBuffer(mgCTexture *texture) {
+PORT_OVERRIDE void mgGetFrameBuffer(mgCTexture *texture) {
     *texture = g_frame_tex;
 }
 
-void mgGetFrameBackBuffer(mgCTexture *texture) {
+PORT_OVERRIDE void mgGetFrameBackBuffer(mgCTexture *texture) {
     sceGsFrame *draw_env;
 
     if (g_display_buffer != 0) {
@@ -377,7 +377,7 @@ void mgGetFrameBackBuffer(mgCTexture *texture) {
     texture->tex0.TBP0 = draw_env->FBP * 32;
 }
 
-void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
+PORT_OVERRIDE void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
     // The clear's colour and enable are already in mgBackColor and mgClearBackFlag, which the
     // renderer's frame begin reads; the GS registers and vertices retail wrote here are the
     // renderer's own.
@@ -387,22 +387,22 @@ void mgSetPkClearScreen(u_char red, u_char green, u_char blue, u_char alpha) {
     (void) alpha;
 }
 
-void mgSetPkTextureRepeat(int mode) {
+PORT_OVERRIDE void mgSetPkTextureRepeat(int mode) {
     // The sampler's wrap mode is renderer state on the host; the CLAMP register retail wrote is
     // not.
     (void) mode;
 }
 
-void mgSetPkTextureRepeat(sceGsClamp clamp) {
+PORT_OVERRIDE void mgSetPkTextureRepeat(sceGsClamp clamp) {
     (void) clamp;
 }
 
-void mgFlushRenderInfo() {
+PORT_OVERRIDE void mgFlushRenderInfo() {
     // Retail wrote the fog coefficient and guard values into the frame's packet; they live in
     // mgRenderInfo for the renderer, so there is nothing to flush.
 }
 
-void mgBeginPacket(mgCDrawManager *manager) {
+PORT_OVERRIDE void mgBeginPacket(mgCDrawManager *manager) {
     if (manager == NULL) {
         manager = &mgDrawManager;
     }
@@ -419,18 +419,18 @@ void mgBeginPacket(mgCDrawManager *manager) {
     manager->SetSortTable(1);
 }
 
-void mgSendPacket(mgCDrawManager *manager) {
+PORT_OVERRIDE void mgSendPacket(mgCDrawManager *manager) {
     // The DMA send has no host counterpart; the flip to the other frame's stacks still happens.
     (void) manager;
     g_data_id = !g_data_id;
 }
 
-void mgEndPacket(mgCDrawManager *manager) {
+PORT_OVERRIDE void mgEndPacket(mgCDrawManager *manager) {
     // sceVif1PkEnd and sceVif1PkTerminate wrote the packet's DMA tag; there is no host packet.
     (void) manager;
 }
 
-void mgBeginFrame(mgCDrawManager *manager) {
+PORT_OVERRIDE void mgBeginFrame(mgCDrawManager *manager) {
     if (manager == NULL) {
         mgDrawManager.texture_manager = &mgTexManager;
         manager = &mgDrawManager;
@@ -474,7 +474,7 @@ void mgBeginFrame(mgCDrawManager *manager) {
     mgFlushRenderInfo();
 }
 
-void mgEndFrame(mgCDrawManager *manager) {
+PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
     static int   count = 1;
     static float free_ratio = 0.0f;
     int          sample;
@@ -577,7 +577,7 @@ void mgEndFrame(mgCDrawManager *manager) {
     }
 }
 
-void mgWaitFrame() {
+PORT_OVERRIDE void mgWaitFrame() {
     // Retail waited for the VIF1 path to drain before touching the frame's geometry; the port
     // records and draws synchronously, so there is nothing in flight to wait for.
 }
@@ -585,13 +585,13 @@ void mgWaitFrame() {
 // The debug frame grab went through the GS store-image path and wrote a TGA to host0:. The host
 // renderer's readback is the port's to use, and belongs with the renderer's units; dropped until
 // then so the debug key cannot reach hardware-free memory.
-void mgStoreFrameImage() {
+PORT_OVERRIDE void mgStoreFrameImage() {
 }
 
 // Retail reset the frame's VIF1 builder around every direct draw; the builder has no host
 // counterpart (the draw goes through the port's visual path, which records renderer draws), so
 // the packet calls are skipped and the frame is drawn where it is.
-int mgDrawDirect(mgCFrame *frame) {
+PORT_OVERRIDE int mgDrawDirect(mgCFrame *frame) {
     if (frame == NULL) {
         return 0;
     }
@@ -599,7 +599,7 @@ int mgDrawDirect(mgCFrame *frame) {
     return frame->Draw(mgVif1Packet->pCurrent);
 }
 
-int mgDrawDirect(mgCVisual *visual, float (*matrix)[4]) {
+PORT_OVERRIDE int mgDrawDirect(mgCVisual *visual, float (*matrix)[4]) {
     if (visual == NULL) {
         return 0;
     }
@@ -607,10 +607,10 @@ int mgDrawDirect(mgCVisual *visual, float (*matrix)[4]) {
     return visual->Draw(mgVif1Packet->pCurrent, matrix, NULL);
 }
 
-void mgDrawDirectStart() {
+PORT_OVERRIDE void mgDrawDirectStart() {
     ddraw_size = 0;
 }
 
-void mgDrawDirectEnd() {
+PORT_OVERRIDE void mgDrawDirectEnd() {
     // Nothing to reserve without a host packet.
 }

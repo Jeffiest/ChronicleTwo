@@ -386,7 +386,7 @@ void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
 
 } // namespace
 
-mgCDrawPrim::mgCDrawPrim() {
+PORT_OVERRIDE mgCDrawPrim::mgCDrawPrim() {
     memory = NULL;
     vif_packet = NULL;
     draw_manager = NULL;
@@ -400,7 +400,7 @@ mgCDrawPrim::mgCDrawPrim() {
     offset_y = 0;
 }
 
-void mgCDrawPrim::Initialize(mgCMemory *memory, sceVif1Packet *vif_packet) {
+PORT_OVERRIDE void mgCDrawPrim::Initialize(mgCMemory *memory, sceVif1Packet *vif_packet) {
     if (vif_packet == NULL) {
         vif_packet = mgVif1Packet;
     }
@@ -425,7 +425,7 @@ void mgCDrawPrim::Initialize(mgCMemory *memory, sceVif1Packet *vif_packet) {
     state = PrimState();
 }
 
-void mgCDrawPrim::Begin(int prim_type) {
+PORT_OVERRIDE void mgCDrawPrim::Begin(int prim_type) {
     this->prim.PRIM = prim_type;
     this->q = 1.0f;
     this->disabled = 0;
@@ -433,12 +433,12 @@ void mgCDrawPrim::Begin(int prim_type) {
     BeginDma();
 }
 
-void mgCDrawPrim::BeginDma() {
+PORT_OVERRIDE void mgCDrawPrim::BeginDma() {
     PrimState &state = State(this);
     OpenRun(state, this->prim.PRIM, false, 0, 0, 0);
 }
 
-void mgCDrawPrim::EndDma() {
+PORT_OVERRIDE void mgCDrawPrim::EndDma() {
     PrimState &state = State(this);
 
     if (state.open) {
@@ -446,17 +446,17 @@ void mgCDrawPrim::EndDma() {
     }
 }
 
-void mgCDrawPrim::Flush() {
+PORT_OVERRIDE void mgCDrawPrim::Flush() {
     EndDma();
     BeginDma();
 }
 
-void mgCDrawPrim::End() {
+PORT_OVERRIDE void mgCDrawPrim::End() {
     EndDma();
     End2();
 }
 
-void mgCDrawPrim::Begin2() {
+PORT_OVERRIDE void mgCDrawPrim::Begin2() {
     this->disabled = 0;
 
     // The packet head sends the draw environment; on the GS those registers then hold until the
@@ -467,21 +467,21 @@ void mgCDrawPrim::Begin2() {
     g_regs.env_seen = true;
 }
 
-void mgCDrawPrim::BeginPrim2(int type) {
+PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int type) {
     this->prim.PRIM = type;
     this->q = 1.0f;
     PrimState &state = State(this);
     OpenRun(state, type, false, 0, 0, 0);
 }
 
-void mgCDrawPrim::BeginPrim2(int prim_type, u_int data_a, u_int data_b, int unit_count) {
+PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int prim_type, u_int data_a, u_int data_b, int unit_count) {
     this->prim.PRIM = prim_type;
     this->q = 1.0f;
     PrimState &state = State(this);
     OpenRun(state, prim_type, true, unit_count, data_a, data_b);
 }
 
-void mgCDrawPrim::EndPrim2() {
+PORT_OVERRIDE void mgCDrawPrim::EndPrim2() {
     PrimState &state = State(this);
 
     if (state.open) {
@@ -489,7 +489,7 @@ void mgCDrawPrim::EndPrim2() {
     }
 }
 
-void mgCDrawPrim::End2() {
+PORT_OVERRIDE void mgCDrawPrim::End2() {
     PrimState &state = State(this);
 
     if (state.open) {
@@ -511,7 +511,7 @@ void mgCDrawPrim::Data4(float *data) {
     FeedRole(state, SCE_GS_XYZF2, words);
 }
 
-void mgCDrawPrim::Data(int *data) {
+PORT_OVERRIDE void mgCDrawPrim::Data(int *data) {
     PrimState &state = State(this);
 
     if (!state.open || !state.packed || state.role_count == 0) {
@@ -522,7 +522,7 @@ void mgCDrawPrim::Data(int *data) {
     state.role_index = (state.role_index + 1) % state.role_count;
 }
 
-u_long128 *mgCDrawPrim::DirectData(int count) {
+PORT_OVERRIDE u_long128 *mgCDrawPrim::DirectData(int count) {
     PrimState &state = State(this);
 
     if (!state.open || !state.packed || state.role_count == 0 || count <= 0) {
@@ -544,20 +544,20 @@ u_long128 *mgCDrawPrim::DirectData(int count) {
     return state.raw_quads.data() + base;
 }
 
-void mgCDrawPrim::Vertex(int x, int y, int z) {
+PORT_OVERRIDE void mgCDrawPrim::Vertex(int x, int y, int z) {
     Vertex4(x << 4, y << 4, z);
 }
 
-void mgCDrawPrim::Vertex(float x, float y, float z) {
+PORT_OVERRIDE void mgCDrawPrim::Vertex(float x, float y, float z) {
     float pos[4] = {x, y, z, 0.0f};
     Vertex(pos);
 }
 
-void mgCDrawPrim::Vertex(float *pos) {
+PORT_OVERRIDE void mgCDrawPrim::Vertex(float *pos) {
     Vertex4(Fixed4(pos[0]), Fixed4(pos[1]), static_cast<int>(pos[2]));
 }
 
-void mgCDrawPrim::Vertex4(int x, int y, int z) {
+PORT_OVERRIDE void mgCDrawPrim::Vertex4(int x, int y, int z) {
     PrimState &state = State(this);
 
     if (!state.open) {
@@ -570,11 +570,11 @@ void mgCDrawPrim::Vertex4(int x, int y, int z) {
     AddVertex(state, x + offset_x, y + offset_y, z, state.u, state.v, state.color, 0xFF);
 }
 
-void mgCDrawPrim::Vertex4(int *pos) {
+PORT_OVERRIDE void mgCDrawPrim::Vertex4(int *pos) {
     Vertex4(pos[0], pos[1], pos[2]);
 }
 
-void mgCDrawPrim::Color(int r, int g, int b, int a) {
+PORT_OVERRIDE void mgCDrawPrim::Color(int r, int g, int b, int a) {
     PrimState &state = State(this);
     state.color[0] = static_cast<u_char>(r);
     state.color[1] = static_cast<u_char>(g);
@@ -582,23 +582,23 @@ void mgCDrawPrim::Color(int r, int g, int b, int a) {
     state.color[3] = static_cast<u_char>(a);
 }
 
-void mgCDrawPrim::Color(float *color) {
+PORT_OVERRIDE void mgCDrawPrim::Color(float *color) {
     Color(static_cast<int>(color[0]), static_cast<int>(color[1]), static_cast<int>(color[2]),
           static_cast<int>(color[3]));
 }
 
-void mgCDrawPrim::TextureCrd4(int u, int v) {
+PORT_OVERRIDE void mgCDrawPrim::TextureCrd4(int u, int v) {
     PrimState &state = State(this);
     // 12.4 texel coordinates, signed 16-bit fields on the GS.
     state.u = static_cast<float>(static_cast<s16>(u)) / 16.0f;
     state.v = static_cast<float>(static_cast<s16>(v)) / 16.0f;
 }
 
-void mgCDrawPrim::TextureCrd(int u, int v) {
+PORT_OVERRIDE void mgCDrawPrim::TextureCrd(int u, int v) {
     TextureCrd4(u << 4, v << 4);
 }
 
-void mgCDrawPrim::Direct(unsigned long reg, unsigned long data) {
+PORT_OVERRIDE void mgCDrawPrim::Direct(unsigned long reg, unsigned long data) {
     switch (reg) {
         case SCE_GS_TEXFLUSH:
             // The GS's sampler had a cache; the renderer samples the live image.
@@ -647,7 +647,7 @@ void mgCDrawPrim::Direct(unsigned long reg, unsigned long data) {
     }
 }
 
-void mgCDrawPrim::Texture(mgCTexture *source) {
+PORT_OVERRIDE void mgCDrawPrim::Texture(mgCTexture *source) {
     if (source != 0) {
         // A plain data copy, as retail made of the texture fields: sceGsTex0's assignment is a
         // link-time function in the texture unit, the copy in the packet never called it.
@@ -667,29 +667,29 @@ void mgCDrawPrim::Texture(mgCTexture *source) {
     }
 }
 
-void mgCDrawPrim::AlphaBlendEnable(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::AlphaBlendEnable(int enable) {
     prim.ABE = enable;
 }
 
-void mgCDrawPrim::AlphaBlend(int mode) {
+PORT_OVERRIDE void mgCDrawPrim::AlphaBlend(int mode) {
     draw_env.SetAlpha(mode);
 }
 
-void mgCDrawPrim::AlphaTestEnable(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::AlphaTestEnable(int enable) {
     draw_env.test.bits.ate = enable;
 }
 
-void mgCDrawPrim::AlphaTest(int method, int ref) {
+PORT_OVERRIDE void mgCDrawPrim::AlphaTest(int method, int ref) {
     draw_env.test.bits.atst = method;
     draw_env.test.bits.aref = ref;
 }
 
-void mgCDrawPrim::DAlphaTest(int enable, int mode) {
+PORT_OVERRIDE void mgCDrawPrim::DAlphaTest(int enable, int mode) {
     draw_env.test.bits.date = enable;
     draw_env.test.bits.datm = mode;
 }
 
-void mgCDrawPrim::DepthTestEnable(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::DepthTestEnable(int enable) {
     sceGsTest *test = &draw_env.test;
 
     if (enable == 0) {
@@ -700,7 +700,7 @@ void mgCDrawPrim::DepthTestEnable(int enable) {
     }
 }
 
-void mgCDrawPrim::DepthTest(int mode) {
+PORT_OVERRIDE void mgCDrawPrim::DepthTest(int mode) {
     sceGsTest *test = &draw_env.test;
     test->bits.zte = 1;
 
@@ -717,35 +717,35 @@ void mgCDrawPrim::DepthTest(int mode) {
     }
 }
 
-void mgCDrawPrim::ZMask(int mask) {
+PORT_OVERRIDE void mgCDrawPrim::ZMask(int mask) {
     z_mask = mask;
 }
 
-void mgCDrawPrim::TextureMapEnable(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::TextureMapEnable(int enable) {
     prim.TME = enable;
 }
 
-void mgCDrawPrim::Bilinear(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::Bilinear(int enable) {
     bilinear = enable;
 }
 
-void mgCDrawPrim::Shading(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::Shading(int enable) {
     prim.IIP = enable;
 }
 
-void mgCDrawPrim::AntiAliasing(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::AntiAliasing(int enable) {
     prim.AA1 = enable;
 }
 
-void mgCDrawPrim::FogEnable(int enable) {
+PORT_OVERRIDE void mgCDrawPrim::FogEnable(int enable) {
     prim.FGE = enable;
 }
 
-void mgCDrawPrim::Coord(int coord) {
+PORT_OVERRIDE void mgCDrawPrim::Coord(int coord) {
     this->coord = coord;
 }
 
-void mgCDrawPrim::GetOffset(int *x, int *y) {
+PORT_OVERRIDE void mgCDrawPrim::GetOffset(int *x, int *y) {
     *y = 0;
     *x = 0;
 
@@ -758,13 +758,13 @@ void mgCDrawPrim::GetOffset(int *x, int *y) {
     *y += offset_y;
 }
 
-mgCDrawManager::mgCDrawManager() {
+PORT_OVERRIDE mgCDrawManager::mgCDrawManager() {
     unk_68 = 0x40;
     unk_6c = 0;
     unk_70 = 0;
 }
 
-void mgCDrawManager::SetSortTable(int num) {
+PORT_OVERRIDE void mgCDrawManager::SetSortTable(int num) {
     float near_dist = 1.0f;
     float far_dist = 2.0f;
 
@@ -784,7 +784,7 @@ void mgCDrawManager::SetSortTable(int num) {
     sort_scale = sort_num_f;
 }
 
-void mgCDrawManager::BeginDraw(mgCMemory *new_memory, int *id_list) {
+PORT_OVERRIDE void mgCDrawManager::BeginDraw(mgCMemory *new_memory, int *id_list) {
     memory = new_memory;
 
     if (memory == 0) {
@@ -807,11 +807,11 @@ void mgCDrawManager::BeginDraw(mgCMemory *new_memory, int *id_list) {
     }
 }
 
-void mgCDrawManager::ClearTable() {}
+PORT_OVERRIDE void mgCDrawManager::ClearTable() {}
 
-void mgCDrawManager::PreEndDraw() {}
+PORT_OVERRIDE void mgCDrawManager::PreEndDraw() {}
 
-int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
+PORT_OVERRIDE int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
     // The renderer's textures are the game's already; only the group's existence matters to the
     // callers, which use the result to decide whether a block is drawn this pass.
     (void) vif_packet;
@@ -823,7 +823,7 @@ int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
     return 1;
 }
 
-int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
+PORT_OVERRIDE int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
     (void) vif_packet;
 
     if (texture_manager == NULL || group < 0 || group >= texture_manager->block_max) {
@@ -833,11 +833,11 @@ int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
     return 1;
 }
 
-void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
+PORT_OVERRIDE void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
     (void) vif_packet;
 }
 
-void mgCDrawManager::AddPacket(int group, u_long128 *common, u_long128 *packet, int vu_program) {
+PORT_OVERRIDE void mgCDrawManager::AddPacket(int group, u_long128 *common, u_long128 *packet, int vu_program) {
     // Retail registered the packet in its texture group's sort list and the frame's DMA chain
     // called it on the GS. A VU1 program has no host executor, and the units that built these
     // packets (the visual ones) draw through the renderer directly now, so registration keeps the

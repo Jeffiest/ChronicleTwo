@@ -143,11 +143,11 @@ __attribute__((weak)) bool ResolveTexture(const mgCTexture &texture, gfx::Textur
 
 } // namespace mgport
 
-mgCDrawEnv::mgCDrawEnv() {
+PORT_OVERRIDE mgCDrawEnv::mgCDrawEnv() {
     Initialize(0);
 }
 
-mgCDrawEnv &mgCDrawEnv::operator=(mgCDrawEnv &source) {
+PORT_OVERRIDE mgCDrawEnv &mgCDrawEnv::operator=(mgCDrawEnv &source) {
     ((u_long128 *) this)[0] = ((u_long128 *) &source)[0];
     ((u_long128 *) this)[1] = ((u_long128 *) &source)[1];
     ((u_long128 *) this)[2] = ((u_long128 *) &source)[2];
@@ -155,7 +155,7 @@ mgCDrawEnv &mgCDrawEnv::operator=(mgCDrawEnv &source) {
     return *this;
 }
 
-void mgCDrawEnv::Initialize(int context) {
+PORT_OVERRIDE void mgCDrawEnv::Initialize(int context) {
     *(u_long *) &giftag = 0;
     giftag.NLOOP = 3;
     giftag.EOP = 1;
@@ -175,7 +175,7 @@ void mgCDrawEnv::Initialize(int context) {
     }
 }
 
-void mgCDrawEnv::SetAlpha(int macro) {
+PORT_OVERRIDE void mgCDrawEnv::SetAlpha(int macro) {
     switch (macro) {
         case 0:
             break;
@@ -197,7 +197,7 @@ void mgCDrawEnv::SetAlpha(int macro) {
     }
 }
 
-int mgCDrawEnv::GetAlphaMacroID() {
+PORT_OVERRIDE int mgCDrawEnv::GetAlphaMacroID() {
     if (alpha.value == 0x48) {
         return 2;
     }
@@ -217,7 +217,7 @@ int mgCDrawEnv::GetAlphaMacroID() {
     return 0;
 }
 
-void mgCDrawEnv::SetZBuf(int mode) {
+PORT_OVERRIDE void mgCDrawEnv::SetZBuf(int mode) {
     switch (mode) {
         case MG_ZBUF_NO_WRITE:
             zbuf.bits.zmsk = 1;
@@ -228,7 +228,7 @@ void mgCDrawEnv::SetZBuf(int mode) {
     }
 }
 
-void mgRENDER_INFO::Initialize() {
+PORT_OVERRIDE void mgRENDER_INFO::Initialize() {
     draw_env[0].Initialize(0);
     draw_env[1].Initialize(1);
     fog_enable = 0;
@@ -239,7 +239,7 @@ void mgRENDER_INFO::Initialize() {
     light_changed = 1;
 }
 
-void mgRENDER_INFO::SetRenderInfo(float projection, int width, int height, float near_dist,
+PORT_OVERRIDE void mgRENDER_INFO::SetRenderInfo(float projection, int width, int height, float near_dist,
                                   float far_dist, int zdepth, float aspect_y) {
     float z_range = 1.67e7f;
 
@@ -373,7 +373,7 @@ void mgRENDER_INFO::SetRenderInfo(float projection, int width, int height, float
     SetViewMatrix(view, camera_pos);
 }
 
-void mgRENDER_INFO::SetViewMatrix(float (*view)[4], float *camera_pos) {
+PORT_OVERRIDE void mgRENDER_INFO::SetViewMatrix(float (*view)[4], float *camera_pos) {
     sceVu0CopyVector(this->camera_pos, camera_pos);
     this->camera_pos[3] = 1.0f;
     sceVu0TransposeMatrix(camera_pose, view);
@@ -397,14 +397,14 @@ void mgRENDER_INFO::SetViewMatrix(float (*view)[4], float *camera_pos) {
     mgMulMatrix(world_clip, view_clip, this->view);
 }
 
-void mgRENDER_INFO::SetDropShadowMatrix(float *light_dir, float *plane_pos, float *plane_normal) {
+PORT_OVERRIDE void mgRENDER_INFO::SetDropShadowMatrix(float *light_dir, float *plane_pos, float *plane_normal) {
     sceVu0CopyVector(shadow_plane_pos, plane_pos);
     sceVu0CopyVector(shadow_plane_normal, plane_normal);
     sceVu0CopyVector(shadow_light_dir, light_dir);
     mgShadowMatrix(shadow, light_dir, plane_pos, plane_normal);
 }
 
-int mgRENDER_INFO::ActiveLighting(int index, int copy) {
+PORT_OVERRIDE int mgRENDER_INFO::ActiveLighting(int index, int copy) {
     int previous = active_light;
 
     if (index == previous) {
@@ -426,16 +426,16 @@ int mgRENDER_INFO::ActiveLighting(int index, int copy) {
     return previous;
 }
 
-mgLIGHT_INFO *mgRENDER_INFO::GetpLightInfo() {
+PORT_OVERRIDE mgLIGHT_INFO *mgRENDER_INFO::GetpLightInfo() {
     return &light_info[active_light];
 }
 
-void mgRENDER_INFO::InitActiveLighting() {
+PORT_OVERRIDE void mgRENDER_INFO::InitActiveLighting() {
     light_changed = 1;
     memset(GetpLightInfo(), 0, sizeof(mgLIGHT_INFO));
 }
 
-void mgRENDER_INFO::InitLighting() {
+PORT_OVERRIDE void mgRENDER_INFO::InitLighting() {
     light_changed = 1;
 
     for (int i = 0; i < 8; i++) {
@@ -443,7 +443,7 @@ void mgRENDER_INFO::InitLighting() {
     }
 }
 
-void mgRENDER_INFO::SetLight(float (*light_dir)[4], float (*light_color)[4]) {
+PORT_OVERRIDE void mgRENDER_INFO::SetLight(float (*light_dir)[4], float (*light_color)[4]) {
     light_changed = 1;
     mgLIGHT_INFO *info = GetpLightInfo();
     sceVu0CopyMatrix(info->light_dir, light_dir);
@@ -458,13 +458,13 @@ void mgRENDER_INFO::SetLight(float (*light_dir)[4], float (*light_color)[4]) {
     info->light_dir[3][3] = 0.0f;
 }
 
-void mgRENDER_INFO::GetLight(float (*light_dir)[4], float (*light_color)[4]) {
+PORT_OVERRIDE void mgRENDER_INFO::GetLight(float (*light_dir)[4], float (*light_color)[4]) {
     mgLIGHT_INFO *info = GetpLightInfo();
     sceVu0CopyMatrix(light_dir, info->light_dir);
     sceVu0CopyMatrix(light_color, info->light_color);
 }
 
-void mgRENDER_INFO::SetLight(int index, float *direction, float *color) {
+PORT_OVERRIDE void mgRENDER_INFO::SetLight(int index, float *direction, float *color) {
     light_changed = 1;
 
     if (index < 0 || index >= 4) {
@@ -482,15 +482,15 @@ void mgRENDER_INFO::SetLight(int index, float *direction, float *color) {
     slot->light_color[index][3] = 0;
 }
 
-void mgRENDER_INFO::SetAmbient(float *color) {
+PORT_OVERRIDE void mgRENDER_INFO::SetAmbient(float *color) {
     sceVu0CopyVector(GetpLightInfo()->ambient, color);
 }
 
-void mgRENDER_INFO::GetAmbient(float *color) {
+PORT_OVERRIDE void mgRENDER_INFO::GetAmbient(float *color) {
     sceVu0CopyVector(color, GetpLightInfo()->ambient);
 }
 
-void mgRENDER_INFO::SetPlight(int index, float *pos, float *color, float power, float range) {
+PORT_OVERRIDE void mgRENDER_INFO::SetPlight(int index, float *pos, float *color, float power, float range) {
     mgPOINT_LIGHT light;
     sceVu0CopyVector(light.pos, pos);
     sceVu0CopyVector(light.color, color);
@@ -499,7 +499,7 @@ void mgRENDER_INFO::SetPlight(int index, float *pos, float *color, float power, 
     SetPlight(index, &light);
 }
 
-void mgRENDER_INFO::SetPlight(int index, mgPOINT_LIGHT *light) {
+PORT_OVERRIDE void mgRENDER_INFO::SetPlight(int index, mgPOINT_LIGHT *light) {
     if (index < 0 || index >= 4) {
         return;
     }
@@ -530,7 +530,7 @@ void mgRENDER_INFO::SetPlight(int index, mgPOINT_LIGHT *light) {
     slot->point_light[index].range = range;
 }
 
-void mgRENDER_INFO::GetPlight(int index, mgPOINT_LIGHT *out) {
+PORT_OVERRIDE void mgRENDER_INFO::GetPlight(int index, mgPOINT_LIGHT *out) {
     if (index < 0 || index >= 4 || out == NULL) {
         return;
     }
@@ -544,23 +544,23 @@ void mgRENDER_INFO::GetPlight(int index, mgPOINT_LIGHT *out) {
     out->range = light->range;
 }
 
-void mgRENDER_INFO::FogEnable(int enable) {
+PORT_OVERRIDE void mgRENDER_INFO::FogEnable(int enable) {
     fog_enable = enable;
 }
 
-int mgRENDER_INFO::GetFogEnable() {
+PORT_OVERRIDE int mgRENDER_INFO::GetFogEnable() {
     return fog_enable;
 }
 
-void mgRENDER_INFO::PlightEnable(int enable) {
+PORT_OVERRIDE void mgRENDER_INFO::PlightEnable(int enable) {
     plight_enable = enable;
 }
 
-int mgRENDER_INFO::GetPlightEnable() {
+PORT_OVERRIDE int mgRENDER_INFO::GetPlightEnable() {
     return plight_enable;
 }
 
-void mgRENDER_INFO::SetFogParam(float near, float far, u_char red, u_char green, u_char blue, float depth_max,
+PORT_OVERRIDE void mgRENDER_INFO::SetFogParam(float near, float far, u_char red, u_char green, u_char blue, float depth_max,
                                 float depth_min) {
     float depth_range = depth_max - depth_min;
     float distance = far - near;
@@ -581,7 +581,7 @@ void mgRENDER_INFO::SetFogParam(float near, float far, u_char red, u_char green,
     fog.b = blue;
 }
 
-mgVu0FBOX &mgVu0FBOX::operator=(mgVu0FBOX &source) {
+PORT_OVERRIDE mgVu0FBOX &mgVu0FBOX::operator=(mgVu0FBOX &source) {
     *(u_long128 *) max = *(u_long128 *) source.max;
     *(u_long128 *) min = *(u_long128 *) source.min;
     return *this;

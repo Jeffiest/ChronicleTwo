@@ -60,7 +60,7 @@ float Dot(const float *a, const float *b) {
 
 } // namespace
 
-void COcclusion::Setup(float (*view_matrix)[4]) {
+PORT_OVERRIDE void COcclusion::Setup(float (*view_matrix)[4]) {
     float points[4][4];
     float origin[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
@@ -116,7 +116,7 @@ void COcclusion::Setup(float (*view_matrix)[4]) {
     side_plane[3][3] = 0;
 }
 
-int COcclusion::CheckSphere(float *sphere) {
+PORT_OVERRIDE int COcclusion::CheckSphere(float *sphere) {
     if (enable == 0 || setup == 0) {
         return 0;
     }

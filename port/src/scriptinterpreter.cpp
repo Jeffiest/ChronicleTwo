@@ -11,7 +11,7 @@ static u8  CheckChar(char c);
 // 32-bit integer member: on the PS2 that is the whole value, a pointer included. A host string
 // argument is an eight-byte pointer, so the same copy would keep only its low half and every
 // string passed to a tag function would be truncated. The whole argument is moved instead.
-void CScriptInterpreter::PushStack(SPI_STACK argument) {
+PORT_OVERRIDE void CScriptInterpreter::PushStack(SPI_STACK argument) {
     if (stack_count >= stack_size) {
         printf("SPI stack over!!\n");
         return;
@@ -24,7 +24,7 @@ void CScriptInterpreter::PushStack(SPI_STACK argument) {
 // Retail reads the last character of an argument with text[(u32) length - 1], which on the PS2
 // wraps to text[-1] for an empty argument; on the host the same index addresses four gigabytes
 // past the buffer. The empty argument keeps its meaningless last-character test skipped instead.
-int CScriptInterpreter::GetArg() {
+PORT_OVERRIDE int CScriptInterpreter::GetArg() {
     char      text[SPI_TOKEN_SIZE];
     SPI_STACK argument;
     int       c;

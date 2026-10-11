@@ -51,7 +51,7 @@ static char *GetDeltaTime(char *p, int *delta) {
     return p;
 }
 
-void sndTrack::Initialize() {
+PORT_OVERRIDE void sndTrack::Initialize() {
     vol = 127;
     expression = 127;
     prog = 0;
@@ -66,13 +66,13 @@ void sndTrack::Initialize() {
     }
 }
 
-void sndCSeSeqData::Initialize() {
+PORT_OVERRIDE void sndCSeSeqData::Initialize() {
     tick_rate = 1;
     event_num = 0;
     event = NULL;
 }
 
-void sndCSeSeqData::LoadSMF(char *smf, int size, mgCMemory *memory) {
+PORT_OVERRIDE void sndCSeSeqData::LoadSMF(char *smf, int size, mgCMemory *memory) {
     s16            format;
     s16            track_count;
     s16            division;
@@ -187,7 +187,7 @@ void sndCSeSeqData::LoadSMF(char *smf, int size, mgCMemory *memory) {
     tick_rate = division * 225 / 60;
 }
 
-void sndCSeSeq::Initialize() {
+PORT_OVERRIDE void sndCSeSeq::Initialize() {
     tick = 0;
     wait = 0;
     data = NULL;
@@ -202,13 +202,13 @@ void sndCSeSeq::Initialize() {
     }
 }
 
-void sndCSeSeq::SetSeID(int id) {
+PORT_OVERRIDE void sndCSeSeq::SetSeID(int id) {
     for (int index = 0; index < track_num; index++) {
         track[index].se_id = id + index;
     }
 }
 
-void sndCSeSeq::Count(float frames) {
+PORT_OVERRIDE void sndCSeSeq::Count(float frames) {
     int            ticks;
     sndCSeSeqData *seq_data;
 
@@ -222,7 +222,7 @@ void sndCSeSeq::Count(float frames) {
     }
 }
 
-void sndCSeSeq::Stop() {
+PORT_OVERRIDE void sndCSeSeq::Stop() {
     AllNoteOff();
     wait = 0;
     tick = 0;
@@ -230,7 +230,7 @@ void sndCSeSeq::Stop() {
     event = NULL;
 }
 
-int sndCSeSeq::Step(float frames) {
+PORT_OVERRIDE int sndCSeSeq::Step(float frames) {
     int channel;
 
     if (data == NULL) {
@@ -302,7 +302,7 @@ int sndCSeSeq::Step(float frames) {
     return 0;
 }
 
-int sndCSeSeq::chk_trk(int trk) {
+PORT_OVERRIDE int sndCSeSeq::chk_trk(int trk) {
     if (trk < 0 || trk >= track_num) {
         return 0;
     }
@@ -310,7 +310,7 @@ int sndCSeSeq::chk_trk(int trk) {
     return 1;
 }
 
-void sndCSeSeq::NoteOn(int trk, int key, int velocity) {
+PORT_OVERRIDE void sndCSeSeq::NoteOn(int trk, int key, int velocity) {
     sndTrack *channel;
     int       volume;
 
@@ -331,13 +331,13 @@ void sndCSeSeq::NoteOn(int trk, int key, int velocity) {
     }
 }
 
-void sndCSeSeq::NoteOff(int trk, int key, int velocity) {
+PORT_OVERRIDE void sndCSeSeq::NoteOff(int trk, int key, int velocity) {
     if (chk_trk(trk) != 0 && track[trk].NoteOff(key, velocity) != 0) {
         sndSeStopPBPrKr(port, bank, track[trk].prog, key, track[trk].se_id);
     }
 }
 
-void sndCSeSeq::AllNoteOff() {
+PORT_OVERRIDE void sndCSeSeq::AllNoteOff() {
     int i;
 
     for (i = 0; i < track_num; i++) {
@@ -345,7 +345,7 @@ void sndCSeSeq::AllNoteOff() {
     }
 }
 
-void sndCSeSeq::TrackNoteOff(int trk) {
+PORT_OVERRIDE void sndCSeSeq::TrackNoteOff(int trk) {
     sndTrack      *channel;
     sndSeSeqVoice *note;
     int            i;
@@ -361,7 +361,7 @@ void sndCSeSeq::TrackNoteOff(int trk) {
     }
 }
 
-void sndCSeSeq::CtrlChg(int trk, int ctrl, int value) {
+PORT_OVERRIDE void sndCSeSeq::CtrlChg(int trk, int ctrl, int value) {
     if (chk_trk(trk) != 0 && track[trk].CtrlChg(ctrl, value) != 0) {
         if (ctrl == SND_MIDI_CTRL_PAN) {
             SendPan(trk);
@@ -373,19 +373,19 @@ void sndCSeSeq::CtrlChg(int trk, int ctrl, int value) {
     }
 }
 
-void sndCSeSeq::ProgChg(int trk, int prog) {
+PORT_OVERRIDE void sndCSeSeq::ProgChg(int trk, int prog) {
     if (chk_trk(trk) != 0) {
         track[trk].ProgChg(prog);
     }
 }
 
-void sndCSeSeq::PitchBend(int trk, int msb, int lsb) {
+PORT_OVERRIDE void sndCSeSeq::PitchBend(int trk, int msb, int lsb) {
     if (chk_trk(trk) != 0 && track[trk].PitchBend(msb, lsb) != 0) {
         SendPitch(trk);
     }
 }
 
-void sndCSeSeq::SendVol(int trk) {
+PORT_OVERRIDE void sndCSeSeq::SendVol(int trk) {
     sndTrack      *channel;
     sndSeSeqVoice *note;
     int            volume;
@@ -402,7 +402,7 @@ void sndCSeSeq::SendVol(int trk) {
     }
 }
 
-void sndCSeSeq::SendPan(int trk) {
+PORT_OVERRIDE void sndCSeSeq::SendPan(int trk) {
     sndTrack      *channel;
     sndSeSeqVoice *note;
     int            i;
@@ -417,7 +417,7 @@ void sndCSeSeq::SendPan(int trk) {
     }
 }
 
-void sndCSeSeq::SendPitch(int trk) {
+PORT_OVERRIDE void sndCSeSeq::SendPitch(int trk) {
     sndTrack      *channel;
     sndSeSeqVoice *note;
     int            i;
@@ -433,7 +433,7 @@ void sndCSeSeq::SendPitch(int trk) {
     }
 }
 
-sndSeSeqVoice *sndTrack::SaerchVoice(int program, int key) {
+PORT_OVERRIDE sndSeSeqVoice *sndTrack::SaerchVoice(int program, int key) {
     sndSeSeqVoice *note = voice;
 
     for (int index = 0; index < voice_num; index++, note++) {
@@ -445,7 +445,7 @@ sndSeSeqVoice *sndTrack::SaerchVoice(int program, int key) {
     return NULL;
 }
 
-sndSeSeqVoice *sndTrack::GetEmptyVoice() {
+PORT_OVERRIDE sndSeSeqVoice *sndTrack::GetEmptyVoice() {
     sndSeSeqVoice *note = voice;
 
     for (int index = 0; index < voice_num; index++, note++) {
@@ -457,7 +457,7 @@ sndSeSeqVoice *sndTrack::GetEmptyVoice() {
     return NULL;
 }
 
-int sndTrack::NoteOn(int note, int velocity) {
+PORT_OVERRIDE int sndTrack::NoteOn(int note, int velocity) {
     sndSeSeqVoice *voice;
 
     if (SaerchVoice((int) prog, note) != 0) {
@@ -477,7 +477,7 @@ int sndTrack::NoteOn(int note, int velocity) {
     return 1;
 }
 
-int sndTrack::NoteOff(int key, int velocity) {
+PORT_OVERRIDE int sndTrack::NoteOff(int key, int velocity) {
     sndSeSeqVoice *note = SaerchVoice(prog, key);
 
     if (note == NULL) {
@@ -488,7 +488,7 @@ int sndTrack::NoteOff(int key, int velocity) {
     return 1;
 }
 
-int sndTrack::CtrlChg(int ctrl, int value) {
+PORT_OVERRIDE int sndTrack::CtrlChg(int ctrl, int value) {
     int result = 1;
 
     switch (ctrl) {
@@ -509,12 +509,12 @@ int sndTrack::CtrlChg(int ctrl, int value) {
     return result;
 }
 
-int sndTrack::ProgChg(int program) {
+PORT_OVERRIDE int sndTrack::ProgChg(int program) {
     prog = program;
     return 0;
 }
 
-int sndTrack::PitchBend(int msb, int lsb) {
+PORT_OVERRIDE int sndTrack::PitchBend(int msb, int lsb) {
     bend_lsb = lsb;
     bend_msb = msb;
     return 1;

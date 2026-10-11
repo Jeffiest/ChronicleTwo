@@ -8,7 +8,7 @@
 // remade the bounds.
 void PortMgSkinMotionTree(mgCFrame *frame);
 
-void CCharacter2::SetDeformMesh() {
+PORT_OVERRIDE void CCharacter2::SetDeformMesh() {
     sceVu0FVECTOR max;
     sceVu0FVECTOR min;
     int           i;

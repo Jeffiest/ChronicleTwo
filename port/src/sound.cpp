@@ -209,15 +209,15 @@ int SndLoadSeqHost(int port, const void *sequence, int size) {
 
 // ---------------------------------------------------------------------------------------------
 
-void *iop_bd_addr;
+PORT_OVERRIDE void *iop_bd_addr;
 
-void set_spu(int mode0, int mode1, int depth0, int depth1) {
+PORT_OVERRIDE void set_spu(int mode0, int mode1, int depth0, int depth1) {
     Player().SetReverbEnabled(true);
     Player().SetReverb(0, mode0, depth0);
     Player().SetReverb(1, mode1, depth1);
 }
 
-int TransHdBd(int hd, int hd_size, int bd, int bd_size) {
+PORT_OVERRIDE int TransHdBd(int hd, int hd_size, int bd, int bd_size) {
     // Retail stages the bank body into iop_bd_addr for its loads; the port's load entry points
     // build the mixer's bank from the buffers directly, and nothing calls this.
     (void) hd;
@@ -227,22 +227,22 @@ int TransHdBd(int hd, int hd_size, int bd, int bd_size) {
     return 0;
 }
 
-void CSound::StopVoice(int core) {
+PORT_OVERRIDE void CSound::StopVoice(int core) {
     audio::Trace("StopVoice core %d", core);
     Player().KeyOffCore(core);
 }
 
-void CSound::SndInReverb(bool enable) {
+PORT_OVERRIDE void CSound::SndInReverb(bool enable) {
     audio::Trace("SndInReverb %d", enable);
     Player().SetReverbEnabled(enable);
 }
 
-void CSound::SetReverb(int core, int mode, int depth) {
+PORT_OVERRIDE void CSound::SetReverb(int core, int mode, int depth) {
     audio::Trace("SetReverb core %d mode %d depth %d", core, mode, depth);
     Player().SetReverb(core, mode, depth);
 }
 
-int CSound::Init(int mode0, int mode1, int depth0, int depth1) {
+PORT_OVERRIDE int CSound::Init(int mode0, int mode1, int depth0, int depth1) {
     static bool output_started = false;
     if (!output_started) {
         output_started = true;
@@ -265,7 +265,7 @@ int CSound::Init(int mode0, int mode1, int depth0, int depth1) {
     return 0;
 }
 
-int CSound::Exit() {
+PORT_OVERRIDE int CSound::Exit() {
     for (int port = 0; port < kDriverPorts; port++) {
         Player().Stop(port);
         g_ports[port] = DriverPort{};
@@ -273,7 +273,7 @@ int CSound::Exit() {
     return 0;
 }
 
-void CSound::DEL_PORT(int port) {
+PORT_OVERRIDE void CSound::DEL_PORT(int port) {
     if (port < 0 || port >= kDriverPorts) {
         return;
     }
@@ -287,7 +287,7 @@ void CSound::DEL_PORT(int port) {
     }
 }
 
-void CSound::SQ_Play(int port, int seq_no, int volume) {
+PORT_OVERRIDE void CSound::SQ_Play(int port, int seq_no, int volume) {
     if (port < 0 || port >= kDriverPorts) {
         return;
     }
@@ -315,7 +315,7 @@ void CSound::SQ_Play(int port, int seq_no, int volume) {
     Player().Play(port);
 }
 
-void CSound::SQ_RePlay(int port) {
+PORT_OVERRIDE void CSound::SQ_RePlay(int port) {
     if (port < 0 || port >= kDriverPorts || g_ports[port].sequences.empty()) {
         return;
     }
@@ -323,7 +323,7 @@ void CSound::SQ_RePlay(int port) {
     Player().Play(port);
 }
 
-void CSound::SE_Play(int port, int bank, int program, int key, int pan, int velocity, int volume, int pitch, int id) {
+PORT_OVERRIDE void CSound::SE_Play(int port, int bank, int program, int key, int pan, int velocity, int volume, int pitch, int id) {
     if (id > 0x7E) {
         std::printf(" ################################SE_ID ERR!! PORT NO=%d !!!\n", port);
         return;
@@ -350,7 +350,7 @@ void CSound::SE_Play(int port, int bank, int program, int key, int pan, int velo
     Player().HsMessage(port, key_on);
 }
 
-void CSound::SE_SetVol(int port, int bank, int program, int key, int volume, int id) {
+PORT_OVERRIDE void CSound::SE_SetVol(int port, int bank, int program, int key, int volume, int id) {
     if (id > 0x7E) {
         std::printf(" ################################SE_ID ERR!! PORT NO=%d !!!\n", port);
         return;
@@ -368,7 +368,7 @@ void CSound::SE_SetVol(int port, int bank, int program, int key, int volume, int
     Player().HsMessage(port, message);
 }
 
-void CSound::SE_SetPan(int port, int bank, int program, int key, int pan, int id) {
+PORT_OVERRIDE void CSound::SE_SetPan(int port, int bank, int program, int key, int pan, int id) {
     if (id > 0x7E) {
         std::printf(" ################################SE_ID ERR!! PORT NO=%d !!!\n", port);
         return;
@@ -386,7 +386,7 @@ void CSound::SE_SetPan(int port, int bank, int program, int key, int pan, int id
     Player().HsMessage(port, message);
 }
 
-void CSound::SE_Stop(int port, int bank, int program, int key, int id) {
+PORT_OVERRIDE void CSound::SE_Stop(int port, int bank, int program, int key, int id) {
     if (id > 0x7E) {
         std::printf(" ################################SE_ID ERR!! PORT NO=%d !!!\n", port);
         return;
@@ -404,30 +404,30 @@ void CSound::SE_Stop(int port, int bank, int program, int key, int id) {
     Player().HsMessage(port, message);
 }
 
-void CSound::Step() {
+PORT_OVERRIDE void CSound::Step() {
     // The IOP's once-a-frame work: the queued MIDI stream buffers went to the IOP and the
     // ports' fades advanced. The mixer takes sequencer events and effect messages as they are
     // posted and no game code sets the retail fade state, so nothing is left to do here.
 }
 
-void CSound::Stop(int port) {
+PORT_OVERRIDE void CSound::Stop(int port) {
     audio::Trace("Stop port %d", port);
     Player().Stop(port);
 }
 
-void CSound::SetVol(int port, int volume) {
+PORT_OVERRIDE void CSound::SetVol(int port, int volume) {
     if (volume != 256) {
         volume = static_cast<int>(volume * 2.015748f);
     }
     Player().SetVolume(port, volume);
 }
 
-void CSound::SetStereoMode(int mode) {
+PORT_OVERRIDE void CSound::SetStereoMode(int mode) {
     audio::Trace("SetStereoMode %d", mode);
     Player().SetStereo(mode != 0);
 }
 
-void CSound::SetMasterVol(int core, int volume) {
+PORT_OVERRIDE void CSound::SetMasterVol(int core, int volume) {
     if (core < 0 || core > 1) {
         return;
     }
@@ -442,23 +442,23 @@ void CSound::SetMasterVol(int core, int volume) {
     Player().SetMasterGain(volume / 16383.0f);
 }
 
-void CSound::LoadHdBd(int port, int hd, int hd_size, int bd, int bd_size) {
+PORT_OVERRIDE void CSound::LoadHdBd(int port, int hd, int hd_size, int bd, int bd_size) {
     LoadHdBd2(port, hd, hd_size, bd, bd_size);
 }
 
-void CSound::LoadHdBd2(int port, int hd, int hd_size, int bd, int bd_size) {
+PORT_OVERRIDE void CSound::LoadHdBd2(int port, int hd, int hd_size, int bd, int bd_size) {
     SndLoadHdBdHost(port, FromInt(hd), hd_size, FromInt(bd), bd_size);
 }
 
-int CSound::LoadHdBdAdd(int port, int hd, int hd_size, int bd, int bd_size) {
+PORT_OVERRIDE int CSound::LoadHdBdAdd(int port, int hd, int hd_size, int bd, int bd_size) {
     return SndLoadHdBdAddHost(port, FromInt(hd), hd_size, FromInt(bd), bd_size);
 }
 
-int CSound::LoadSeq(int port, int address, int size) {
+PORT_OVERRIDE int CSound::LoadSeq(int port, int address, int size) {
     return SndLoadSeqHost(port, FromInt(address), size);
 }
 
-void CSound::SE_SetPitch(int port, int bank, int program, int key, int pitch, int id) {
+PORT_OVERRIDE void CSound::SE_SetPitch(int port, int bank, int program, int key, int pitch, int id) {
     if (id > 0x7E) {
         std::printf(" ################################SE_ID ERR!! PORT NO=%d !!!\n", port);
         return;
@@ -477,15 +477,15 @@ void CSound::SE_SetPitch(int port, int bank, int program, int key, int pitch, in
     Player().HsMessage(port, message);
 }
 
-void CSound::StreamOpenFast(int channel, char *name) {
+PORT_OVERRIDE void CSound::StreamOpenFast(int channel, char *name) {
     OpenStream(channel, name, nullptr);
 }
 
-void CSound::StreamOpenFromFPLFast(int channel, char *name, char *pack_name) {
+PORT_OVERRIDE void CSound::StreamOpenFromFPLFast(int channel, char *name, char *pack_name) {
     OpenStream(channel, name, pack_name);
 }
 
-void CSound::StreamPlay(int channel) {
+PORT_OVERRIDE void CSound::StreamPlay(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
@@ -499,35 +499,35 @@ void CSound::StreamPlay(int channel) {
     audio::Trace("stream %d: play (silent)", channel);
 }
 
-void CSound::StreamStop(int channel) {
+PORT_OVERRIDE void CSound::StreamStop(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
     g_streams[channel].playing = false;
 }
 
-void CSound::StreamClose(int channel) {
+PORT_OVERRIDE void CSound::StreamClose(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
     g_streams[channel] = StreamChannel{};
 }
 
-void CSound::StreamEND(int channel) {
+PORT_OVERRIDE void CSound::StreamEND(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
     g_streams[channel] = StreamChannel{};
 }
 
-void CSound::StreamPause(int channel) {
+PORT_OVERRIDE void CSound::StreamPause(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
     g_streams[channel].playing = false;
 }
 
-void CSound::StreamRePlay(int channel) {
+PORT_OVERRIDE void CSound::StreamRePlay(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
@@ -538,11 +538,11 @@ void CSound::StreamRePlay(int channel) {
     }
 }
 
-void CSound::StreamSetVol(int channel, int left, int right) {
+PORT_OVERRIDE void CSound::StreamSetVol(int channel, int left, int right) {
     audio::Trace("stream %d: set volume %d %d", channel, left, right);
 }
 
-int CSound::StreamGetState(int channel) {
+PORT_OVERRIDE int CSound::StreamGetState(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return 0;
     }
@@ -561,12 +561,12 @@ int CSound::StreamGetState(int channel) {
     return kStreamPlaying;
 }
 
-int CSound::StreamGetLevel(int channel) {
+PORT_OVERRIDE int CSound::StreamGetLevel(int channel) {
     (void) channel;
     return 0;
 }
 
-void CSound::StreamStandBy(int channel) {
+PORT_OVERRIDE void CSound::StreamStandBy(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
@@ -577,12 +577,12 @@ void CSound::StreamStandBy(int channel) {
     }
 }
 
-int CSound::TransBdState(int channel) {
+PORT_OVERRIDE int CSound::TransBdState(int channel) {
     // Wave transfers are synchronous here; the game's sndWaitTransBd always sees them done.
     (void) channel;
     return 1;
 }
 
-int CSound::StreamOpenState() {
+PORT_OVERRIDE int CSound::StreamOpenState() {
     return 0;
 }

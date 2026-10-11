@@ -340,7 +340,7 @@ bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
     return true;
 }
 
-int mgCTextureManager::ReloadTexture(int block, u_int *packet) {
+PORT_OVERRIDE int mgCTextureManager::ReloadTexture(int block, u_int *packet) {
     // The ps2 version writes the VIF1 chain that uploads a block into VRAM. On the host the
     // upload happens when the renderer first samples the texture, so this only has to keep the
     // ps2's placement of TBP0 and CBP (which the engine's other units still speak in) and mark
@@ -401,7 +401,7 @@ int mgCTextureManager::ReloadTexture(int block, u_int *packet) {
     return 0;
 }
 
-void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
+PORT_OVERRIDE void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
     if (texture != NULL) {
         mgCTextureBlock *block = GetTextureBlock(texture->block);
 
@@ -420,7 +420,7 @@ void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
     }
 }
 
-void mgCTextureManager::Initialize(int start, int end) {
+PORT_OVERRIDE void mgCTextureManager::Initialize(int start, int end) {
     for (auto &pair : g_entries) {
         Release(pair.second);
     }
@@ -466,7 +466,7 @@ void mgCTextureManager::Initialize(int start, int end) {
     }
 }
 
-mgCTexture *mgCTextureManager::SearchHash(char *name, int mode) {
+PORT_OVERRIDE mgCTexture *mgCTextureManager::SearchHash(char *name, int mode) {
     int             bucket = hash(name);
     mgTEXTURE_HASH *node;
 

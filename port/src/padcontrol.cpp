@@ -7,7 +7,7 @@
 // nothing here needs a host change; the unit is still the port's copy so the pad's code is owned
 // together.
 
-void CPadControl::Initialize() {
+PORT_OVERRIDE void CPadControl::Initialize() {
     for (int i = 0; i < PAD_CTRL_BTN_MAX; i++) {
         btn[i].config = 0;
     }
@@ -17,7 +17,7 @@ void CPadControl::Initialize() {
     }
 }
 
-int CPadControl::RegisterBtn(int index, int mask, int flags) {
+PORT_OVERRIDE int CPadControl::RegisterBtn(int index, int mask, int flags) {
     if (index < 0 || index >= PAD_CTRL_BTN_MAX) {
         return 0;
     }
@@ -27,7 +27,7 @@ int CPadControl::RegisterBtn(int index, int mask, int flags) {
     return 1;
 }
 
-int CPadControl::RegisterAnalog(int no, int axis) {
+PORT_OVERRIDE int CPadControl::RegisterAnalog(int no, int axis) {
     if (no < 0 || no >= PAD_CTRL_ANALOG_MAX) {
         return 0;
     }
@@ -37,7 +37,7 @@ int CPadControl::RegisterAnalog(int no, int axis) {
     return 1;
 }
 
-int CPadControl::Btn(int no) {
+PORT_OVERRIDE int CPadControl::Btn(int no) {
     if (no < 0 || no >= PAD_CTRL_BTN_MAX) {
         return 0;
     }
@@ -45,7 +45,7 @@ int CPadControl::Btn(int no) {
     return btn[no].value;
 }
 
-float CPadControl::Analog(int no) {
+PORT_OVERRIDE float CPadControl::Analog(int no) {
     if (no < 0 || no >= PAD_CTRL_ANALOG_MAX) {
         return 0.0f;
     }
@@ -53,7 +53,7 @@ float CPadControl::Analog(int no) {
     return analog[no].value;
 }
 
-void CPadControl::Update(CGamePad *pad) {
+PORT_OVERRIDE void CPadControl::Update(CGamePad *pad) {
     int i;
     int j;
 

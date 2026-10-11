@@ -4,7 +4,7 @@
 
 // Retail indexes the stack array from a raw offset with the PS2's four-byte pointers; on the host
 // the member itself is used. Everything else is the retail routine.
-void CScene::ClearStack(int index) {
+PORT_OVERRIDE void CScene::ClearStack(int index) {
     for (int i = index; i < stack_num; i++) {
         mgCMemory *memory = stack[i];
 

@@ -289,7 +289,7 @@ void DisableAudioForHeadless() {
 
 } // namespace
 
-int main(int argc, char **argv) {
+PORT_OVERRIDE int main(int argc, char **argv) {
     ConfigureHost();
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);
