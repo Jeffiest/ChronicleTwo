@@ -47,13 +47,14 @@ struct InputPadState {
     std::uint16_t stick_dpad = 0;
 };
 
-// What the keyboard and the mouse hold: SDL scancodes, mouse buttons (bit n-1 for Mouse n) and the
-// mouse motion over one tick in pixels, y growing downward.
+// What the keyboard and the mouse hold: SDL scancodes, mouse buttons (bit n-1 for Mouse n), the
+// mouse motion over one tick in pixels, y growing downward, and the wheel's turn in notches.
 struct InputKeyboardMouse {
     std::vector<int> keys;
     std::uint32_t    mouse_buttons = 0;
     float            mouse_dx = 0.0f;
     float            mouse_dy = 0.0f;
+    float            mouse_wheel = 0.0f;
 };
 
 struct InputMouseSettings {

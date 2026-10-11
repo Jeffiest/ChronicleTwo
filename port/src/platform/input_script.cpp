@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
+#include <cmath>
 #include <fstream>
 #include <sstream>
+
+#include "paths.hpp"
 
 namespace {
 
@@ -14,10 +17,22 @@ struct ButtonName {
 };
 
 constexpr ButtonName kButtonNames[] = {
-    {"cross", kInputCross}, {"circle", kInputCircle}, {"square", kInputSquare}, {"triangle", kInputTriangle},
-    {"start", kInputStart}, {"select", kInputSelect}, {"l1", kInputL1},         {"r1", kInputR1},
-    {"l2", kInputL2},       {"r2", kInputR2},         {"l3", kInputL3},         {"r3", kInputR3},
-    {"up", kInputUp},       {"down", kInputDown},     {"left", kInputLeft},     {"right", kInputRight},
+    {"cross",    kInputCross   },
+    {"circle",   kInputCircle  },
+    {"square",   kInputSquare  },
+    {"triangle", kInputTriangle},
+    {"start",    kInputStart   },
+    {"select",   kInputSelect  },
+    {"l1",       kInputL1      },
+    {"r1",       kInputR1      },
+    {"l2",       kInputL2      },
+    {"r2",       kInputR2      },
+    {"l3",       kInputL3      },
+    {"r3",       kInputR3      },
+    {"up",       kInputUp      },
+    {"down",     kInputDown    },
+    {"left",     kInputLeft    },
+    {"right",    kInputRight   },
 };
 
 InputScript g_script;
@@ -71,6 +86,13 @@ bool ParseDeviceToken(std::string_view token, std::string_view lower, InputScrip
         if (comma == std::string_view::npos || !ParseNumber(motion.substr(0, comma), step.devices.mouse_dx) ||
             !ParseNumber(motion.substr(comma + 1), step.devices.mouse_dy)) {
             why = "mouse motion is mouse:dx,dy";
+            return false;
+        }
+        return true;
+    }
+    if (lower.starts_with("wheel:")) {
+        if (!ParseNumber(lower.substr(6), step.devices.mouse_wheel) || !std::isfinite(step.devices.mouse_wheel)) {
+            why = "mouse wheel is wheel:number (finite notches)";
             return false;
         }
         return true;
@@ -174,13 +196,13 @@ bool InputScriptParse(std::string_view text, InputScript &script, std::string &e
 bool InputScriptLoad(const std::filesystem::path &path, InputScript &script, std::string &error) {
     std::ifstream file(path);
     if (!file) {
-        error = "cannot read " + path.string();
+        error = "cannot read " + PathsDisplay(path);
         return false;
     }
     std::stringstream text;
     text << file.rdbuf();
     if (!InputScriptParse(text.str(), script, error)) {
-        error = path.string() + ": " + error;
+        error = PathsDisplay(path) + ": " + error;
         return false;
     }
     return true;
@@ -221,12 +243,6 @@ void InputScriptInstall(InputScript script) {
     g_active = !g_script.steps.empty();
     for (int pad = 0; pad < kInputPadCount; ++pad) {
         InputSetOverride(pad, nullptr);
-    }
-    if (!g_active) {
-        // Uninstalling must release the scripted keyboard and mouse as well, or a key the script
-        // held stays held for the host actions after the script is gone.
-        InputSetScriptedDevices(InputKeyboardMouse{});
-        return;
     }
     InputScriptApply(0);
 }
