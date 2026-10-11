@@ -84,7 +84,8 @@ list(TRANSFORM PORT_DEFINITIONS PREPEND --define= OUTPUT_VARIABLE port_override_
 # only when it changes, so other edits to port/src rebuild nothing of ps2/src.
 # PORT_OVERRIDE_SOURCES changes when a unit or a stub header comes or goes, which no
 # timestamp shows.
-set(PORT_OVERRIDE_SCRIPT ${KZ_ROOT}/scripts/port_override.py)
+# Interim copy of Kazarov's port_override.py with two parser fixes this game needs; drop it once those land upstream.
+set(PORT_OVERRIDE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/port_override.py)
 set(PORT_OVERRIDES ${CMAKE_BINARY_DIR}/port_overrides.txt)
 set(PORT_OVERRIDE_SOURCES ${CMAKE_BINARY_DIR}/port_override_sources.txt)
 file(GLOB_RECURSE PORT_OVERRIDE_STUBS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/port/include/stubs/*.hpp)
