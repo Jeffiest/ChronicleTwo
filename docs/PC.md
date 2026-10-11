@@ -14,7 +14,7 @@ $buildDir = (Resolve-Path .).Path + '\build\windows'
 ./tools/windows/build.ps1 -Root $depsRoot -BuildDirectory $buildDir
 ```
 
-The scripts use PowerShell 7, CMake, Python 3, Ninja, llvm-mingw/clang, SDL3, Vulkan headers and loader, and glslang from that dependency tree. The configure script defaults to Debug and `DC_BUILD_TESTS=OFF`. Pass `-BuildType Release` or `-Tests` as needed. `build.ps1` builds `darkchronicle`; `-Tests` also builds `darkchronicle_tests`. Runtime DLLs are copied next to the executables.
+The scripts use PowerShell 7, CMake, Python 3, Ninja, llvm-mingw/clang, SDL3, Vulkan headers and loader, and glslang from that dependency tree. The configure script defaults to Debug and `CT_BUILD_TESTS=OFF`. Pass `-BuildType Release` or `-Tests` as needed. `build.ps1` builds `darkchronicle`; `-Tests` also builds `darkchronicle_tests`. Runtime DLLs are copied next to the executables.
 
 To configure with the GoogleTest target enabled and build it:
 
@@ -31,7 +31,7 @@ cmake --build $buildDir --target dc_compatibility_tests_headless
 cmake --build $buildDir --target dc_compatibility_tests
 ```
 
-The core build targets are `dc_host` (shared host services), `dc_port` (ChronicleTwo's host implementation), and `dc_ps2` (the game sources compiled for the host). Build `darkchronicle` to link the executable. Windows CI and exact dependency versions are described by the scripts under `tools/windows/` and `.github/workflows/pc.yml`.
+The core build targets are `ct_host` (shared host services), `ct_port` (ChronicleTwo's host implementation), and `ct_ps2` (the game sources compiled for the host). Build `darkchronicle` to link the executable. Windows CI and exact dependency versions are described by the scripts under `tools/windows/` and `.github/workflows/pc.yml`.
 
 ## Running
 
@@ -71,7 +71,7 @@ Known unresolved issues include a crash involving shared model memory in Items a
 - `port/src` contains the host entry point, runtime replacements, and ChronicleTwo-specific host logic. `port/include` holds port headers and compatibility declarations.
 - `ps2/src` and `ps2/include` contain the game's native sources and headers. The PC build compiles the game sources alongside the host code, using `PORT_OVERRIDE` definitions and generated host-compatible source transformations.
 - `tools/kazarov/port` supplies shared SDL, Vulkan, audio, platform, and SDK replacement code. ChronicleTwo also has host overrides where its requirements differ.
-- `port/CMakeLists.txt` defines `dc_host`, `dc_port`, `dc_ps2`, the executable, and the focused compatibility targets. `DC_BUILD_TESTS` enables `darkchronicle_tests`.
+- `port/CMakeLists.txt` defines `ct_host`, `ct_port`, `ct_ps2`, the executable, and the focused compatibility targets. `CT_BUILD_TESTS` enables `darkchronicle_tests`.
 - `scripts/port/compatibility_audit.py` and related checks verify the host-specific source transformations and compatibility inventory.
 - `docs/port/UPSTREAM_SYNC.md` records the upstream merge audit and its validation status.
 

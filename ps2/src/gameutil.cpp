@@ -499,7 +499,6 @@ Mot_List *MotionProc(mgCFrame *root, unsigned int from_frame, unsigned int to_fr
  *
  */
 static void testVUnew(float (*matrix)[4], float *vertex, float *weight, float *accum, float *out) {
-#ifndef PORT
     asm {
         lqc2 vf4, 0(matrix)
         lqc2 vf5, 0x10(matrix)
@@ -517,7 +516,6 @@ static void testVUnew(float (*matrix)[4], float *vertex, float *weight, float *a
         sqc2 vf6, 0(accum)
         sqc2 vf6, 0(out)
     }
-#endif
 }
 
 Mot_List *MotionProc2(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *frame_info, Mot_List *list) {
@@ -560,11 +558,9 @@ Mot_List *MotionProc2(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *fram
 
             // vf0 always holds (0, 0, 0, 1); store it into each accumulator.
             for (; remaining > 0; remaining--, accum++) {
-#ifndef PORT
                 asm volatile {
                     sqc2 vf0, 0(accum)
                 }
-#endif
             }
         }
 
@@ -1124,12 +1120,10 @@ int CheckHit(CollisionInfo *collision, float *from, float *to, float *hit, int c
         float *max_ptr;
         max_ptr = seg_max;
         min_ptr = seg_min;
-#ifndef PORT
         asm {
             lqc2 vf10, 0(max_ptr)
             lqc2 vf11, 0(min_ptr)
         }
-#endif
     }
     poly = collision->polys;
     count = collision->count;
@@ -1294,12 +1288,10 @@ int CheckHits(CollisionInfo *info, float *from, float *to, int max_hits, int *hi
         float *max_ptr;
         max_ptr = seg_max;
         min_ptr = seg_min;
-#ifndef PORT
         asm volatile {
             lqc2 vf10, 0(max_ptr)
             lqc2 vf11, 0(min_ptr)
         }
-#endif
     }
     poly = info->polys;
     count = info->count;

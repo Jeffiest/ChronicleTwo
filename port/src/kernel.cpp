@@ -7,63 +7,12 @@
 #include "mg_memory.hpp"
 #include "vu0_ops.hpp"
 
-// The odds and ends the link still asked for after the kernel and the SDK stubs landed: the two
-// CodeWarrior runtime helpers the game calls by name, the two globals the retail image held but
-// every decompiled unit only declares, and the collision triangle transform whose VU bodies
-// ps2/src writes in assembly. The collision pair would sit better in a port/src/collision.cpp once
-// that unit is replaced wholesale; it lives here until then.
+// The remaining host definitions: the collision triangle transform whose VU bodies ps2/src writes
+// in assembly. The collision pair would sit better in a port/src/collision.cpp once that unit is
+// replaced wholesale; it lives here until then.
 
-/**
- *
- * The Metrowerks runtime's float-to-unsigned-integer helper, alongside fptosi in runtime.cpp.
- * MWCC used it for conversions its inline sequences could not express; the host cast truncates
- * toward zero exactly like the MIPS conversion it stands in for.
- *
- */
-extern "C" unsigned int fptoui(float value) {
-    return static_cast<unsigned int>(value);
-}
-
-/**
- *
- * CodeWarrior's placement-array constructor: the compiler allocates count * element_size + 16
- * bytes, this runs the constructor (when there is one) over each element and returns the first.
- * The leading quadword pair is the array's header - the element size and the count - which
- * `operator delete[]` reads back; the game's arrays come from its quadword stacks and are never
- * freed individually, but the layout must still match the runtime's.
- *
- */
-extern "C" void *__construct_new_array(void *buffer, void *(*constructor)(void *), void *destructor, unsigned int element_size,
-                                       int count) {
-    (void) destructor;
-
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-
-    unsigned int *header = static_cast<unsigned int *>(buffer);
-    header[0] = element_size;
-    header[1] = static_cast<unsigned int>(count);
-
-    char *array = static_cast<char *>(buffer) + 16;
-
-    if (constructor != nullptr) {
-        for (int i = 0; i < count; i++) {
-            constructor(array + static_cast<std::size_t>(i) * element_size);
-        }
-    }
-
-    return array;
-}
-
-// The retail image carried both of these; the decompiled units only declare them (dng_object.hpp
-// reads BuffWorkData__2, dng_main.hpp and sphida.cpp read EventCamera__2). Their sizes match the
-// PS2 symbol table.
 STATIC_ASSERT(sizeof(mgCMemory) == 0x30);
 STATIC_ASSERT(sizeof(CCameraControl) == 0x1F0);
-
-mgCMemory BuffWorkData__2;
-CCameraControl EventCamera__2;
 
 namespace {
 

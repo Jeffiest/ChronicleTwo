@@ -868,19 +868,11 @@ int CFuncPointMngr::GetLight(float *sphere, CFuncPoint *out_lights, int max, CFu
 
         switch (light->type) {
             case FUNC_POINT_PLIGHT:
-#ifdef PORT
-                memcpy(out, light, sizeof(CFuncPoint));
-#else
                 *out = *light;
-#endif
                 break;
             case FUNC_POINT_FIRE:
             case FUNC_POINT_FLARE: {
-#ifdef PORT
-                memcpy(out, light, sizeof(CFuncPoint));
-#else
                 *out = *light;
-#endif
                 out->type = FUNC_POINT_PLIGHT;
                 sceVu0ScaleVector(out->plight.color, color, 1.0f);
                 out->plight.power = 60.0f * light->scale[1];

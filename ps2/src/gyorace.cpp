@@ -1073,14 +1073,9 @@ int sgLoopGyoRace(SubGameInfo *info) {
             scene->SetActive(SCENE_DATA_CHARA, 0);
             scene->active_camera = scene->before_camera;
 
-#ifdef PORT
-            alignas(CSceneEventData) u_char data_storage[sizeof(CSceneEventData)];
-            CSceneEventData &data = *reinterpret_cast<CSceneEventData *>(data_storage);
-#else
             union {
                 CSceneEventData data;
             };
-#endif
 
             memset(&data, 0, sizeof(data));
             if (OmakeFlag != 0) {

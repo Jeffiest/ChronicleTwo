@@ -553,11 +553,7 @@ public:
      * @address 0x1CC7E0
      * @size 0x3D0
      */
-#ifdef PORT
-    virtual int Draw();
-#else
     virtual void Draw();
-#endif
 
     /**
      *

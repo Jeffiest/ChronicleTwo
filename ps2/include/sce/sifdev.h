@@ -22,13 +22,6 @@
  * Describes a file's attributes, size and
  * time stamps as reported by sceGetstat.
  */
-#ifdef PORT
-/* glibc defines these as macros for struct stat; the SDK names its own fields. */
-#undef st_atime
-#undef st_mtime
-#undef st_ctime
-#endif
-
 struct sce_stat {
     unsigned int  st_mode;       /**< File type and access mode. */
     unsigned int  st_attr;       /**< Device-specific attributes. */

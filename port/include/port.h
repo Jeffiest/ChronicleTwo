@@ -6,6 +6,14 @@
 #include <cstddef>
 #include <new>
 
+#ifdef _WIN32
+#include <cstring>
+// mingw's <strings.h> has no BSD index(); the PS2 libc's index() is strchr().
+inline char *index(const char *s, int c) {
+    return const_cast<char *>(strchr(s, c));
+}
+#endif
+
 #ifdef __APPLE__
 #undef __assert
 #define section(name)
@@ -21,7 +29,7 @@
 /**
  * The Metrowerks runtime's assertion failure.
  */
-[[noreturn]] void __assert(const char *file, int line, const char *expression);
+extern "C" [[noreturn]] void __assert(const char *file, int line, const char *expression);
 
 /**
  * The Metrowerks runtime's exit.

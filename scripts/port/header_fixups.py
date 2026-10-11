@@ -16,6 +16,59 @@ from pathlib import Path
 FIXUPS = [
     ("dng_event.hpp", "    virtual void Draw();", "    virtual int Draw();"),
     ("dng_hud.hpp", "    virtual void Draw();", "    virtual int Draw();"),
+    (
+        "mg_tanime.hpp",
+        """template <>
+void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
+
+template <>
+inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }
+""",
+        """#ifdef PORT
+template <>
+void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
+#endif
+
+template <>
+inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }
+
+#ifndef PORT
+template <>
+void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
+#endif
+""",
+    ),
+    (
+        "runscript.hpp",
+        """    u32   addr;  /**< Nonnegative byte offset of the function's first instruction in the code section. */
+    char *name;  /**< Name of the function, for runtime error messages. */
+    int   local; /**< Number of frame slots, arguments included. */
+    int   arg;   /**< Number of argument slots. */
+""",
+        """    u32 addr; /**< Nonnegative byte offset of the function's first instruction in the code section. */
+#ifdef PORT
+    // The program images were built for the PS2 and never carry a host name pointer; the field is
+    // read as the file holds it so local and arg stay at their file offsets.
+    u32 name; /**< Name field as the file holds it; only the PS2 build's error messages read it. */
+#else
+    char *name; /**< Name of the function, for runtime error messages. */
+#endif
+    int local; /**< Number of frame slots, arguments included. */
+    int arg;   /**< Number of argument slots. */
+""",
+    ),
+    (
+        "sce/sifdev.h",
+        "struct sce_stat {",
+        """#ifdef PORT
+/* glibc defines these as macros for struct stat; the SDK names its own fields. */
+#undef st_atime
+#undef st_mtime
+#undef st_ctime
+#endif
+
+struct sce_stat {""",
+    ),
 ]
 
 

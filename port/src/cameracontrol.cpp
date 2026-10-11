@@ -1,9 +1,4 @@
-/**
- *
- * The camera parameter set's retail assignment, which the PS2 build takes from
- * an assembly function. The port copies every distance and height limit.
- *
- */
+#include "common.h"
 
 #define CAMERA_CONTROL_USE_RETAIL_ASSIGNMENT
 #include "cameracontrol.hpp"
