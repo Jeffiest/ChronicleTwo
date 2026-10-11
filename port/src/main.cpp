@@ -18,6 +18,7 @@
 #include "platform/input.hpp"
 #include "platform/input_script.hpp"
 #include "platform/paths.hpp"
+#include "platform/settings.hpp"
 #include "platform/window.hpp"
 
 // The game headers keep MWCC's pragmas, which clang names but ignores.
@@ -243,6 +244,13 @@ void ReportShaderProgress(uint32_t done, uint32_t total) {
     }
 }
 
+// What the shared host layer needs to know of this game before anything of it runs.
+void ConfigureHost() {
+    SettingsSetEnvPrefix("DC");
+    PathsConfigure({.app_dir = "chronicle", .env_data = "DC_DATA", .env_save = "DC_SAVE"});
+    WindowSetIdentity({.title = "Dark Chronicle", .app_id = "dcdecomp.darkchronicle"});
+}
+
 gfx::PresentMode PresentMode(ConfigPresentMode mode) {
     switch (mode) {
         case ConfigPresentMode::Mailbox:
@@ -282,6 +290,7 @@ void DisableAudioForHeadless() {
 } // namespace
 
 int main(int argc, char **argv) {
+    ConfigureHost();
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);
     if (options.jump == nullptr) {
@@ -315,6 +324,11 @@ int main(int argc, char **argv) {
     InputInit();
 
     gfx::RendererConfig renderer;
+    renderer.app_name = "Dark Chronicle";
+    renderer.logical_width = 640.0f;
+    renderer.logical_height = 480.0f;
+    renderer.display_aspect = 4.0f / 3.0f;
+    renderer.validation = renderer.validation || SettingsEnv("VULKAN_VALIDATION") != nullptr;
     renderer.present_mode = PresentMode(config.present_mode);
     renderer.pipeline_cache = PathsSaveRoot() / "pipeline_cache.bin";
     renderer.progress = ReportShaderProgress;

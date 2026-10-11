@@ -33,7 +33,7 @@ bool ResolveTexture(const mgCTexture &texture, gfx::TextureBinding &binding, flo
     // logical columns, so a texel coordinate in its space scales with them; the texture manager
     // names such images with the frame handles.
     if (binding.texture == gfx::kMainTarget || binding.texture == gfx::kPreviousFrame) {
-        u_scale = gfx::kLogicalWidth / static_cast<float>(mgScreenWidth);
+        u_scale = gfx::LogicalWidth() / static_cast<float>(mgScreenWidth);
     }
 
     return true;

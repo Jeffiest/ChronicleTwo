@@ -58,7 +58,7 @@ struct GsRegisters {
     bool   texa_aem = true;
 
     bool             scissor_seen = false;
-    gfx::LogicalRect scissor{0.0f, 0.0f, gfx::kLogicalWidth, gfx::kLogicalHeight};
+    gfx::LogicalRect scissor{0.0f, 0.0f, gfx::LogicalWidth(), gfx::LogicalHeight()};
 
     // The image-transfer registers the last Direct writes assembled; TRXDIR runs the transfer.
     u_long transfer_bitbltbuf = 0;

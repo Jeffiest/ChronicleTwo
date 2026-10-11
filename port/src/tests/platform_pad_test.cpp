@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <libpad.h>
 
-#include "../platform/input.hpp"
+#include "platform/input.hpp"
 #include "gamepad.hpp"
 
 // CGamePad::Init waits on sceGsSyncV, which lives in the libgraph stub, so

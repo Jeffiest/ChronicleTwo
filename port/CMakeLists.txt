@@ -8,6 +8,9 @@
 # SDK, the Metrowerks runtime, the functions that touch the hardware directly
 # and those written in assembly.
 #
+# The host layer (gfx, audio, platform and the shared sce sources) is Kazarov's
+# (tools/kazarov/port); port/src holds this game's side of it.
+#
 # The port is always the PAL release.
 
 if(NOT CMAKE_CXX_COMPILER)
@@ -48,29 +51,54 @@ FetchContent_Declare(nlohmann_json
     FIND_PACKAGE_ARGS CONFIG)
 FetchContent_MakeAvailable(nlohmann_json)
 
-# platform/imagefile.cpp decodes PNGs with stb_image.h, at the commit DC1 pins. Kept beside the
-# build, fetched once, so no vendored copy is carried here.
-set(STB_IMAGE_DIR ${CMAKE_BINARY_DIR}/stb)
-if(NOT EXISTS ${STB_IMAGE_DIR}/stb_image.h)
-    file(DOWNLOAD https://raw.githubusercontent.com/nothings/stb/2c980bb59875b0d32144a71867fbdebb2f77cd20/stb_image.h
-        ${STB_IMAGE_DIR}/stb_image.h
-        EXPECTED_HASH SHA256=594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3)
+set(KZ_ROOT ${CMAKE_SOURCE_DIR}/tools/kazarov)
+if(NOT EXISTS ${KZ_ROOT}/include/kazarov/port.h)
+    message(FATAL_ERROR "${KZ_ROOT} is empty: run git submodule update --init tools/kazarov")
 endif()
+include(${KZ_ROOT}/cmake/KazarovPort.cmake)
 
 set(PS2_DIR ${CMAKE_SOURCE_DIR}/ps2/src)
 set(PORT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB_RECURSE PS2_SOURCES CONFIGURE_DEPENDS RELATIVE ${PS2_DIR} ${PS2_DIR}/*.cpp)
 file(GLOB_RECURSE PORT_SOURCES CONFIGURE_DEPENDS ${PORT_DIR}/*.cpp)
 list(FILTER PORT_SOURCES EXCLUDE REGEX "/tests/")
+# Kazarov's units this game replaces with its own copies, built into the host library instead.
+file(GLOB_RECURSE HOST_OVERRIDE_SOURCES CONFIGURE_DEPENDS ${PORT_DIR}/host_overrides/*.cpp)
+list(FILTER PORT_SOURCES EXCLUDE REGEX "/host_overrides/")
 # The first-run extractor drives the data tool; that lands with the data phase.
 list(FILTER PORT_SOURCES EXCLUDE REGEX "/platform/firstrun\\.cpp$")
 list(FILTER PS2_SOURCES EXCLUDE REGEX "(^|/)tmp[^/]*$")
+
+# CMenuItemUse::UseItem keeps a CItemUseTarget in an anonymous union so that no constructor runs
+# for it, which MWCC accepts and clang deletes, and ps2/src cannot change. The port compiles a
+# copy with the same storage spelled out, until the function is replaced from port/src.
+set(MENUCLS1_COPY ${CMAKE_BINARY_DIR}/ps2_copies/menucls1.cpp)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${PS2_DIR}/menucls1.cpp)
+file(READ ${PS2_DIR}/menucls1.cpp menucls1_text)
+string(REPLACE "    union {\n        CItemUseTarget target_data;\n    };\n"
+    "    alignas(CItemUseTarget) u_char target_data_storage[sizeof(CItemUseTarget)];\n    CItemUseTarget &target_data = *reinterpret_cast<CItemUseTarget *>(target_data_storage);\n"
+    menucls1_patched "${menucls1_text}")
+if(menucls1_patched STREQUAL menucls1_text)
+    message(FATAL_ERROR "ps2/src/menucls1.cpp no longer holds the union port/CMakeLists.txt rewrites")
+endif()
+# Written only when it changes, so a configure does not recompile the unit.
+set(menucls1_current "")
+if(EXISTS ${MENUCLS1_COPY})
+    file(READ ${MENUCLS1_COPY} menucls1_current)
+endif()
+if(NOT menucls1_current STREQUAL menucls1_patched)
+    file(WRITE ${MENUCLS1_COPY} "${menucls1_patched}")
+endif()
 
 set(PS2_UNITS "")
 # port/include/stubs/<unit>.hpp, if it exists, is included ahead of that unit
 # of ps2/src: it declares what the port defines in place of code PORT leaves
 # out, and supplies or renames what the unit takes from MWCC alone.
 foreach(unit IN LISTS PS2_SOURCES)
+    if(unit STREQUAL "menucls1.cpp")
+        list(APPEND PS2_UNITS ${MENUCLS1_COPY})
+        continue()
+    endif()
     list(APPEND PS2_UNITS ${PS2_DIR}/${unit})
     string(REGEX REPLACE "\\.cpp$" ".hpp" header ${CMAKE_SOURCE_DIR}/port/include/stubs/${unit})
     if(EXISTS ${header})
@@ -86,7 +114,7 @@ add_library(dc_options INTERFACE)
 # PORT leaves out the functions ps2/src writes in MIPS assembly.
 target_compile_definitions(dc_options INTERFACE PORT PAL)
 target_include_directories(dc_options INTERFACE
-    ${CMAKE_SOURCE_DIR}/port/include ${CMAKE_SOURCE_DIR}/ps2/include ${CMAKE_SOURCE_DIR}/ps2/include/sce)
+    ${CMAKE_SOURCE_DIR}/port/include ${KZ_ROOT}/include ${CMAKE_SOURCE_DIR}/ps2/include ${CMAKE_SOURCE_DIR}/ps2/include/sce)
 target_compile_options(dc_options INTERFACE
     "SHELL:-include ${CMAKE_SOURCE_DIR}/port/include/port.h"
     -fms-extensions -ffunction-sections -fdata-sections
@@ -131,39 +159,44 @@ add_custom_target(dc_ps2_merged ALL DEPENDS ${PS2_OBJECT})
 # ps2/src copy. Objects named on the link line always do.
 set(PORT_LIB_SOURCES ${PORT_SOURCES})
 list(FILTER PORT_LIB_SOURCES EXCLUDE REGEX "/tests/|/main\\.cpp$")
-# The host side (platform, gfx, audio) never sees a game header, so it is built
-# without dc_options: no port.h ahead of each unit and no game include paths.
-set(HOST_SOURCES ${PORT_LIB_SOURCES})
-list(FILTER HOST_SOURCES INCLUDE REGEX "/port/src/(platform|gfx|audio)/")
-list(FILTER PORT_LIB_SOURCES EXCLUDE REGEX "/port/src/(platform|gfx|audio)/")
 
-# Every shaders/*.vert|frag under port/src/gfx becomes a header holding its
-# SPIR-V words as a const uint32_t array named after the file.
-find_program(GLSLANG_VALIDATOR NAMES glslangValidator REQUIRED)
-set(SHADER_DIR ${PORT_DIR}/gfx/shaders)
-set(SHADER_HEADER_DIR ${CMAKE_BINARY_DIR}/generated)
-file(GLOB SHADER_SOURCES CONFIGURE_DEPENDS ${SHADER_DIR}/*.vert ${SHADER_DIR}/*.frag)
-set(SHADER_HEADERS "")
-foreach(shader IN LISTS SHADER_SOURCES)
-    get_filename_component(shader_name ${shader} NAME)
-    string(REPLACE "." "_" shader_symbol ${shader_name})
-    set(header ${SHADER_HEADER_DIR}/shaders/${shader_name}.spv.hpp)
-    add_custom_command(OUTPUT ${header}
-        COMMAND ${GLSLANG_VALIDATOR} -V --target-env vulkan1.4 --quiet --vn ${shader_symbol}
-            --depfile ${header}.d -o ${header} ${shader}
-        DEPENDS ${shader}
-        DEPFILE ${header}.d
-        COMMENT "Compiling ${shader_name} to SPIR-V")
-    list(APPEND SHADER_HEADERS ${header})
+# Kazarov's sce sources, compiled here with this game's SDK headers and port.h like the rest of
+# port/src/sce. Its libcdvd, libgraph, libmc, libpad, sifdev and sifrpc are smaller than this
+# game's, and its stubs/ for libdma, libgraph and libpkt abort where this game's pass quietly, so
+# those stay in port/src/sce.
+kz_port_sce_sources(KZ_SCE_SOURCES LIBS eekernel libvu0)
+list(APPEND PORT_LIB_SOURCES ${KZ_SCE_SOURCES})
+
+# gfx, audio and platform never see a game header, so the host library is built without dc_options.
+kz_port_host_library(dc_host)
+# These Kazarov units differ from what this game needs (see the notes at the top of each file in
+# host_overrides/); the copies replace them, and are checked against the pinned originals so that a
+# Kazarov update cannot slip past them.
+get_target_property(host_sources dc_host SOURCES)
+list(FILTER host_sources EXCLUDE REGEX "/port/(gfx/(pipelines|resources)|audio/mixer)\\.cpp$")
+set_property(TARGET dc_host PROPERTY SOURCES ${host_sources} ${HOST_OVERRIDE_SOURCES})
+target_include_directories(dc_host BEFORE PRIVATE ${PORT_DIR}/host_overrides)
+set(HOST_OVERRIDE_BASES
+    gfx/pipelines.cpp b2187d17501cb9d2f056c0792ffbaaa751e6fb067cfcb0d30a49eb25e5d4d5de
+    gfx/resources.cpp 32db6591dea7a9d4713846082b5e958d7fe22d90b2963359429dc64a225a0050
+    audio/mixer.cpp 72413488cb79f69fad65ce0731afa338fa254fe588a13d990605a381f0bf89a1
+    audio/mixer.hpp 3a5c1a8a2d1f2265b394d85ec494b7b9d0145390e0a0b8b1fc93eb27931de1aa)
+list(LENGTH HOST_OVERRIDE_BASES override_count)
+math(EXPR override_last "${override_count} - 1")
+foreach(index RANGE 0 ${override_last} 2)
+    math(EXPR sha_index "${index} + 1")
+    list(GET HOST_OVERRIDE_BASES ${index} unit)
+    list(GET HOST_OVERRIDE_BASES ${sha_index} expected)
+    file(SHA256 ${KZ_ROOT}/port/${unit} actual)
+    if(NOT actual STREQUAL expected)
+        message(FATAL_ERROR "tools/kazarov/port/${unit} changed since port/src/host_overrides/${unit} was "
+            "made from it: merge the change into the override, then update HOST_OVERRIDE_BASES")
+    endif()
 endforeach()
 
-add_library(dc_host OBJECT ${HOST_SOURCES} ${SHADER_HEADERS})
-target_include_directories(dc_host PRIVATE ${PORT_DIR} ${SHADER_HEADER_DIR} ${STB_IMAGE_DIR})
-target_link_libraries(dc_host PRIVATE SDL3::SDL3 Vulkan::Vulkan nlohmann_json::nlohmann_json)
-target_compile_options(dc_host PRIVATE -Wall -ffunction-sections -fdata-sections)
-
 add_library(dc_port OBJECT ${PORT_LIB_SOURCES})
-target_link_libraries(dc_port PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan)
+target_link_libraries(dc_port PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan kz_port_headers)
+target_include_directories(dc_port BEFORE PRIVATE ${PORT_DIR}/host_overrides)
 target_include_directories(dc_port PRIVATE ${PORT_DIR})
 target_compile_options(dc_port PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
     -Wno-overloaded-virtual -Wno-unused-function)
@@ -191,7 +224,8 @@ set(DC_LINK_OPTIONS -fuse-ld=lld -pie -Wl,-z,separate-code -Wl,--gc-sections -Wl
 
 function(dc_link_game target)
     target_sources(${target} PRIVATE $<TARGET_OBJECTS:dc_port> $<TARGET_OBJECTS:dc_host> ${PS2_OBJECT})
-    target_link_libraries(${target} PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan)
+    target_link_libraries(${target} PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan kz_port_headers)
+    target_include_directories(${target} BEFORE PRIVATE ${PORT_DIR}/host_overrides)
     target_include_directories(${target} PRIVATE ${PORT_DIR})
     target_compile_options(${target} PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
         -Wno-overloaded-virtual -Wno-unused-function)

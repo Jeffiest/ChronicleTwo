@@ -1,5 +1,8 @@
 #pragma once
 
+// Kazarov's audio/mixer.hpp with a bank list per port, a bank reference and an effect pitch per voice
+// (Mixer::VoiceExtra), and the FD 2 effect pitch message. Every header it includes is Kazarov's.
+
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -7,10 +10,11 @@
 #include <span>
 #include <vector>
 
-#include "hdbank.hpp"
-#include "reverb.hpp"
-#include "sequencer.hpp"
-#include "synth.hpp"
+#include "audio/hdbank.hpp"
+#include "audio/pcm.hpp"
+#include "audio/reverb.hpp"
+#include "audio/sequencer.hpp"
+#include "audio/synth.hpp"
 
 namespace audio {
 
@@ -35,11 +39,16 @@ public:
 
     void SetSequence(int port, std::shared_ptr<const SqFile> file);
 
+    // A recording the port plays instead of its sequence (the soundtrack option): Rewind, Play, Stop,
+    // IsPlaying and SetVolume treat it as the sequence. SetSequence takes it away; null does too.
+    void SetStream(int port, std::shared_ptr<const PcmTrack> track);
+
     void Rewind(int port, int song);
 
     void Play(int port);
 
-    // Stops the sequence where it stands and releases every voice the port sounds.
+    // Stops the sequence where it stands and releases every voice the port sounds. The port keeps
+    // only its selected bank.
     void Stop(int port);
 
     bool IsPlaying(int port) const;
@@ -104,6 +113,9 @@ private:
         int                                      effect_volume = 127;
         int                                      effect_pan = 64;
         int                                      effect_pitch = 8192;
+        std::shared_ptr<const PcmTrack>          stream;
+        double                                   stream_position = 0.0;
+        bool                                     stream_playing = false;
 
         void ChannelMessage(std::uint8_t status, std::uint8_t data1, std::uint8_t data2) override;
     };
@@ -130,7 +142,20 @@ private:
     // stay pinned until the voice is reused.
     void DropIdleBanks();
 
+    // What a voice carries beyond the shared Voice, kept here so the synth stays the library's: the
+    // bank its sample was decoded from, so a rebind or teardown cannot free it mid-voice, and the FD 2
+    // effect pitch (a 14-bit bend centred at 8192).
+    struct VoiceExtra {
+        std::shared_ptr<const Bank> bank;
+        int                         effect_pitch = 8192;
+    };
+
+    VoiceExtra &Extra(const Voice &voice);
+
     void ReleaseVoice(Voice &voice);
+
+    // Adds the playing recordings' next frames to out.
+    void RenderStreams(float *out, int frames);
 
     void UpdateVoices();
 
@@ -138,6 +163,7 @@ private:
     mutable std::mutex         mutex_;
     Synth                      synth_;
     std::array<Port, kPorts>   ports_;
+    std::array<VoiceExtra, kVoices> voice_extra_;
     std::array<Reverb, kCores> reverbs_;
     bool                       stereo_ = true;
     bool                       reverb_enabled_ = true;

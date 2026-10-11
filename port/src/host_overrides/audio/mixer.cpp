@@ -1,9 +1,12 @@
-#include "mixer.hpp"
+// Kazarov's audio/mixer.cpp with a bank list per port and the FD 2 effect pitch (see mixer.hpp). A
+// rebind keeps the voices that are sounding, where the shared mixer cuts them off.
+
+#include "audio/mixer.hpp"
 
 #include <algorithm>
 #include <cmath>
 
-#include "trace.hpp"
+#include "audio/trace.hpp"
 
 namespace audio {
 
@@ -40,6 +43,8 @@ void Mixer::Reset() {
         port.banks.clear();
         port.bank_index = -1;
         port.sequencer.SetSequence(nullptr);
+        port.stream.reset();
+        port.stream_playing = false;
         port.channels = {};
         port.volume = 0;
         port.attribute = 0;
@@ -91,8 +96,20 @@ void Mixer::SetSequence(int port, std::shared_ptr<const SqFile> file) {
         return;
     }
     std::lock_guard lock(mutex_);
+    ports_[port].stream.reset();
+    ports_[port].stream_playing = false;
     ports_[port].sequencer.SetSequence(std::move(file));
     ForVoices([&](const Voice &v) { return v.port == port && !v.effect; }, [&](Voice &v) { ReleaseVoice(v); });
+}
+
+void Mixer::SetStream(int port, std::shared_ptr<const PcmTrack> track) {
+    if (!ValidPort(port)) {
+        return;
+    }
+    std::lock_guard lock(mutex_);
+    ports_[port].stream = std::move(track);
+    ports_[port].stream_position = ports_[port].stream != nullptr ? static_cast<double>(ports_[port].stream->start) : 0.0;
+    ports_[port].stream_playing = false;
 }
 
 void Mixer::Rewind(int port, int song) {
@@ -100,6 +117,7 @@ void Mixer::Rewind(int port, int song) {
         return;
     }
     std::lock_guard lock(mutex_);
+    ports_[port].stream_position = ports_[port].stream != nullptr ? static_cast<double>(ports_[port].stream->start) : 0.0;
     ports_[port].sequencer.Rewind(song);
     ports_[port].channels = {};
 }
@@ -109,6 +127,10 @@ void Mixer::Play(int port) {
         return;
     }
     std::lock_guard lock(mutex_);
+    if (ports_[port].stream != nullptr) {
+        ports_[port].stream_playing = true;
+        return;
+    }
     ports_[port].sequencer.Play();
 }
 
@@ -118,6 +140,7 @@ void Mixer::Stop(int port) {
     }
     std::lock_guard lock(mutex_);
     Port          &state = ports_[port];
+    state.stream_playing = false;
     state.sequencer.Stop();
     ForVoices([&](const Voice &v) { return v.port == port; }, [&](Voice &v) { ReleaseVoice(v); });
     // Keep only the selected bank: the game's loaders drop their own references after a Stop and
@@ -139,6 +162,9 @@ bool Mixer::IsPlaying(int port) const {
         return false;
     }
     std::lock_guard lock(mutex_);
+    if (ports_[port].stream != nullptr) {
+        return ports_[port].stream_playing;
+    }
     return ports_[port].sequencer.Playing();
 }
 
@@ -260,7 +286,7 @@ void Mixer::HsMessage(int port, std::span<const std::uint8_t> message) {
         case 0x02: {
             // A 14-bit bend, centred at 8192, as the seseq player sends it (sndCSeSeq::SendPitch).
             const int pitch = value | ((message.size() > 6 ? message[6] & 0x7F : 0) << 7);
-            ForVoices(match, [&](Voice &v) { v.effect_pitch = pitch; });
+            ForVoices(match, [&](Voice &v) { Extra(v).effect_pitch = pitch; });
             break;
         }
         default:
@@ -283,11 +309,15 @@ void Mixer::ForVoices(Match match, Action action) {
 }
 
 void Mixer::DropIdleBanks() {
-    for (Voice &voice : synth_.Voices()) {
+    for (const Voice &voice : synth_.Voices()) {
         if (!voice.active) {
-            voice.bank.reset();
+            Extra(voice).bank.reset();
         }
     }
+}
+
+Mixer::VoiceExtra &Mixer::Extra(const Voice &voice) {
+    return voice_extra_[static_cast<std::size_t>(&voice - synth_.Voices().data())];
 }
 
 void Mixer::ReleaseVoice(Voice &voice) {
@@ -447,7 +477,6 @@ void Mixer::EffectOn(Port &port, int id, int number, int velocity) {
     prototype.effect_no = number;
     prototype.effect_volume = port.effect_volume;
     prototype.effect_pan = port.effect_pan;
-    prototype.effect_pitch = port.effect_pitch;
     for (int i = 0; i < count; i++) {
         StartLayer(port, layers[i], note < 0 ? layers[i].sample->base_note : note, velocity, prototype);
     }
@@ -473,10 +502,11 @@ void Mixer::StartLayer(Port &port, const Layer &layer, int note, int velocity, V
             break;
     }
     prototype.mix = sample.spu_attr & kMixAll;
-    // The voice holds the bank so the decoded samples it plays cannot be freed under it.
-    prototype.bank = bank;
     Voice &voice = synth_.Allocate(prototype.Core());
     voice = prototype;
+    VoiceExtra &extra = Extra(voice);
+    extra.bank = bank;
+    extra.effect_pitch = voice.effect ? port.effect_pitch : 8192;
     voice.note = note;
     voice.sample = layer.vag;
     voice.rate = layer.rate;
@@ -511,7 +541,7 @@ void Mixer::UpdateVoices() {
             pan += voice.effect_pan;
             // The FD 2 bend is the driver's 14-bit effect pitch, centred at 8192. Its range is not
             // recorded anywhere host-side; two semitones matches the banks' default split range.
-            pitch += (voice.effect_pitch - 8192) / 8192.0 * 2.0;
+            pitch += (Extra(voice).effect_pitch - 8192) / 8192.0 * 2.0;
         } else {
             const Channel &channel = port.channels[voice.channel];
             gain *= channel.volume * kVolumeUnit * channel.expression * kVolumeUnit;
@@ -532,6 +562,37 @@ void Mixer::UpdateVoices() {
         voice.gain_l = gain * left;
         voice.gain_r = gain * right;
         voice.step = std::min(max_step, voice.rate * std::exp2(pitch / 12.0) / rate_);
+    }
+}
+
+void Mixer::RenderStreams(float *out, int frames) {
+    for (Port &port : ports_) {
+        if (!port.stream_playing || port.stream == nullptr) {
+            continue;
+        }
+        const PcmTrack    &track = *port.stream;
+        const std::int64_t length = track.Frames();
+        const std::int64_t loop_end = track.loop_end > 0 ? std::min(track.loop_end, length) : length;
+        const std::int64_t loop_start = std::clamp<std::int64_t>(track.loop_start, 0, std::max<std::int64_t>(0, loop_end - 1));
+        const double       step = static_cast<double>(track.rate) / rate_;
+        const float        gain = std::clamp(port.volume, 0, kFullPortVolume) / float(kFullPortVolume) * master_ * track.gain / 32768.0f;
+        for (int i = 0; i < frames; ++i) {
+            if (port.stream_position >= loop_end) {
+                if (!track.loop) {
+                    port.stream_playing = false;
+                    break;
+                }
+                port.stream_position -= static_cast<double>(loop_end - loop_start);
+            }
+            const std::int64_t  at = static_cast<std::int64_t>(port.stream_position);
+            const float         fraction = static_cast<float>(port.stream_position - at);
+            const std::int64_t  next = std::min(at + 1, length - 1);
+            const std::int16_t *a = &track.samples[static_cast<std::size_t>(at) * 2];
+            const std::int16_t *b = &track.samples[static_cast<std::size_t>(next) * 2];
+            out[i * 2] += (a[0] + (b[0] - a[0]) * fraction) * gain;
+            out[i * 2 + 1] += (a[1] + (b[1] - a[1]) * fraction) * gain;
+            port.stream_position += step;
+        }
     }
 }
 
@@ -558,6 +619,7 @@ void Mixer::Render(float *out, int frames) {
                 reverbs_[core].Process(sends[core], out, block);
             }
         }
+        RenderStreams(out, block);
         if (!stereo_) {
             for (int i = 0; i < block; i++) {
                 out[i * 2] = out[i * 2 + 1] = (out[i * 2] + out[i * 2 + 1]) * 0.5f;

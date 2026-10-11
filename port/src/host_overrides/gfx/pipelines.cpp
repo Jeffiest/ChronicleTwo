@@ -1,3 +1,7 @@
+// Kazarov's gfx/pipelines.cpp with this game's pipeline-cache diagnostics: a cache that is refused is
+// said out loud, the cache is saved before the creation check so one refused pipeline does not throw
+// away the rest of a cold start, and the summary line gives the cache's size in and out.
+
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -14,7 +18,8 @@
 #include <thread>
 #include <vector>
 
-#include "context.hpp"
+#include "gfx/context.hpp"
+#include "platform/paths.hpp"
 #include "shaders/draw.frag.spv.hpp"
 #include "shaders/draw2d.vert.spv.hpp"
 #include "shaders/mesh.vert.spv.hpp"
@@ -182,7 +187,7 @@ std::vector<uint8_t> LoadCache(const std::filesystem::path &path) {
     // A refusal is said out loud: the whole set then recompiles, which is the cost users wonder about.
     VkPipelineCacheHeaderVersionOne header;
     if (data.size() < sizeof(header)) {
-        Error("pipeline cache at %s is not a pipeline cache; starting from scratch", path.string().c_str());
+        Error("pipeline cache at %s is not a pipeline cache; starting from scratch", PathsDisplay(path).c_str());
         return {};
     }
     std::memcpy(&header, data.data(), sizeof(header));
@@ -190,7 +195,7 @@ std::vector<uint8_t> LoadCache(const std::filesystem::path &path) {
         header.vendorID != g.properties.vendorID || header.deviceID != g.properties.deviceID ||
         std::memcmp(header.pipelineCacheUUID, g.properties.pipelineCacheUUID, VK_UUID_SIZE) != 0) {
         Error("pipeline cache at %s belongs to another device or driver; starting from scratch",
-              path.string().c_str());
+              PathsDisplay(path).c_str());
         return {};
     }
     return data;
@@ -217,13 +222,13 @@ size_t SaveCache(const std::filesystem::path &path) {
         std::ofstream file(temporary, std::ios::binary | std::ios::trunc);
         if (!file ||
             !file.write(reinterpret_cast<const char *>(data.data()), static_cast<std::streamsize>(size))) {
-            Error("cannot write the pipeline cache to %s", temporary.string().c_str());
+            Error("cannot write the pipeline cache to %s", PathsDisplay(temporary).c_str());
             return 0;
         }
     }
     std::filesystem::rename(temporary, path, error);
     if (error) {
-        Error("cannot write the pipeline cache to %s: %s", path.string().c_str(), error.message().c_str());
+        Error("cannot write the pipeline cache to %s: %s", PathsDisplay(path).c_str(), error.message().c_str());
         std::filesystem::remove(temporary, error);
         return 0;
     }
@@ -614,7 +619,7 @@ void CreatePipelines() {
     g.pipeline_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     std::fprintf(stderr, "gfx: %u pipelines ready in %.2f s (cache %llu B in, %llu B out, %s)\n", total,
                  g.pipeline_seconds, static_cast<unsigned long long>(initial.size()),
-                 static_cast<unsigned long long>(cached), g.config.pipeline_cache.string().c_str());
+                 static_cast<unsigned long long>(cached), PathsDisplay(g.config.pipeline_cache).c_str());
 }
 
 void DestroyPipelines() {

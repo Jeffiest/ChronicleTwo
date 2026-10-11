@@ -7,7 +7,7 @@
 #include <cstring>
 #include <string>
 
-#include "../platform/paths.hpp"
+#include "platform/paths.hpp"
 #include "data_fixture.hpp"
 #include "dataread.hpp"
 #include "exitcodes.hpp"

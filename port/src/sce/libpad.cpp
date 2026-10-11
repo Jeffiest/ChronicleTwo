@@ -3,7 +3,7 @@
 #include <array>
 #include <cstring>
 
-#include "../platform/input.hpp"
+#include "platform/input.hpp"
 
 namespace {
 

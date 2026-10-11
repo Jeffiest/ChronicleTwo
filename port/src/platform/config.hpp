@@ -5,47 +5,26 @@
 #include <string_view>
 #include <vector>
 
-enum class ConfigPresentMode {
-    Fifo,
-    Mailbox,
-    Immediate,
-};
+#include "platform/settings.hpp"
 
 enum class ConfigAspect {
     Auto,
     FourThree,
 };
 
-struct ConfigKeyBinding {
-    std::string              action;
-    std::vector<std::string> keys;
+// The shared host layer's settings (platform/settings.hpp) with this game's own on top. config.json
+// holds the fields ConfigSerialize names; the host fields it leaves out keep Config()'s values.
+struct Config : HostSettings {
+    bool         debug_mode = true;
+    bool         interpolation = true;
+    ConfigAspect aspect = ConfigAspect::Auto;
+    float        ui_scale = 1.0f;
+    float        detail_distance = 0.0f;
+    float        shadow_distance = 0.0f;
 
-    bool operator==(const ConfigKeyBinding &) const = default;
-};
-
-struct Config {
-    double                        tick_rate = 50.0;
-    bool                          debug_mode = true;
-    ConfigPresentMode             present_mode = ConfigPresentMode::Fifo;
-    bool                          interpolation = true;
-    double                        max_fps = 0.0;
-    // 0: the monitor's (WindowConfig).
-    int                           window_width = 0;
-    int                           window_height = 0;
-    bool                          fullscreen = false;
-    ConfigAspect                  aspect = ConfigAspect::Auto;
-    float                         ui_scale = 1.0f;
-    bool                          show_fps = true;
-    float                         detail_distance = 0.0f;
-    float                         shadow_distance = 0.0f;
-    float                         master_volume = 1.0f;
-    // audio.sound "surround": the host stereo mix is upmixed to 5.1 (platform/audio.hpp).
-    bool                          surround = false;
-    std::vector<ConfigKeyBinding> key_bindings;
-    float                         mouse_sensitivity = 0.1f;
-    bool                          mouse_invert_y = false;
-    bool                          mouse_capture = true;
-    std::vector<std::string>      mouse_release_keys = {"Escape"};
+    // The host layer's defaults are another game's: this one ticks at the PAL field rate, binds the
+    // mouse to the right stick and lets Escape release the captured mouse.
+    Config();
 
     bool operator==(const Config &) const = default;
 };

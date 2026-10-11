@@ -95,7 +95,7 @@ struct Canvas {
     }
 
     void Centered(float y, float scale, std::string_view text, const Color &color) {
-        Text((gfx::kLogicalWidth - TextWidth(text, scale)) * 0.5f, y, scale, text, color);
+        Text((gfx::LogicalWidth() - TextWidth(text, scale)) * 0.5f, y, scale, text, color);
     }
 
     void Present() const {

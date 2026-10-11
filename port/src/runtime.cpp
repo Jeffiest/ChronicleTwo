@@ -5,17 +5,6 @@
 
 /**
  *
- * Reports a PS2-only path reached on the host and stops, so an unfinished
- * replacement is loud instead of silent.
- *
- */
-[[noreturn]] void Ps2Unimplemented(const char *function, const char *file, int line) {
-    std::fprintf(stderr, "%s:%d: %s: PlayStation 2 code is not implemented on PC\n", file, line, function);
-    std::abort();
-}
-
-/**
- *
  * The Metrowerks runtime's assertion failure. Retail halted after printing
  * the expression, so the port stops the same way.
  *

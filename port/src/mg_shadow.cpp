@@ -191,9 +191,9 @@ void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
 
     gfx::Vertex2D quad[4] = {};
     quad[0] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f};
-    quad[1] = {gfx::kLogicalWidth, 0.0f, 0.0f, texture_width - 1.0f, 1.0f};
-    quad[2] = {gfx::kLogicalWidth, gfx::kLogicalHeight, 0.0f, texture_width - 1.0f, texture_height - 1.0f};
-    quad[3] = {0.0f, gfx::kLogicalHeight, 0.0f, 1.0f, texture_height - 1.0f};
+    quad[1] = {gfx::LogicalWidth(), 0.0f, 0.0f, texture_width - 1.0f, 1.0f};
+    quad[2] = {gfx::LogicalWidth(), gfx::LogicalHeight(), 0.0f, texture_width - 1.0f, texture_height - 1.0f};
+    quad[3] = {0.0f, gfx::LogicalHeight(), 0.0f, 1.0f, texture_height - 1.0f};
 
     for (gfx::Vertex2D &vertex : quad) {
         vertex.color[0] = 128;

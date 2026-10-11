@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "../platform/config.hpp"
-#include "../platform/paths.hpp"
+#include "platform/paths.hpp"
 
 TEST(PlatformConfig, Defaults) {
     Config config = ConfigParse("");

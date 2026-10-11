@@ -52,11 +52,11 @@ DepthMap CurrentDepthMap() {
 // while the renderer's logical frame is always 640x480: a 512-wide screen stretches to 640 as a
 // PAL television's pixels do, a 640-wide one passes through.
 float ScreenXScale() {
-    return mgScreenWidth > 0 ? gfx::kLogicalWidth / static_cast<float>(mgScreenWidth) : 1.0f;
+    return mgScreenWidth > 0 ? gfx::LogicalWidth() / static_cast<float>(mgScreenWidth) : 1.0f;
 }
 
 float ScreenYScale() {
-    return mgScreenHeight > 0 ? gfx::kLogicalHeight / static_cast<float>(mgScreenHeight) : 1.0f;
+    return mgScreenHeight > 0 ? gfx::LogicalHeight() / static_cast<float>(mgScreenHeight) : 1.0f;
 }
 
 float LogicalX(int gs_x) {

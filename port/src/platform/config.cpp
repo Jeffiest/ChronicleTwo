@@ -14,7 +14,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "paths.hpp"
+#include "platform/paths.hpp"
 
 namespace {
 
@@ -136,6 +136,9 @@ bool ApplyBindings(Config &config, const Json &bindings) {
     for (const auto &[action, keys] : bindings.items()) {
         ConfigKeyBinding binding = {Lower(action), {}};
         if (ReadList(keys, binding.keys)) {
+            // One entry per action, so the defaults a file rebinds are replaced rather than repeated.
+            std::erase_if(config.key_bindings,
+                          [&](const ConfigKeyBinding &bound) { return bound.action == binding.action; });
             config.key_bindings.push_back(std::move(binding));
         } else {
             Ignore("input.bindings." + action, keys);
@@ -265,6 +268,27 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
     return false;
 }
 
+// The host fields config.json has no key for: ConfigParse leaves them at their defaults, so a change
+// carries over the values it asked for. They hold until the next start.
+void CarryUnsavedFields(Config &to, const HostSettings &from) {
+    to.fps_detail = from.fps_detail;
+    to.soundtrack = from.soundtrack;
+    to.stick_sensitivity = from.stick_sensitivity;
+    to.stick_invert_x = from.stick_invert_x;
+    to.stick_invert_y = from.stick_invert_y;
+    to.gyro = from.gyro;
+    to.gyro_sensitivity = from.gyro_sensitivity;
+    to.gyro_invert_x = from.gyro_invert_x;
+    to.gyro_invert_y = from.gyro_invert_y;
+    to.mouse_zoom = from.mouse_zoom;
+    to.touchpad = from.touchpad;
+    to.touchpad_sensitivity = from.touchpad_sensitivity;
+    to.lightbar = from.lightbar;
+    to.rumble_strength = from.rumble_strength;
+    to.glyphs_new = from.glyphs_new;
+    to.glyph_device = from.glyph_device;
+}
+
 bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
     std::filesystem::path temp = path;
     temp += ".tmp";
@@ -288,8 +312,29 @@ bool WriteReplacing(const std::filesystem::path &path, std::string_view text) {
 
 } // namespace
 
+Config::Config() {
+    tick_rate = 50.0;
+    // The raw stick: the shared layer's 1.33 scaling is tuned to another game's thresholds.
+    stick_sensitivity = 1.0f;
+    // A mouse stick binding turns 0.04 radians a tick at full deflection per this many degrees of
+    // motion, so 0.2292 is the 0.1 stick deflection per pixel the port always used.
+    mouse_sensitivity = 0.2292f;
+    mouse_release_keys = {"Escape"};
+    key_bindings = {{"circle", {"F"}}, {"r1", {"Mouse2", "X"}}, {"rx", {"MouseX"}}, {"ry", {"-MouseY"}}};
+}
+
 const Config &ConfigGet() {
     return g_config;
+}
+
+const HostSettings &SettingsGet() {
+    return g_config;
+}
+
+bool SettingsChange(const HostSettings &settings) {
+    Config config = g_config;
+    static_cast<HostSettings &>(config) = settings;
+    return ConfigChange(config);
 }
 
 float ConfigDetailDistance() {
@@ -409,6 +454,7 @@ bool ConfigChange(const Config &config) {
     } guard;
 
     Config after = ConfigParse(ConfigSerialize(config));
+    CarryUnsavedFields(after, config);
     if (after == g_config) {
         return g_saved || ConfigSave();
     }

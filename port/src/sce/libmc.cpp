@@ -12,7 +12,7 @@
 #include <system_error>
 #include <vector>
 
-#include "../platform/paths.hpp"
+#include "platform/paths.hpp"
 
 // Each card is a directory, <save root>/mc0 and mc1, and every command
 // finishes inside the call that issues it. The game still sees libmc's
