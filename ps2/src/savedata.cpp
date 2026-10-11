@@ -11,7 +11,7 @@
 void InitSV_CONFIG_OPTION(SV_CONFIG_OPTION *config) {
     if (config != NULL) {
         memset(config, 0, sizeof(SV_CONFIG_OPTION));
-        config->map = 1;
+        config->map = SV_CONFIG_MAP_SMALL;
     }
 }
 

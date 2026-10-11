@@ -259,15 +259,6 @@ enum GYORACE_SHORT_FLAG {
 
 /**
  *
- * Bit save flags of the fishing tournament.
- *
- */
-enum GYORACE_BIT_FLAG {
-    GYORACE_BIT_FLAG_TOUR_CYCLED = 0x3F, /**< Set when the tournament count wraps; it then wraps one tournament earlier. */
-};
-
-/**
- *
  * Bits of a fish's flags marking the race classes that it has won.
  *
  */
@@ -1646,7 +1637,7 @@ void CBubble::Draw() {
     int          right[4];
     unsigned int index;
     AQUA_BUBBLE *particle;
-    SetSpriteEnv(&prim, 4);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_ADD);
     prim.Coord(1);
     prim.DepthTestEnable(1);
     prim.Begin(6);
@@ -2513,7 +2504,7 @@ void CAquaFishEff::Draw() {
         int         right[4];
 
         fish->GetPosition(pos);
-        SetSpriteEnv(&prim, 0);
+        SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
         prim.Coord(1);
         prim.DepthTestEnable(1);
         prim.Bilinear(2);
@@ -2710,7 +2701,7 @@ void DrawEsaDropRoot(CFishFood *food, float bottom) {
         int         left[4];
         int         right[4];
 
-        SetSpriteEnv(&prim, 1);
+        SetSpriteEnv(&prim, MENU_SPRITE_ENV_COLOR);
         prim.Coord(1);
         prim.DepthTestEnable(1);
         food->GetPosition(pos);
@@ -3551,7 +3542,7 @@ void DrawFishParam(int x, int y, mgCTexture *tex, CGameDataUsed *data) {
 
     mgCDrawPrim  prim;
     mgCDrawPrim *pen = &prim;
-    SetSpriteEnv(pen, 0);
+    SetSpriteEnv(pen, MENU_SPRITE_ENV_TEXTURE);
     pen->Begin(MG_PRIM_SPRITE);
     pen->Texture(tex);
 
@@ -6455,7 +6446,7 @@ void CAquarium::Draw() {
         mgCDrawPrim title_prim;
 
         DrawMenuFillBox(&title_prim, AQUA_TITLE_X + 10, AQUA_TITLE_Y + 12, AQUA_TITLE_W - 18, AQUA_TITLE_H - 22, 0x10, 0, 0xFF, 0xFF);
-        SetSpriteEnv(&title_prim, 0);
+        SetSpriteEnv(&title_prim, MENU_SPRITE_ENV_TEXTURE);
         title_prim.Begin(6);
         title_prim.Texture(Tex_Aqualium);
         title_prim.Color(0x80, 0x80, 0x80, 0x80);
@@ -7307,13 +7298,13 @@ void TuriTourCount() {
     count = save_data->GetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT) + 1;
     last_tour = 9;
 
-    if (save_data->GetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED) != 0) {
+    if (save_data->GetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED) != 0) {
         last_tour = 8;
     }
 
     if (count > last_tour) {
         count = 1;
-        save_data->SetBitFlag(GYORACE_BIT_FLAG_TOUR_CYCLED, count);
+        save_data->SetBitFlag(SAVE_FLAG_FISH_TOUR_CYCLED, count);
     }
 
     save_data->SetShortFlag(GYORACE_SHORT_FLAG_TOUR_COUNT, count);
@@ -8028,7 +8019,7 @@ int GyoraceMenuKey() {
         case GYORACE_MENU_SAVE_FADE:
             if (MenuMainScene->fade.FadeCheck() != 0) {
                 GyoraceNowMode = GYORACE_MENU_SAVE;
-                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], 0x1E);
+                MenuSaveInit(&GyoraceStack, &GyoraceTexBlock[5], MENU_OPEN_GYORACE_LOAD);
             }
 
             break;
@@ -8042,7 +8033,7 @@ int GyoraceMenuKey() {
 
                 next = GYORACE_MENU_RETURN_FROM_SAVE;
                 MenuMainScene->fade.FadeIn(30);
-                MenuArg.end_code = 0;
+                MenuArg.end_code = MENU_END_NONE;
                 MenuArg.result[0] = 0;
             }
 
@@ -8155,10 +8146,10 @@ int GyoraceMenuKey() {
 
                     MenuLoadFishSelect = 0;
                     MenuLoadFishTopLine = 0;
-                    SetModeMenuDrawItemBoard(4);
+                    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
                     bag_max = GetNowBagMax(ITEM_BOARD_ALL);
                     MenuItemBrdSetInfo(MenuLoadFishSelect, MenuLoadFishTopLine, bag_max / 6, 5);
-                    MenuItemBrdCalcManner = 0;
+                    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
                     list_update = true;
                     GyoraceMes->cursor_on = 0;
                     Gyoracemenu_CursorXY[0] = 206.0f;
@@ -8170,7 +8161,7 @@ int GyoraceMenuKey() {
 
                 break;
             case GYORACE_MENU_LOAD_FISH:
-                SetModeMenuDrawItemBoard(4);
+                SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_FISH);
                 GyoraceQuestionMsgDrawFlag = false;
                 GyoraceFishHaveDrawFlag = true;
                 GyoraceHaveFishCursorDrawFlag = false;
@@ -8528,7 +8519,7 @@ void DrawSubGameTitle(mgCTexture *texture, int large, int x, int y, int width) {
     }
 
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8560,7 +8551,7 @@ void DrawSubGameListFix(mgCTexture *texture, int x, int y, int width, int height
     mgRect<int>  frame_bottom;
     int          mid_height = height - 0x38;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8614,7 +8605,7 @@ void DrawSubGameScrlList(mgCTexture *texture, int *box, int *thumb) {
     int          y = box[1];
     int          width = box[2];
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0, 0, 0, 0x40);
@@ -8649,7 +8640,7 @@ void DrawSubGameUnderLine(mgCTexture *texture, int x, int y, int width) {
 
     mgRect<int>  rect;
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(6);
     prim->Texture(texture);
     prim->Color(0x80, 0x80, 0x80, 0x80);

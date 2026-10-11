@@ -981,11 +981,11 @@ int TitleLoop() {
 
                 result = 0;
 
-                if (MenuArg.end_code == 10) {
+                if (MenuArg.end_code == MENU_END_LOAD) {
                     next_loop = 2;
                 } else if (MenuArg.end_code == 12) {
                     next_loop = 1;
-                } else if (MenuArg.end_code == 19) {
+                } else if (MenuArg.end_code == MENU_END_SUBGAME_LOAD) {
                     next_loop = 11;
                 } else {
                     memcpy(&TitleInfo->config, &GetSaveData()->config, sizeof(SV_CONFIG_OPTION));
@@ -1862,7 +1862,7 @@ void TitleModeDraw() {
     TitleMapDraw();
     mgTexManager.ReloadTexture(0x40, (sceVif1Packet *) NULL);
     mgCDrawPrim prim;
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     float left = 0.0f;
     float top = 24.0f;
     float title_alpha = TitleInfo->title_alpha;
@@ -3052,7 +3052,7 @@ void DrawMenuDl(int x, int y, int width, int alpha, float rate) {
     mgRect<int> shadow_put;
     mgRect<int> body_put;
 
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     prim.Begin(6);
     prim.Texture(HDDDlBar);
     prim.Color(0x80, 0x80, 0x80, alpha);

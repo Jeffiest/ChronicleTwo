@@ -606,7 +606,7 @@ void CShopMenu::AttachForm() {
 
 int CShopMenu::IsCancelNoneLoadItem() {
     MENU_SWAPITEM_INFO origin;
-    origin.Set(-1, 0, -1, 0);
+    origin.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
     memcpy(&origin, &MenuCommonInfo->have_swap, sizeof(origin));
     origin.flag = 0;
     CGameDataUsed *destination = GetGameDataUsedForSWAPINFO(&origin);
@@ -730,7 +730,7 @@ void CShopMenu::InitEnd() {
     MenuMoveItemPtr->AttachForm();
     int bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
     MenuItemBrdSetInfo(bag_pos, bag_top, bag_max / 6, 5);
-    MenuItemBrdCalcManner = 0;
+    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
     UpdataScrlBar();
     MenuLocalStack.Align64();
     MenuMainScene->LoadBGM(0x32, MenuLocalStack.stGetTop());
@@ -799,7 +799,7 @@ int CShopMenu::KeyStep() {
             static s16         shop_mode_prev = 0;
             int                command = 0;
             MENU_SWAPITEM_INFO swap;
-            swap.Set(-1, 0, -1, 0);
+            swap.Set(MENU_SWAP_TYPE_NONE, 0, -1, 0);
             int item_num = CShopPtr->item_num;
             int buy_price = 0;
             int sell_price;
@@ -881,7 +881,7 @@ int CShopMenu::KeyStep() {
                             MenuSePlay(SYSTEM_SE_CURSOR);
                         }
                     } else {
-                        swap.Set(3, bag_pos, -1, 0);
+                        swap.Set(MENU_SWAP_TYPE_ITEM_BOARD, bag_pos, -1, 0);
 
                         switch (push) {
                             case 1:
@@ -1774,7 +1774,7 @@ void ShopSellListDraw(int &tex_block, float *pos) {
 
     mgRect<int>  line_rect(0, 0x8E, 0xB0, 6);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     float price_x;
     int   price;
     float mark_x;
@@ -1943,7 +1943,7 @@ void MenuShopInit(mgCMemory *stack, int *tex_block, int arg) {
     MenuPosData->AttachCommonTexInfo();
     MenuCommonInfo->AttachFuncData();
     AttachMessageForm();
-    MenuMainFrameModeSet(0, 1);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, true);
     CShopMenuPt->AttachForm();
     MenuLocalStack.Alloc(0x180);
     MenuLocalStack.Align64();
@@ -2382,10 +2382,10 @@ void MenuNPCQuestViewDraw() {
     mgCTextureManager *textures = &mgTexManager;
     textures->ReloadTexture(Tex_QuestMemo->block, (sceVif1Packet *) NULL);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     DrawMenuTilePattern(prim, Tex_QuestMemo, QuestTilePatternXY, QuestTilePatternXY,
                         mgRect<int>(0x180, 0, 0x80, 0x80), 0, NULL);
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_QuestMemo);
     mgRect<int> board_rect(0, 0xBA, 0x184, 0x146);
@@ -2580,7 +2580,7 @@ void MenuNPCQuestViewDraw() {
         }
 
         DrawMenuFillBox((float) (box_x + 6), 125.0f, 384.0f, (float) (box_h - 0xC), 0x56, 0, 0, 0);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Tex_QuestMemo);
         prim->Color(0x80, 0x80, 0x80, 0x80);
