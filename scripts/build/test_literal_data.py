@@ -43,13 +43,13 @@ class AnonymousBssTests(unittest.TestCase):
         rows = [(0x3000, 'at_1__2', 8, False), (0x3010, 'at_2', 8, False)]
         return elf, pieces, retail, rows
 
-    def apply(self, fixture, placeholders=()):
+    def apply(self, fixture):
         elf, pieces, retail, rows = fixture
         with patch.object(p.layout, 'Retail', return_value=retail), \
              patch.object(p.disassemble, 'Pieces', return_value=pieces), \
              patch.object(p, 'retail_addresses', return_value={'_gp': 0x2000}), \
              patch.object(p.layout, 'read_symbols', return_value=rows):
-            p.name_literal_data(elf, 'unit', set(placeholders))
+            p.name_literal_data(elf, 'unit')
         return elf.symtab.symbols[0].name
 
     def test_exact_extent_and_hi_lo_evidence(self):
@@ -67,7 +67,7 @@ class AnonymousBssTests(unittest.TestCase):
         with patch.object(p.layout, 'Retail', side_effect=AssertionError('retail reread')), \
              patch.object(p.disassemble, 'Pieces', side_effect=AssertionError('pieces reread')), \
              patch.object(p.layout, 'read_symbols', side_effect=AssertionError('symbols reread')):
-            p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+            p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                                 addresses={'_gp': 0x2000}, rows=rows)
         self.assertEqual(elf.symtab.symbols[0].name, 'at_1__2')
 
@@ -122,9 +122,6 @@ class AnonymousBssTests(unittest.TestCase):
         fixture = self.fixture()
         fixture[0].symtab.symbols[0].bind = 1
         self.assertEqual(self.apply(fixture), 'at_999')
-
-    def test_placeholder_is_untouched(self):
-        self.assertEqual(self.apply(self.fixture(), [1]), 'at_999')
 
     def test_section_extent_must_equal_object(self):
         fixture = self.fixture()
@@ -285,13 +282,13 @@ class LiteralPointerTests(unittest.TestCase):
                 (0x3010, 'at_3', 1, False), (0x4000, 'table', 4, False)]
         return elf, pieces, retail, rows
 
-    def apply(self, fixture, placeholders=()):
+    def apply(self, fixture):
         elf, pieces, retail, rows = fixture
         with patch.object(p.layout, 'Retail', return_value=retail), \
              patch.object(p.disassemble, 'Pieces', return_value=pieces), \
              patch.object(p, 'retail_addresses', return_value={'table': 0x4000}), \
              patch.object(p.layout, 'read_symbols', return_value=rows):
-            p.name_literal_data(elf, 'unit', set(placeholders))
+            p.name_literal_data(elf, 'unit')
         return elf.symtab.symbols[0].name
 
     def test_empty_literal_is_identified_by_native_pointer(self):
@@ -335,10 +332,6 @@ class LiteralPointerTests(unittest.TestCase):
         retail.relocations[0x4004] = p.R_MIPS_32
         retail.word = lambda address: 0x3008 if address == 0x4000 else 0x3000
         self.assertEqual(self.apply(fixture), 'at_999')
-
-    def test_placeholder_data_cannot_anchor_a_literal(self):
-        fixture = self.fixture()
-        self.assertEqual(self.apply(fixture, [2]), 'at_999')
 
     def test_dead_nonallocated_or_nondata_storage_cannot_anchor_a_literal(self):
         for invalid in ('dead', 'nonallocated', 'text', 'executable_data', 'nobits'):

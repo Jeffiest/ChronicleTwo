@@ -41,9 +41,9 @@ class InitializedLocalTests(unittest.TestCase):
         return elf, dict(retail=retail, pieces=pieces,
                         addresses={name: start for start, name, _size, _function in rows}, rows=rows)
 
-    def apply(self, fixture, placeholders=()):
+    def apply(self, fixture):
         elf, kwargs = fixture
-        p.name_literal_data(elf, 'unit', set(placeholders), **kwargs)
+        p.name_literal_data(elf, 'unit', **kwargs)
         return elf.symtab.symbols[0].name
 
     def paired_fixture(self):
@@ -122,7 +122,7 @@ class InitializedLocalTests(unittest.TestCase):
 
     def test_storage_metadata_bytes_and_source_base_must_agree(self):
         for invalid in ('base', 'binding', 'section', 'declared', 'symbol', 'payload', 'alias',
-                        'object', 'outgoing', 'no_reference', 'placeholder', 'competing'):
+                        'object', 'outgoing', 'no_reference', 'competing'):
             with self.subTest(invalid=invalid):
                 fixture = self.fixture()
                 elf, kwargs = fixture
@@ -149,7 +149,7 @@ class InitializedLocalTests(unittest.TestCase):
                 elif invalid == 'competing':
                     elf.sections.append(copy.deepcopy(elf.sections[1]))
                     elf.symtab.symbols.append(symbol('bits_12', 3, 8))
-                self.assertEqual(self.apply(fixture, [1] if invalid == 'placeholder' else []),
+                self.assertEqual(self.apply(fixture),
                                  'other_999' if invalid == 'base' else 'bits_999')
 
     def test_complete_consumer_body_extent_and_call_target_are_required(self):
