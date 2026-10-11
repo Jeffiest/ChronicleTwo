@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "common.h"
 
 #include <libgraph.h>
@@ -309,6 +310,47 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         }
         if (entry.palette != gfx::kNullTexture) {
             gfx::UpdatePalette(entry.palette, rgba.data());
+        }
+
+        // Diagnostic: DC_DUMP_TEXTURES=1 prints the palette and index usage of the costume textures when
+        // they change, to tell a wrong palette from a wrong draw.
+        static const bool dump_textures = std::getenv("DC_DUMP_TEXTURES") != nullptr;
+        static std::unordered_map<const void *, uint64_t> dumped;
+
+        if (dump_textures && std::strncmp(texture->name, "c01", 3) == 0 && !levels.empty()) {
+            uint64_t hash = 1469598103934665603ull;
+            for (uint32_t color : rgba) {
+                hash = (hash ^ color) * 1099511628211ull;
+            }
+            for (size_t i = 0; i < levels[0].size(); i += 7) {
+                hash = (hash ^ levels[0][i]) * 1099511628211ull;
+            }
+
+            if (dumped[texture] != hash) {
+                dumped[texture] = hash;
+                unsigned visible = 0;
+                for (uint32_t color : rgba) {
+                    visible += (color & 0x00FFFFFFu) != 0;
+                }
+                unsigned counts[256] = {};
+                for (uint8_t index : levels[0]) {
+                    counts[index]++;
+                }
+                unsigned top = 0;
+                for (unsigned i = 1; i < 256; i++) {
+                    top = counts[i] > counts[top] ? i : top;
+                }
+                size_t black_texels = 0;
+                for (uint8_t index : levels[0]) {
+                    black_texels += (rgba[index] & 0x00FFFFFFu) == 0;
+                }
+                std::fprintf(stderr,
+                             "texdump %s %p %ux%u bpp %d clut %p nonblack_palette %u/256 top_index %u x%u -> %08x "
+                             "black_texels %zu/%zu pal0-7 %08x %08x %08x %08x %08x %08x %08x %08x\n",
+                             texture->name, (const void *) texture, desc.width, desc.height, texture->bpp,
+                             (const void *) clut, visible, top, counts[top], rgba[top], black_texels,
+                             levels[0].size(), rgba[0], rgba[1], rgba[2], rgba[3], rgba[4], rgba[5], rgba[6], rgba[7]);
+            }
         }
     }
     if (gfx::TraceTextures()) {
