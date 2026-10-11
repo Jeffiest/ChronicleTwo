@@ -1009,11 +1009,11 @@ int CColPrim::IsHit(CScene *scene, int chara_id) {
 
     int chara_type = scene->GetType(SCENE_DATA_CHARA, chara_id);
 
-    if (chara_type == 1 && !(self->target & DAMAGE_TARGET_PLAYER)) {
+    if (chara_type == SCENE_CHARA_TYPE_PLAYER && !(self->target & DAMAGE_TARGET_PLAYER)) {
         return false;
     }
 
-    if (chara_type == 3 && !(self->target & DAMAGE_TARGET_MONSTER)) {
+    if (chara_type == SCENE_CHARA_TYPE_MONSTER && !(self->target & DAMAGE_TARGET_MONSTER)) {
         return false;
     }
 
@@ -1061,7 +1061,7 @@ int CColPrim::IsHit(CScene *scene, int chara_id) {
 
     CHARA_ENTRY_OBJECT *entry;
 
-    while ((entry = chara->GetEntryObjectPos(2, entry_no, entry_position)) != NULL) {
+    while ((entry = chara->GetEntryObjectPos(CHARA_ENTRY_GROUP_HIT, entry_no, entry_position)) != NULL) {
         if (!entry->enable) {
             ++entry_no;
             continue;
