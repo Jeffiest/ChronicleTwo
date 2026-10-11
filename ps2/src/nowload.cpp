@@ -508,7 +508,7 @@ void PauseEnd() {
         sndMasterVolFadeInOut(1, 15, SeCoreVol, 0.0f);
     }
 
-    sndSePlay(GetSystemSndID(), 0x19, 0);
+    sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
 }
 
 int PauseLoop() {
@@ -522,7 +522,7 @@ int PauseLoop() {
     mgCTexture *backdrop = tex->GetTexture("pause_work", -1);
 
     if (InitFlag == 0) {
-        sndSePlay(GetSystemSndID(), 25, 0);
+        sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
         SeCoreVol = sndGetMasterVol(1);
 
         sndMasterVolFadeInOut(1, 15, 0.0f, -1.0f);

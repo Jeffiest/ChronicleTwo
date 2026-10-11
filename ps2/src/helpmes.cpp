@@ -322,5 +322,5 @@ void ShowErrorHelpMes(int mes_no, int time) {
     info->time = time > 0 ? time + 1 : time;
     info->fukidashi_pos = 8;
     WindowMode = MES_WIN_VERSATILE_1;
-    sndSePlay(GetSystemSndID(), 28, 0);
+    sndSePlay(GetSystemSndID(), SYSTEM_SE_DENIED, 0);
 }
