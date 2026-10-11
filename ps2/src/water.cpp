@@ -671,7 +671,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
     int                point_count;
     int                started;
     mgCMemory         *memory;
+#ifdef PORT
+    u_long128         *base;
+#else
     u_int              base;
+#endif
     WaterFinishPacket *finish;
     u_int             *counts;
     float             *previous;
@@ -732,8 +736,14 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
         slope[2][c][3] = 0.3f;
     }
 
+#ifdef PORT
+    // The packet is written through the host pointer; the PS2's uncached alias does not exist.
+    base = memory->stGetTop();
+    start = base;
+#else
     base = (u_int) memory->stGetTop();
     start = (u_long128 *) (base | MG_UNCACHED);
+#endif
     end = start;
 
     if (texture != NULL) {
@@ -794,7 +804,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
             positions = (u_long128 *) (strip + 1);
             vertex_count = point_count * 2;
             int bytes = point_count * 32;
+#ifdef PORT
+            out = (u_long128 *) ((u_char *) strip + bytes) + 3;
+#else
             out = (u_long128 *) (bytes + (u_int) strip) + 3;
+#endif
 
             for (index = 0; index < point_count; index++) {
                 positions[0] = *(u_long128 *) position0;
@@ -857,8 +871,13 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
     finish->ret.vif[1] = 0;
     out += 3;
     memory->Alloc(out - start);
+#ifdef PORT
+    packet = (u_int) (unsigned long) base;
+    return (u_int) (unsigned long) base;
+#else
     packet = base;
     return base;
+#endif
 }
 
 void CWaterFrame::SetTexture(mgCTexture *texture) {
