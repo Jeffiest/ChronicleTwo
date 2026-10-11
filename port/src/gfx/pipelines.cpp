@@ -179,27 +179,32 @@ std::vector<uint8_t> LoadCache(const std::filesystem::path &path) {
     }
     std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     // Some drivers misbehave on a cache from another device or driver, so it is checked here first.
+    // A refusal is said out loud: the whole set then recompiles, which is the cost users wonder about.
     VkPipelineCacheHeaderVersionOne header;
     if (data.size() < sizeof(header)) {
+        Error("pipeline cache at %s is not a pipeline cache; starting from scratch", path.string().c_str());
         return {};
     }
     std::memcpy(&header, data.data(), sizeof(header));
     if (header.headerSize < sizeof(header) || header.headerVersion != VK_PIPELINE_CACHE_HEADER_VERSION_ONE ||
         header.vendorID != g.properties.vendorID || header.deviceID != g.properties.deviceID ||
         std::memcmp(header.pipelineCacheUUID, g.properties.pipelineCacheUUID, VK_UUID_SIZE) != 0) {
+        Error("pipeline cache at %s belongs to another device or driver; starting from scratch",
+              path.string().c_str());
         return {};
     }
     return data;
 }
 
-void SaveCache(const std::filesystem::path &path) {
+// Bytes written, 0 when there was nothing to save or the file could not be replaced.
+size_t SaveCache(const std::filesystem::path &path) {
     size_t size = 0;
     if (vkGetPipelineCacheData(g.device, g.pipeline_cache, &size, nullptr) != VK_SUCCESS || size == 0) {
-        return;
+        return 0;
     }
     std::vector<uint8_t> data(size);
     if (vkGetPipelineCacheData(g.device, g.pipeline_cache, &size, data.data()) != VK_SUCCESS) {
-        return;
+        return 0;
     }
     std::error_code error;
     if (path.has_parent_path()) {
@@ -212,15 +217,17 @@ void SaveCache(const std::filesystem::path &path) {
         std::ofstream file(temporary, std::ios::binary | std::ios::trunc);
         if (!file ||
             !file.write(reinterpret_cast<const char *>(data.data()), static_cast<std::streamsize>(size))) {
-            Error("cannot write the pipeline cache to %s", temporary.c_str());
-            return;
+            Error("cannot write the pipeline cache to %s", temporary.string().c_str());
+            return 0;
         }
     }
     std::filesystem::rename(temporary, path, error);
     if (error) {
-        Error("cannot write the pipeline cache to %s: %s", path.c_str(), error.message().c_str());
+        Error("cannot write the pipeline cache to %s: %s", path.string().c_str(), error.message().c_str());
         std::filesystem::remove(temporary, error);
+        return 0;
     }
+    return size;
 }
 
 struct PipelineDesc {
@@ -589,14 +596,19 @@ void CreatePipelines() {
             }
         }
     }
-    Check(failure, "vkCreateGraphicsPipelines");
 
     vkDestroyShaderModule(g.device, draw2d_module, nullptr);
     vkDestroyShaderModule(g.device, mesh_module, nullptr);
     vkDestroyShaderModule(g.device, frag_module, nullptr);
-    SaveCache(g.config.pipeline_cache);
+    // Saved before the check below: a pipeline the driver refuses must not throw away everything
+    // that did compile, which is the whole cost of a cold start.
+    size_t cached = SaveCache(g.config.pipeline_cache);
+    Check(failure, "vkCreateGraphicsPipelines");
+
     g.pipeline_seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
-    std::fprintf(stderr, "gfx: %u pipelines ready in %.2f s\n", total, g.pipeline_seconds);
+    std::fprintf(stderr, "gfx: %u pipelines ready in %.2f s (cache %llu B in, %llu B out, %s)\n", total,
+                 g.pipeline_seconds, static_cast<unsigned long long>(initial.size()),
+                 static_cast<unsigned long long>(cached), g.config.pipeline_cache.string().c_str());
 }
 
 void DestroyPipelines() {
