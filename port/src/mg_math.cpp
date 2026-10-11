@@ -8,8 +8,6 @@
 // sign and magnitude, a zero divisor gives the largest float rather than an
 // infinity, and the box tests answer with the status register's sticky sign bit.
 
-namespace {
-
 // The unit multiplies a matrix by two others in place, carrying the first product
 // in registers across both passes, so the output may be one of the inputs.
 void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]) {
@@ -26,8 +24,6 @@ void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]) {
         vu0::Copy(matrix[i], s[i]);
     }
 }
-
-} // namespace
 
 // vftoi4.xyzw: four 12.4 fixed-point lanes.
 void mgFotI4(int *out, float *in) {
