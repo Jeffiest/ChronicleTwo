@@ -59,9 +59,9 @@ function(add_asm_object obj src fixup_args)
         VERBATIM)
 endfunction()
 
-# Compile one game unit. tools/mwccgap puts retail's assembly wherever the
-# source has an INCLUDE_ASM or INCLUDE_RODATA marker, reading the per-symbol
-# files the split wrote, so every object depends on the split.
+# Compile one game unit through tools/mwccgap. The split stays a dependency
+# because the marker overlay reads the per-symbol files it wrote and
+# scripts/build/postprocess_object.py reads its reference files.
 function(add_cpp_object obj src)
     add_custom_command(
         OUTPUT ${CMAKE_SOURCE_DIR}/${obj}

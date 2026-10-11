@@ -1,16 +1,14 @@
 #!/bin/sh
-# Compile one game unit whose markers stand in for code and data that are not
-# decompiled yet, and leave a depfile Ninja can read.
+# Compile one game unit through tools/mwccgap and leave a depfile Ninja can
+# read.
 #
 #   mwccgap.sh <object> <depfile> <source> [mwcc args...]
 #
-# tools/mwccgap compiles the source twice: once as written, to learn which
-# functions the C++ already defines, and once with each INCLUDE_ASM marker
-# replaced by a run of `nop` the size of the function and each INCLUDE_RODATA
-# marker by a zeroed array the size of the datum. It then assembles the
-# per-symbol files scripts/build/disassemble.py wrote and puts those bytes, and
-# their relocations, over the placeholders. scripts/build/postprocess_object.py
-# then gives every section retail's name, type, flags and alignment.
+# No source carries an INCLUDE_ASM or INCLUDE_RODATA marker any more, so
+# mwccgap compiles the source as written; the marker pass, and the options
+# below that pass reads, stay for the submodule's interface.
+# scripts/build/postprocess_object.py then gives every section retail's name,
+# type, flags and alignment.
 #
 # A marker names its file's directory from the repository root
 # (`ps2/asm/<region>/nonmatchings/<unit>`), so the prefix below is `.`.
@@ -18,8 +16,8 @@
 # A unit's files are assembled several at a time; MWCCGAP_AS_JOBS says how
 # many, and 1 makes it one after another.
 #
-# The second compile reads a temporary file named `.c`, so mwcc cannot tell
-# the language from the extension and `-lang` is passed explicitly.
+# The marker pass reads a temporary file named `.c`, so mwcc cannot tell the
+# language from the extension and `-lang` is passed explicitly.
 #
 # Argument order matters. mwccgap takes the two positionals first and passes
 # everything it does not recognise to mwcc, and `--as-flags` takes a list, so
