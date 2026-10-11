@@ -31,6 +31,10 @@ struct Entry {
     gfx::TextureHandle palette = gfx::kNullTexture;
     bool               dirty = true;
     bool               target = false; // a named render target: the renderer keeps it alive
+    uint32_t           width = 0;
+    uint32_t           height = 0;
+    uint32_t           mips = 0;
+    gfx::TextureFormat format = static_cast<gfx::TextureFormat>(0);
 };
 
 std::unordered_map<const mgCTexture *, Entry> g_entries;
@@ -225,7 +229,6 @@ void Sync(const mgCTexture *texture, Entry &entry) {
     if (!RendererUp()) {
         return;
     }
-    Release(entry);
     entry.dirty = false;
 
     gfx::TextureDesc desc;
@@ -236,6 +239,7 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         // render target for 16 bits and up, an index image with a palette of zeroes below.
         bool has_alpha = texture->bpp != 24;
         if (texture->bpp > 8) {
+            Release(entry);
             entry.texture = gfx::NamedRenderTarget(texture->name, static_cast<uint32_t>(texture->width),
                                                    static_cast<uint32_t>(texture->height), has_alpha);
             entry.target = entry.texture != gfx::kNullTexture;
@@ -252,9 +256,22 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         return;
     }
 
-    entry.texture = gfx::CreateTexture(desc);
-    if (entry.texture == gfx::kNullTexture) {
-        return;
+    // The loaded textures are re-synced every time the game rewrites them, which the title
+    // and loading screens do every frame. Releasing and recreating the renderer's image each
+    // time churns through slots faster than the deferred releases return them, so an entry
+    // whose shape has not changed keeps its image and only the pixels are re-uploaded.
+    bool reuse = entry.texture != gfx::kNullTexture && entry.width == desc.width &&
+                 entry.height == desc.height && entry.mips == desc.mip_levels && entry.format == desc.format;
+    if (!reuse) {
+        Release(entry);
+        entry.texture = gfx::CreateTexture(desc);
+        if (entry.texture == gfx::kNullTexture) {
+            return;
+        }
+        entry.width = desc.width;
+        entry.height = desc.height;
+        entry.mips = desc.mip_levels;
+        entry.format = desc.format;
     }
     for (size_t level = 0; level < levels.size(); level++) {
         uint32_t level_width = std::max(1u, desc.width >> level);
@@ -273,7 +290,9 @@ void Sync(const mgCTexture *texture, Entry &entry) {
             }
             gfx::ConvertPs2Alpha(rgba.data(), rgba.size());
         }
-        entry.palette = gfx::CreatePalette();
+        if (entry.palette == gfx::kNullTexture) {
+            entry.palette = gfx::CreatePalette();
+        }
         if (entry.palette != gfx::kNullTexture) {
             gfx::UpdatePalette(entry.palette, rgba.data());
         }
