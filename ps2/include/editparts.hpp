@@ -38,21 +38,21 @@
  *
  */
 enum EditPartsAtr {
-    EDIT_PARTS_ATR_NO_REMOVE = 0x1,          /**< The part cannot be removed: removal focus skips it and the Georama menu refuses to destroy it. */
-    EDIT_PARTS_ATR_NO_PREVIEW = 0x2,         /**< Suppresses the placement preview. */
-    EDIT_PARTS_ATR_GROUND = 0x7,             /**< Bits that GROUND_PARTS sets; a part with all three is ground that holds a placement grid. */
-    EDIT_PARTS_ATR_QUARTER_TURN = 0x8,       /**< Restricts part rotation to quarter turns. */
-    EDIT_PARTS_ATR_MAGNET_HELP = 0x20,       /**< Shows the magnet toggle in placement help. */
-    EDIT_PARTS_ATR_BLOCK = 0x30,             /**< Bits that BLOCK_PARTS sets. */
-    EDIT_PARTS_ATR_TYPE_ONE = 0x40,          /**< Bit that makes GetPartsType return type 1. */
-    EDIT_PARTS_ATR_RIVER = 0x80,             /**< Bit that RIVER_PARTS sets; the part is a piece of river laid on the grid. */
-    EDIT_PARTS_ATR_LINE = 0x100,             /**< Snaps a line part only while the cursor is still. */
-    EDIT_PARTS_ATR_FENCE = 0x130,            /**< Bits that FENCE_PARTS sets; a part with all of them is a fence. */
-    EDIT_PARTS_ATR_WALL = 0x200,             /**< Places a part on the selected wall plane. */
-    EDIT_PARTS_ATR_MOVE_MASK_SWITCH = 0x800, /**< Marks parts whose floors switch the player's move-check ignore mask from 0x1 to 0x10. */
-    EDIT_PARTS_ATR_BURN = 0x1000,            /**< Bit marking a part that can burn. */
-    EDIT_PARTS_ATR_NO_REFUND = 0x8000,       /**< Keeps BurnEditParts and RemoveEditParts from returning the part to the build counts, and the Georama menu leaves it out of its placed, house and make lists. */
-    EDIT_PARTS_ATR_ANY_HEIGHT = 0x10000,     /**< Bypasses the placement altitude limit. */
+    EDIT_PARTS_ATR_NO_REMOVE = 0x1,            /**< The part cannot be removed: removal focus skips it and the Georama menu refuses to destroy it. */
+    EDIT_PARTS_ATR_NO_PREVIEW = 0x2,           /**< Suppresses the placement preview. */
+    EDIT_PARTS_ATR_GROUND = 0x7,               /**< Bits that GROUND_PARTS sets; a part with all three is ground that holds a placement grid. */
+    EDIT_PARTS_ATR_QUARTER_TURN = 0x8,         /**< Restricts part rotation to quarter turns. */
+    EDIT_PARTS_ATR_MAGNET_HELP = 0x20,         /**< Shows the magnet toggle in placement help. */
+    EDIT_PARTS_ATR_BLOCK = 0x30,               /**< Bits that BLOCK_PARTS sets. */
+    EDIT_PARTS_ATR_TYPE_ONE = 0x40,            /**< Bit that makes GetPartsType return type 1. */
+    EDIT_PARTS_ATR_RIVER = 0x80,               /**< Bit that RIVER_PARTS sets; the part is a piece of river laid on the grid. */
+    EDIT_PARTS_ATR_LINE = 0x100,               /**< Snaps a line part only while the cursor is still. */
+    EDIT_PARTS_ATR_FENCE = 0x130,              /**< Bits that FENCE_PARTS sets; a part with all of them is a fence. */
+    EDIT_PARTS_ATR_WALL = 0x200,               /**< Places a part on the selected wall plane. */
+    EDIT_PARTS_ATR_MOVE_MASK_SWITCH = 0x800,   /**< Marks parts whose floors switch the player's move-check ignore mask from 0x1 to 0x10. */
+    EDIT_PARTS_ATR_BURN = 0x1000,              /**< Bit marking a part that can burn. */
+    EDIT_PARTS_ATR_NO_REFUND = 0x8000,         /**< Keeps BurnEditParts and RemoveEditParts from returning the part to the build counts, and the Georama menu leaves it out of its placed, house and make lists. */
+    EDIT_PARTS_ATR_ANY_HEIGHT = 0x10000,       /**< Bypasses the placement altitude limit. */
     EDIT_PARTS_ATR_NO_STOCK_DESTROY = 0x40000, /**< The Georama stock page refuses to destroy the part and greys out its destroy command. */
 };
 

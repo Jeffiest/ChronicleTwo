@@ -302,7 +302,7 @@ int EventLoop() {
         case EVENT_SKIP_NONE:
             break;
         case EVENT_SKIP_ENABLED:
-            if (EdEventInfo.skip_button == 20 && PadCtrl.Btn(EdEventInfo.skip_button)) {
+            if (EdEventInfo.skip_button == PAD_BTN_EVENT_SKIP_2 && PadCtrl.Btn(EdEventInfo.skip_button)) {
                 SkipEventStart();
             }
 

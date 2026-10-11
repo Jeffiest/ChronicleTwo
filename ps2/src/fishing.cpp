@@ -171,7 +171,7 @@ enum FISHING_LOAD_PRIORITY {
  * Random seed used by the fishing casting and capture code.
  *
  */
-enum FishingCaptureSeed {
+enum FISHING_CAPTURE {
     FISHING_CAPTURE_SEED = 0xC31AFF, /**< Seed set while controller input is recorded or replayed, so the replay repeats. */
 };
 
