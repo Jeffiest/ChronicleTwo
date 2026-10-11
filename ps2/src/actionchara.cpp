@@ -595,7 +595,7 @@ void CActionChara::ThrowItemObject() {
 
     if (hold_type != ACTION_HOLD_NONE) {
         if (throw_effect >= 0) {
-            effect_man->SetScriptProgNo(0x12C, 0, throw_effect);
+            effect_man->SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, 0, throw_effect);
             sceVu0CopyVector(target, front_vec);
             GetPosition(position);
             sceVu0ScaleVector(target, target, 120.0f);
@@ -674,7 +674,7 @@ void CActionChara::EntryThrowItem() {
     item_no = item->item_no;
     ThrowItemTable table = {
         {0x114, 0x118, 0x119, 0x11A, 0x11B, 0x11C, 0x11D, 0x11E, 0x11F,
-         0x120, 0x121, 0x122, 0x123, 0x124, 0x130, 0x186, 0x187, 0x133, -1}
+         0x120, 0x121, 0x122, 0x123, 0x124, ITEM_ID_GIFT_CAPSULE, 0x186, 0x187, 0x133, -1}
     };
     index = 0;
 
@@ -1481,7 +1481,7 @@ void CActionChara::RockOn() {
                 return;
             }
 
-            if (scene_input->lock_on_mode == 2) {
+            if (scene_input->lock_on_mode == DNG_LOCK_ON_SELECT) {
                 if (target_no < 0) {
                     target_no = MONSTER_ACTIVE_MAX;
                 } else {
@@ -3093,7 +3093,7 @@ int CActionChara::CheckDamage() {
         }
 
         if (battle->GetNowHp_i() <= 0) {
-            if (CheckEquipSetItem(0x111) == 0) {
+            if (CheckEquipSetItem(ITEM_ID_RESURRECTION_POWDER) == 0) {
                 reaction = ACTION_REACTION_DEAD;
             } else {
                 battle->SetHpRate(0.5f);
@@ -3453,11 +3453,11 @@ void CActionChara::RunScript(CScene *scene, RUN_SCRIPT_ENV *env) {
         }
     }
 
-    if (area->lock_on_mode == 2) {
+    if (area->lock_on_mode == DNG_LOCK_ON_SELECT) {
         target_no = RockOn_TargetSel(scene, target_no);
     }
 
-    if (area->lock_on_mode == 0) {
+    if (area->lock_on_mode == DNG_LOCK_ON_NEAREST) {
         if (lock_on == 0) {
             target_no = DistCheck_Action2(scene, 0.5f, 400.0f, &target_distance, 0, NULL);
         } else {
