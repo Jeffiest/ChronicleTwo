@@ -73,6 +73,14 @@ Getters: +0x0 GetMapName (+0x4 to `*title`), +0x4 GetMapTitle, +0x8 GetAddMapPat
 EditMapJump: town with PartsOnOff), 2/4/6 (dngmenu CMenuTreeMap::Step). Meaning not established,
 so no enum; left `int`.
 
+## MapType
+`MapType` names the values `MAP_NAME_INFO::type` holds and `GetMapType` returns: 1 `MAP_TYPE_GEORAMA` (a
+Georama town with edit data), 2 `MAP_TYPE_GEORAMA_INTERIOR`, 4 `MAP_TYPE_INTERIOR`, 5 `MAP_TYPE_FUTURE` and 6
+`MAP_TYPE_FUTURE_INTERIOR`. Users: dngmenu's tree-map action closes the map when the target is the entrance room
+of a Georama, interior or future interior map; editloop sends data packet 2 for a Georama town and 1 otherwise;
+menumain hides the time board's parts, skips a topic draw, and disables the world move with a message (0x28,
+or 0x2E under a bit-flag condition) on the future kinds.
+
 ## EVENT_VIEW_INFO (0x1C)
 Size: `Alloc(0x382)` + `new[] 0x3800` = 0x200 rows; `memset(row, 0, 0x1C)`; stride 0x1C.
 File `event/view_pal.txt`, tab-separated, read by GetLine into `char *cols[16]` over a
