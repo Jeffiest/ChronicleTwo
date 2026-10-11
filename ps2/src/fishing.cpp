@@ -2791,7 +2791,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
         switch (UkiMode) {
             case kUkiStart:
-                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 UkiModeCnt = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 boze_cnt = 0;
                 UkiMode = kUkiWaitBite;
@@ -2846,7 +2846,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 if (FishData.fish_no <= 0) {
                     UkiMode = kUkiStart;
                 } else {
-                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
 
                     if (pushed != 0) {
                         caught = 1;
@@ -2868,7 +2868,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
         switch (UkiMode) {
             case kUkiStart:
-                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 RodActionPoint = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 act_count = 0;
                 UkiMode = kUkiCharge;
@@ -2912,7 +2912,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                     caught = 1;
                 }
 
-                scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 GamePad__2.SetVibration(1, 0x96, 4);
 
                 if (UkiModeCnt <= 0) {
@@ -2974,7 +2974,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
     if (caught != 0) {
         ResetUkiCamera(camera);
-        scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+        scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
 
         if (InitBattle(scene) != 0) {
             GamePad__2.SetVibration(0, 1, 5);

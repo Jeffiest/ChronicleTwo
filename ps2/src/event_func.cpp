@@ -1272,9 +1272,9 @@ int CEohMother::SetShadow(int slot, int enable) {
     switch (handle->type) {
         case EOH_TYPE_CHARA:
             if (enable != 0) {
-                EventScene->ResetStatus(SCENE_DATA_CHARA, handle->scene_no, 8);
+                EventScene->ResetStatus(SCENE_DATA_CHARA, handle->scene_no, SCENE_DATA_CHARA_SHADOW_HIDDEN);
             } else {
-                EventScene->SetStatus(SCENE_DATA_CHARA, handle->scene_no, 8);
+                EventScene->SetStatus(SCENE_DATA_CHARA, handle->scene_no, SCENE_DATA_CHARA_SHADOW_HIDDEN);
             }
 
             return true;
