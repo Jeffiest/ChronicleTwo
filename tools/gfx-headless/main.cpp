@@ -95,7 +95,9 @@ int main(int argc, char **argv) {
 
     gfx::RendererConfig config;
     config.offscreen = !surface;
-    // The bring-up server has no VK_LAYER_KHRONOS_validation; asking for it would only log.
+    // The loader on the bring-up server has VK_LAYER_KHRONOS_validation, but the renderer takes
+    // validation from DC_VULKAN_VALIDATION in the environment too (renderer.cpp), so a plain run
+    // needs nothing here and DC_VULKAN_VALIDATION=1 makes the message count meaningful.
     config.validation = false;
     config.pipeline_cache = std::filesystem::temp_directory_path() / "dc_g1" / "pipeline_cache.bin";
     config.progress = [](uint32_t done, uint32_t total) {
