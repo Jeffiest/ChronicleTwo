@@ -84,6 +84,18 @@ enum SCENE_DATA_STATUS {
 
 /**
  *
+ * Roles of a character slot, as CScene::SetType and CScene::GetType give them for SCENE_DATA_CHARA.
+ *
+ */
+enum SCENE_CHARA_TYPE {
+    SCENE_CHARA_TYPE_PLAYER = 1,  /**< A party character the player controls. */
+    SCENE_CHARA_TYPE_EVENT = 2,   /**< An event character. */
+    SCENE_CHARA_TYPE_MONSTER = 3, /**< A monster. */
+    SCENE_CHARA_TYPE_EFFECT = 4,  /**< An effect character, drawn after the water and effects. */
+};
+
+/**
+ *
  * Kinds of rain drop, telling how far from the camera a drop falls.
  *
  */

@@ -18,6 +18,15 @@
 
 /**
  *
+ * Fixed Georama part numbers.
+ *
+ */
+enum EditGeoPartsId {
+    EDIT_GEO_NPC_PARTS_ID = 0x49, /**< The part whose villager is shown walking in the town. */
+};
+
+/**
+ *
  * Progress of an edit event, as CEditEvent::state holds it.
  *
  */

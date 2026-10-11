@@ -134,7 +134,7 @@ public:
      * @address 0x2FAD90
      * @size 0x70
      */
-    void StartEffect(mgCFrame *start, mgCFrame *end, int value8_c, int frames, int hold_time);
+    void StartEffect(mgCFrame *start, mgCFrame *end, int length, int frames, int hold_time);
 
     /**
      *

@@ -233,13 +233,25 @@ STATIC_ASSERT(sizeof(CHRINFO_EFFECT_IMAGE) == 0x28);
 
 /**
  *
+ * Kinds of entry object, as CHARA_ENTRY_OBJECT::group holds them.
+ *
+ */
+enum CHARA_ENTRY_GROUP {
+    CHARA_ENTRY_GROUP_TARGET = 0, /**< The point that lock-on, aiming and status displays use. */
+    CHARA_ENTRY_GROUP_SHADOW = 1, /**< The point the drop shadow is cast from. */
+    CHARA_ENTRY_GROUP_HIT = 2,    /**< Spheres that attacks hit with. */
+    CHARA_ENTRY_GROUP_BODY = 4,   /**< Spheres that make up the body. */
+};
+
+/**
+ *
  * A frame of the character's model named as a place to put objects.
  *
  */
 struct CHARA_ENTRY_OBJECT {
     mgCFrame *frame;  /**< Frame of the model; NULL for a free slot. */
     float     size;   /**< Size used when checking a frame against a character entry. */
-    s32       group;  /**< Group that the frame belongs to; -1 for a free slot. */
+    s32       group;  /**< Group that the frame belongs to; -1 for a free slot. @see CHARA_ENTRY_GROUP */
     s32       enable; /**< Nonzero while the slot is in use. */
 };
 

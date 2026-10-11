@@ -105,6 +105,7 @@ enum sndSQ_STATE {
 
 enum sndSTREAM_STATE {
     SND_STREAM_STATE_PLAYING = 0x1000,
+    SND_STREAM_STATE_END = 0x8000, /**< The stream has finished playing. */
 };
 
 /**

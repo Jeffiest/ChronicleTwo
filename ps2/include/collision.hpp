@@ -50,6 +50,16 @@ enum CCPolyAreaKind {
 
 /**
  *
+ * Parts of CCPoly::parts_no for a polygon taken from a placed Georama part.
+ *
+ */
+enum CCPolyPartsNo {
+    CCPOLY_PARTS_EDIT = 0x1000,     /**< The polygon belongs to a placed Georama part. */
+    CCPOLY_PARTS_SLOT_MASK = 0xFFF, /**< Placed-part slot of such a polygon. */
+};
+
+/**
+ *
  * Stores a collision triangle, its plane normal, and the surface
  * attributes it was given by its material.
  *
@@ -61,7 +71,7 @@ struct CCPoly {
     short         foot_sound;  /**< Sound the character's feet play on it. */
     short         area_kind;   /**< Kind of area the surface marks, a CCPolyAreaKind on map collision. */
     short         ignore_mask; /**< Collision query modes that pass through the surface. */
-    u_short       parts_no;    /**< Index of the map part the triangle was gathered from. */
+    u_short       parts_no;    /**< Index of the map part the triangle was gathered from. @see CCPolyPartsNo */
     short         attr;        /**< Surface attribute returned by ground collision queries. */
     float         attr_value;  /**< Value associated with the surface attribute. */
 };

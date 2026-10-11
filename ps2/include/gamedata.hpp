@@ -676,6 +676,22 @@ struct BOILED_USED {
 
 /**
  *
+ * Shot kinds of a gun, as CGameDataUsed::GetAttackType returns them.
+ *
+ */
+enum WEAPON_ATTACK_TYPE {
+    WEAPON_ATTACK_GUN = 0,            /**< An ordinary gun. */
+    WEAPON_ATTACK_LAUNCHER = 10,      /**< A grenade or rocket launcher. */
+    WEAPON_ATTACK_GUN_2 = 11,         /**< An ordinary gun of a second kind. */
+    WEAPON_ATTACK_LASER = 20,         /**< A laser gun. */
+    WEAPON_ATTACK_MACHINE_GUN = 30,   /**< A machine gun. */
+    WEAPON_ATTACK_RIDEPOD_LASER = 40, /**< The ridepod's four-cannon laser. */
+    WEAPON_ATTACK_MISSILE = 70,       /**< A missile launcher. */
+    WEAPON_ATTACK_BEAM = 90,          /**< A two-muzzle beam. */
+};
+
+/**
+ *
  * One owned item: an inventory place, an equipment slot, an aquarium tank place or a fishing bait.
  *
  */
