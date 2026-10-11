@@ -189,14 +189,12 @@ the end of the chain. `DelHash` unlinks the matching texture and returns the lin
 to the free stack. `SearchHash` compares names and applies an optional texture-block
 filter. All three use typed `hash_table[index]` reads and writes.
 
-A single `optimization_level 2` scope across these contiguous methods, while the
-translation unit retains its existing disabled global optimizer and scheduler,
-produces the retail operand order for bucket address formation. The fixed
+At the unit's level-2 setting, with its global optimizer and scheduler left
+disabled for the other functions, these contiguous methods produce the retail operand
+order for bucket address formation. The fixed
 translation-unit `-O3,p` build without this scope leaves one commutative `addu`
-operand mismatch in each function. Applying `-O2` to the whole unit fails many
-unrelated function extents and instructions, so the narrow shared scope is
-required. The fixed-profile private build passed `check_objects.py` for the whole
-unit: 0x3674 bytes and 160 resolved relocations, with all three functions exact.
+operand mismatch in each function. The whole unit at level 2 matches `check_objects.py`:
+0x3674 bytes and 160 resolved relocations, with all three functions exact.
 
 ## Native full-image conversion
 
@@ -224,3 +222,9 @@ failures. Level 1 and global-optimizer-on change other instructions. The DC1
 `CTextureManager` uses fixed arrays and provides no corresponding bucket
 accessor. The active implementation uses upstream's single shared level-2
 scope; no profile row or shared-header change is required.
+
+## Compiler options
+
+The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. With that option and none of its former `schedule off` / `optimization_level` pragmas the object is
+byte-identical to the build that used them. Its seven `global_optimizer off` regions remain function-specific.

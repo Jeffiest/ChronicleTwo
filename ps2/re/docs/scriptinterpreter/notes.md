@@ -133,3 +133,9 @@ routine}, a tag-name hash, and binary ("BIN") scripts. Nothing in the layout was
   path between binary and text branches).
 - Ctor draft writes `buffer/size/position` explicitly after the base ctor (retail zeroes 0x0,
   0x4, 0x8 again); differs because the inline `input_str()` is inlined rather than called.
+
+## Compiler options
+
+The unit is compiled with `-inline off` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) added
+to the game's `-O3,p`, and with it the object is byte-identical to the build that used the former
+`dont_inline on` pragma. Without inlining, the header's inline members are called rather than expanded, as in retail.

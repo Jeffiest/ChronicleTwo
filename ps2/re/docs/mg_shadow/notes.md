@@ -94,8 +94,7 @@ The mgCFace / FACES_ID / face-group layouts above are shared with mgCVisualMDT::
 belong in mg_visual.hpp.
 
 ## Source status
-All six functions are native C++ and byte-identical under the unit's `schedule off` and
-`optimization_level 2` pragmas; there are no guarded drafts, `INCLUDE_ASM` entries or data
+All six functions are native C++ and byte-identical at the unit's level-2 setting; there are no guarded drafts, `INCLUDE_ASM` entries or data
 markers. The FLUSHA and zero quadword initializers and the `mgCShadowMDT` vtable are emitted
 by the compiler.
 - `CreateFace` walks the triangle indices as `int *vertex` over `source->index` (`vertex[0]`,
@@ -132,3 +131,9 @@ by the compiler.
   view_clip_full*view*shadow*M, then DMA RET. GetpLightInfo's result is unused.
 - `SCE_GS_PRMODECONT` (26) and `SCE_GS_PRMODE` (27) added to `sce/libgraph.h`.
 - DMA-tag and VIF-code names come from `mgPACKET_CODE` in `mg_drawprim.hpp`.
+
+## Compiler options
+
+The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. With that option and none of its former `schedule off` / `optimization_level 2` pragmas the object is
+byte-identical to the build that used them. Its four `global_optimizer off` regions remain function-specific.

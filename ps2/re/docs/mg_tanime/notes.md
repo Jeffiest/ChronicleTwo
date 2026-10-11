@@ -21,7 +21,7 @@ definitions and `mgCTextureAnime::stop_anime` keeps its header declaration.
 ## Current TexAnime and optimizer state
 
 `TexAnime` is native and exact at retail's 0x1458-byte symbol size. The
-unit uses `#pragma optimization_level 2`, preserving global common-
+unit is compiled at optimization level 2, preserving global common-
 subexpression elimination without the level-3 loop strength reduction.
 Template-using functions receive the pragma state in force when their
 code generation is triggered by the next top-level declaration. The
@@ -35,8 +35,8 @@ Retail `TexAnime` performs global common-subexpression elimination without
 strength reduction: `group * 4` is computed once per main-loop iteration and
 spilled (`sw/lw 0xF0(sp)`), `&frame[group]` is materialized before the
 comparison that stores through it, and the first loop still shifts its index
-every iteration. `#pragma optimization_level 2` applied once to the whole code
-section produces exactly that mixture and reproduces every other function;
+every iteration. Level 2 applied to the whole unit
+produces exactly that mixture and reproduces every other function;
 `opt_strength_reduction off` alone breaks `Initialize` and
 `NewTexAnimeGroupData`, and level 2 with `opt_propagation off` breaks
 `texSCROLL`. `TexAnime` and `NewTexAnimeData` use class templates
@@ -186,3 +186,9 @@ into a frame buffer), +8 name, +0x38 sceGsTex0 tex0 (TBP0/TBW/PSM/CBP fields use
 The local `divbyzerocheck on`/`reset` pair is redundant with the PS2
 compiler flag. Removing it leaves every section and symbol in this unit's
 object diff unchanged.
+
+## Compiler options
+
+The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. With that option and none of its former `optimization_level 2` pragmas the object is
+byte-identical to the build that used them.

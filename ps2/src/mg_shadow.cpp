@@ -10,8 +10,6 @@
 #include "mg_shadow.hpp"
 #include "mg_visual.hpp"
 
-#pragma schedule off
-
 /**
  *
  * Writes the packet that loads the shadow projection matrix into VU1 memory, followed by the GS
@@ -48,14 +46,10 @@ static int SetShadowData(u_int *packet, float (*matrix)[4]) {
     return 9;
 }
 
-#pragma schedule reset
-
 struct ShadowGifRegs {
     u_long reg_s0 : 4;
     u_long reg_s1 : 4;
 };
-
-#pragma optimization_level 2
 
 int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
     static u_int prog_vif[4] __attribute__((aligned(16))) = {0, 0, 0, MG_VIF_MSCAL | 2};
@@ -161,9 +155,6 @@ int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
     return (packet + 4 - start) / 4;
 }
 
-#pragma optimization_level reset
-
-#pragma schedule off
 #pragma global_optimizer off
 
 FACES_ID *mgCShadowMDT::CreateFace(FACES_ID *source, mgCMemory *face_memory, mgCMemory *index_memory,
@@ -222,9 +213,7 @@ FACES_ID *mgCShadowMDT::CreateFace(FACES_ID *source, mgCMemory *face_memory, mgC
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
 
-#pragma schedule off
 #pragma global_optimizer off
 
 u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
@@ -275,9 +264,7 @@ u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
 
-#pragma schedule off
 #pragma global_optimizer off
 
 int mgCShadowMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
@@ -304,9 +291,7 @@ int mgCShadowMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
 
-#pragma schedule off
 #pragma global_optimizer off
 
 int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
@@ -416,4 +401,3 @@ int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRE
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset

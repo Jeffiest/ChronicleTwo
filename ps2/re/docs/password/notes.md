@@ -73,7 +73,7 @@ No corresponding `password` unit was found in Dark Cloud 1.
   `UNMATCHING` block at the top of the `.cpp`.
 - Retail's code for every function except `random` spills its arguments to the stack and
   re-reads them, and keeps loop temporaries in memory: the unit looks compiled with little or no
-  optimisation (e.g. a per-file `#pragma optimization_level`), which accounts for most of the
+  optimisation (the unit is compiled with `-O0`), which accounts for most of the
   size differences (retail functions are 1.3-2x the size of the `-opt all` drafts).
 - `random() % (size - 2)` is a `divu` in both Encode/DecodeBinData, so `random` returns an
   unsigned 32-bit value (`unsigned int`); `random_seed` is drafted as `unsigned int`.
@@ -89,3 +89,9 @@ The two local `divbyzerocheck on`/`reset` pairs around `EncodeBinData` and
 `DecodeBinData` are redundant now that the PS2 compiler command enables the
 check for the whole unit. Removing both pairs leaves every section and symbol
 in the unit's object diff unchanged; both functions remain exact matches.
+
+## Compiler options
+
+The unit is compiled with `-O0` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. With that option and none of its former `optimization_level 0` / `schedule off` pragmas the object is
+byte-identical to the build that used them.
