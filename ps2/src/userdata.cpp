@@ -472,11 +472,11 @@ int CGameDataUsed::IsWhoEquip() {
     if (this->used_type == USED_ITEM_TYPE_WEAPON) {
         item_type = this->item_type;
 
-        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == 5 || item_type == 6 || item_type == 7) {
+        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == ITEM_DATA_MAX_CLOTHES || item_type == ITEM_DATA_MAX_HAT || item_type == ITEM_DATA_MAX_SHOES) {
             return USER_CHARA_MAX;
         }
 
-        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == 8 || item_type == 9 || item_type == 0xA) {
+        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == ITEM_DATA_MONICA_CLOTHES || item_type == ITEM_DATA_MONICA_ACCESSORY || item_type == ITEM_DATA_MONICA_BOOTS) {
             return USER_CHARA_MONICA;
         }
 
@@ -2898,7 +2898,7 @@ float CUserDataManager::AddHp_Rate(int chara_no, float rate) {
 
 COMMON_GAGE *CUserDataManager::GetWHpGage(int group, int member) {
     if (group == USER_CHARA_ROBO) {
-        return &robo_data.parts[0].data.robopart.whp;
+        return &robo_data.parts[ROBO_PART_ARM].data.robopart.whp;
     }
 
     if (group == USER_CHARA_MONSTER) {
@@ -3693,7 +3693,7 @@ void CUserDataManager::AllWeaponRepair() {
         }
     }
 
-    robo_data.parts[0].Repair(999);
+    robo_data.parts[ROBO_PART_ARM].Repair(999);
     robo_data.AddPoint(999.0f);
 }
 
@@ -5969,9 +5969,9 @@ int KillMonsterCount(int monster, int amount) {
 int SearchEquipType(int category, int slot) {
     // Gives the item type accepted by each human or ridepod equipment slot.
     static signed char equip_type_tbl[3][5] = {
-        {1,  2,  6,  7,  5},
-        {3,  4,  9,  10, 8},
-        {13, 12, 15, 14, 0},
+        {ITEM_DATA_MAX_MELEE, ITEM_DATA_MAX_GUN, ITEM_DATA_MAX_HAT, ITEM_DATA_MAX_SHOES, ITEM_DATA_MAX_CLOTHES},
+        {ITEM_DATA_MONICA_MELEE, ITEM_DATA_MONICA_MAGIC, ITEM_DATA_MONICA_ACCESSORY, ITEM_DATA_MONICA_BOOTS, ITEM_DATA_MONICA_CLOTHES},
+        {ITEM_DATA_ROBO_ARM, ITEM_DATA_ROBO_BODY, ITEM_DATA_ROBO_ENERGY_PACK, ITEM_DATA_ROBO_LEG, ITEM_DATA_NONE},
     };
 
     if (category < USER_CHARA_MAX || category > USER_CHARA_ROBO) {

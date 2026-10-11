@@ -569,7 +569,7 @@ CInventUserData *GetInventUserDataPtr() {
 void Init_USER_PICTURE_INFO(USER_PICTURE_INFO *photo) {
     if (photo != NULL) {
         photo->used = 0;
-        photo->is_new = 0;
+        photo->is_new = false;
         photo->map_no = -1;
         photo->npc_no = -1;
         photo->unk_8 = -1;
@@ -584,7 +584,7 @@ void Copy_USER_PICTURE_INFO(USER_PICTURE_INFO *src, USER_PICTURE_INFO *dst) {
     }
 
     dst->used = src->used;
-    dst->is_new = *(signed char *) &src->is_new;
+    dst->is_new = src->is_new;
     dst->map_no = src->map_no;
     dst->npc_no = src->npc_no;
     dst->unk_8 = src->unk_8;
@@ -850,7 +850,7 @@ void CInventUserData::PhotoCheckEnd() {
     int i;
 
     for (i = 0; i < 30; i++) {
-        photo[i].is_new = 0;
+        photo[i].is_new = false;
     }
 }
 
@@ -5870,7 +5870,7 @@ void MenuInventPictureBoardDraw(float *pos, int &tex_block, int alpha) {
 
         PictureDraw(CMenuInventPt->photo_tex[i], photo, x, y, 0.7f, alpha, 0x80, 0x80, 0x80);
 
-        if (*(s8 *) &photo->is_new != 0) {
+        if (photo->is_new != 0) {
             SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(Tex_Hatsumei);

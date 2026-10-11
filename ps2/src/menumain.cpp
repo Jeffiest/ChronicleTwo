@@ -2670,8 +2670,8 @@ int CopyActiveIconTexture(mgCTexture **textures, int chara_no, u_int *unused) {
         items[6] = chara->equip[2].item_no;
         items[7] = chara->equip[3].item_no;
     } else if (chara_no == USER_CHARA_ROBO) {
-        items[4] = user->robo_data.parts[2].item_no;
-        items[5] = user->robo_data.parts[0].item_no;
+        items[4] = user->robo_data.parts[ROBO_PART_PACK].item_no;
+        items[5] = user->robo_data.parts[ROBO_PART_ARM].item_no;
     }
 
     for (int sheet = 0; sheet < 2; ++sheet) {
