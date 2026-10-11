@@ -3735,7 +3735,7 @@ int CMenuInvent::IsMakeObject(int keys, int button) {
                             }
 
                             if (make_item_no == ITEM_ID_LURE_ROD) {
-                                GetSaveData()->SetBitFlag(48, true);
+                                GetSaveData()->SetBitFlag(SAVE_FLAG_LURE_ROD, true);
                             }
 
                             InventManagePt->DeleteUserUsedItem(make_item_no, make_num);

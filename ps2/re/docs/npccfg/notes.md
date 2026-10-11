@@ -47,7 +47,8 @@ Size 0x36 (2-byte aligned by the s16). Script arg N is `SPI_STACK` entry N (stri
   (The asm file shows 0x20 bytes; the last 8 are padding before typetbl.)
 - `typetbl_853` .data 0x10: function-local `static char` table in GetPartyCharaMessage (loaded
   with lb): 0, 10, 20, 30, 2, 40, 45, 50, 55, 0, 90, 60, 0, 21, 25, 0. Types seen at call sites:
-  0, 1, 3, 4, 5, 7, 8, 10, 11 (0x0B), 12 (0x0C, special-cased). No enum: meanings not established.
+  0, 1, 3, 4, 5, 7, 8, 10, 11 (0x0B), 12 (0x0C, special-cased). PARTY_MESSAGE names 0, 1, 3, 5, 6, 7, 8
+  and 0xB.
 - `path$885` .bss 0x40: function-local `static char[0x40]` in GetPartyCharaModelName.
 - `infocfg$886` .data 9: function-local `static char[] = "info.cfg"` in GetPartyCharaModelName
   (returned directly for type 1).
@@ -69,4 +70,5 @@ as local statics.
 
 `typetbl_853` remains file-local under its retail identity. Making it a function-local
 `typetbl` preserves the executable but leaves the table unbound in the complete-object
-check. The 16-byte signed suffix table has no established category enum.
+check. The 16-byte signed table gives the message base added to `chara_no * 100` for each
+`type` index; the type names are the `PARTY_MESSAGE` enumerators.

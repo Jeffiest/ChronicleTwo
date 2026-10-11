@@ -145,8 +145,7 @@ definitions; their zero tails are piece alignment.
 - MDT layout: `CreateCollisionMDT` reads `MDT_HEADER` (mg_dataset.hpp) vertex_ofs/faces_ofs/
   material_ofs; `MDT_FACES::prim_num`, records from `faces + 1`; `FACES_ID::vertex_num` is used as
   an INDEX count here (triangles = vertex_num / 3 with *signed* division although the field is
-  declared unsigned; the next record is `&index[vertex_num]`), so mg_dataset.hpp's "Number of
-  faces" comment is likely wrong. Material attrs come from `MDT_MATERIAL_::diffuse[0..3]`. The
+  declared unsigned; the next record is `&index[vertex_num]`). Material attrs come from `MDT_MATERIAL_::diffuse[0..3]`. The
   16-byte zeroing of CCPoly 0x40-0x4F suggests the original had a 16-byte attribute struct
   there (first game: union `info`/`attr`). Vertex, material and face tables are byte offsets
   from the MDT header.
