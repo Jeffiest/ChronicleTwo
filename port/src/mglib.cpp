@@ -50,6 +50,12 @@ mgCTexture g_frame_tex;
 // Whether mgSetPkFrameBuffer has drawing redirected to a texture, so only a redirect it made is undone.
 bool g_frame_redirected;
 
+// Counts frames, and remembers the one an off-screen target's depth was last cleared in. Retail clears its
+// Z buffer once a frame and the passes within the frame share it; the host target has a depth buffer of its own
+// that nothing else would ever clear.
+int g_frame_serial;
+int g_target_depth_serial = -1;
+
 // The render-target texture the manager has placed at a frame buffer page, or NULL. Retail points the
 // frame buffer at a texture by its VRAM address; the host draws into the texture itself.
 mgCTexture *FindFrameTarget(int fbp) {
@@ -411,6 +417,12 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     if (target != NULL && PortMgTextureBinding(target, binding) && binding.texture != gfx::kNullTexture) {
         gfx::SetRenderTarget(binding.texture);
         g_frame_redirected = true;
+
+        if (g_target_depth_serial != g_frame_serial) {
+            const uint8_t black[4] = {0, 0, 0, 0};
+            gfx::Clear(false, black, true, 0.0f);
+            g_target_depth_serial = g_frame_serial;
+        }
         std::strncpy(g_frame_tex.name, target->name, sizeof(g_frame_tex.name) - 1);
         g_frame_tex.width = target->width;
         g_frame_tex.height = target->height;
@@ -526,6 +538,7 @@ PORT_OVERRIDE void mgEndPacket(mgCDrawManager *manager) {
 }
 
 PORT_OVERRIDE void mgBeginFrame(mgCDrawManager *manager) {
+    g_frame_serial++;
     if (manager == NULL) {
         mgDrawManager.texture_manager = &mgTexManager;
         manager = &mgDrawManager;
