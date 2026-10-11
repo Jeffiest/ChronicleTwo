@@ -21,12 +21,11 @@ class ObjectGraphTests(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(text)
 
-            for name in ('scripts/build/postprocess_object.py', 'tools/mwccgap/elf.py',
-                         'src/first.cpp', 'src/second.cpp', 'out/split'):
+            for name in ('tools/mwccgap/elf.py', 'src/first.cpp', 'src/second.cpp', 'out/split'):
                 write(name, '')
-            write('scripts/build/lcf.py', 'lcf')
+            write('scripts/build/postprocess_object.py', 'postprocess_object')
             write('scripts/build/mwccgap.sh', '''#!/bin/sh
-cat scripts/build/lcf.py > "$1"
+cat scripts/build/postprocess_object.py > "$1"
 printf '%s:\\n' "$PWD/$1" > "$2"
 ''')
             write('scripts/build/fixup_sections.sh', 'exit 0\n')
@@ -53,7 +52,7 @@ add_custom_target(objects DEPENDS ${objects})
             run('cmake', '-S', '.', '-B', 'out', '-G', 'Ninja')
             run('cmake', '--build', 'out', '--target', 'objects')
             self.assertNotIn('CC src/', run('ninja', '-C', 'out', '-n', 'objects'))
-            for tool in ('lcf',):
+            for tool in ('postprocess_object',):
                 with self.subTest(tool=tool):
                     time.sleep(0.01)
                     write(f'scripts/build/{tool}.py', tool + ' changed')
@@ -61,7 +60,7 @@ add_custom_target(objects DEPENDS ${objects})
                     for unit in ('first', 'second'):
                         self.assertIn(f'CC src/{unit}.cpp', pending)
                     run('cmake', '--build', 'out', '--target', 'objects')
-                    expected = (root / 'scripts/build/lcf.py').read_bytes()
+                    expected = (root / 'scripts/build/postprocess_object.py').read_bytes()
                     for unit in ('first', 'second'):
                         self.assertEqual((root / f'out/{unit}.cpp.o').read_bytes(), expected)
                     self.assertNotIn('CC src/', run('ninja', '-C', 'out', '-n', 'objects'))

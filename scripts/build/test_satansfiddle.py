@@ -1,4 +1,4 @@
-"""Exercise the mwccgap adapter without requiring a private compiler or ROM."""
+"""Exercise the Satan's Fiddle adapter without requiring a private compiler or ROM."""
 
 import importlib.util
 import json
@@ -36,7 +36,7 @@ class AdapterTests(unittest.TestCase):
             with self.subTest(arguments=arguments), self.assertRaises(ValueError):
                 adapter.invocation(arguments)
 
-    def test_temporary_source_uses_original_unit_and_current_selectors(self):
+    def test_direct_compile_uses_original_unit_and_current_selectors(self):
         with tempfile.TemporaryDirectory() as directory:
             directory = Path(directory)
             profile = directory / "profile.json"
@@ -80,10 +80,10 @@ class AdapterTests(unittest.TestCase):
             }), patch.object(adapter.shutil, "which", return_value="/tool/satansfiddle"), \
                     patch.object(adapter.subprocess, "run", side_effect=run):
                 status = adapter.main(["compiler.exe", "-c", "-pragma", "divbyzerocheck on",
-                                       "-o", str(directory / "output.o"), str(directory / "tmp123.c")])
+                                       "-o", str(directory / "output.o"), str(directory / "unit.cpp")])
             self.assertEqual(status, 7)
             self.assertEqual(observed["arguments"][-3:-1], ["--translation-unit", "unit.cpp"])
-            self.assertEqual(Path(observed["arguments"][-1]).name, "tmp123.c")
+            self.assertEqual(Path(observed["arguments"][-1]).name, "unit.cpp")
             selected = observed["configuration"]
             self.assertEqual(shlex.split(selected["compiler_options"]),
                              ["-c", "-pragma", "divbyzerocheck on"])
@@ -120,7 +120,7 @@ class AdapterTests(unittest.TestCase):
                         run.return_value.returncode = 0
                         with self.assertRaisesRegex(ValueError, "unknown translation unit 'stale.cpp'"):
                             adapter.main(["compiler.exe", "-c", "-o", str(output),
-                                          str(directory / "temporary.c")])
+                                          str(directory / "unit.cpp")])
                         run.assert_not_called()
                     self.assertEqual(output.read_bytes(), b"existing object")
 
