@@ -2511,7 +2511,7 @@ int MenuInternSelectKey() {
 
                         if (NextMenuInit(CMenuInterPt->next_mode, &MenuMainStack_Next, &MenuCommonInfo->tex_block[3]) != 0) {
                             if (CMenuInterPt->next_mode != MENU_MODE_DNG_TREE_MAP && CMenuInterPt->next_mode != MENU_MODE_WORLD_MOVE) {
-                                MenuSePlay(2);
+                                MenuSePlay(SYSTEM_SE_PAGE);
                             }
                         }
 

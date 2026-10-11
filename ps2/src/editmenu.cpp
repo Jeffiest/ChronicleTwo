@@ -1363,7 +1363,7 @@ void MenuGeoDebugKey() {
         CMenuGeoPt->ExeScript("DL_END");
         MenuGeoStoneDonwLoadFlag = 0;
         DownLoadMesAlpha = 0;
-        MenuSePlay(0x1F);
+        MenuSePlay(SYSTEM_SE_COMPLETE);
     }
 
     if (GamePad__2.Down(PAD_SQUARE) != 0) {
@@ -1388,7 +1388,7 @@ void MenuGeoDebugKey() {
             MenuAnalyzeData->condition_open[i] = 1;
         }
 
-        MenuSePlay(1);
+        MenuSePlay(SYSTEM_SE_DECIDE);
     }
 }
 
@@ -2174,14 +2174,14 @@ int StepDownLoadAnaunce(int confirm) {
 
     if (DownLoadMesMakeProgress == 0 && advance != 0) {
         if (DownLoadInfoNext == NULL) {
-            MenuSePlay(0x19);
+            MenuSePlay(SYSTEM_SE_MESSAGE);
             DownLoadInfoEndFlag = 0;
             return 1;
         }
 
         DownLoadMesMakeProgress = 1;
         DownLoadActiveMes->push_button = 0;
-        MenuSePlay(0x19);
+        MenuSePlay(SYSTEM_SE_MESSAGE);
     }
 
     if (DownLoadMesMakeProgress == 1) {
@@ -4297,14 +4297,14 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
 
         if (MenuGeoStoneDonwLoadFlag == 1 && download_done != 0) {
             MenuGeoStoneDonwLoadFlag = 2;
-            MenuSePlay(0x1F);
+            MenuSePlay(SYSTEM_SE_COMPLETE);
             MenuDCMsg[5]->MakeMsg(0x5DD);
         }
 
         if (MenuGeoStoneDonwLoadFlag == 2 && buttons_pressed != 0) {
             menu->ExeScript("DL_END");
             DrawDownLoadAnaunceSwitch(1);
-            MenuSePlay(0x13);
+            MenuSePlay(SYSTEM_SE_WINDOW);
             MenuGeoStoneDonwLoadFlag = 3;
             DownLoadMesMakeProgress = 2;
         }
@@ -4343,7 +4343,7 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
     moved = 0;
 
     if (MenuKeySelectCheck(step, &menu->view_mode, NULL, 0, 6, 6, (int) MENU_CURSOR_LIMIT_CLAMP) != 0) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
 
         for (i = 0; i < 6; i++) {
             if (i < 3 || i == 4) {
@@ -4433,7 +4433,7 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
                         menu->ExeScript("GO_\x95\xAA\x90\xCD\x88\xC8\x8AO");
                     }
                 } else {
-                    MenuSePlay(5);
+                    MenuSePlay(SYSTEM_SE_CANCEL);
                 }
             } else {
                 if (view_mode == 3) {
@@ -4442,7 +4442,7 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
                 }
 
                 result = 1;
-                MenuSePlay(1);
+                MenuSePlay(SYSTEM_SE_DECIDE);
             }
 
             break;
@@ -4450,7 +4450,7 @@ int MenuGeoramaBasePush(CMenuGeorama *menu, int buttons_held, int buttons_presse
             MenuArg.end_code = 0;
             result = 1;
             MenuArg.result[0] = -1;
-            MenuSePlay(5);
+            MenuSePlay(SYSTEM_SE_CANCEL);
             break;
     }
 
@@ -4517,7 +4517,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
 
             if (prev_selected != menu->select) {
                 menu->LoadGeoramaPart(menu->GetNowModeLoadPartsID(), 0);
-                MenuSePlay(0);
+                MenuSePlay(SYSTEM_SE_CURSOR);
             }
 
             switch (buttons_pressed) {
@@ -4526,7 +4526,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                         menu->GetNowSelectEditPartsInfo(menu->view_mode, menu->select);
 
                     if (edparts_info == NULL) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else {
                         DestroyPartsName[0] = edparts_info->edit_name;
                         DestroyNum[0] = 1;
@@ -4544,7 +4544,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                             }
                         }
 
-                        MenuSePlay(0x13);
+                        MenuSePlay(SYSTEM_SE_WINDOW);
                         menu->sub_step = 1;
                         msg->MsgPreset(6);
                         msg->MakeMsg(0x672);
@@ -4581,7 +4581,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                 case 32:
                     menu->ArrangePartsList(0, 1);
                     menu->LoadGeoramaPart(menu->GetNowModeLoadPartsID(), 0);
-                    MenuSePlay(1);
+                    MenuSePlay(SYSTEM_SE_DECIDE);
                     break;
             }
 
@@ -4626,7 +4626,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                 }
 
                 if (old_num != DestroyNum[0]) {
-                    MenuSePlay(0x1D);
+                    MenuSePlay(SYSTEM_SE_NUMBER);
                 }
             }
 
@@ -4642,7 +4642,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                             menu->stock_list[selected].no);
 
                         if (parts_info == NULL) {
-                            MenuSePlay(5);
+                            MenuSePlay(SYSTEM_SE_CANCEL);
                             break;
                         }
 
@@ -4680,14 +4680,14 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                         }
 
                         result = 1;
-                        MenuSePlay(1);
+                        MenuSePlay(SYSTEM_SE_DECIDE);
                     }
 
                     if (cursor == 1) {
                         if (flags & kPlaceSingle) {
-                            MenuSePlay(5);
+                            MenuSePlay(SYSTEM_SE_CANCEL);
                         } else if (flags & kPlaceHidden) {
-                            MenuSePlay(5);
+                            MenuSePlay(SYSTEM_SE_CANCEL);
                         } else {
                             form->draw_flag = 0;
                             menu->sub_step = 2;
@@ -4756,7 +4756,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                 if (GetSaveData()->GetBuildPartsNum(edparts_info->id) <= 0) {
                     menu->ReturnSelectMode(0);
                 } else {
-                    MenuSePlay(1);
+                    MenuSePlay(SYSTEM_SE_DECIDE);
                 }
             }
 
@@ -4803,7 +4803,7 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
 
             if (old_index != menu->select) {
                 menu->LoadGeoramaPart(menu->GetNowModeLoadPartsID(), 1);
-                MenuSePlay(0);
+                MenuSePlay(SYSTEM_SE_CURSOR);
             }
 
             switch (pushed) {
@@ -4811,7 +4811,7 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
                     menu->make_parts = menu->GetNowSelectEditPartsInfo(0, menu->select);
 
                     if (menu->make_parts == NULL) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else {
                         menu->make_cursor = 0;
                         menu->make_item_no = menu->make_parts->id;
@@ -4863,7 +4863,7 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
                 case 0x20:
                     menu->ArrangePartsList(1, 1);
                     menu->LoadGeoramaPart(menu->GetNowModeLoadPartsID(), 1);
-                    MenuSePlay(1);
+                    MenuSePlay(SYSTEM_SE_DECIDE);
                     break;
             }
 
@@ -4924,7 +4924,7 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
                             MenuGeoramaViewNowPicNo = 7;
                         }
 
-                        MenuSePlay(1);
+                        MenuSePlay(SYSTEM_SE_DECIDE);
                     } else if ((keys & 8) || (keys & 0x20) || (pushed & 1)) {
                         MenuGeoramaViewNowPicNo++;
                         step = 1;
@@ -4933,10 +4933,10 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
                             MenuGeoramaViewNowPicNo = 0;
                         }
 
-                        MenuSePlay(1);
+                        MenuSePlay(SYSTEM_SE_DECIDE);
                     } else if (pushed & 2) {
                         step = 3;
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     }
 
                     if (step != 2) {
@@ -4975,7 +4975,7 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
             }
 
             if (old_select != menu->select) {
-                MenuSePlay(0);
+                MenuSePlay(SYSTEM_SE_CURSOR);
                 HouseInfoSelectLine = 0;
                 HouseInfoSelectMoveInit = 1;
                 HouseInfoSelectSelect = 0;
@@ -4993,10 +4993,10 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
                 case 4:
                 case 0x20:
                     menu->ArrangePartsList(2, 1);
-                    MenuSePlay(1);
+                    MenuSePlay(SYSTEM_SE_DECIDE);
                     break;
                 case 8:
-                    MenuSePlay(5);
+                    MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
             }
 
@@ -5040,7 +5040,7 @@ int MenuGeoramaCheckPointPush(CMenuGeorama *menu, int keys, int pushed) {
             }
 
             if (old_select != HouseInfoSelectSelect) {
-                MenuSePlay(0);
+                MenuSePlay(SYSTEM_SE_CURSOR);
             }
 
             switch (pushed) {
@@ -5148,7 +5148,7 @@ int MenuGeoramaPaintSelect(CMenuGeorama *menu, int keys, int pushed) {
     menu->SetGeoListInfo(menu->view_mode, menu->paint_select, menu->paint_top);
 
     if (old_cursor != menu->paint_select) {
-        MenuSePlay(0);
+        MenuSePlay(SYSTEM_SE_CURSOR);
     }
 
     switch (pushed) {
@@ -5159,7 +5159,7 @@ int MenuGeoramaPaintSelect(CMenuGeorama *menu, int keys, int pushed) {
 
             if (cursor == 8) {
                 MenuArg.end_code = 0x10;
-                MenuSePlay(1);
+                MenuSePlay(SYSTEM_SE_DECIDE);
                 menu->ExeScript("COL_END");
                 done = 1;
             } else {
@@ -5396,7 +5396,7 @@ int CRemovalMenu::KeyStep() {
 
                                             if (house->npc_no[0] <= 0) {
                                                 if (npc_num <= 0) {
-                                                    MenuSePlay(5);
+                                                    MenuSePlay(SYSTEM_SE_CANCEL);
                                                 } else {
                                                     key_arg_no = 1;
                                                     step = 0;
@@ -5432,7 +5432,7 @@ int CRemovalMenu::KeyStep() {
                                 }
                                 case 2:
                                     action = REMOVAL_ACTION_CLOSE;
-                                    MenuSePlay(5);
+                                    MenuSePlay(SYSTEM_SE_CANCEL);
                                     break;
                             }
 
@@ -5460,7 +5460,7 @@ int CRemovalMenu::KeyStep() {
                                 ask_mes->cursor_on = 1;
                                 ExeScript("MSG_ISMOVE_END");
                                 step = 0;
-                                MenuSePlay(5);
+                                MenuSePlay(SYSTEM_SE_CANCEL);
                             }
 
                             break;
@@ -5495,7 +5495,7 @@ int CRemovalMenu::KeyStep() {
                                     break;
                                 case 2:
                                     action = REMOVAL_ACTION_BACK;
-                                    MenuSePlay(5);
+                                    MenuSePlay(SYSTEM_SE_CANCEL);
                                     break;
                             }
 
@@ -5572,7 +5572,7 @@ int CRemovalMenu::KeyStep() {
                 case REMOVAL_ACTION_CANCEL:
                     ExeScript("MSG_ISMOVE_END");
                     step = 0;
-                    MenuSePlay(5);
+                    MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
                 case REMOVAL_ACTION_BACK:
                     key_arg_no = 0;

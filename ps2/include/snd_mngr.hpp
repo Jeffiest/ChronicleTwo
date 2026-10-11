@@ -24,13 +24,26 @@
  *
  */
 enum SYSTEM_SE {
-    SYSTEM_SE_CURSOR = 0,      /**< Moves the menu cursor. */
-    SYSTEM_SE_DECIDE = 1,      /**< Accepts the current menu selection. */
-    SYSTEM_SE_CANCEL = 5,      /**< Cancels or rejects the current menu selection. */
-    SYSTEM_SE_IDEA = 0xE,      /**< Announces that a photo has captured an idea. */
-    SYSTEM_SE_WINDOW = 0x13,   /**< Accompanies a menu window or panel being opened or switched. */
-    SYSTEM_SE_MAGNET = 0x15,   /**< A Georama part first snaps to a nearby part. */
-    SYSTEM_SE_COMPLETE = 0x1F, /**< Announces that a memory card operation, a download or an install has finished. */
+    SYSTEM_SE_CURSOR = 0,       /**< Moves the menu cursor. */
+    SYSTEM_SE_DECIDE = 1,       /**< Accepts the current menu selection. */
+    SYSTEM_SE_PAGE = 2,         /**< Switches to another menu page or sub-menu. */
+    SYSTEM_SE_ITEM_MOVE = 3,    /**< Splits or moves a carried item stack. */
+    SYSTEM_SE_ITEM_RETURN = 4,  /**< Puts a carried item back. */
+    SYSTEM_SE_CANCEL = 5,       /**< Cancels or rejects the current menu selection. */
+    SYSTEM_SE_EQUIP = 8,        /**< Changes a character's equipment. */
+    SYSTEM_SE_REVIVE = 0xA,     /**< A fallen character is revived. */
+    SYSTEM_SE_IDEA = 0xE,       /**< Announces that a photo has captured an idea. */
+    SYSTEM_SE_TRANSFORM = 0x10, /**< Monica transforms into a monster. */
+    SYSTEM_SE_JOIN = 0x11,      /**< A townsperson joins the party. */
+    SYSTEM_SE_WINDOW = 0x13,    /**< Accompanies a menu window or panel being opened or switched. */
+    SYSTEM_SE_MAGNET = 0x15,    /**< A Georama part first snaps to a nearby part. */
+    SYSTEM_SE_MESSAGE = 0x19,   /**< Accompanies a message or announcement window. */
+    SYSTEM_SE_LOCK_ON = 0x1A,   /**< Locks on to a target or switches to the next one. */
+    SYSTEM_SE_LOCK_OFF = 0x1B,  /**< Releases the lock-on. */
+    SYSTEM_SE_DENIED = 0x1C,    /**< Refuses an action, such as equipping an item that does not fit. */
+    SYSTEM_SE_NUMBER = 0x1D,    /**< Changes a quantity being chosen. */
+    SYSTEM_SE_PARAM_UP = 0x1E,  /**< A parameter, level or class goes up. */
+    SYSTEM_SE_COMPLETE = 0x1F,  /**< Announces that a memory card operation, a download or an install has finished. */
 };
 
 /**

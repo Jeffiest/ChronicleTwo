@@ -629,7 +629,7 @@ int CShopMenu::IsCancelNoneLoadItem() {
         return 0;
     }
 
-    MenuSePlay(5);
+    MenuSePlay(SYSTEM_SE_CANCEL);
     return 1;
 }
 
@@ -1100,7 +1100,7 @@ int CShopMenu::KeyStep() {
 
             switch (command) {
                 case 5:
-                    MenuSePlay(5);
+                    MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
                 case 0x14:
                     switch (MenuCommonInfo->EnableSwapNowPos(&swap)) {
@@ -1112,7 +1112,7 @@ int CShopMenu::KeyStep() {
                             MenuSePlay(SYSTEM_SE_DECIDE);
                             break;
                         default:
-                            MenuSePlay(5);
+                            MenuSePlay(SYSTEM_SE_CANCEL);
                             break;
                     }
 
@@ -1287,9 +1287,9 @@ int CShopMenu::KeyStep() {
                     CGameDataUsed *sell_item = SearchNowPosItemExist();
 
                     if (sell_item->GetNum() <= 0) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (CShopPtr->price[item_no].sell <= 0) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (CheckEquipFishRod(sell_item) == 1) {
                         refuse = (int) SHOP_MENU_ERROR_LAST_WEAPON;
                     } else {
@@ -2266,7 +2266,7 @@ int CMenuQuestView::KeyStep() {
                         MenuSePlay(SYSTEM_SE_DECIDE);
                     } else if (push & 2) {
                         FadeOutMenu(0x28, 0.0f);
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                         mode = 2;
                     }
 
@@ -2278,7 +2278,7 @@ int CMenuQuestView::KeyStep() {
                         ActiveQuestInfo = NULL;
                         ScmFlagCtrl = NULL;
                         step = 0;
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                         UnderMsg(0);
                     }
 

@@ -677,7 +677,7 @@ void MenuManualDraw() {
                         chr_no = GetUserDataMan()->active_chr_no;
                         attribute = GetUserDataMan()->GetCharaStatusAttirbute(chr_no);
 
-                        if ((chr_no == USER_CHARA_MONICA || chr_no == USER_CHARA_MAX) && (attribute & (CHARA_STATUS_UNK_8 | CHARA_STATUS_UNK_20))) {
+                        if ((chr_no == USER_CHARA_MONICA || chr_no == USER_CHARA_MAX) && (attribute & (CHARA_STATUS_STOP | CHARA_STATUS_STONE))) {
                             chara->SetHold();
                         }
                     }

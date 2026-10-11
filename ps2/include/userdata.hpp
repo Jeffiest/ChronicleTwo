@@ -44,12 +44,12 @@ enum BATTLE_CHARA_TYPE {
 enum CHARA_STATUS_ATTR {
     CHARA_STATUS_POISON = 0x01, /**< Loses a little health every 100 steps while above 1. */
     CHARA_STATUS_SLOW = 0x02,   /**< Timed condition counted down by CHARA_DATA::status_time[1]. */
-    CHARA_STATUS_UNK_4 = 0x04,
-    CHARA_STATUS_UNK_8 = 0x08,  /**< Timed condition that blocks changing character. */
+    CHARA_STATUS_CURSE = 0x04,  /**< Cursed. */
+    CHARA_STATUS_STOP = 0x08,   /**< Stopped: a timed condition that blocks changing character. */
     CHARA_STATUS_POWER = 0x10,  /**< Timed boost that raises attack by half and wards off the first two bits. */
-    CHARA_STATUS_UNK_20 = 0x20, /**< Timed condition that blocks changing character. */
-    CHARA_STATUS_UNK_40 = 0x40,
-    CHARA_STATUS_ALL = 0x7F, /**< Every status bit. */
+    CHARA_STATUS_STONE = 0x20,  /**< Petrified: a timed condition that blocks changing character. */
+    CHARA_STATUS_DRY = 0x40,    /**< Thirsty. */
+    CHARA_STATUS_ALL = 0x7F,    /**< Every status bit. */
 };
 
 /**

@@ -2335,7 +2335,7 @@ int CAquaFish::ParamStep() {
             }
 
             if (before < breed->param[BREEDFISH_STAT_BATTLE]) {
-                MenuSePlay(0x1E);
+                MenuSePlay(SYSTEM_SE_PARAM_UP);
             }
 
             AquaFishEff[aqua_no]->StartFishEffect(AQUA_FISH_EFF_GROW);
@@ -5239,7 +5239,7 @@ int CAquarium::Step() {
                             menu->guide_mes->MakeMesWin(menu->guide_id);
                             menu->guide_mes->fukidashi_pos = 5;
                             menu->help_draw = false;
-                            MenuSePlay(0x1E);
+                            MenuSePlay(SYSTEM_SE_PARAM_UP);
                         }
                     }
 

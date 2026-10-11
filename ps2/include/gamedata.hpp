@@ -256,21 +256,21 @@ enum ITEM_USE_FLAG {
     ITEM_USE_FLAG_RESTORE_HP = 0x100,      /**< Restores health. */
     ITEM_USE_FLAG_REPAIR = 0x400,          /**< Restores durability. */
     ITEM_USE_FLAG_FILL_ABS = 0x1000,       /**< Fills the absorption gauge of a weapon. */
-    ITEM_USE_FLAG_ADD_STOP = 0x4000,       /**< Stops the target (CHARA_STATUS_UNK_8). */
-    ITEM_USE_FLAG_CURE_STOP = 0x8000,      /**< Cures being stopped (CHARA_STATUS_UNK_8). */
+    ITEM_USE_FLAG_ADD_STOP = 0x4000,       /**< Stops the target (CHARA_STATUS_STOP). */
+    ITEM_USE_FLAG_CURE_STOP = 0x8000,      /**< Cures being stopped (CHARA_STATUS_STOP). */
     ITEM_USE_FLAG_ADD_POISON = 0x10000,            /**< Adds poison. */
     ITEM_USE_FLAG_CURE_POISON = 0x20000,           /**< Cures poison. */
-    ITEM_USE_FLAG_ADD_CURSE = 0x40000,      /**< Curses the target (CHARA_STATUS_UNK_4). */
-    ITEM_USE_FLAG_CURE_CURSE = 0x80000,     /**< Cures a curse (CHARA_STATUS_UNK_4). */
+    ITEM_USE_FLAG_ADD_CURSE = 0x40000,      /**< Curses the target (CHARA_STATUS_CURSE). */
+    ITEM_USE_FLAG_CURE_CURSE = 0x80000,     /**< Cures a curse (CHARA_STATUS_CURSE). */
     ITEM_USE_FLAG_ADD_SLOW = 0x100000,     /**< Adds CHARA_STATUS_SLOW. */
     ITEM_USE_FLAG_CURE_SLOW = 0x200000,    /**< Cures CHARA_STATUS_SLOW. */
     ITEM_USE_FLAG_ADD_POWER = 0x400000,            /**< Adds the power status. */
     ITEM_USE_FLAG_CURE_ALL = 0x800000,             /**< Expands to the individual status cure effects when loaded. */
     ITEM_USE_FLAG_CORE_CAPACITY = 0x01000000, /**< Sets the ridepod's energy capacity, for cores. */
-    ITEM_USE_FLAG_ADD_STONE = 0x02000000,  /**< Petrifies the target (CHARA_STATUS_UNK_20). */
-    ITEM_USE_FLAG_CURE_STONE = 0x04000000, /**< Cures petrification (CHARA_STATUS_UNK_20). */
-    ITEM_USE_FLAG_ADD_DRY = 0x08000000,  /**< Makes the target thirsty (CHARA_STATUS_UNK_40). */
-    ITEM_USE_FLAG_CURE_DRY = 0x10000000, /**< Cures thirst (CHARA_STATUS_UNK_40). */
+    ITEM_USE_FLAG_ADD_STONE = 0x02000000,  /**< Petrifies the target (CHARA_STATUS_STONE). */
+    ITEM_USE_FLAG_CURE_STONE = 0x04000000, /**< Cures petrification (CHARA_STATUS_STONE). */
+    ITEM_USE_FLAG_ADD_DRY = 0x08000000,  /**< Makes the target thirsty (CHARA_STATUS_DRY). */
+    ITEM_USE_FLAG_CURE_DRY = 0x10000000, /**< Cures thirst (CHARA_STATUS_DRY). */
 };
 
 // clang-format on

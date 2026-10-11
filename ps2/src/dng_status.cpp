@@ -413,7 +413,7 @@ void DrawMainUnitStatusBord(float rate) {
 
     sprite.End();
     status_attr = info->GetAttr();
-    int status_mask[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_UNK_8, CHARA_STATUS_UNK_4, CHARA_STATUS_POWER, CHARA_STATUS_UNK_20, CHARA_STATUS_UNK_40};
+    int status_mask[7] = {CHARA_STATUS_POISON, CHARA_STATUS_SLOW, CHARA_STATUS_STOP, CHARA_STATUS_CURSE, CHARA_STATUS_POWER, CHARA_STATUS_STONE, CHARA_STATUS_DRY};
     s16 status_glyph[7][2] = {
         {0,  0 },
         {24, 24},
