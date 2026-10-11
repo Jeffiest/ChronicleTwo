@@ -36,7 +36,7 @@ wave_y[i+1]=mgAngleLimit(wave_y[i]+0.10471976); 0xA70,0xA68,0xA6C,0x17C,0x198..0
 | 0x118 | u8[0x50] | unk_118 | only the ctor memset; never read |
 | 0x168 | | unk_168 | never accessed |
 | 0x16C | s32 | exit_wait | incremented while closing (mode 2); >2 ends |
-| 0x170 | s16 | map_type | 1..4 from flags 600 (->2), 0x268 (->4), 0x280 (->3); `"wmap%d.pac"`, `"wmap0%d"` |
+| 0x170 | s16 | map_type | 1..4 from flags SAVE_FLAG_WORLD_MAP_2 (->2), SAVE_FLAG_WORLD_MAP_4 (->4), SAVE_FLAG_WORLD_MAP_3 (->3); `"wmap%d.pac"`, `"wmap0%d"` |
 | 0x174 | s32 | here_area | -1 = mark all enabled areas; open type 13 sets `spi_wmappos_tbl[n].area_no + 1`, n = DAT_01EFC668 remapped 8->14, 9->15, 10->21, and copies it to area_no |
 | 0x178 | s32 | view_only | only set 0; non-zero makes any button close |
 | 0x17C | mgCTexture* | capture_tex | `"menuwork2"`; Draw `**(short**)` -> texture block for MenuReloadTexture |
@@ -84,14 +84,14 @@ map_no, loop_no, area_no, dng_no, floor, flag_no, type):
 0x0 char* name (GetMapTitle(map_no) -> ConvertFontCode -> mgCopyString), 0x4 s32 map_no (compared
 with scene `+0x2E60`), 0x8 s16 loop_no (2 = LOOP_DUNGEON), 0xA s16 area_no, 0xC s16 dng_no,
 0xE s8 floor (lb; >=0 jump directly, <0 open tree map), 0xF u8 enable (CheckBitFlagMenu(flag_no),
-cleared for type 4 when flag 0x2E0 set), 0x10 s16 flag_no, 0x12 s8 type (4 = Georama:
+cleared for type 4 when flag SAVE_FLAG_CHAPTER_8 set), 0x10 s16 flag_no, 0x12 s8 type (4 = Georama:
 geo_table_1183[area_no] -> SearchMapNo -> CScene::SetNowMapNo), 0x13 pad.
 
 WMAP_AREA_DATA: 0x0 s32 area_no (= tag index), 0x4 WMAP_POS_DATA*[8] (places whose area_no
 matches, rest zeroed; KeyStep only scans 6), 0x24 s16 unk_24 (script arg 1, sh, never read),
 0x28 x, 0x2C y (y scaled by 1.15 via fptosi), 0x30 name_x, 0x34 name_y (scaled 1.15),
-0x38 name_side (0/1 in Draw), 0x3C enable (any enabled place; forced 0 for area 8 with flag 0x268,
-areas 6/7 with flag 0x320), 0x40 char* name, 0x44 float dist (mgDistVector), 0x48 float dir_dot
+0x38 name_side (0/1 in Draw), 0x3C enable (any enabled place; forced 0 for area 8 with flag SAVE_FLAG_WORLD_MAP_4,
+areas 6/7 with flag SAVE_FLAG_CHAPTER_8_STARTED), 0x40 char* name, 0x44 float dist (mgDistVector), 0x48 float dir_dot
 (sceVu0InnerProduct with the pad direction; threshold walks down from 0.72 by 0.05).
 MapEnableNum (static s16) counts enabled areas.
 

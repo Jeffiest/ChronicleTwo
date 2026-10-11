@@ -20,7 +20,7 @@ No constructor: `__sinit_editloop_cpp` calls `Reset`. No virtual functions.
 | 0xF4-0xFF | unk | Untouched; padding before the vector. |
 | 0x100 | `return_pos` | Door step 0: character vfunc +0x18 (get pos) into it; step 4 interpolates back to it. |
 | 0x110 | `return_rot` | Door step 0: character vfunc +0x24 (get rot) into it. |
-| 0x120 | `reload_geo_npc` s32 | House door step 1: 1 when menu end_code 0xD and the part's info id is 0x49 (also fades out); step 2 then FadeIn(0x14) + `LoadGeoNPC(&param, 0)`. |
+| 0x120 | `reload_geo_npc` s32 | House door step 1: 1 when menu end_code MENU_END_RESIDENT_CHANGE and the part's info id is EDIT_GEO_NPC_PARTS_ID (also fades out); step 2 then FadeIn(0x14) + `LoadGeoNPC(&param, 0)`. |
 | 0x124 | unk | Untouched. |
 | 0x128 | `map_name` char[0x20] | Door step 0 `strcpy(map_name, data.event.unk_38)` (unless it is "exit"); for flag 0x10 a suffix from a local `char *suffix[4] = {"ia", "ib", "ic", "id"}` (indexed by `GetVillagerInfo(npc)->+8 & 3`) or the literal "ia" when no info and strlen<=3. editloop passes EditEvent+0x128 (0x01ECD9F8) to `SearchMapNo`. Reset clears byte 0. 0x20 is the gap to 0x148. |
 | 0x148 | `door_se` s32 | Reset/door step 0 set -1; door step 2 at count 0x14: `SePlayOpenDoor(data.event.unk_30, &matrix[3])` then stores unk_30. |
@@ -44,7 +44,7 @@ Offsets inside `data` as Step uses them (EditEvent offset = data offset + 0x20):
 Door step 3 result: "exit" -> 3 after fade; else when `PreLoadSync()==0` -> 2, or 4 with flag 0x10.
 
 ## Step enums (all from Step)
-- House door (type 0): 0 sets `MenuInfo->open_type=0xC, scene, param[0]=parts_no`, CancelRotBack, KeepEditAnalyze, returns 5; 1 restore projection, end_code 9 -> type=1 (door), count/step 0; else EditDataSave, step 2; 2 when count>0x13 or fade done -> 1 (and `RunEvent(0x136, 0)` if `EditAnalyzeChanged()`).
+- House door (type 0): 0 sets `MenuInfo->open_type=MENU_OPEN_REMOVAL, scene, param[0]=parts_no`, CancelRotBack, KeepEditAnalyze, returns 5; 1 restore projection, end_code MENU_END_ENTER_HOUSE -> type=1 (door), count/step 0; else EditDataSave, step 2; 2 when count>0x13 or fade done -> 1 (and `RunEvent(0x136, 0)` if `EditAnalyzeChanged()`).
 - Door (type 1): 0..5 as in header. Close-door (flag 0x80) path: 1 -> 2 plays motion, 2 waits motion/0x3C frames -> 4, 4 walks back -> 5, 5 waits -> result 1.
 - Treasure box (type 2): 0..7; box's top frame found with `SearchFrame("top")`, missing -> step 5. Box fields used: +0x70 frame, +0x64 zeroed, +0x668 item, +0x66C count (CMap tr box type, not declared here).
 - Book (type 3): 0 message, count 0x1E; 1 by ClsMes::State (0 -> 2, 3 close on button, 5 next page), count-- and <0 -> 3; 2 -> 3; 3 close window, result 1.
@@ -58,7 +58,7 @@ Character vtable offsets used (not this unit's class): +0x10 set pos, +0x18 get 
 - `GeoramaFunc` (global): `rsGetStackInt(args)` command: 1 LoadIntNPC(args+1, argc-1), 2 LoadGeoNPC(param, 0), 3 CheckPlaceBurnParts(args+1, argc-1), 999 printf warning returns 0, else 1.
 - `CheckPlaceBurnParts`, `LoadIntNPC`, `LoadGeoNPC`: LOCAL in retail (local_symbols.tsv) -> `static` in the .cpp, not in the header. Signatures: `static int X(GeoFuncParam *, RS_STACKDATA *, int)` and `static int LoadGeoNPC(GeoFuncParam *, int)`.
   - LoadIntNPC: villager `scene+0x2F5C`, buffer `scene+0x3C`, stack 4 (needs 0xC800 free, else "geo int chara memory over!!"), slot from args; positions via map's CFuncPointMngr at map+0xCB0 "npc_pos".
-  - LoadGeoNPC: main map 1 only; part with info id 0x49 (`GetePlacePartsAtInfoID(0x49, &no, 1)`), its live NPC into slot 8 with stack 2; position from the part's `npc_pos` point (CEditParts+0x2B0 CFuncPointMngr) through `GetLWMatrix`. Second arg non-zero skips the load (returns 1).
+  - LoadGeoNPC: main map EDIT_ANALYZE_MAP_STERA only; part with info id EDIT_GEO_NPC_PARTS_ID (`GetePlacePartsAtInfoID(EDIT_GEO_NPC_PARTS_ID, &no, 1)`), its live NPC into slot 8 with stack 2; position from the part's `npc_pos` point (CEditParts+0x2B0 CFuncPointMngr) through `GetLWMatrix`. Second arg non-zero skips the load (returns 1).
 - `GeoUpdateNpcPos` (global, void): same placement for the already loaded villager, wrapped in StayVillager/CancelStayVillager.
 - `Draw` returns int 0 (both paths return 0).
 

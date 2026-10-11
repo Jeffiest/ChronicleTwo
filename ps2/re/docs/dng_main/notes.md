@@ -135,8 +135,8 @@ normal translation-unit configuration.
   MONSTER_ACTIVE_MAX CActiveMonster entries, type 3). DngStep and DngMainDraw iterate the same ranges.
 - DNG_MAIN_ARRAY_SIZE: counts of the file-scope arrays, taken from their declarations and loop bounds.
 - DNG_SYSTEM_EVENT: the event numbers IsEventRun writes to `*event_no`, each gated by a save bit:
-  0x3B gates 2540 (magic sword guide), SAVE_FLAG_ROBO_BIKE_EVENT_SEEN gates 2530 (ridepod guide, with
-  move_type ACTION_MOVE_ROBO_BIKE), 0x32 gates 2500 (random stone), 0x34 gates 2520 (level-up guide,
+  SAVE_FLAG_GUIDE_MAGIC_SWORD gates 2540 (magic sword guide), SAVE_FLAG_ROBO_BIKE_EVENT_SEEN gates 2530 (ridepod guide, with
+  move_type ACTION_MOVE_ROBO_BIKE), SAVE_FLAG_GUIDE_RANDOM_STONE gates 2500 (random stone), SAVE_FLAG_GUIDE_LEVEL_UP gates 2520 (level-up guide,
   with LevelupInfo.phase != 0). 1500 is raised when no monster is left and battle_clear is 0.
 - DNG_FOOT_EFFECT: DngStep's `effect[35]` table maps CheckFootEffect ids to a kind. Kind 0 (dust) runs
   the effect script "足砂煙", kind 1 (grass) runs "足砂煙" then "足芝生", kind 2 (splash) runs "足水パシャ".
