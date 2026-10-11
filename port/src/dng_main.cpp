@@ -11,7 +11,7 @@
 // EventCamera among them), and that is the spelling the outside readers use: dng_object.hpp
 // declares BuffWorkData__2 for the buffer CPullItem::Step carves its collision polygons from,
 // dng_main.hpp declares EventCamera__2 for the camera sphida.cpp copies the follow camera
-// into. These strong definitions replace ps2/src/dng_main.cpp's weak ones, and the aliases
+// into. These definitions replace ps2/src/dng_main.cpp's, and the aliases
 // make both spellings one object, as they are in retail.
 // BuffWorkData, EventCamera and their __2 aliases live in port/src/kernel.cpp;
 // Vu_prog_wtr lives in port/src/title.cpp.

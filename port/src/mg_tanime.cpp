@@ -533,7 +533,7 @@ void PlayRecord(mgCTexAnimeData *data) {
 
 } // namespace
 
-void mgCTextureAnime::TexAnime(int texb, sceVif1Packet *packet) {
+PORT_OVERRIDE void mgCTextureAnime::TexAnime(int texb, sceVif1Packet *packet) {
     (void) packet;
 
     // A playing record may name a group to run alongside it.
@@ -615,7 +615,7 @@ void mgCTextureAnime::TexAnime(int texb, sceVif1Packet *packet) {
     }
 }
 
-void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
+PORT_OVERRIDE void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
     // Retail writes the block's VIF1 upload chain here. The host's images already live in the
     // renderer, so the reload is the block bookkeeping plus the block's animation step.
     (void) packet;
@@ -640,7 +640,7 @@ void mgCTextureManager::ReloadTexture(int index, sceVif1Packet *packet) {
     last_block = index;
 }
 
-CList<mgCTexAnimeData> *mgCTextureAnime::NewTexAnimeGroupData(int group, mgCMemory *stack) {
+PORT_OVERRIDE CList<mgCTexAnimeData> *mgCTextureAnime::NewTexAnimeGroupData(int group, mgCMemory *stack) {
     if (group < 0 || group >= group_num) {
         return NULL;
     }

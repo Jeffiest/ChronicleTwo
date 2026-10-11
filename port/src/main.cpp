@@ -30,9 +30,8 @@
 
 /**
  *
- * The port's entry point. It takes the place of ps2/src/main.cpp's main
- * through the weak-merge: the port's definition is strong and the game's
- * becomes weak, so the linker keeps this one.
+ * The port's entry point. It takes the place of ps2/src/main.cpp's main:
+ * the build strips that definition from its copy of the unit.
  *
  * It is retail main's work without the hardware: parse the command line, set
  * up the platform layer and the renderer, open the data tree, and run the
@@ -289,7 +288,7 @@ void DisableAudioForHeadless() {
 
 } // namespace
 
-int main(int argc, char **argv) {
+PORT_OVERRIDE int main(int argc, char **argv) {
     ConfigureHost();
     argc = PathsConsumeArgs(argc, argv);
     Options options = ParseOptions(argc, argv);

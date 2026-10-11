@@ -1,6 +1,6 @@
 #include "menudraw.hpp"
 
-void CRepairManager::Generate(int x, int y) {
+PORT_OVERRIDE void CRepairManager::Generate(int x, int y) {
     int            slot = -1;
     CRepairEffect *effect;
 

@@ -64,7 +64,7 @@ extern CFont  Font;
 /**
  * Resource arena the loop hands the game through GetMainStack.
  */
-u_long128 main_buffer[0x1A0000];
+PORT_OVERRIDE u_long128 main_buffer[0x1A0000];
 
 namespace {
 
@@ -274,40 +274,40 @@ bool FrameBoundaryStop() {
 
 } // namespace
 
-int GetCaptureMode() {
+PORT_OVERRIDE int GetCaptureMode() {
     return CaptureMode;
 }
 
-CSaveData *GetSaveData() {
+PORT_OVERRIDE CSaveData *GetSaveData() {
     return ActiveSaveData;
 }
 
-CSubGameData *GetSubGameSaveData() {
+PORT_OVERRIDE CSubGameData *GetSubGameSaveData() {
     return SubGameSaveData;
 }
 
-void InitSaveData() {
+PORT_OVERRIDE void InitSaveData() {
     GetSaveData()->Initialize();
 }
 
-void NextLoop(int loop_no, INIT_LOOP_ARG arg) {
+PORT_OVERRIDE void NextLoop(int loop_no, INIT_LOOP_ARG arg) {
     NextLoopNo = loop_no;
     NextInitArg = arg;
 }
 
-int GetNowLoopNo() {
+PORT_OVERRIDE int GetNowLoopNo() {
     return LoopNo;
 }
 
-INIT_LOOP_ARG *GetNowInitArg() {
+PORT_OVERRIDE INIT_LOOP_ARG *GetNowInitArg() {
     return &InitArg;
 }
 
-void PlayTimeCount(int enable) {
+PORT_OVERRIDE void PlayTimeCount(int enable) {
     PlayTimeCountFlag = enable;
 }
 
-int GetPlayTimeCountFlag() {
+PORT_OVERRIDE int GetPlayTimeCountFlag() {
     return PlayTimeCountFlag;
 }
 
@@ -335,7 +335,7 @@ void GameSetStartMode(int loop_no, INIT_LOOP_ARG arg, int debug_flag, bool skip_
     start_mode.set = true;
 }
 
-void MainLoop() {
+PORT_OVERRIDE void MainLoop() {
     /**
      *
      * Microprogram addresses loaded when the main game loop starts.

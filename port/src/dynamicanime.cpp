@@ -217,7 +217,7 @@ void PortMgSkinMotionTree(mgCFrame *frame) {
     }
 }
 
-int CDynamicAnime::DrawSub(int direct) {
+PORT_OVERRIDE int CDynamicAnime::DrawSub(int direct) {
     int sum = 0;
 
     for (int i = 0; i < draw_frame_num; i++) {

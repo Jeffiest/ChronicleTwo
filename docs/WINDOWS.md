@@ -155,8 +155,9 @@ Not verified:
 
 - That the game compiles or links on Windows. It does not, yet; `docs/PC_PORT_PLAN.md`
   and the port's own sources are where that work is tracked. In particular
-  `u_long` is 32 bits on Windows and `llvm-objcopy --weaken` and `ld.lld -r` do not
-  support COFF.
+  `u_long` is 32 bits on Windows. The link no longer merges and weakens ps2/src (COFF
+  supports neither `ld.lld -r` nor `--weaken`): `PORT_OVERRIDE` strips the replaced
+  definitions from copies of its units, which every object format links.
 - `acquire.ps1` on this checkout: it was not run, because it downloads.
 - `configure-tests.ps1` and `build.ps1 -Tests` (GoogleTest is fetched with git).
 - Everything that needs a running game: windowed or offscreen output, input, audio,

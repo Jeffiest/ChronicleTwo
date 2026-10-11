@@ -101,7 +101,7 @@ static float fstpMasterVol[2];
  * Bank and sequence state for each game sound port.
  *
  */
-sndPortInfo PortInfo[SND_PORT_NUM];
+PORT_OVERRIDE sndPortInfo PortInfo[SND_PORT_NUM];
 
 /**
  *
@@ -156,7 +156,7 @@ static int          PlaySeSeq(unsigned int snd_id, sndCSeSeqData *data, int vol)
 static void         SetVolSeSeq(int index, int vol);
 static int          GetPortBankNo(unsigned int snd_id, int *port, int *bank);
 
-int CLoopSeMngr::Create(int sequence_count, mgCMemory *memory) {
+PORT_OVERRIDE int CLoopSeMngr::Create(int sequence_count, mgCMemory *memory) {
     unsigned int byte_count;
     unsigned int quadwords;
 
@@ -182,18 +182,18 @@ int CLoopSeMngr::Create(int sequence_count, mgCMemory *memory) {
     return 1;
 }
 
-SND_LOOP_SE_SEQ::SND_LOOP_SE_SEQ() {
+PORT_OVERRIDE SND_LOOP_SE_SEQ::SND_LOOP_SE_SEQ() {
     se_id = -1;
     vol = -1.0f;
     pan = 0.0f;
 }
 
-void CLoopSeMngr::Initialize() {
+PORT_OVERRIDE void CLoopSeMngr::Initialize() {
     loop_se_num = 0;
     loop_se = NULL;
 }
 
-void CLoopSeMngr::Clear() {
+PORT_OVERRIDE void CLoopSeMngr::Clear() {
     if (loop_se != NULL) {
         for (int index = 0; index < loop_se_num; index++) {
             SND_LOOP_SE_SEQ *entry = &loop_se[index];
@@ -204,7 +204,7 @@ void CLoopSeMngr::Clear() {
     }
 }
 
-SND_LOOP_SE_SEQ *CLoopSeMngr::GetLoopSe(int *found, unsigned int se_id, int voice) {
+PORT_OVERRIDE SND_LOOP_SE_SEQ *CLoopSeMngr::GetLoopSe(int *found, unsigned int se_id, int voice) {
     SND_LOOP_SE_SEQ *free_entry;
     int              i;
 
@@ -234,11 +234,11 @@ SND_LOOP_SE_SEQ *CLoopSeMngr::GetLoopSe(int *found, unsigned int se_id, int voic
     return free_entry;
 }
 
-int CLoopSeMngr::SeLoopPlayStop(u32 handle, int sound, int flags, int loop) {
+PORT_OVERRIDE int CLoopSeMngr::SeLoopPlayStop(u32 handle, int sound, int flags, int loop) {
     return SeLoopPlayStop(handle, sound, flags, -1.0f, 0.0f, loop);
 }
 
-int CLoopSeMngr::SeLoopPlayStop(unsigned int snd_id, int se_no, int keep_time, float vol, float pan, int voice) {
+PORT_OVERRIDE int CLoopSeMngr::SeLoopPlayStop(unsigned int snd_id, int se_no, int keep_time, float vol, float pan, int voice) {
     SND_LOOP_SE_SEQ *entry;
     int              found;
 
@@ -268,7 +268,7 @@ int CLoopSeMngr::SeLoopPlayStop(unsigned int snd_id, int se_no, int keep_time, f
     return 1;
 }
 
-void CLoopSeMngr::Step() {
+PORT_OVERRIDE void CLoopSeMngr::Step() {
     SND_LOOP_SE_SEQ *entry;
     int              i;
     int              se_no;
@@ -304,7 +304,7 @@ void CLoopSeMngr::Step() {
     }
 }
 
-void CLoopSeMngr::AllSeStop() {
+PORT_OVERRIDE void CLoopSeMngr::AllSeStop() {
     SND_LOOP_SE_SEQ *entry;
     int              i;
     int              se_no;
@@ -324,7 +324,7 @@ void CLoopSeMngr::AllSeStop() {
     }
 }
 
-int sndGetReverbDepth(int core) {
+PORT_OVERRIDE int sndGetReverbDepth(int core) {
     if (core < 0 || core > 1) {
         return 0;
     }
@@ -332,11 +332,11 @@ int sndGetReverbDepth(int core) {
     return ReverbDepthe[core];
 }
 
-u32 sndCreateID(u32 snd_id, s32 se_no) {
+PORT_OVERRIDE u32 sndCreateID(u32 snd_id, s32 se_no) {
     return (snd_id & 0xFFFF0000) | (se_no & 0xFFFF);
 }
 
-int sndGetSeNo(u32 se_id) {
+PORT_OVERRIDE int sndGetSeNo(u32 se_id) {
     return se_id & 0xFFFF;
 }
 
@@ -448,7 +448,7 @@ static sndSeInfo *GetSeInfo(unsigned int snd_id, int se_no) {
     return &bank->se[se_no];
 }
 
-void sndInitMngr() {
+PORT_OVERRIDE void sndInitMngr() {
     int port;
 
     if (init_snd != 0) {
@@ -467,16 +467,16 @@ void sndInitMngr() {
     }
 }
 
-void sndWaitSema() {
+PORT_OVERRIDE void sndWaitSema() {
     // The IOP callbacks the semaphore guarded do not exist on the host, and the mixer
     // serializes its own state.
 }
 
-void sndSignalSema() {
+PORT_OVERRIDE void sndSignalSema() {
     // See sndWaitSema.
 }
 
-void sndInitPort(int port_no) {
+PORT_OVERRIDE void sndInitPort(int port_no) {
     sndPortInfo *info;
 
     sndSeAllStop(port_no);
@@ -514,7 +514,7 @@ void sndInitPort(int port_no) {
     sndStopSeSeq(port_no);
 }
 
-void sndInitSeSeq(int port_no) {
+PORT_OVERRIDE void sndInitSeSeq(int port_no) {
     sndPortInfo *port_info;
     int          index;
 
@@ -527,7 +527,7 @@ void sndInitSeSeq(int port_no) {
     }
 }
 
-void sndSetReverb(int core, int type, int depth) {
+PORT_OVERRIDE void sndSetReverb(int core, int type, int depth) {
     if (core < 0 || core > 1) {
         return;
     }
@@ -539,7 +539,7 @@ void sndSetReverb(int core, int type, int depth) {
     sndSignalSema();
 }
 
-void sndStopVoice(int voice) {
+PORT_OVERRIDE void sndStopVoice(int voice) {
     if (voice < 0 || voice > 1) {
         return;
     }
@@ -599,7 +599,7 @@ static void FadeMasterVol() {
     }
 }
 
-void sndSetMasterVol(int core, float vol) {
+PORT_OVERRIDE void sndSetMasterVol(int core, float vol) {
     if (core < 0 || core > 1) {
         return;
     }
@@ -617,7 +617,7 @@ void sndSetMasterVol(int core, float vol) {
     MasterVolFade[core] = 0;
 }
 
-float sndGetMasterVol(int core) {
+PORT_OVERRIDE float sndGetMasterVol(int core) {
     if (core < 0 || core > 1) {
         return 0.0f;
     }
@@ -625,7 +625,7 @@ float sndGetMasterVol(int core) {
     return MasterVol[core];
 }
 
-void sndMasterVolFadeInOut(int core, int frames, float target, float start) {
+PORT_OVERRIDE void sndMasterVolFadeInOut(int core, int frames, float target, float start) {
     float change;
 
     if (frames <= 1 || core < 0 || core > 1) {
@@ -665,7 +665,7 @@ void sndMasterVolFadeInOut(int core, int frames, float target, float start) {
     }
 }
 
-void sndSetPortVol(int port_no, float vol) {
+PORT_OVERRIDE void sndSetPortVol(int port_no, float vol) {
     sndPortInfo *info;
     int          driver_vol;
 
@@ -695,7 +695,7 @@ void sndSetPortVol(int port_no, float vol) {
     sndSignalSema();
 }
 
-float sndGetPortVol(int port) {
+PORT_OVERRIDE float sndGetPortVol(int port) {
     if (port < 0 || port >= SND_PORT_NUM) {
         return 0.0f;
     }
@@ -703,11 +703,11 @@ float sndGetPortVol(int port) {
     return PortVolf[port];
 }
 
-int sndTransBdState() {
+PORT_OVERRIDE int sndTransBdState() {
     return CSnd.TransBdState(1);
 }
 
-void sndWaitTransBd() {
+PORT_OVERRIDE void sndWaitTransBd() {
     int previous_frame = -1;
 
     while (1) {
@@ -755,7 +755,7 @@ static void CSndStepWait() {
     CSnd.Step();
 }
 
-void sndStep(float frames) {
+PORT_OVERRIDE void sndStep(float frames) {
     int           port_no;
     sndPortInfo  *info;
     sndCSeSeq    *player;
@@ -784,7 +784,7 @@ void sndStep(float frames) {
     sndFlush();
 }
 
-void sndFlush() {
+PORT_OVERRIDE void sndFlush() {
     sndWaitSema();
     CSndStep();
     sndSignalSema();
@@ -813,7 +813,7 @@ static void SeAllStop_Sub(int port_no) {
     }
 }
 
-void sndSeAllStop(int port_no) {
+PORT_OVERRIDE void sndSeAllStop(int port_no) {
     int port;
 
     if (port_no < 0) {
@@ -841,7 +841,7 @@ void sndSeAllStop(int port_no) {
     sndSignalSema();
 }
 
-int sndGetSeDefVol(u32 se_id, int index) {
+PORT_OVERRIDE int sndGetSeDefVol(u32 se_id, int index) {
     sndSeInfo *info;
 
     info = GetSeInfo(se_id, index);
@@ -939,7 +939,7 @@ static int GetCSndPortNo(int port_no, int *port, int *sq_port, int *vol) {
     return 1;
 }
 
-unsigned int sndLoadSound(int port_no, unsigned int *pack, mgCMemory *memory) {
+PORT_OVERRIDE unsigned int sndLoadSound(int port_no, unsigned int *pack, mgCMemory *memory) {
     sndPortInfo  *info;
     sndBankInfo  *bank;
     unsigned int *sq[32];
@@ -1083,11 +1083,11 @@ unsigned int sndLoadSound(int port_no, unsigned int *pack, mgCMemory *memory) {
     return sound_id;
 }
 
-sndCSeSeqData::sndCSeSeqData() {
+PORT_OVERRIDE sndCSeSeqData::sndCSeSeqData() {
     Initialize();
 }
 
-void sndDeletePort(int port_no) {
+PORT_OVERRIDE void sndDeletePort(int port_no) {
     int volume;
     int driver_port;
     int sequence_port;
@@ -1141,19 +1141,19 @@ static int GetPortBankNo(unsigned int snd_id, int *port, int *bank) {
     return 1;
 }
 
-void sndSePlay(u32 snd_id, s32 se_no, s32 voice) {
+PORT_OVERRIDE void sndSePlay(u32 snd_id, s32 se_no, s32 voice) {
     sndSePlaySeID(snd_id, se_no, -1, -1, 0x40, 0x2000, voice);
 }
 
-void sndSePlayV(u32 snd_id, s32 se_no, s32 vol, s32 voice) {
+PORT_OVERRIDE void sndSePlayV(u32 snd_id, s32 se_no, s32 vol, s32 voice) {
     sndSePlaySeID(snd_id, se_no, -1, vol, 0x40, 0x2000, voice);
 }
 
-void sndSePlayVP(u32 snd_id, s32 se_no, s32 vol, s32 pan, s32 voice) {
+PORT_OVERRIDE void sndSePlayVP(u32 snd_id, s32 se_no, s32 vol, s32 pan, s32 voice) {
     sndSePlaySeID(snd_id, se_no, -1, vol, pan, 0x2000, voice);
 }
 
-void sndSePlayVPf(unsigned int snd_id, int se_no, float vol, float pan, int voice) {
+PORT_OVERRIDE void sndSePlayVPf(unsigned int snd_id, int se_no, float vol, float pan, int voice) {
     int volume;
     int driver_pan;
 
@@ -1176,7 +1176,7 @@ void sndSePlayVPf(unsigned int snd_id, int se_no, float vol, float pan, int voic
     sndSePlaySeID(snd_id, se_no, -1, volume, driver_pan, SND_SE_PITCH_CENTER, voice);
 }
 
-void sndSePlayVf(unsigned int snd_id, int se_no, float vol, int voice) {
+PORT_OVERRIDE void sndSePlayVf(unsigned int snd_id, int se_no, float vol, int voice) {
     int volume;
 
     volume = (int) (vol * sndGetSeDefVol(snd_id, se_no));
@@ -1188,7 +1188,7 @@ void sndSePlayVf(unsigned int snd_id, int se_no, float vol, int voice) {
     sndSePlayV(snd_id, se_no, volume, voice);
 }
 
-void sndSePause(unsigned int snd_id, int se_no) {
+PORT_OVERRIDE void sndSePause(unsigned int snd_id, int se_no) {
     sndPortInfo *info;
     sndBankInfo *bank;
     sndSeInfo   *se;
@@ -1221,7 +1221,7 @@ void sndSePause(unsigned int snd_id, int se_no) {
     }
 }
 
-int sndGetSeStatus(unsigned int snd_id, int se_no) {
+PORT_OVERRIDE int sndGetSeStatus(unsigned int snd_id, int se_no) {
     sndPortInfo *info;
     sndBankInfo *bank;
     sndSeInfo   *se;
@@ -1259,7 +1259,7 @@ int sndGetSeStatus(unsigned int snd_id, int se_no) {
     return info->sq_state;
 }
 
-void sndPortSqPause(int port) {
+PORT_OVERRIDE void sndPortSqPause(int port) {
     sndPortInfo *info;
 
     info = GetPortInfo(port);
@@ -1270,7 +1270,7 @@ void sndPortSqPause(int port) {
     }
 }
 
-void sndPortSqReplay(int port) {
+PORT_OVERRIDE void sndPortSqReplay(int port) {
     sndPortInfo *info;
 
     info = GetPortInfo(port);
@@ -1282,7 +1282,7 @@ void sndPortSqReplay(int port) {
     }
 }
 
-int sndSeCheck(unsigned int snd_id, int se_no) {
+PORT_OVERRIDE int sndSeCheck(unsigned int snd_id, int se_no) {
     sndPortInfo *info;
     sndBankInfo *bank;
     sndSeInfo   *se;
@@ -1316,7 +1316,7 @@ int sndSeCheck(unsigned int snd_id, int se_no) {
     return 1;
 }
 
-void sndSePlaySeID(unsigned int snd_id, int se_no, int velocity, int vol, int pan, int pitch, int voice) {
+PORT_OVERRIDE void sndSePlaySeID(unsigned int snd_id, int se_no, int velocity, int vol, int pan, int pitch, int voice) {
     int            port_no;
     int            bank_no;
     sndPortInfo   *info;
@@ -1392,7 +1392,7 @@ void sndSePlaySeID(unsigned int snd_id, int se_no, int velocity, int vol, int pa
     }
 }
 
-void sndSeStop(unsigned int snd_id, int se_no, int voice) {
+PORT_OVERRIDE void sndSeStop(unsigned int snd_id, int se_no, int voice) {
     int           port_no;
     int           bank_no;
     sndPortInfo  *info;
@@ -1446,7 +1446,7 @@ void sndSeStop(unsigned int snd_id, int se_no, int voice) {
     }
 }
 
-void sndSetSeVol(unsigned int snd_id, int se_no, int vol, int voice) {
+PORT_OVERRIDE void sndSetSeVol(unsigned int snd_id, int se_no, int vol, int voice) {
     int           port_no;
     int           bank_no;
     sndPortInfo  *info;
@@ -1504,7 +1504,7 @@ void sndSetSeVol(unsigned int snd_id, int se_no, int vol, int voice) {
     }
 }
 
-void sndSetSePan(unsigned int snd_id, int se_no, int pan, int voice) {
+PORT_OVERRIDE void sndSetSePan(unsigned int snd_id, int se_no, int pan, int voice) {
     sndPortInfo *info;
     sndBankInfo *bank;
     sndSeInfo   *se;
@@ -1544,7 +1544,7 @@ void sndSetSePan(unsigned int snd_id, int se_no, int pan, int voice) {
     }
 }
 
-void sndSetSeVolf(unsigned int snd_id, int se_no, float vol, int voice) {
+PORT_OVERRIDE void sndSetSeVolf(unsigned int snd_id, int se_no, float vol, int voice) {
     int volume;
 
     volume = (int) (vol * sndGetSeDefVol(snd_id, se_no));
@@ -1556,7 +1556,7 @@ void sndSetSeVolf(unsigned int snd_id, int se_no, float vol, int voice) {
     sndSetSeVol(snd_id, se_no, volume, voice);
 }
 
-void sndSetSePanf(unsigned int snd_id, int se_no, float pan, int voice) {
+PORT_OVERRIDE void sndSetSePanf(unsigned int snd_id, int se_no, float pan, int voice) {
     int driver_pan;
 
     driver_pan = (int) (64.0f * pan) + 64;
@@ -1572,7 +1572,7 @@ void sndSetSePanf(unsigned int snd_id, int se_no, float pan, int voice) {
     sndSetSePan(snd_id, se_no, driver_pan, voice);
 }
 
-void sndSetSePitch(unsigned int snd_id, int se_no, int pitch, int voice) {
+PORT_OVERRIDE void sndSetSePitch(unsigned int snd_id, int se_no, int pitch, int voice) {
     sndPortInfo *info;
     sndBankInfo *bank;
     sndSeInfo   *se;
@@ -1612,12 +1612,12 @@ void sndSetSePitch(unsigned int snd_id, int se_no, int pitch, int voice) {
     }
 }
 
-void sndSetMicPos(float *position, float *direction) {
+PORT_OVERRIDE void sndSetMicPos(float *position, float *direction) {
     *(u_long128 *) MicPos = *(u_long128 *) position;
     *(u_long128 *) MicDir = *(u_long128 *) direction;
 }
 
-void sndGetVolPan(float *vol, float *pan, float *pos, float near_dist, float far_dist) {
+PORT_OVERRIDE void sndGetVolPan(float *vol, float *pan, float *pos, float near_dist, float far_dist) {
     sceVu0FVECTOR direction;
     sceVu0FVECTOR side;
     float         distance;
@@ -1673,14 +1673,14 @@ void sndGetVolPan(float *vol, float *pan, float *pos, float near_dist, float far
     *vol *= 1.0f + boost;
 }
 
-void sndGetVolPan(float *vol, float *pan, float *start, float *end, float near_dist, float far_dist) {
+PORT_OVERRIDE void sndGetVolPan(float *vol, float *pan, float *start, float *end, float near_dist, float far_dist) {
     sceVu0FVECTOR nearest;
 
     mgDistLinePoint(MicPos, start, end, nearest);
     sndGetVolPan(vol, pan, nearest, near_dist, far_dist);
 }
 
-int sndVolLimit(int vol) {
+PORT_OVERRIDE int sndVolLimit(int vol) {
     if (vol < 0) {
         return 0;
     }
@@ -1688,7 +1688,7 @@ int sndVolLimit(int vol) {
     return vol > 127 ? 127 : vol;
 }
 
-void sndSePlayPrKr(unsigned int snd_id, int prog, int key, int velocity, int vol, int pan, int pitch, int voice) {
+PORT_OVERRIDE void sndSePlayPrKr(unsigned int snd_id, int prog, int key, int velocity, int vol, int pan, int pitch, int voice) {
     int port;
     int bank;
 
@@ -1697,7 +1697,7 @@ void sndSePlayPrKr(unsigned int snd_id, int prog, int key, int velocity, int vol
     }
 }
 
-void sndSeStopPrKr(unsigned int snd_id, int prog, int key, int voice) {
+PORT_OVERRIDE void sndSeStopPrKr(unsigned int snd_id, int prog, int key, int voice) {
     int port;
     int bank;
 
@@ -1706,7 +1706,7 @@ void sndSeStopPrKr(unsigned int snd_id, int prog, int key, int voice) {
     }
 }
 
-void sndSetSeVolPrKr(unsigned int snd_id, int prog, int key, int vol, int voice) {
+PORT_OVERRIDE void sndSetSeVolPrKr(unsigned int snd_id, int prog, int key, int vol, int voice) {
     int port;
     int bank;
 
@@ -1715,7 +1715,7 @@ void sndSetSeVolPrKr(unsigned int snd_id, int prog, int key, int vol, int voice)
     }
 }
 
-void sndSetSePanPrKr(unsigned int snd_id, int prog, int key, int pan, int voice) {
+PORT_OVERRIDE void sndSetSePanPrKr(unsigned int snd_id, int prog, int key, int pan, int voice) {
     int port;
     int bank;
 
@@ -1724,7 +1724,7 @@ void sndSetSePanPrKr(unsigned int snd_id, int prog, int key, int pan, int voice)
     }
 }
 
-void sndSetSePitchPrKr(unsigned int snd_id, int prog, int key, int pitch, int voice) {
+PORT_OVERRIDE void sndSetSePitchPrKr(unsigned int snd_id, int prog, int key, int pitch, int voice) {
     int port;
     int bank;
 
@@ -1733,7 +1733,7 @@ void sndSetSePitchPrKr(unsigned int snd_id, int prog, int key, int pitch, int vo
     }
 }
 
-void sndSePlayPBPrKr(int port, int bank, int prog, int key, int velocity, int vol, int pan, int pitch, int voice) {
+PORT_OVERRIDE void sndSePlayPBPrKr(int port, int bank, int prog, int key, int velocity, int vol, int pan, int pitch, int voice) {
     if (vol < 0) {
         vol = 127;
     }
@@ -1747,13 +1747,13 @@ void sndSePlayPBPrKr(int port, int bank, int prog, int key, int velocity, int vo
     sndSignalSema();
 }
 
-void sndSeStopPBPrKr(int a, int b, int c, int d, int e) {
+PORT_OVERRIDE void sndSeStopPBPrKr(int a, int b, int c, int d, int e) {
     sndWaitSema();
     CSnd.SE_Stop(a, b, c, d, e);
     sndSignalSema();
 }
 
-void sndSetSeVolPBPrKr(int port, int bank, int prog, int key, int vol, int voice) {
+PORT_OVERRIDE void sndSetSeVolPBPrKr(int port, int bank, int prog, int key, int vol, int voice) {
     if (vol < 0) {
         vol = 127;
     }
@@ -1763,25 +1763,25 @@ void sndSetSeVolPBPrKr(int port, int bank, int prog, int key, int vol, int voice
     sndSignalSema();
 }
 
-void sndSetSePanPBPrKr(int a, int b, int c, int d, int e, int f) {
+PORT_OVERRIDE void sndSetSePanPBPrKr(int a, int b, int c, int d, int e, int f) {
     sndWaitSema();
     CSnd.SE_SetPan(a, b, c, d, e, f);
     sndSignalSema();
 }
 
-void sndSetSePitchPBPrKr(int a, int b, int c, int d, int e, int f) {
+PORT_OVERRIDE void sndSetSePitchPBPrKr(int a, int b, int c, int d, int e, int f) {
     sndWaitSema();
     CSnd.SE_SetPitch(a, b, c, d, e, f);
     sndSignalSema();
 }
 
-void sndSqPlay(int a, int b, int c) {
+PORT_OVERRIDE void sndSqPlay(int a, int b, int c) {
     sndWaitSema();
     CSnd.SQ_Play(a, b, c);
     sndSignalSema();
 }
 
-void sndSqStop(int port, int sq_no) {
+PORT_OVERRIDE void sndSqStop(int port, int sq_no) {
     sndWaitSema();
     CSnd.SetVol(port, 0);
 
@@ -1799,13 +1799,13 @@ void sndSqStop(int port, int sq_no) {
     sndSignalSema();
 }
 
-void sndSetSqVol(int port, int sq_no, int vol) {
+PORT_OVERRIDE void sndSetSqVol(int port, int sq_no, int vol) {
     sndWaitSema();
     CSnd.SetVol(port, vol);
     sndSignalSema();
 }
 
-void sndSqRePlay(int port, int sq_no) {
+PORT_OVERRIDE void sndSqRePlay(int port, int sq_no) {
     sndWaitSema();
     CSnd.SQ_RePlay(port);
     sndSignalSema();
@@ -1876,7 +1876,7 @@ static char *GetLine(char **col, char *text, char *end) {
     return text;
 }
 
-int sndBankInfo::SearchSeq(char *name, int *index) {
+PORT_OVERRIDE int sndBankInfo::SearchSeq(char *name, int *index) {
     int i;
 
     if (name == NULL || *name == '\0') {
@@ -1912,7 +1912,7 @@ int sndBankInfo::SearchSeq(char *name, int *index) {
     return SND_SE_TYPE_KEYON;
 }
 
-void sndPortInfo::LoadSeInfoTxt(int bank_no, char *text, int size, mgCMemory *memory) {
+PORT_OVERRIDE void sndPortInfo::LoadSeInfoTxt(int bank_no, char *text, int size, mgCMemory *memory) {
     sndBankInfo *bank_info;
     sndSeInfo   *entry;
     char        *end;
@@ -2058,12 +2058,12 @@ void sndPortInfo::LoadSeInfoTxt(int bank_no, char *text, int size, mgCMemory *me
     }
 }
 
-sndSeInfo::sndSeInfo() {
+PORT_OVERRIDE sndSeInfo::sndSeInfo() {
     this->unk_0 = 0;
     this->type = 0;
 }
 
-void sndPortInfo::LoadVolInfoTxt(int bank_no, char *text, int size) {
+PORT_OVERRIDE void sndPortInfo::LoadVolInfoTxt(int bank_no, char *text, int size) {
     sndBankInfo *bank_info;
     sndSeInfo   *entry;
     char        *end;
@@ -2121,7 +2121,7 @@ void sndPortInfo::LoadVolInfoTxt(int bank_no, char *text, int size) {
     }
 }
 
-void sndStopSeSeq(int port_no) {
+PORT_OVERRIDE void sndStopSeSeq(int port_no) {
     sndPortInfo *info;
     sndCSeSeq   *player;
     int          port;
@@ -2220,13 +2220,13 @@ static void SetVolSeSeq(int index, int vol) {
     }
 }
 
-void sndStreamOpenFast(char *name) {
+PORT_OVERRIDE void sndStreamOpenFast(char *name) {
     sndWaitSema();
     CSnd.StreamOpenFast(1, name);
     sndSignalSema();
 }
 
-int sndStreamOpenState() {
+PORT_OVERRIDE int sndStreamOpenState() {
     int state;
 
     sndWaitSema();
@@ -2235,13 +2235,13 @@ int sndStreamOpenState() {
     return state;
 }
 
-void sndStreamStandBy() {
+PORT_OVERRIDE void sndStreamStandBy() {
     sndWaitSema();
     CSnd.StreamStandBy(1);
     sndSignalSema();
 }
 
-void sndStreamSetVol(float left, float right) {
+PORT_OVERRIDE void sndStreamSetVol(float left, float right) {
     int left_vol;
     int right_vol;
 
@@ -2268,25 +2268,25 @@ void sndStreamSetVol(float left, float right) {
     sndSignalSema();
 }
 
-void sndStreamPlay() {
+PORT_OVERRIDE void sndStreamPlay() {
     sndWaitSema();
     CSnd.StreamPlay(1);
     sndSignalSema();
 }
 
-void sndStreamPause() {
+PORT_OVERRIDE void sndStreamPause() {
     sndWaitSema();
     CSnd.StreamPause(1);
     sndSignalSema();
 }
 
-void sndStreamRePlay() {
+PORT_OVERRIDE void sndStreamRePlay() {
     sndWaitSema();
     CSnd.StreamRePlay(1);
     sndSignalSema();
 }
 
-int sndStreamGetState() {
+PORT_OVERRIDE int sndStreamGetState() {
     int state;
 
     sndWaitSema();
@@ -2295,7 +2295,7 @@ int sndStreamGetState() {
     return state;
 }
 
-void sndStreamClose() {
+PORT_OVERRIDE void sndStreamClose() {
     sndWaitSema();
     CSnd.StreamClose(1);
     sndSignalSema();

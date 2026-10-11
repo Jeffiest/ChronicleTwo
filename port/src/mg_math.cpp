@@ -321,7 +321,7 @@ void mgInversMatrix(float (*inverse)[4], float (*matrix)[4]) {
 }
 
 // The unit composes x, then y, then z: (rotation_z * rotation_y) * rotation_x.
-void mgRotMatrixXYZ(float (*matrix)[4], float *rotation) {
+PORT_OVERRIDE void mgRotMatrixXYZ(float (*matrix)[4], float *rotation) {
     sceVu0FMATRIX rotate_x;
     sceVu0FMATRIX rotate_y;
 

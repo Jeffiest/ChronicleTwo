@@ -7,7 +7,7 @@
 // on that int: new (memory->Alloc()) CEffectScriptMan or not, on the host the high half of the
 // pointer is lost and the file read lands low. The two buffers stay pointers here; everything
 // else is the retail routine.
-int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) {
+PORT_OVERRIDE int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) {
     char path[0x80];
     char pack[0x80];
     int  path_size;

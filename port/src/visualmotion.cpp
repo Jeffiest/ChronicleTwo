@@ -9,7 +9,7 @@
 // Retail keeps the packet buffer's address in an int and hands the truncated value straight back
 // in as the packet pointer; on the host that address lands low. The address stays a pointer here;
 // only the DMA tag word, which the GS reads as a 32-bit address, keeps its low half.
-int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data, mgCMemory *memory,
+PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data, mgCMemory *memory,
                                             mgCMemory *work, mgCTextureManager *textures) {
     mgCFace   *packet;
     int        count;

@@ -34,15 +34,15 @@ void MakeMemoryCardFileName(int slot, char *path);
 /** Whether dungeon-tree state is included in the next save. */
 static short DngTreeSaveFlag;
 
-void SetDngTreeFlag(int flag) {
+PORT_OVERRIDE void SetDngTreeFlag(int flag) {
     DngTreeSaveFlag = flag;
 }
 
-void CMemoryCardManager::FinishForMC() {
+PORT_OVERRIDE void CMemoryCardManager::FinishForMC() {
     // The host card layer holds no library state, so there is nothing to release.
 }
 
-int CMemoryCardManager::SaveToMc(int file_no) {
+PORT_OVERRIDE int CMemoryCardManager::SaveToMc(int file_no) {
     char          path[0x80];
     int           result;
     int           command;
@@ -222,7 +222,7 @@ int CMemoryCardManager::SaveToMc(int file_no) {
     return MC_STEP_BUSY;
 }
 
-int CMemoryCardManager::SaveOamkeFile() {
+PORT_OVERRIDE int CMemoryCardManager::SaveOamkeFile() {
     char          path[0x80];
     int           result;
     int           command;
@@ -415,7 +415,7 @@ int CMemoryCardManager::SaveOamkeFile() {
     return MC_STEP_BUSY;
 }
 
-int CMemoryCardManager::GetAllSaveFileInfo() {
+PORT_OVERRIDE int CMemoryCardManager::GetAllSaveFileInfo() {
     int result;
     int command;
     int sub_step;
@@ -491,7 +491,7 @@ int CMemoryCardManager::GetAllSaveFileInfo() {
     return MC_STEP_BUSY;
 }
 
-int CMemoryCardManager::CheckOmakeFile() {
+PORT_OVERRIDE int CMemoryCardManager::CheckOmakeFile() {
     int            command;
     int            result;
     int           *album_found = &file_exists;

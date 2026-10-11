@@ -144,7 +144,7 @@ Mot_List *MotionProc2(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *fram
     return list->next;
 }
 
-Mot_List *MotionProc3(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *frame_info, Mot_List *list) {
+PORT_OVERRIDE Mot_List *MotionProc3(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *frame_info, Mot_List *list) {
     static sceVu0FVECTOR *vert;
     static sceVu0FVECTOR *nml;
     static sceVu0FMATRIX  tmp_SkinMatrix;

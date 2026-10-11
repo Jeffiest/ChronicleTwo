@@ -1,12 +1,11 @@
 # The x64 port: the game's code built with clang as C++26 for the host.
 #
-# ps2/src holds the game as the PS2 build compiles it. Its units are compiled
-# as they are and merged into one relocatable object whose definitions are all
-# made weak. Units in port/src are compiled normally, so any function or
-# variable defined there takes precedence at link time and the ps2/src
-# definition is discarded. That is how the PS2-only parts are replaced: the
-# SDK, the Metrowerks runtime, the functions that touch the hardware directly
-# and those written in assembly.
+# ps2/src holds the game as the PS2 build compiles it. A definition port/src
+# tags PORT_OVERRIDE replaces the one ps2/src gives the same name: the port
+# compiles a copy of each unit without those definitions
+# (tools/kazarov/scripts/port_override.py) and links it with port/src. That is
+# how the PS2-only parts are replaced: the SDK, the Metrowerks runtime, the
+# functions that touch the hardware directly and those written in assembly.
 #
 # The host layer (gfx, audio, platform and the shared sce sources) is Kazarov's
 # (tools/kazarov/port); port/src holds this game's side of it.
@@ -24,22 +23,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# The LLVM tools are looked up beside the compiler first; the distro's
-# versioned names are the fallback.
-get_filename_component(compiler_dir ${CMAKE_CXX_COMPILER} DIRECTORY)
-file(REAL_PATH ${CMAKE_CXX_COMPILER} compiler_path)
-get_filename_component(compiler_real_dir ${compiler_path} DIRECTORY)
-set(LLVM_TOOL_HINTS ${compiler_dir} ${compiler_real_dir} /usr/lib/llvm-19/bin)
-find_program(OBJCOPY NAMES llvm-objcopy llvm-objcopy-19 HINTS ${LLVM_TOOL_HINTS} REQUIRED)
-find_program(LLVM_NM NAMES llvm-nm llvm-nm-19 HINTS ${LLVM_TOOL_HINTS} REQUIRED)
-find_program(LLVM_OBJDUMP NAMES llvm-objdump llvm-objdump-19 HINTS ${LLVM_TOOL_HINTS} REQUIRED)
-find_program(LLVM_READOBJ NAMES llvm-readobj llvm-readobj-19 HINTS ${LLVM_TOOL_HINTS} REQUIRED)
-find_program(LLVM_LIPO NAMES llvm-lipo llvm-lipo-19 HINTS ${LLVM_TOOL_HINTS})
-find_program(LD_RELOCATABLE NAMES ld.lld ld.lld-19 HINTS ${LLVM_TOOL_HINTS} REQUIRED)
-option(DC_INTERPOSITION_CHECK "Check that ps2/src's calls to replaced functions go through the linker" ON)
-if(DC_INTERPOSITION_CHECK)
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
-endif()
+# Python runs ${KZ_ROOT}/scripts/port_override.py.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 # SDL3 owns the window and input; Vulkan renders.
 find_package(SDL3 REQUIRED CONFIG)
 find_package(Vulkan REQUIRED)
@@ -91,28 +76,73 @@ if(NOT menucls1_current STREQUAL menucls1_patched)
 endif()
 
 set(PS2_UNITS "")
+# What both halves are compiled with (dc_options below). PORT leaves out the
+# functions ps2/src writes in MIPS assembly.
+set(PORT_DEFINITIONS PORT PAL)
+list(TRANSFORM PORT_DEFINITIONS PREPEND --define= OUTPUT_VARIABLE port_override_defines)
+# The names port/src's PORT_OVERRIDE definitions link under. The list is rewritten
+# only when it changes, so other edits to port/src rebuild nothing of ps2/src.
+# PORT_OVERRIDE_SOURCES changes when a unit or a stub header comes or goes, which no
+# timestamp shows.
+set(PORT_OVERRIDE_SCRIPT ${KZ_ROOT}/scripts/port_override.py)
+set(PORT_OVERRIDES ${CMAKE_BINARY_DIR}/port_overrides.txt)
+set(PORT_OVERRIDE_SOURCES ${CMAKE_BINARY_DIR}/port_override_sources.txt)
+file(GLOB_RECURSE PORT_OVERRIDE_STUBS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/port/include/stubs/*.hpp)
+string(JOIN "\n" port_override_sources ${PORT_SOURCES} ${PS2_SOURCES} ${PORT_OVERRIDE_STUBS})
+file(CONFIGURE OUTPUT ${PORT_OVERRIDE_SOURCES} CONTENT "${port_override_sources}\n" @ONLY)
+add_custom_command(OUTPUT ${PORT_OVERRIDES}
+    COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} list ${PORT_DIR} -o ${PORT_OVERRIDES}
+    DEPENDS ${PORT_SOURCES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT}
+    COMMENT "Listing port/src's PORT_OVERRIDE definitions"
+    VERBATIM)
+# What is compiled of a unit is its copy without the definitions of those names.
 # port/include/stubs/<unit>.hpp, if it exists, is included ahead of that unit
 # of ps2/src: it declares what the port defines in place of code PORT leaves
 # out, and supplies or renames what the unit takes from MWCC alone.
+set(PS2_ORIGINALS "")
 foreach(unit IN LISTS PS2_SOURCES)
+    set(copy ${CMAKE_BINARY_DIR}/ps2_src/${unit})
     if(unit STREQUAL "menucls1.cpp")
-        list(APPEND PS2_UNITS ${MENUCLS1_COPY})
-        continue()
+        set(original ${MENUCLS1_COPY})
+    else()
+        set(original ${PS2_DIR}/${unit})
     endif()
-    list(APPEND PS2_UNITS ${PS2_DIR}/${unit})
     string(REGEX REPLACE "\\.cpp$" ".hpp" header ${CMAKE_SOURCE_DIR}/port/include/stubs/${unit})
     if(EXISTS ${header})
-        set_property(SOURCE ${PS2_DIR}/${unit} APPEND PROPERTY COMPILE_OPTIONS -include ${header})
-        set_property(SOURCE ${PS2_DIR}/${unit} APPEND PROPERTY OBJECT_DEPENDS ${header})
+        set(stubs --stubs ${header})
+    else()
+        set(stubs "")
+        set(header "")
+    endif()
+    add_custom_command(OUTPUT ${copy}
+        COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
+            ${port_override_defines} ${original} ${copy}
+        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${header}
+        COMMENT "Removing overridden definitions from ps2/src/${unit}"
+        VERBATIM)
+    list(APPEND PS2_UNITS ${copy})
+    list(APPEND PS2_ORIGINALS ${PS2_DIR}/${unit} ${header})
+    if(header)
+        set_property(SOURCE ${copy} APPEND PROPERTY COMPILE_OPTIONS -include ${header})
+        set_property(SOURCE ${copy} APPEND PROPERTY OBJECT_DEPENDS ${header})
     endif()
 endforeach()
+# A tag that names no definition in ps2/src stops the build: its replacement
+# would be unused wherever the two signatures differ.
+set(PORT_OVERRIDES_CHECKED ${CMAKE_BINARY_DIR}/port_overrides.checked)
+add_custom_command(OUTPUT ${PORT_OVERRIDES_CHECKED}
+    COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} check --overrides ${PORT_OVERRIDES}
+        --stubs ${CMAKE_SOURCE_DIR}/port/include/stubs ${port_override_defines} ${PS2_DIR}
+        -o ${PORT_OVERRIDES_CHECKED}
+    DEPENDS ${PS2_ORIGINALS} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT}
+    COMMENT "Checking that every PORT_OVERRIDE definition replaces one of ps2/src's"
+    VERBATIM)
 
 # What both halves are compiled with. The game was written for MWCC, which
 # accepts constructs clang rejects by default: pointers truncated to 32-bit
 # integers, narrowing in braced initialisers and the register keyword.
 add_library(dc_options INTERFACE)
-# PORT leaves out the functions ps2/src writes in MIPS assembly.
-target_compile_definitions(dc_options INTERFACE PORT PAL)
+target_compile_definitions(dc_options INTERFACE ${PORT_DEFINITIONS})
 target_include_directories(dc_options INTERFACE
     ${CMAKE_SOURCE_DIR}/port/include ${KZ_ROOT}/include ${CMAKE_SOURCE_DIR}/ps2/include ${CMAKE_SOURCE_DIR}/ps2/include/sce)
 target_compile_options(dc_options INTERFACE
@@ -123,11 +153,8 @@ target_compile_options(dc_options INTERFACE
 # wherever it runs.
 target_compile_options(dc_options INTERFACE -ffp-contract=off)
 
-# ps2/src: semantic interposition keeps clang from inlining or folding a call
-# to a function port/src may replace, so every such call reaches the linker.
-add_library(dc_ps2 OBJECT ${PS2_UNITS})
+add_library(dc_ps2 OBJECT ${PS2_UNITS} ${PORT_OVERRIDES_CHECKED})
 target_link_libraries(dc_ps2 PRIVATE dc_options)
-target_compile_options(dc_ps2 PRIVATE -fPIC -fsemantic-interposition)
 # Retail's code reads locals it never set and falls off the end of functions
 # that return a value, and ps2/src keeps both because the match depends on
 # them. MWCC gave each a defined if arbitrary result; these flags give the port
@@ -143,20 +170,9 @@ target_compile_options(dc_ps2 PRIVATE -Wall -Wno-writable-strings -Wno-unknown-p
     -Wno-unused-local-typedef -Wno-unused-label -Wno-unused-function -Wno-unused-value
     -Wno-unused-const-variable -Wno-undefined-internal -Wno-self-assign -Wno-deprecated-volatile)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/tools/weaken ${CMAKE_BINARY_DIR}/tools/weaken)
-set(PS2_OBJECT ${CMAKE_BINARY_DIR}/dc_ps2.o)
-add_custom_command(OUTPUT ${PS2_OBJECT}
-    COMMAND ${LD_RELOCATABLE} -r -o ${PS2_OBJECT} $<TARGET_OBJECTS:dc_ps2>
-    COMMAND ${OBJCOPY} --weaken ${PS2_OBJECT}
-    DEPENDS $<TARGET_OBJECTS:dc_ps2>
-    COMMAND_EXPAND_LISTS
-    COMMENT "Merging ps2/src into one weak object")
-add_custom_target(dc_ps2_merged ALL DEPENDS ${PS2_OBJECT})
-
 # Everything in port/src except main.cpp is an object library rather than an
 # archive: an archive member only enters the link when something references
-# it, so a strong definition sitting in one would never displace the weak
-# ps2/src copy. Objects named on the link line always do.
+# it, and the port's static initialisers are referenced by nothing.
 set(PORT_LIB_SOURCES ${PORT_SOURCES})
 list(FILTER PORT_LIB_SOURCES EXCLUDE REGEX "/tests/|/main\\.cpp$")
 
@@ -201,29 +217,14 @@ target_include_directories(dc_port PRIVATE ${PORT_DIR})
 target_compile_options(dc_port PRIVATE -Wall -Wno-mismatched-tags -Wno-unused-label
     -Wno-overloaded-virtual -Wno-unused-function)
 
-# ps2/src calls a function port/src replaces only through a relocation against
-# its name; this fails the build when the compiler bound such a call inside
-# dc_ps2.o, or when dc_ps2.o still holds a strong definition.
-if(DC_INTERPOSITION_CHECK)
-    set(interposition_stamp ${CMAKE_BINARY_DIR}/ps2_interposition_check.stamp)
-    set(interposition_script ${CMAKE_SOURCE_DIR}/tools/weaken/interposition_check.py)
-    add_custom_command(OUTPUT ${interposition_stamp}
-        COMMAND ${Python3_EXECUTABLE} ${interposition_script} --nm ${LLVM_NM} --objdump ${LLVM_OBJDUMP}
-            --stamp ${interposition_stamp} ${PS2_OBJECT} $<TARGET_OBJECTS:dc_port>
-        DEPENDS ${PS2_OBJECT} $<TARGET_OBJECTS:dc_port> ${interposition_script}
-        COMMAND_EXPAND_LISTS
-        COMMENT "Checking that ps2/src reaches port/src's replacements through the linker")
-    add_custom_target(ps2_interposition_check ALL DEPENDS ${interposition_stamp})
-endif()
-
-# Shared by the game and its tests: the port's objects, the weakened game and
-# the link flags they need. The executable is position-independent on every
+# Shared by the game and its tests: the port's objects, the game's and the
+# link flags they need. The executable is position-independent on every
 # platform: the game's casts of pointers to 32-bit integers are all widened in
 # port/src, so nothing has to sit below 4 GiB.
 set(DC_LINK_OPTIONS -fuse-ld=lld -pie -Wl,-z,separate-code -Wl,--gc-sections -Wl,--error-limit=0)
 
 function(dc_link_game target)
-    target_sources(${target} PRIVATE $<TARGET_OBJECTS:dc_port> $<TARGET_OBJECTS:dc_host> ${PS2_OBJECT})
+    target_sources(${target} PRIVATE $<TARGET_OBJECTS:dc_port> $<TARGET_OBJECTS:dc_host> $<TARGET_OBJECTS:dc_ps2>)
     target_link_libraries(${target} PRIVATE dc_options SDL3::SDL3 Vulkan::Vulkan kz_port_headers)
     target_include_directories(${target} BEFORE PRIVATE ${PORT_DIR}/host_overrides)
     target_include_directories(${target} PRIVATE ${PORT_DIR})

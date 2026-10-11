@@ -157,7 +157,7 @@ void FillMaterial(gfx::MeshConstants &constants, const mgRENDER_INFO *info, cons
 
 // ---- mgCVisualMDT ------------------------------------------------------------------------------
 
-int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *draw_manager) {
+PORT_OVERRIDE int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *draw_manager) {
     (void) tag;
     if (draw_manager == NULL) {
         draw_manager = &mgDrawManager;
@@ -267,12 +267,12 @@ int mgCVisualMDT::Draw(u_int *tag, float (*matrix)[4], mgCDrawManager *draw_mana
     return 1;
 }
 
-u_int mgCVisualMDT::CreatePacket(mgCDrawManager *draw_manager) {
+PORT_OVERRIDE u_int mgCVisualMDT::CreatePacket(mgCDrawManager *draw_manager) {
     (void) draw_manager;
     return 0;
 }
 
-u_int mgCVisualFixMDT::CreatePacket(mgCDrawManager *draw_manager) {
+PORT_OVERRIDE u_int mgCVisualFixMDT::CreatePacket(mgCDrawManager *draw_manager) {
     (void) draw_manager;
     return 0;
 }
@@ -282,7 +282,7 @@ u_int mgCVisualFixMDT::CreatePacket(mgCDrawManager *draw_manager) {
 // so the arrays have to live in the model arena instead, as the plain MDT path's do. The packet
 // the retail loop built has no host counterpart (CreateFacePacket is the no-op above), so the
 // loop is only the face build.
-int mgCVisualFixMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
+PORT_OVERRIDE int mgCVisualFixMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
                                    mgCTextureManager *textures) {
     if (header == NULL) {
         return 0;
@@ -306,20 +306,20 @@ int mgCVisualFixMDT::DataAssignMDT(MDT_HEADER *header, mgCMemory *memory,
     return 1;
 }
 
-int mgCVisualMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
+PORT_OVERRIDE int mgCVisualMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
     (void) packet;
     (void) face;
     return 0;
 }
 
-int mgCVisualMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
+PORT_OVERRIDE int mgCVisualMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     (void) packet;
     (void) matrix;
     (void) info;
     return 0;
 }
 
-int mgCVisualPrim::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
+PORT_OVERRIDE int mgCVisualPrim::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     (void) packet;
     (void) matrix;
     (void) info;
@@ -330,7 +330,7 @@ int mgCVisualPrim::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgR
 // 0x30-byte material. On the host the header's high half would be lost and the streams would land
 // low, and a host material is wider than 0x30, so both the addresses and the block follow the
 // host.
-void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemory *memory) {
+PORT_OVERRIDE void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemory *memory) {
     mgCTextureManager *textures = GetTextureManager();
     u_char            *vertex_address = (u_char *) header + header->vertex_ofs;
     u_char            *normal_address = (u_char *) header + header->normal_ofs;
@@ -357,7 +357,7 @@ void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemory *memory) {
 
 // The PS2's scratchpad has no host address; a static buffer with the same two halves stands in, so
 // code that still builds scratchpad packets writes real memory instead of the EE's 0x70000000.
-u_int *GetScrPad() {
+PORT_OVERRIDE u_int *GetScrPad() {
     static u_int scratchpad[2][0x2000 / 4] __attribute__((aligned(64)));
 
     return scratchpad[buff_id ? 1 : 0];
