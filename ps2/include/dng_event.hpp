@@ -334,7 +334,11 @@ public:
      * @address 0x28F800
      * @size 0xA0
      */
+#ifdef PORT
+    virtual int Draw();
+#else
     virtual void Draw();
+#endif
 
     /**
      *

@@ -218,10 +218,12 @@ int CCollisionMDT::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
     max_ptr = box_max;
     min_ptr = box_min;
 
+#ifndef PORT
     asm {
         lqc2 vf10, 0(max_ptr)
         lqc2 vf11, 0(min_ptr)
     }
+#endif
     polygon = poly;
     for (; i < poly_count; i++, polygon++) {
         mgVectorMaxMin(poly_max, poly_min, polygon->vertex[0], polygon->vertex[1], polygon->vertex[2]);
@@ -277,6 +279,7 @@ int CColFrame::InsidePoint(float *point) {
  * transforms trance_normal makes.
  *
  */
+#ifndef PORT
 static asm void pre_trance_normal(float (*matrix)[4]) {
     .set noreorder
     lqc2 vf10, 0(a0)
@@ -285,6 +288,7 @@ static asm void pre_trance_normal(float (*matrix)[4]) {
     jr ra
     lqc2 vf13, 0x30(a0)
 }
+#endif
 
 /**
  *
@@ -292,6 +296,7 @@ static asm void pre_trance_normal(float (*matrix)[4]) {
  * loaded, and writes the unnormalised normal of the transformed triangle.
  *
  */
+#ifndef PORT
 static asm void trance_normal(float *v0, float *v1, float *v2, float *normal) {
     .set noreorder
     lqc2 vf16, 0(a0)
@@ -320,6 +325,7 @@ static asm void trance_normal(float *v0, float *v1, float *v2, float *normal) {
     jr ra
     sqc2 vf22, 0(a3)
 }
+#endif
 
 int CColFrame::PickUpNearPoly(CCPoly *out, const mgVu0FBOX &box, int max) {
     sceVu0FVECTOR corners[8];

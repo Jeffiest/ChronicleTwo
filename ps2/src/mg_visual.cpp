@@ -105,11 +105,14 @@ u_int *GetScrPad() {
 void SendDMA(void *packet, int size) {
     int address_mask = 0x0FFFFFFF;
 
+#ifndef PORT
     asm {
         and packet, packet, address_mask
     }
+#endif
 
     if (start_dma) {
+#ifndef PORT
         asm {
             .set noreorder
         wait_dma:
@@ -123,6 +126,7 @@ void SendDMA(void *packet, int size) {
             nop
             nop
         }
+#endif
 
         start_dma = 0;
     }
