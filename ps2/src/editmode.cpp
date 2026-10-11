@@ -9,6 +9,7 @@
 #include "character.hpp"
 #include "dataread.hpp"
 #include "dng_effect.hpp"
+#include "editanalyze.hpp"
 #include "editctrl.hpp"
 #include "editeff.hpp"
 #include "editmap.hpp"
@@ -2913,7 +2914,7 @@ void DrawEditSystem(int block, CScene *scene, float *pos, int edit) {
                 prim.End();
             }
 
-            if (scene->GetMainMapNo() == 1) {
+            if (scene->GetMainMapNo() == EDIT_ANALYZE_MAP_STERA) {
                 CEditMap *map = (CEditMap *) scene->GetMap(scene->active_map);
 
                 if (map != NULL) {

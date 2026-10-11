@@ -167,7 +167,7 @@ static int CheckSaku(CEditMap *map, int parts_no) {
         return false;
     }
 
-    return parts->GetPartsType() == 8;
+    return parts->GetPartsType() == EDIT_PARTS_TYPE_FENCE;
 }
 
 /**
@@ -1027,7 +1027,7 @@ void EditMapInitEvent(int map_no, CEditMap *edit_map) {
 
     if (map_no == 14) {
         CFuncPoint *point = edit_map->func_point.Search("dun07");
-        int         opened = GetSaveData()->GetBitFlag(800);
+        int         opened = GetSaveData()->GetBitFlag(SAVE_FLAG_CHAPTER_8_STARTED);
 
         if (point != NULL) {
             point->enable = opened;

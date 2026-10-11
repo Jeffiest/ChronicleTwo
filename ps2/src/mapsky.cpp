@@ -305,7 +305,7 @@ void CMapSky::LoadPack(unsigned int *pack, int tex_block_base, mgCMemory *memory
             if (bg_attr != NULL) {
                 bg_attr->z_write = -1;
                 bg_attr->clip_enable = 1;
-                bg_attr->fog = 0;
+                bg_attr->fog = MG_FOG_OFF;
             }
 
             bg_visual = (mgCVisualMDT *) bg->visual;

@@ -35,7 +35,6 @@ static EditVector at_1837__2 = {
 };
 
 const int kRiverPolyFlag = 0x10;
-const int kEditPartsPolyFlag = 0x1000;
 const int kMaxInfoId = 0x100;
 const int kInfoFixedFlag = 0x1;
 const int kInfoRiverRelatedFlag = 0x80000;
@@ -317,7 +316,7 @@ int CEditMap::GetPoly(int mode, CCPoly *polys, mgVu0FBOX &box, int max) {
         count = part->GetPoly(mode, polys, box, max);
 
         for (j = 0; j < count; j++, polys++) {
-            polys->parts_no = ((s16) (u16) i) | kEditPartsPolyFlag;
+            polys->parts_no = ((s16) (u16) i) | CCPOLY_PARTS_EDIT;
         }
 
         max -= count;
@@ -890,7 +889,7 @@ int CEditMap::RemoveEditParts(int index, float *pos, RemoveInfo *remove_info_opa
     }
 
     if (RemoveRiver(pos) != 0) {
-        river_info = GetePartsInfoAtType((int) EDIT_PARTS_TYPE_RIVER);
+        river_info = GetePartsInfoAtType(EDIT_PARTS_TYPE_RIVER);
 
         if (river_info != 0) {
             id = river_info->id;
@@ -1044,7 +1043,7 @@ CEditParts *CEditMap::PlaceEditParts(int index, EP_PLACE_INFO *place, float *pos
         return 0;
     }
 
-    if (edit_parts->GetPartsType() != (int) EDIT_PARTS_TYPE_RIVER) {
+    if (edit_parts->GetPartsType() != EDIT_PARTS_TYPE_RIVER) {
         if (!CreatePlaceLog(index, place)) {
             return 0;
         }

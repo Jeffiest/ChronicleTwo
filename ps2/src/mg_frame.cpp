@@ -23,7 +23,7 @@ void mgCFrameAttr::Initialize() {
     z_write = MG_ZBUF_WRITE;
     unk_3c = 0;
     unk_20 = 100.0f;
-    fog = 1;
+    fog = MG_FOG_SCENE;
     obj_alpha = 1.0f;
     point_light = 1;
     unk_50[3] = 0.0f;
