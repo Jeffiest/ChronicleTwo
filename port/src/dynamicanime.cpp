@@ -165,7 +165,9 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
         vu0::Copy(visual->vertex[i], out);
 
-        if (base_normal != NULL && visual->normal != NULL) {
+        // Normals are indexed by face, not by vertex, so a model can hold fewer of them than vertices; the
+        // ones past the end keep their base pose.
+        if (base_normal != NULL && visual->normal != NULL && i < base.normal_num) {
             float normal[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
             for (int influence = 0; influence < 4; influence++) {
