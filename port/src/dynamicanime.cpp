@@ -2,6 +2,7 @@
 
 #include <libvu0.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <unordered_map>
 #include <vector>
@@ -127,6 +128,9 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
     const float (*base_normal)[4] =
         base.normal_num > 0 ? reinterpret_cast<const float (*)[4]>(base.normal.data()) : NULL;
 
+    // Diagnostic: DC_NO_SKIN_NORMALS=1 leaves normals at their base pose, to tell bad lighting from bad UVs.
+    static const bool skip_normals = std::getenv("DC_NO_SKIN_NORMALS") != nullptr;
+
     float skin_matrix[32][4][4];
 
     for (int slot = 0; slot < 32; slot++) {
@@ -167,7 +171,7 @@ void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
 
         // Normals are indexed by face, not by vertex, so a model can hold fewer of them than vertices; the
         // ones past the end keep their base pose.
-        if (base_normal != NULL && visual->normal != NULL && i < base.normal_num) {
+        if (base_normal != NULL && visual->normal != NULL && i < base.normal_num && !skip_normals) {
             float normal[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
             for (int influence = 0; influence < 4; influence++) {
