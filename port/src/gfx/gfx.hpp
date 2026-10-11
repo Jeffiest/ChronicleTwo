@@ -114,6 +114,12 @@ bool HeadlessSurfaceAvailable();
 void RendererShutdown();
 // The window's pixel size changed; the swapchain and main target follow at the next BeginFrame.
 void RendererResize();
+// The swapchain is recreated with the mode at the next BeginFrame or tick render.
+void SetPresentMode(PresentMode mode);
+
+// Anisotropic filtering of linearly filtered meshes: 0 or 1 is off, otherwise 2, 4, 8 or 16 samples
+// (a value in between takes the level below it). Takes effect from the next draw.
+void SetAnisotropy(int samples);
 // False when no frame can be drawn (minimised window); draws until EndFrame are then dropped.
 bool BeginFrame();
 void EndFrame();
@@ -200,6 +206,12 @@ void          DestroyTexture(TextureHandle texture);
 // index byte. Alpha is in the renderer's units: 0xFF is GS 0x80; ConvertPs2Alpha converts.
 bool UpdateTexture(TextureHandle texture, uint32_t mip, uint32_t x, uint32_t y, uint32_t w, uint32_t h,
                    const void *pixels, uint32_t row_length = 0);
+// UpdateTexture that is never recorded into a display list: it happens at once, even between
+// BeginRecording and EndRecording. For a texture that is filled once and kept (the TrueType
+// message font's atlas): a list that is recorded and never drawn, as the lists of ticks the window
+// skips are, would take its upload with it, and the texture would stay without it for good.
+bool UpdateTextureNow(TextureHandle texture, uint32_t mip, uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+                      const void *pixels, uint32_t row_length = 0);
 bool UpdatePalette(TextureHandle palette, const uint32_t *rgba, uint32_t first = 0, uint32_t count = 256);
 
 std::optional<TextureInfo> GetTextureInfo(TextureHandle texture);
@@ -395,6 +407,7 @@ enum MeshFlags : uint32_t {
     // where the vertex itself lands, and Vertex3D::uv is an offset from there in the image's
     // normalised units. A display render's interpolated camera moves the sample with the vertex.
     kMeshScreenUv = 1u << 6,
+    kMeshWorldUv = 1u << 7,
 };
 
 // Matches the std140 block in shaders/mesh.vert. Colours are modulations with 1.0 as GS 0x80.
@@ -409,6 +422,7 @@ struct MeshConstants {
     float    specular[4];
     float    fog[4];           // F = clamp(fog[0] + fog[1] / w, fog[2], fog[3]), GS units 0..255
     float    clip_plane[2][4]; // object space, kept where dot(plane, (p, 1)) >= 0
+    float    world_uv[2][4]; // world x/z rows for terrain sampled across map cells
     uint32_t flags = 0;
     uint32_t light_count = 0;
     uint32_t pad[2] = {};
