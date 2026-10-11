@@ -1,10 +1,13 @@
 #define MGLIB_IMPLICIT_TEX0_ASSIGNMENT
 
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 // The game headers keep MWCC's pragmas, which clang names but ignores.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#include "mg_dataset.hpp"
 #include "mg_math.hpp"
 #include "mglib.hpp"
 #pragma clang diagnostic pop
@@ -41,6 +44,36 @@ int g_data_id;
 
 // Texture description of the frame buffer mgSetPkFrameBuffer last set (retail's frame_tex).
 mgCTexture g_frame_tex;
+
+bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
+
+// Whether mgSetPkFrameBuffer has drawing redirected to a texture, so only a redirect it made is undone.
+bool g_frame_redirected;
+
+// The render-target texture the manager has placed at a frame buffer page, or NULL. Retail points the
+// frame buffer at a texture by its VRAM address; the host draws into the texture itself.
+mgCTexture *FindFrameTarget(int fbp) {
+    const u_int         tbp = static_cast<u_int>(fbp) << 5;
+    mgCTextureManager  *managers[2] = {mgDrawManager.texture_manager, &mgTexManager};
+
+    for (mgCTextureManager *manager : managers) {
+        if (manager == NULL || manager->blocks == NULL) {
+            continue;
+        }
+
+        for (int block = 0; block < manager->block_max + 1; block++) {
+            mgCTexture *texture = block < manager->block_max ? manager->blocks[block].texture : manager->fix_block.texture;
+
+            for (; texture != NULL; texture = texture->next) {
+                if ((texture->tex0.value & 0x3FFF) == tbp && texture->image[0] == NULL && texture->bpp > 8) {
+                    return texture;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
 
 // mgDBuffID of retail, kept here because the frame functions read and flip it.
 int g_display_buffer;
@@ -358,6 +391,34 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
     g_frame_tex.tex0.bits.tcc = 1;
     g_frame_tex.tex0.bits.tfx = 0;
     *(u_long *) &g_frame_tex.tex1 = SCE_GS_SET_TEX1(1, 0, 1, 1, 1, 0, 0);
+
+    // The outline, photo and screen-effect passes aim the frame buffer at a texture and read it back
+    // as a texture afterwards. Without the redirect their clears and model draws land on the screen.
+    mgCTexture *target = fbp != default_frame->FBP ? FindFrameTarget(fbp) : NULL;
+    gfx::TextureBinding binding;
+
+    if (target != NULL && PortMgTextureBinding(target, binding) && binding.texture != gfx::kNullTexture) {
+        gfx::SetRenderTarget(binding.texture);
+        g_frame_redirected = true;
+        std::strncpy(g_frame_tex.name, target->name, sizeof(g_frame_tex.name) - 1);
+        g_frame_tex.width = target->width;
+        g_frame_tex.height = target->height;
+        g_frame_tex.bpp = target->bpp;
+
+        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        if (trace) {
+            std::fprintf(stderr, "frame buffer -> texture '%s' %p fbp %d %dx%d target %#x\n", target->name,
+                         (const void *) target, fbp, target->width, target->height, binding.texture);
+        }
+    } else if (g_frame_redirected) {
+        gfx::SetRenderTarget(gfx::kMainTarget);
+        g_frame_redirected = false;
+
+        static const bool trace = std::getenv("DC_DUMP_DRAWS") != nullptr;
+        if (trace) {
+            std::fprintf(stderr, "frame buffer -> main (fbp %d)\n", fbp);
+        }
+    }
 }
 
 PORT_OVERRIDE void mgGetFrameBuffer(mgCTexture *texture) {
