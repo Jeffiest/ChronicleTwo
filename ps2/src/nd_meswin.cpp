@@ -1397,7 +1397,7 @@ int ClsMes::MyTextureMake_sub() {
             } else if (voice_type == 2) {
                 sndSePlay(SystemSND_ID, 6, voice_cnt % 2);
             } else {
-                sndSePlay(SystemSND_ID, 5, voice_cnt % 2);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_CANCEL, voice_cnt % 2);
             }
 
             voice_cnt += 1;

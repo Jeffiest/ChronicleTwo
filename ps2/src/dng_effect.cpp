@@ -38,7 +38,6 @@
 #include "snd_seseq.hpp"
 #include "water.hpp"
 
-static const char at_1107__2[] = "br = %.2f\n";
 static int        chill_tex_rect_910[6][3] = {
     {0,  0,  32},
     {32, 0,  32},
@@ -82,7 +81,7 @@ static void trans_float_to_sceVector(float *sce, float *vec, int to_vec) {
 }
 
 void CChillAfterHit::Initialize() {
-    active = 0;
+    active = false;
     piece_num = 0;
     rate = 0;
     memset(piece, 0, sizeof(piece));
@@ -100,7 +99,7 @@ void CChillAfterHit::SetPos(float *pos, float size, int strength) {
     }
 
     Initialize();
-    active = 1;
+    active = true;
     p = piece;
     rate = trans_effect_rate(strength);
 
@@ -108,7 +107,7 @@ void CChillAfterHit::SetPos(float *pos, float size, int strength) {
         size = 45.0f;
     }
 
-    piece_num = 24;
+    piece_num = CHILL_AFTER_HIT_PIECE_MAX;
 
     if (rate <= 0.5f) {
         piece_num = fptosi(16.0f * (0.5f + rate)) + 8;
@@ -119,8 +118,8 @@ void CChillAfterHit::SetPos(float *pos, float size, int strength) {
         speed_boost = 5.6f * rate;
     }
 
-    if (piece_num > 24) {
-        piece_num = 24;
+    if (piece_num > CHILL_AFTER_HIT_PIECE_MAX) {
+        piece_num = CHILL_AFTER_HIT_PIECE_MAX;
     }
 
     *(u_long128 *) center = *(u_long128 *) pos;
@@ -150,7 +149,7 @@ void CChillAfterHit::SetPos(float *pos, float size, int strength) {
         p->trail_num = -1;
         i++;
         p++;
-    } while (i < 24);
+    } while (i < CHILL_AFTER_HIT_PIECE_MAX);
 }
 
 void CChillAfterHit::Step() {
@@ -159,7 +158,7 @@ void CChillAfterHit::Step() {
     CHILL_AFTER_HIT_PIECE *p;
 
     if (active != 0) {
-        any_alive = 0;
+        any_alive = false;
         p = piece;
         i = 0;
 
@@ -197,7 +196,7 @@ void CChillAfterHit::Step() {
                 p->pos[3] = 1.0f;
 
                 if (0 < p->alpha) {
-                    any_alive = 1;
+                    any_alive = true;
                 }
             }
 
@@ -205,8 +204,8 @@ void CChillAfterHit::Step() {
             p++;
         }
 
-        if (any_alive == 0) {
-            active = 0;
+        if (!any_alive) {
+            active = false;
         }
     }
 }
@@ -241,7 +240,7 @@ int LocalTransWorldPrimPos(int (*corners)[4], float *pos, float width, float hei
     sceVu0ApplyMatrix(screen, mgRenderInfo.world_screen, pos);
 
     if (screen[3] < 1.0f) {
-        return 0;
+        return false;
     }
 
     float inv_w = 1.0f / screen[3];
@@ -262,14 +261,14 @@ int LocalTransWorldPrimPos(int (*corners)[4], float *pos, float width, float hei
     LocalPrimCorner(corners[3], corner[3], screen, half_w, half_h, last, 1.0f);
 
     if (corner[0][0] < 0.0f || !(corner[0][0] <= 4095.0f)) {
-        return 0;
+        return false;
     }
 
     if (corner[0][1] < 0.0f || !(corner[0][1] <= 4095.0f)) {
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 void CChillAfterHit::Draw() {
@@ -286,10 +285,9 @@ void CChillAfterHit::Draw() {
         CHILL_AFTER_HIT_PIECE *p;
         int                   *rect;
         int                    alpha;
-        int                    trail_offset;
         float                  size;
         int                    side;
-        prim.Initialize(0, 0);
+        prim.Initialize(NULL, NULL);
         prim.Preset2D();
         prim.Coord(1);
         prim.DepthTestEnable(1);
@@ -309,12 +307,11 @@ void CChillAfterHit::Draw() {
                     prim.Texture(TEX_ExFx_ICE);
                     alpha = p->alpha;
                     j = 0;
-                    trail_offset = 0;
                     rect = chill_tex_rect_910[p->rect];
 
                     while (j < p->trail_num) {
 
-                        trans_float_to_sceVector(vec, (float *) ((u8 *) p + trail_offset + 0x38), 0);
+                        trans_float_to_sceVector(vec, p->trail[j], 0);
                         size = p->size;
                         LocalTransWorldPrimPos(trail_quad, vec, size, size, p->angle);
                         prim.Color(0x80, 0x80, 0xB6, alpha);
@@ -330,7 +327,6 @@ void CChillAfterHit::Draw() {
                         prim.Vertex4(trail_quad[3]);
                         prim.Flush();
                         alpha = alpha >> 1;
-                        trail_offset += 0xC;
                         j++;
                     }
 
@@ -367,7 +363,7 @@ void CChillAfterHit::Draw() {
 }
 
 void CFireAfterHit::Initialize() {
-    active = 0;
+    active = false;
     flame_num = 0;
     time = 0;
     rate = 0.0f;
@@ -377,10 +373,8 @@ void CFireAfterHit::Initialize() {
 
 void CFireAfterHit::SetPos(float *pos, float size, int strength) {
     FIRE_AFTER_HIT_FLAME *e;
-    FIRE_AFTER_HIT_TRAIL(*trails)
-    [6];
+    FIRE_AFTER_HIT_TRAIL (*trails)[FIRE_AFTER_HIT_TRAIL_MAX];
     int i;
-    int trail_offset;
 
     if (strength < 32) {
         return;
@@ -395,16 +389,15 @@ void CFireAfterHit::SetPos(float *pos, float size, int strength) {
 
     flame_num = fptosi(4.0f + 10.0f * rate);
 
-    if (flame_num > 14) {
-        flame_num = 14;
+    if (flame_num > FIRE_AFTER_HIT_FLAME_MAX) {
+        flame_num = FIRE_AFTER_HIT_FLAME_MAX;
     }
 
     e = flame;
     trails = trail;
     size = 8.0f + size / 14.0f;
-    active = 1;
+    active = true;
     i = 0;
-    trail_offset = 0;
 
     while (i < flame_num) {
         e->velocity[0] = fRand(1.0f) - 0.5f;
@@ -417,11 +410,10 @@ void CFireAfterHit::SetPos(float *pos, float size, int strength) {
         e->alpha = iRand(40) + 97;
         e->age = fptosi((1.3f - rate) * fRand(4.0f));
 
-        trans_float_to_sceVector(e->pos, (float *) ((u8 *) trails + trail_offset), 1);
+        trans_float_to_sceVector(e->pos, trails[i][0].pos, 1);
         e->trail_head += 1;
         e->fade_speed = iRand(10) + 4;
         e->delay = iRand(3);
-        trail_offset += 0x78;
         i++;
         e++;
     }
@@ -433,26 +425,24 @@ void CFireAfterHit::Step() {
     int                   any_alive;
     FIRE_AFTER_HIT_FLAME *e;
     FIRE_AFTER_HIT_TRAIL *row;
-    int                   trail_offset;
     int                   spawned;
 
     if (active != 0) {
-        any_alive = 0;
+        any_alive = false;
         e = flame;
         i = 0;
-        trail_offset = 0;
 
         while (i < flame_num) {
             if (0 < e->delay) {
                 e->delay -= 1;
             } else {
 
-                row = (FIRE_AFTER_HIT_TRAIL *) ((u8 *) this + trail_offset + 0x2B0);
-                spawned = 0;
+                row = trail[i];
+                spawned = false;
                 j = 0;
 
                 do {
-                    if (j == e->trail_head && spawned == 0 && e->age < 13) {
+                    if (j == e->trail_head && !spawned && e->age < 13) {
                         trans_float_to_sceVector(e->pos, row->pos, 1);
                         row->alpha = fptosi(0.5f * (128.0f - (float) e->alpha)) + 32;
 
@@ -466,9 +456,9 @@ void CFireAfterHit::Step() {
 
                         row->size = 1.35f * e->size;
                         e->trail_head += 1;
-                        spawned = 1;
+                        spawned = true;
 
-                        if (e->trail_head >= 6) {
+                        if (e->trail_head >= FIRE_AFTER_HIT_TRAIL_MAX) {
                             e->trail_head = 0;
                         }
                     } else {
@@ -481,15 +471,15 @@ void CFireAfterHit::Step() {
                     }
 
                     if (0 < row->alpha) {
-                        any_alive = 1;
+                        any_alive = true;
                     }
 
                     j++;
                     row++;
-                } while (j < 6);
+                } while (j < FIRE_AFTER_HIT_TRAIL_MAX);
 
                 if (0 < e->alpha) {
-                    any_alive = 1;
+                    any_alive = true;
                     e->alpha -= e->fade_speed;
                 }
 
@@ -507,15 +497,14 @@ void CFireAfterHit::Step() {
                 e->age += 1;
             }
 
-            trail_offset += 0x78;
             i++;
             e++;
         }
 
         time += 1;
 
-        if (any_alive == 0) {
-            active = 0;
+        if (!any_alive) {
+            active = false;
         }
     }
 }
@@ -546,7 +535,7 @@ void CFireAfterHit::Draw() {
 
     FIRE_AFTER_HIT_TRAIL *puff = &trail[0][0];
     CPreSprite            prim;
-    prim.Initialize(0, 0);
+    prim.Initialize(NULL, NULL);
     prim.Preset2D();
     prim.Coord(1);
     prim.DepthTestEnable(1);
@@ -647,16 +636,16 @@ void CTornado::SetPos(float *pos, float size, float strength) {
         return;
     }
 
-    active = 1;
-    live_num = 18;
+    active = true;
+    live_num = TORNADO_PIECE_MAX;
     pos[3] = 1.0f;
     sceVu0CopyVector(center, pos);
     rate = strength / 255.0f;
     live_num = fptosi(14.0f * rate) + 4;
-    printf(at_1107__2, (double) rate);
+    printf("br = %.2f\n", (double) rate);
     p = piece;
 
-    for (i = 0; i < 18; i++) {
+    for (i = 0; i < TORNADO_PIECE_MAX; i++) {
         p[i].life = 0;
     }
 
@@ -676,15 +665,15 @@ void CTornado::Draw() {
     TORNADO_PIECE *p;
     int            i;
 
-    if (active != 0 && model != 0) {
+    if (active != 0 && model != NULL) {
         mgCFrameAttr attr;
 
-        attr.no_light = 1;
-        attr.z_write = -1;
-        attr.alpha_blend = 2;
+        attr.no_light = true;
+        attr.z_write = MG_ZBUF_NO_WRITE;
+        attr.alpha_blend = MG_ALPHA_MACRO_ADD;
         p = piece;
 
-        for (i = 0; i < 18; i++) {
+        for (i = 0; i < TORNADO_PIECE_MAX; i++) {
             if (p->life <= 0) {
                 p++;
                 continue;
@@ -692,7 +681,7 @@ void CTornado::Draw() {
 
             model->SetPosition(p->pos);
             float size = p->scale;
-            ((mgCFrame *) model)->SetScale(size, 0.25f + 4.0f * rate, size);
+            model->SetScale(size, 0.25f + 4.0f * rate, size);
             model->SetRotation(0.0f, p->angle, 0.0f);
             attr.color[0] = 180.0f;
             attr.color[1] = 180.0f;
@@ -712,14 +701,14 @@ void CTornado::Step() {
     if (active != 0) {
         p = piece;
 
-        for (i = 0; i < 18; i++) {
+        for (i = 0; i < TORNADO_PIECE_MAX; i++) {
             if (p->life <= 0) {
                 p++;
                 continue;
             }
 
             p->pos[1] += p->rise;
-            p->angle += 0.19634955f;
+            p->angle += PI / 16.0f;
             p->angle = mgAngleLimit(p->angle);
 
             if (p->life < 10) {
@@ -741,7 +730,7 @@ void CTornado::Step() {
         }
 
         if (live_num <= 0) {
-            active = 0;
+            active = false;
         }
     }
 }
@@ -749,11 +738,11 @@ void CTornado::Step() {
 void CTornado::Initialize() {
     TORNADO_PIECE *p;
     int            i;
-    active = 0;
+    active = false;
     live_num = 0;
     p = piece;
 
-    for (i = 0; i < 18; i++) {
+    for (i = 0; i < TORNADO_PIECE_MAX; i++) {
         p->life = 0;
         p++;
     }
@@ -764,7 +753,7 @@ void CThunder::SetPos(float *pos, float width, float power) {
         return;
     }
 
-    active = 1;
+    active = true;
     live_num = THUNDER_SPARK_MAX;
     float span = 2.0f * width;
     frame.SetPosition(pos);
@@ -793,7 +782,7 @@ void CThunder::SetPos(float *pos, float width, float power) {
         bolt->velocity[2] = fRand(1.0f) - 0.5f;
         bolt->velocity[3] = 0.0f;
         bolt->life = (float) (iRand(5) + 20);
-        bolt->spin = fRand((PI / 8.0f));
+        bolt->spin = fRand(PI / 8.0f);
         bolt->angle = fRand(PI);
         bolt->frame = iRand(6);
         bolt->scale = 1.0f;
@@ -842,7 +831,7 @@ void CThunder::Draw() {
     mgCDrawEnv env = *mgGetpDrawEnv(0);
     sceGsTest *test = &env.test;
     test->bits.zte = 1;
-    test->bits.ztst = 2;
+    test->bits.ztst = SCE_GS_ZGEQUAL;
     env.SetZBuf(MG_ZBUF_NO_WRITE);
     env.SetAlpha(MG_ALPHA_MACRO_ADD);
     packet->BeginCreatePacket(1, NULL);
@@ -917,46 +906,46 @@ void CThunder::Step() {
             }
 
             if (live_num <= 0) {
-                active = 0;
+                active = false;
             }
         }
     }
 }
 
 void CThunder::Initialize() {
-    active = 0;
+    active = false;
     live_num = 0;
     frame.attr = &attr;
 }
 
 void CSparcEffect::Draw() {
-    if (state != (int) SPARC_EFFECT_OFF && model[0] != 0) {
+    if (state != SPARC_EFFECT_OFF && model[0] != NULL) {
         mgCFrameAttr attr;
         float        sx = 2.0f;
         float        sz = 1.0f;
 
-        attr.no_light = 1;
+        attr.no_light = true;
 
-        switch ((s64) color) {
-            case 0:
+        switch (color) {
+            case WEAPON_ELEMENT_FIRE:
                 attr.color[0] = 255.0f;
                 attr.color[1] = 64.0f;
                 attr.color[2] = 0.0f;
                 attr.color[3] = alpha;
                 break;
-            case 1:
+            case WEAPON_ELEMENT_COLD:
                 attr.color[0] = 160.0f;
                 attr.color[1] = 220.0f;
                 attr.color[2] = 250.0f;
                 attr.color[3] = alpha;
                 break;
-            case 2:
+            case WEAPON_ELEMENT_THUNDER:
                 attr.color[0] = 200.0f;
                 attr.color[1] = 160.0f;
                 attr.color[2] = 250.0f;
                 attr.color[3] = alpha;
                 break;
-            case 3:
+            case WEAPON_ELEMENT_WIND:
                 attr.color[0] = 128.0f;
                 attr.color[1] = 255.0f;
                 attr.color[2] = 128.0f;
@@ -974,16 +963,16 @@ void CSparcEffect::Draw() {
         model[2]->SetPosition(pos);
         model[2]->SetScale(sx, sx, sz);
 
-        switch ((s64) pattern) {
-            case 0:
+        switch (pattern) {
+            case SPARC_EFFECT_PATTERN_FIRST_PAIR:
                 mgDrawDirect(model[0]);
                 mgDrawDirect(model[1]);
                 break;
-            case 1:
+            case SPARC_EFFECT_PATTERN_LAST_PAIR:
                 mgDrawDirect(model[1]);
                 mgDrawDirect(model[2]);
                 break;
-            case 2:
+            case SPARC_EFFECT_PATTERN_OUTER_PAIR:
                 mgDrawDirect(model[0]);
                 mgDrawDirect(model[2]);
                 break;
@@ -992,22 +981,22 @@ void CSparcEffect::Draw() {
 }
 
 void CSparcEffect::Step() {
-    if (state != (int) SPARC_EFFECT_OFF) {
+    if (state != SPARC_EFFECT_OFF) {
         switch ((s64) state) {
-            case (int) SPARC_EFFECT_FADE_IN:
+            case SPARC_EFFECT_FADE_IN:
                 alpha += alpha_max / 4.0f;
 
                 if (!(alpha < alpha_max)) {
-                    state = (int) SPARC_EFFECT_FADE_OUT;
+                    state = SPARC_EFFECT_FADE_OUT;
                 }
 
                 break;
-            case (int) SPARC_EFFECT_FADE_OUT:
+            case SPARC_EFFECT_FADE_OUT:
                 alpha -= alpha_max / 8.0f;
 
                 if (alpha <= 0.0f) {
                     alpha = 0.0f;
-                    state = (int) SPARC_EFFECT_OFF;
+                    state = SPARC_EFFECT_OFF;
                 }
 
                 break;
@@ -1016,12 +1005,12 @@ void CSparcEffect::Step() {
 }
 
 void CSparcEffect::Initialize() {
-    state = (int) SPARC_EFFECT_OFF;
+    state = SPARC_EFFECT_OFF;
 }
 
 void CMiniEffPrim::SetPrim(float *pos, int kind) {
     sceVu0CopyVector(this->pos, pos);
-    this->state = (int) MINI_EFF_PRIM_RISING;
+    this->state = MINI_EFF_PRIM_RISING;
     this->alpha = 1.0f;
     this->size = 1.0f + fRand(2.0f);
     this->color = kind;
@@ -1035,8 +1024,8 @@ void CMiniEffPrim::Draw(CPreSprite *sprite) {
     int u1;
     int v1;
 
-    if (state != (int) MINI_EFF_PRIM_FREE && sprite != 0) {
-        if (color == 0) {
+    if (state != MINI_EFF_PRIM_FREE && sprite != NULL) {
+        if (color == MINI_EFF_PRIM_GREEN) {
             sprite->Color(0x80, 0xB4, 0x80, fptosi(128.0f * alpha));
             u0 = 0x20;
             v0 = 0x40;
@@ -1044,7 +1033,7 @@ void CMiniEffPrim::Draw(CPreSprite *sprite) {
             v1 = 0x4F;
         }
 
-        if (color == 1) {
+        if (color == MINI_EFF_PRIM_GOLD) {
             sprite->Color(0xFA, 0xDC, 0x40, fptosi(128.0f * alpha));
             u0 = 0x20;
             v0 = 0x40;
@@ -1062,30 +1051,30 @@ void CMiniEffPrim::Draw(CPreSprite *sprite) {
 }
 
 int CMiniEffPrim::Step() {
-    if (state == (int) MINI_EFF_PRIM_FREE) {
-        return 0;
+    if (state == MINI_EFF_PRIM_FREE) {
+        return false;
     }
 
-    if (state == (int) MINI_EFF_PRIM_RISING) {
+    if (state == MINI_EFF_PRIM_RISING) {
         alpha -= 0.0625f;
         pos[1] -= 0.5f;
 
         if (alpha <= 0.0f) {
-            state = (int) MINI_EFF_PRIM_FREE;
-            return 1;
+            state = MINI_EFF_PRIM_FREE;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 void CMiniEffPrim::Initialize() {
-    state = (int) MINI_EFF_PRIM_FREE;
+    state = MINI_EFF_PRIM_FREE;
 }
 
 void CMiniEffPrimMan::CreatPrim(float *pos, int kind) {
     for (int i = 0; i < MINI_EFF_PRIM_MAX; i++) {
-        if (prim[i].state == (int) MINI_EFF_PRIM_FREE) {
+        if (prim[i].state == MINI_EFF_PRIM_FREE) {
             prim[i].SetPrim(pos, kind);
             active_num++;
             return;
@@ -1095,7 +1084,7 @@ void CMiniEffPrimMan::CreatPrim(float *pos, int kind) {
 
 void CMiniEffPrimMan::Draw() {
     if (active_num > 0) {
-        draw_prim.Initialize(0, 0);
+        draw_prim.Initialize(NULL, NULL);
         draw_prim.Preset2D();
         draw_prim.Coord(1);
         draw_prim.DepthTestEnable(1);
@@ -1144,13 +1133,13 @@ void CPalletAnime::SetAnim(s16 red, s16 green, s16 blue, s16 pulse_num, s16 dura
 
 int CPalletAnime::CreatPallet(float *out, float *base) {
     if (duration <= 0) {
-        return 0;
+        return false;
     }
 
     int period = duration / this->pulse_num;
 
     if (period <= 0) {
-        return 0;
+        return false;
     }
 
     float ratio = (float) (elapsed % period);
@@ -1160,7 +1149,7 @@ int CPalletAnime::CreatPallet(float *out, float *base) {
     out[1] = base[1] + blend * ((float) green - base[1]);
     out[2] = base[2] + blend * ((float) blue - base[2]);
     out[3] = 128.0f;
-    return 1;
+    return true;
 }
 
 void CPalletAnime::Step() {
@@ -1203,21 +1192,21 @@ void CHealingEffectMan::Draw(mgCCamera *camera) {
         sceVu0UnitMatrix(identity);
 
         switch (mode) {
-            case (int) HEALING_EFFECT_IDLE:
+            case HEALING_EFFECT_IDLE:
                 glow_alpha = 0x80;
                 halo_alpha = 0x40;
                 break;
-            case (int) HEALING_EFFECT_OFF:
+            case HEALING_EFFECT_OFF:
                 halo_alpha = 0;
                 glow_alpha = 0;
                 break;
-            case (int) HEALING_EFFECT_SPENT: {
+            case HEALING_EFFECT_SPENT: {
                 float fade_in = 1.0f - (brightness - 1.0f);
                 glow_alpha = fptosi(255.0f * fade_in);
                 halo_alpha = fptosi(180.0f * fade_in);
                 break;
             }
-            case (int) HEALING_EFFECT_RECHARGE: {
+            case HEALING_EFFECT_RECHARGE: {
                 float fade_out = brightness;
                 glow_alpha = fptosi(128.0f * fade_out);
                 halo_alpha = fptosi(64.0f * fade_out);
@@ -1238,7 +1227,7 @@ void CHealingEffectMan::Draw(mgCCamera *camera) {
             halo_alpha = fptosi((float) halo_alpha * distance_fade);
 
             CPreSprite prim;
-            prim.Initialize(0, 0);
+            prim.Initialize(NULL, NULL);
             prim.Preset2D();
             prim.Coord(1);
             prim.DepthTestEnable(1);
@@ -1290,20 +1279,20 @@ void CHealingEffectMan::Draw(mgCCamera *camera) {
 void CHealingEffectMan::Step() {
     if (active != 0) {
         switch (mode) {
-            case (int) HEALING_EFFECT_SPENT:
+            case HEALING_EFFECT_SPENT:
                 brightness += 0.033333335f;
 
                 if (!(brightness < 2.0f)) {
-                    mode = (int) HEALING_EFFECT_OFF;
+                    mode = HEALING_EFFECT_OFF;
                     brightness = 0.0f;
                 }
 
                 break;
-            case (int) HEALING_EFFECT_RECHARGE:
+            case HEALING_EFFECT_RECHARGE:
                 brightness += 0.033333335f;
 
                 if (!(brightness < 1.0f)) {
-                    mode = (int) HEALING_EFFECT_IDLE;
+                    mode = HEALING_EFFECT_IDLE;
                     brightness = 1.0f;
                 }
 
@@ -1338,14 +1327,14 @@ void CHealingEffectMan::SetMode(int mode) {
 
 void CHealingEffectMan::Set(float *pos) {
     sceVu0CopyVector(this->center, pos);
-    this->active = 1;
-    this->mode = (int) HEALING_EFFECT_IDLE;
+    this->active = true;
+    this->mode = HEALING_EFFECT_IDLE;
     this->brightness = 1.0f;
 }
 
 void CHealingEffectMan::Initialize() {
-    active = 0;
-    mode = (int) HEALING_EFFECT_IDLE;
+    active = false;
+    mode = HEALING_EFFECT_IDLE;
     HEALING_LIGHT *particle = light;
 
     for (int i = 0; i < HEALING_LIGHT_MAX; i++, particle++) {
@@ -1366,17 +1355,17 @@ void CHealingEffectMan::Initialize() {
 }
 
 void CSwordLuminous::Draw() {
-    float hilt_pos[4];
     float tip_pos[4];
+    float glow_pos[4];
     float step[4];
 
-    if (mode == (int) SWORD_LUMINOUS_OFF || tip_frame == 0 || root_frame == 0) {
+    if (mode == SWORD_LUMINOUS_OFF || tip_frame == NULL || root_frame == NULL) {
         return;
     }
 
-    tip_frame->GetWorldPosition0(hilt_pos);
-    root_frame->GetWorldPosition0(tip_pos);
-    sceVu0SubVector(step, hilt_pos, tip_pos);
+    tip_frame->GetWorldPosition0(tip_pos);
+    root_frame->GetWorldPosition0(glow_pos);
+    sceVu0SubVector(step, tip_pos, glow_pos);
     float length = mgDistVector(step);
     sceVu0Normalize(step, step);
     sceVu0ScaleVector(step, step, length / 16.0f);
@@ -1384,7 +1373,7 @@ void CSwordLuminous::Draw() {
     CPreSprite prim;
     int        corner0[4];
     int        corner1[4];
-    prim.Initialize(0, 0);
+    prim.Initialize(NULL, NULL);
     prim.Preset2D();
     prim.Coord(1);
     prim.DepthTestEnable(1);
@@ -1399,27 +1388,27 @@ void CSwordLuminous::Draw() {
     int   i = 0;
 
     do {
-        if (mgTransWorldPrim3DSprite(corner0, corner1, tip_pos, size, size, 0) != 0) {
+        if (mgTransWorldPrim3DSprite(corner0, corner1, glow_pos, size, size, 0) != 0) {
             prim.TextureCrd(0x80, 0x40);
             prim.Vertex4(corner0);
             prim.TextureCrd(0xA0, 0x60);
             prim.Vertex4(corner1);
         }
 
-        sceVu0AddVector(tip_pos, tip_pos, step);
+        sceVu0AddVector(glow_pos, glow_pos, step);
         i++;
-    } while (i < 0x10);
+    } while (i < 16);
 
     prim.End();
 }
 
 void CSwordLuminous::Step() {
-    if (mode == (int) SWORD_LUMINOUS_OFF) {
+    if (mode == SWORD_LUMINOUS_OFF) {
         return;
     }
 
     switch (mode) {
-        case (int) SWORD_LUMINOUS_FADE_IN:
+        case SWORD_LUMINOUS_FADE_IN:
             fade += 0.0625f;
 
             if (fade > 1.0f) {
@@ -1427,19 +1416,19 @@ void CSwordLuminous::Step() {
             }
 
             break;
-        case (int) SWORD_LUMINOUS_ON:
+        case SWORD_LUMINOUS_ON:
             break;
-        case (int) SWORD_LUMINOUS_FADE_OUT:
+        case SWORD_LUMINOUS_FADE_OUT:
             fade -= 0.03125f;
 
             if (fade <= 0.0f) {
-                mode = (int) SWORD_LUMINOUS_OFF;
+                mode = SWORD_LUMINOUS_OFF;
             }
 
             break;
     }
 
-    pulse += 0.10471976f;
+    pulse += 6.0f * DEG_TO_RAD;
 
     if (pulse > PI) {
         pulse -= PI;
@@ -1454,7 +1443,7 @@ void CSWordAfterImage::Draw() {
         float      edge[4];
         float      edge_end[4];
 
-        prim.Initialize(0, 0);
+        prim.Initialize(NULL, NULL);
         prim.Preset2D();
         prim.TextureMapEnable(0);
         prim.Coord(1);
@@ -1553,7 +1542,7 @@ void CSWordAfterImage::AddPoint(float *tip, float *base, float fade) {
         this->write_index = this->point_max - 1;
     }
 
-    this->active = 1;
+    this->active = true;
 }
 
 void CSWordAfterImage::Step() {
@@ -1579,7 +1568,7 @@ void CSWordAfterImage::Step() {
         }
 
         if (point_num <= 0) {
-            active = 0;
+            active = false;
         }
     }
 }
@@ -1614,7 +1603,7 @@ void CSWordAfterImage::Initialize(mgCMemory *memory, int capacity, int divisions
     point_num = 0;
     write_index = capacity - 1;
     head_index = capacity - 1;
-    active = 0;
+    active = false;
 }
 
 #pragma opt_propagation reset
@@ -1658,7 +1647,7 @@ void CAfterWire::DrawWire(float (*smooth)[4]) {
         smooth_num = CreatSmoothPass(smooth, point, point_num, 4, oldest, AFTER_WIRE_POINT_MAX);
 
         CPreSprite prim;
-        prim.Initialize(0, 0);
+        prim.Initialize(NULL, NULL);
         prim.Preset2D();
         prim.TextureMapEnable(0);
         prim.Coord(1);
@@ -1799,7 +1788,7 @@ void CHitEffectImage::DrawBord() {
     int        corner_t_l[4];
     int        corner1[4];
 
-    prim.Initialize(0, 0);
+    prim.Initialize(NULL, NULL);
     prim.Preset2D();
     prim.DepthTestEnable(1);
     prim.DepthTest(MG_DEPTH_TEST_GEQUAL);
@@ -1860,7 +1849,7 @@ void CHitEffectImage::DrawSpark(float size) {
     int        tip_screen[4];
     float      tip[4];
 
-    prim.Initialize(0, 0);
+    prim.Initialize(NULL, NULL);
     prim.Preset2D();
     prim.TextureMapEnable(0);
     prim.Coord(1);
@@ -1904,7 +1893,7 @@ void CFlushEffect::Draw() {
         int        corner_t_l[4];
         int        corner1[4];
 
-        prim.Initialize(0, 0);
+        prim.Initialize(NULL, NULL);
         prim.Preset2D();
         prim.DepthTestEnable(1);
         prim.DepthTest(MG_DEPTH_TEST_GEQUAL);
@@ -1944,30 +1933,25 @@ void CFlushEffect::Draw() {
 }
 
 void CFlushEffect::Step() {
-    switch (active) {
-        case 0:
-            break;
-        default:
-            if (follow != NULL) {
-                follow->GetWorldPosition0(pos);
-            }
+    if (active != 0) {
+        if (follow != NULL) {
+            follow->GetWorldPosition0(pos);
+        }
 
-            size += grow;
-            alpha -= (short) fade_speed;
+        size += grow;
+        alpha -= (short) fade_speed;
 
-            if (alpha <= 0) {
-                alpha = 0;
-                active = 0;
-                follow = NULL;
-            }
-
-            break;
+        if (alpha <= 0) {
+            alpha = 0;
+            active = false;
+            follow = NULL;
+        }
     }
 }
 
 void CPowerLine::CreatPrim() {
     float             range = radius;
-    BattleEffectPrim *streak = prim + next;
+    BattleEffectPrim *streak = &prim[next];
     streak->pos[0] = 2.0f * (range * mgRnd()) - range;
     streak->pos[1] = 0.2f * (height * mgRnd());
     range = radius;
@@ -1986,7 +1970,7 @@ void CPowerLine::CreatPrim() {
 }
 
 void CPowerLine::Step() {
-    if ((duration > 0 || live_num > 0) && source != 0) {
+    if ((duration > 0 || live_num > 0) && source != NULL) {
         BattleEffectPrim *streak = this->prim;
 
         for (int i = 0; i < prim_max; i++) {
@@ -2024,7 +2008,7 @@ void CPowerLine::Draw() {
         int        corner_b_r[4];
         int        corner_t_l[4];
         int        corner1[4];
-        sprite.Initialize(0, 0);
+        sprite.Initialize(NULL, NULL);
         sprite.Preset2D();
         sprite.DepthTestEnable(1);
         sprite.DepthTest(MG_DEPTH_TEST_GEQUAL);
@@ -2046,7 +2030,7 @@ void CPowerLine::Draw() {
             int   tex_v = tex_rect.top;
             float width = 20.0f;
             float sprite_height = 0.2f;
-            sceVu0AddVector(center, &streak->pos[0], pos);
+            sceVu0AddVector(center, streak->pos, pos);
             center[3] = 1.0f;
 
             if (mgTransWorldPrim3DSprite(corner0, corner1, center, sprite_height, width, 0) != 0) {
@@ -2080,12 +2064,12 @@ void CPowerLine::Draw() {
     }
 }
 
-void CDeadEffect::SetDeadEffect(float *pos, float value14, float value10, float value18, int value1_c) {
+void CDeadEffect::SetDeadEffect(float *pos, float radius, float height, float size, int duration) {
     sceVu0CopyVector(this->pos, pos);
-    this->radius = value14;
-    this->height = value10;
-    this->size = value18;
-    this->duration = value1_c;
+    this->radius = radius;
+    this->height = height;
+    this->size = size;
+    this->duration = duration;
     this->elapsed = 0;
 }
 
@@ -2188,14 +2172,14 @@ void CDeadEffect::Draw() {
     int        corner_t_l[4];
     int        corner1[4];
 
-    prim_draw.Initialize(0, 0);
+    prim_draw.Initialize(NULL, NULL);
     prim_draw.Preset2D();
     prim_draw.DepthTestEnable(1);
-    prim_draw.DepthTest(1);
+    prim_draw.DepthTest(MG_DEPTH_TEST_GEQUAL);
     prim_draw.Bilinear(1);
     prim_draw.Coord(1);
-    prim_draw.AlphaBlend(2);
-    prim_draw.Begin(3);
+    prim_draw.AlphaBlend(MG_ALPHA_BLEND_ADD);
+    prim_draw.Begin(MG_PRIM_TRIANGLE);
     prim_draw.Texture(TEX_SystemEffect1);
     prim_draw.AlphaTestEnable(1);
     int               u;
@@ -2321,7 +2305,7 @@ void CMapEffect_Sprite::Step(mgCCamera *camera) {
         pos[0] += move[0];
         pos[1] += move[1];
         pos[2] += move[2];
-        bob_angle += 0.05235988f;
+        bob_angle += 3.0f * DEG_TO_RAD;
 
         if (!(bob_angle <= PI)) {
             bob_angle -= TWO_PI;
@@ -2425,16 +2409,22 @@ void CMapEffect_Sprite::Draw(mgCCamera *camera, CPreSprite *sprite) {
     }
 }
 
-void CMapEffectsManeger::Init_LightBoll(mgCMemory *memory, int count) {
-    sprite_num = count;
-    u32 blocks;
-
-    if (((u32) count * (int) sizeof(CMapEffect_Sprite)) & 0xF) {
-        blocks = (((u32) count * (int) sizeof(CMapEffect_Sprite)) >> 4) + 1;
-    } else {
-        blocks = ((u32) count * (int) sizeof(CMapEffect_Sprite)) >> 4;
+/**
+ *
+ * Rounds a byte count up to a number of 16-byte allocation blocks.
+ *
+ */
+static inline u_int align16_blocks(u_int size) {
+    if (size & 15) {
+        return (size >> 4) + 1;
     }
 
+    return size >> 4;
+}
+
+void CMapEffectsManeger::Init_LightBoll(mgCMemory *memory, int count) {
+    sprite_num = count;
+    u32 blocks = align16_blocks(count * sizeof(CMapEffect_Sprite));
     void *block = memory->Alloc(blocks + 2);
     sprite = (CMapEffect_Sprite *) __construct_new_array(
         operator new[](count *(int) sizeof(CMapEffect_Sprite) + 0x10, (u_long128 *) block), 0, 0,
@@ -2490,12 +2480,12 @@ void CMapEffectsManeger::Step(mgCCamera *camera) {
                 sceVu0Normalize(to_spawn, to_spawn);
 
                 if (!(sceVu0InnerProduct(forward, to_spawn) <= 0.25f)) {
-                    if (type == 2) {
+                    if (type == MAP_EFFECT_D03) {
                         spawn[1] -= 130.0f;
                     }
 
                     sprite[i].Set(spawn);
-                    CMapEffect_Sprite *slot = sprite + i;
+                    CMapEffect_Sprite *slot = &sprite[i];
                     slot->type = type;
                     spawn_wait = fptosi(1.0f + (5.0f * (float) rand()) / 2.1474836e9f);
                 }
@@ -2527,16 +2517,16 @@ void CMapEffectsManeger::Draw(mgCCamera *camera) {
     primitive.Initialize(NULL, NULL);
     primitive.Preset2D();
 
-    if (manager->type == 0) {
+    if (manager->type == MAP_EFFECT_D01) {
         primitive.DepthTestEnable(0);
     }
 
-    if (manager->type == 1) {
+    if (manager->type == MAP_EFFECT_D02) {
         primitive.DepthTestEnable(1);
         primitive.DepthTest(MG_DEPTH_TEST_GEQUAL);
     }
 
-    if (manager->type == 2) {
+    if (manager->type == MAP_EFFECT_D03) {
         primitive.DepthTestEnable(1);
         primitive.DepthTest(MG_DEPTH_TEST_GEQUAL);
     }
@@ -2566,41 +2556,28 @@ void CMapEffectsManeger::Draw(mgCCamera *camera) {
 
 #pragma opt_propagation reset
 
-/**
- *
- * Rounds a byte count up to a number of 16-byte allocation blocks.
- *
- */
-static inline u_int align16_blocks(u_int size) {
-    if (size & 15) {
-        return (size >> 4) + 1;
-    }
-
-    return size >> 4;
-}
-
 int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
     switch (kind) {
         case BATTLE_EFFECT_HIT: {
-            u_int prim_bytes = num * 0x20 * sizeof(BattleEffectPrim);
-            hit_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            u_int prim_bytes = num * HIT_EFFECT_SPARK_MAX * sizeof(BattleEffectPrim);
+            hit_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * HIT_EFFECT_SPARK_MAX];
             u_int hit_bytes = num * sizeof(CHitEffectImage);
             hit = new (memory->Alloc(align16_blocks(hit_bytes) + 2)) CHitEffectImage[num];
             hit_num = 0;
 
             if (hit == NULL || hit_prim == NULL) {
-                return 0;
+                return false;
             }
 
             hit_num = num;
 
             for (int i = 0; i < num; i++) {
-                CHitEffectImage *effect = hit + i;
-                effect->spark = hit_prim + i * 0x20;
-                effect->spark_max = 0x20;
+                CHitEffectImage *effect = &hit[i];
+                effect->spark = &hit_prim[i * HIT_EFFECT_SPARK_MAX];
+                effect->spark_max = HIT_EFFECT_SPARK_MAX;
                 effect->live_num = 0;
                 effect->spark_num = 0;
-                effect->kind = 0;
+                effect->kind = HIT_EFFECT_BOARD;
             }
 
             break;
@@ -2612,38 +2589,38 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             flush_num = 0;
 
             if (flush == NULL) {
-                return 0;
+                return false;
             }
 
             flush_num = num;
 
             for (int i = 0; i < num; i++) {
-                CFlushEffect *effect = flush + i;
-                effect->active = 0;
+                CFlushEffect *effect = &flush[i];
+                effect->active = false;
                 effect->follow = NULL;
             }
 
             break;
         }
         case BATTLE_EFFECT_POWER_LINE: {
-            u_int prim_bytes = num * 0x14 * sizeof(BattleEffectPrim);
-            power_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            u_int prim_bytes = num * POWER_LINE_PRIM_MAX * sizeof(BattleEffectPrim);
+            power_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * POWER_LINE_PRIM_MAX];
             u_int power_bytes = num * sizeof(CPowerLine);
             power = new (memory->Alloc(align16_blocks(power_bytes) + 2)) CPowerLine[num];
             power_num = 0;
 
             if (power == NULL) {
-                return 0;
+                return false;
             }
 
             power_num = num;
 
             for (int i = 0; i < num; i++) {
-                BattleEffectPrim *streaks = power_prim + i * 0x14;
-                CPowerLine       *line = power + i;
+                BattleEffectPrim *streaks = &power_prim[i * POWER_LINE_PRIM_MAX];
+                CPowerLine       *line = &power[i];
                 line->source = NULL;
                 line->prim = streaks;
-                line->prim_max = 0x14;
+                line->prim_max = POWER_LINE_PRIM_MAX;
                 line->duration = 0;
                 line->next = 0;
                 line->live_num = 0;
@@ -2652,8 +2629,8 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             break;
         }
         case BATTLE_EFFECT_DEAD: {
-            u_int prim_bytes = num * 0x30 * sizeof(BattleEffectPrim);
-            dead_prim = (BattleEffectPrim *) operator new[](prim_bytes, memory->Alloc(align16_blocks(prim_bytes) + 2));
+            u_int prim_bytes = num * DEAD_EFFECT_PRIM_MAX * sizeof(BattleEffectPrim);
+            dead_prim = new (memory->Alloc(align16_blocks(prim_bytes) + 2)) BattleEffectPrim[num * DEAD_EFFECT_PRIM_MAX];
             u_int dead_bytes = num * sizeof(CDeadEffect);
             dead = (CDeadEffect *) __construct_new_array(
                 operator new[](num *(int) sizeof(CDeadEffect) + 16, memory->Alloc(align16_blocks(dead_bytes) + 2)), NULL, NULL,
@@ -2663,16 +2640,16 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             dead_num = 0;
 
             if (dead == NULL) {
-                return 0;
+                return false;
             }
 
             dead_num = num;
 
             for (int i = 0; i < num; i++) {
                 CDeadEffect      *effect = &dead[i];
-                BattleEffectPrim *prim = &dead_prim[i * 0x30];
+                BattleEffectPrim *prim = &dead_prim[i * DEAD_EFFECT_PRIM_MAX];
                 effect->prim = prim;
-                effect->prim_max = 0x30;
+                effect->prim_max = DEAD_EFFECT_PRIM_MAX;
                 effect->radius = 10.0f;
                 effect->height = 10.0f;
                 effect->size = 1.0f;
@@ -2688,12 +2665,12 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             u_int chara_bytes = num * sizeof(CCharacter2);
             chara = new (memory->Alloc(align16_blocks(chara_bytes) + 2)) CCharacter2[num];
             u_int slot_bytes = num * sizeof(BattleEffectChara);
-            chara_slot = (BattleEffectChara *) operator new[](slot_bytes, memory->Alloc(align16_blocks(slot_bytes) + 2));
+            chara_slot = new (memory->Alloc(align16_blocks(slot_bytes) + 2)) BattleEffectChara[num];
             chara_num = num;
 
             for (int i = 0; i < num; i++) {
-                BattleEffectChara *slot = chara_slot + i;
-                slot->chara = chara + i;
+                BattleEffectChara *slot = &chara_slot[i];
+                slot->chara = &chara[i];
                 slot->unk_4 = 0;
                 slot->unk_8 = 0;
             }
@@ -2701,10 +2678,10 @@ int BattleEffectMan::AllocEffect(int kind, mgCMemory *memory, int num) {
             break;
         }
         default:
-            return 0;
+            return false;
     }
 
-    return 1;
+    return true;
 }
 
 CPowerLine::CPowerLine() {
@@ -2732,7 +2709,7 @@ void BattleEffectMan::Step() {
 
     hit = this->hit;
 
-    if (hit != 0) {
+    if (hit != NULL) {
         for (hit_no = 0; hit_no < hit_num; hit_no++) {
             hit->Step();
             hit++;
@@ -2741,7 +2718,7 @@ void BattleEffectMan::Step() {
 
     flush = this->flush;
 
-    if (flush != 0) {
+    if (flush != NULL) {
         for (flush_no = 0; flush_no < flush_num; flush_no++) {
             flush->Step();
             flush++;
@@ -2750,7 +2727,7 @@ void BattleEffectMan::Step() {
 
     line = power;
 
-    if (line != 0) {
+    if (line != NULL) {
         for (line_no = 0; line_no < power_num; line_no++) {
             line->Step();
             line++;
@@ -2759,7 +2736,7 @@ void BattleEffectMan::Step() {
 
     dead = this->dead;
 
-    if (dead != 0) {
+    if (dead != NULL) {
         for (dead_no = 0; dead_no < dead_num; dead_no++) {
             dead->Step();
             dead++;
@@ -2780,7 +2757,7 @@ void BattleEffectMan::Draw() {
 
     hit = this->hit;
 
-    if (hit != 0) {
+    if (hit != NULL) {
         for (hit_no = 0; hit_no < hit_num; hit_no++) {
             hit->Draw();
             hit++;
@@ -2789,7 +2766,7 @@ void BattleEffectMan::Draw() {
 
     flush = this->flush;
 
-    if (flush != 0) {
+    if (flush != NULL) {
         for (flush_no = 0; flush_no < flush_num; flush_no++) {
             flush->Draw();
             flush++;
@@ -2798,7 +2775,7 @@ void BattleEffectMan::Draw() {
 
     line = power;
 
-    if (line != 0) {
+    if (line != NULL) {
         for (line_no = 0; line_no < power_num; line_no++) {
             line->Draw();
             line++;
@@ -2807,7 +2784,7 @@ void BattleEffectMan::Draw() {
 
     dead = this->dead;
 
-    if (dead != 0) {
+    if (dead != NULL) {
         for (dead_no = 0; dead_no < dead_num; dead_no++) {
             dead->Draw();
             dead++;
@@ -2823,7 +2800,7 @@ void CWeaponElement::Initialize() {
         alpha[i] = 1.0f;
     }
 
-    on = 0;
+    on = false;
 }
 
 void CWeaponElement::Set(float (*base)[4], float *center, float level, int element_type, float spread) {
@@ -2848,7 +2825,7 @@ void CWeaponElement::Set(float (*base)[4], float *center, float level, int eleme
             break;
     }
 
-    on = 1;
+    on = true;
 }
 
 void CWeaponElement::Step() {
@@ -2917,7 +2894,7 @@ void CWeaponElement::Init_Cold(float *center) {
         size[j] = 3.0f + (6.0f * (float) rand()) / 2.1474836e9f;
         shrink[j] = 1.0f;
         alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-        fading[j] = 0;
+        fading[j] = false;
         offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][1] = spread / 2.0f + (spread * (float) rand()) / 2.1474836e9f;
         offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
@@ -2960,7 +2937,7 @@ void CWeaponElement::Step_Cold() {
                 alpha[i] += 24.0f;
 
                 if (!(alpha[i] < 128.0f)) {
-                    fading[i] = 1;
+                    fading[i] = true;
                 }
             }
         }
@@ -2984,7 +2961,7 @@ void CWeaponElement::Step_Cold() {
                     size[j] = 3.0f + (6.0f * (float) rand()) / 2.1474836e9f;
                     shrink[j] = 1.0f;
                     alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-                    fading[j] = 0;
+                    fading[j] = false;
                     offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][1] = spread / 2.0f + (spread * (float) rand()) / 2.1474836e9f;
                     offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
@@ -2998,7 +2975,7 @@ void CWeaponElement::Step_Cold() {
     }
 
     if (dead >= WEAPON_ELEMENT_SPARK_MAX) {
-        on = 0;
+        on = false;
     }
 }
 
@@ -3076,16 +3053,16 @@ void CWeaponElement::Init_Wind(float *center) {
         size[j] = 2.0f + (4.0f * (float) rand()) / 2.1474836e9f;
         shrink[j] = 1.0f;
         alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-        fading[j] = 0;
+        fading[j] = false;
         offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][1] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][3] = 1.0f;
-        sceVu0CopyVector(&velocity[j][0], &offset[j][0]);
-        sceVu0Normalize(&velocity[j][0], &velocity[j][0]);
-        sceVu0ScaleVector(&velocity[j][0], &velocity[j][0], (0.3f * (float) rand()) / 2.1474836e9f);
+        sceVu0CopyVector(velocity[j], offset[j]);
+        sceVu0Normalize(velocity[j], velocity[j]);
+        sceVu0ScaleVector(velocity[j], velocity[j], (0.3f * (float) rand()) / 2.1474836e9f);
         spin[j] = (2.0f * (PI * (float) rand())) / 2.1474836e9f - PI;
-        spin_speed[j] = 0.09817477f + (0.19634955f * (float) rand()) / 2.1474836e9f;
+        spin_speed[j] = PI / 32.0f + ((PI / 16.0f) * (float) rand()) / 2.1474836e9f;
         frame[j] = fptosi((5.0f * (float) rand()) / 2.1474836e9f) * 0x30;
     }
 }
@@ -3112,7 +3089,7 @@ void CWeaponElement::Step_Wind() {
                 alpha[i] += 32.0f;
 
                 if (!(alpha[i] < 128.0f)) {
-                    fading[i] = 1;
+                    fading[i] = true;
                 }
             }
 
@@ -3150,17 +3127,17 @@ void CWeaponElement::Step_Wind() {
                     size[j] = 2.0f + (4.0f * (float) rand()) / 2.1474836e9f;
                     shrink[j] = 1.0f;
                     alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-                    fading[j] = 0;
+                    fading[j] = false;
                     offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][1] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][3] = 1.0f;
-                    sceVu0CopyVector(&velocity[j][0], &offset[j][0]);
-                    sceVu0Normalize(&velocity[j][0], &velocity[j][0]);
-                    sceVu0ScaleVector(&velocity[j][0], &velocity[j][0],
+                    sceVu0CopyVector(velocity[j], offset[j]);
+                    sceVu0Normalize(velocity[j], velocity[j]);
+                    sceVu0ScaleVector(velocity[j], velocity[j],
                                       (0.3f * (float) rand()) / 2.1474836e9f);
                     spin[j] = (2.0f * (PI * (float) rand())) / 2.1474836e9f - PI;
-                    spin_speed[j] = 0.09817477f + (0.19634955f * (float) rand()) / 2.1474836e9f;
+                    spin_speed[j] = PI / 32.0f + ((PI / 16.0f) * (float) rand()) / 2.1474836e9f;
                     frame[j] = fptosi((5.0f * (float) rand()) / 2.1474836e9f) * 0x30;
                     spawn_delay = fptosi(((float) spawn_delay_max * (float) rand()) / 2.1474836e9f) + 1;
                     break;
@@ -3170,7 +3147,7 @@ void CWeaponElement::Step_Wind() {
     }
 
     if (dead >= WEAPON_ELEMENT_SPARK_MAX) {
-        on = 0;
+        on = false;
     }
 }
 
@@ -3214,7 +3191,7 @@ void CWeaponElement::Draw_Wind() {
             float sprite_size = scale * (this->size[i] * shrink[i]);
             sceVu0UnitMatrix(identity);
             sceVu0RotMatrixY(rotation, identity, spin[i]);
-            sceVu0ApplyMatrix(pos.v, rotation, &offset[i][0]);
+            sceVu0ApplyMatrix(pos.v, rotation, offset[i]);
             pos.v[0] += base[0];
             pos.v[1] += base[1];
             pos.v[2] += base[2];
@@ -3259,7 +3236,7 @@ void CWeaponElement::Init_Fire(float *center) {
         size[j] = 2.0f + (6.0f * (float) rand()) / 2.1474836e9f;
         shrink[j] = 1.0f;
         alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-        fading[j] = 0;
+        fading[j] = false;
         offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][1] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
         offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
@@ -3302,7 +3279,7 @@ void CWeaponElement::Step_Fire() {
                 alpha[i] += 16.0f;
 
                 if (!(alpha[i] < 128.0f)) {
-                    fading[i] = 1;
+                    fading[i] = true;
                 }
             }
         }
@@ -3326,7 +3303,7 @@ void CWeaponElement::Step_Fire() {
                     size[j] = 2.0f + (6.0f * (float) rand()) / 2.1474836e9f;
                     shrink[j] = 1.0f;
                     alpha[j] = 1.0f + (48.0f * (float) rand()) / 2.1474836e9f;
-                    fading[j] = 0;
+                    fading[j] = false;
                     offset[j][0] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][1] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
                     offset[j][2] = (2.0f * (spread * (float) rand())) / 2.1474836e9f - spread;
@@ -3340,7 +3317,7 @@ void CWeaponElement::Step_Fire() {
     }
 
     if (dead >= WEAPON_ELEMENT_SPARK_MAX) {
-        on = 0;
+        on = false;
     }
 }
 
@@ -3420,13 +3397,13 @@ void CWeaponElement::Init_Thunder(float *center) {
         velocity[i][0] = (8.0f * (float) rand()) / 2.1474836e9f - 4.0f;
         velocity[i][1] = (8.0f * (float) rand()) / 2.1474836e9f - 4.0f;
         velocity[i][2] = (8.0f * (float) rand()) / 2.1474836e9f - 4.0f;
-        sceVu0Normalize(dir, &velocity[i][0]);
+        sceVu0Normalize(dir, velocity[i]);
         sceVu0ScaleVectorXYZ(scaled, dir, spread);
         offset[i][0] = center[0] + velocity[i][0] + (scaled[0] * (float) rand()) / 2.1474836e9f;
         offset[i][1] = center[1] + velocity[i][1] + (scaled[1] * (float) rand()) / 2.1474836e9f;
         offset[i][2] = center[2] + velocity[i][2] + (scaled[2] * (float) rand()) / 2.1474836e9f;
         offset[i][3] = 1.0f;
-        sceVu0ScaleVectorXYZ(&velocity[i][0], dir, (0.3f * (float) rand()) / 2.1474836e9f);
+        sceVu0ScaleVectorXYZ(velocity[i], dir, (0.3f * (float) rand()) / 2.1474836e9f);
         size[i] = 0.5f + (2.5f * (float) rand()) / 2.1474836e9f;
         shrink[i] = 1.0f;
         alpha[i] = 96.0f + (float) fptosi((64.0f * (float) rand()) / 2.1474836e9f);
@@ -3464,7 +3441,7 @@ void CWeaponElement::Step_Thunder() {
     }
 
     if (dead >= count) {
-        on = 0;
+        on = false;
         return;
     }
 

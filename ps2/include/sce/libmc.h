@@ -27,6 +27,21 @@
 #define sceMcTypePS2 2
 #define sceMcTypePDA 3
 
+#define sceMcFuncNoCardInfo 1
+#define sceMcFuncNoOpen 2
+#define sceMcFuncNoClose 3
+#define sceMcFuncNoSeek 4
+#define sceMcFuncNoRead 5
+#define sceMcFuncNoWrite 6
+#define sceMcFuncNoFlush 10
+#define sceMcFuncNoMkdir 11
+#define sceMcFuncNoChDir 12
+#define sceMcFuncNoGetDir 13
+#define sceMcFuncNoFileInfo 14
+#define sceMcFuncNoDelete 15
+#define sceMcFuncNoFormat 16
+#define sceMcFuncNoUnformat 17
+
 #include "common.h"
 
 /**
@@ -72,6 +87,37 @@ struct sceMcIconSys {
 };
 
 STATIC_ASSERT(sizeof(sceMcIconSys) == 0x3C4);
+
+/**
+ * Date and time a memory card file was created or changed.
+ */
+struct sceMcStDateTime {
+    u_char  resv2; /**< Reserved. */
+    u_char  sec;   /**< Second. */
+    u_char  min;   /**< Minute. */
+    u_char  hour;  /**< Hour. */
+    u_char  day;   /**< Day of the month. */
+    u_char  month; /**< Month. */
+    u_short year;  /**< Year. */
+};
+
+STATIC_ASSERT(sizeof(sceMcStDateTime) == 0x8);
+
+/**
+ * One directory entry that sceMcGetDir writes.
+ */
+struct sceMcTblGetDir {
+    sceMcStDateTime create;         /**< When the file was created. */
+    sceMcStDateTime modify;         /**< When the file was last changed. */
+    u_int           file_size_byte; /**< Size of the file in bytes. */
+    u_short         attr_file;      /**< Attribute bits of the file. */
+    u_short         reserve1;       /**< Reserved. */
+    u_int           reserve2;       /**< Reserved. */
+    u_int           pda_apl_no;     /**< PDA application number. */
+    char            entry_name[32]; /**< Name of the file or directory. */
+};
+
+STATIC_ASSERT(sizeof(sceMcTblGetDir) == 0x40);
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,8 +194,7 @@ int sceMcDelete(int port, int slot, char *name);
 /**
  * Reads up to the given number of directory entries into the given table and returns a command id.
  */
-struct MC_DIR_ENTRY;
-int sceMcGetDir(int port, int slot, const char *name, int mode, int count, MC_DIR_ENTRY *table);
+int sceMcGetDir(int port, int slot, const char *name, int mode, int count, sceMcTblGetDir *table);
 
 /**
  * Asks for the type, the free space and the format flag of the card in the given port.

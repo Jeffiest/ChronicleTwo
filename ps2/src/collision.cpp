@@ -12,6 +12,7 @@
 #include "mg_math.hpp"
 #include "mg_memory.hpp"
 #include "mg_texture.hpp"
+#include "mg_visual.hpp"
 #include "mglib.hpp"
 
 int CCollision::InsidePoint(float *point) {
@@ -62,9 +63,7 @@ void CCollisionMDT::Copy(CCollisionMDT &dest, mgCMemory *memory) {
     }
 
     if (memory != NULL) {
-        dest.poly = (CCPoly *) operator new[](
-            dest.poly_count * 0x50,
-            memory->Alloc(Align16Blocks(dest.poly_count * 0x50) + 2));
+        dest.poly = new (memory->Alloc(Align16Blocks(dest.poly_count * sizeof(CCPoly)) + 2)) CCPoly[dest.poly_count];
         i = 0;
 
         if (dest.poly != NULL) {
@@ -124,36 +123,36 @@ int CCollisionMDT::GetMaxY(float *position) {
 
     cursor = poly;
 
-    if (cursor == 0) {
-        return 0;
+    if (cursor == NULL) {
+        return false;
     }
 
     if (!(position[0] <= bbox.max[0])) {
-        return 0;
+        return false;
     }
 
     if (!(position[2] <= bbox.max[2])) {
-        return 0;
+        return false;
     }
 
     if (position[0] < bbox.min[0]) {
-        return 0;
+        return false;
     }
 
     if (position[2] < bbox.min[2]) {
-        return 0;
+        return false;
     }
 
     from[0] = to[0] = position[0];
     from[2] = to[2] = position[2];
     from[1] = 0.0f;
-    found = 0;
+    found = false;
     max_y = -1e8f;
     to[1] = 1.0f;
 
     for (i = 0; i < poly_count; i++, cursor++) {
         if (mgIntersectionPoint_line_poly3(from, to, cursor->vertex[0], cursor->vertex[1], cursor->vertex[2], cursor->normal, hit) != 0) {
-            found = 1;
+            found = true;
 
             if (max_y < hit[1]) {
                 max_y = hit[1];
@@ -261,8 +260,8 @@ int CColFrame::InsidePoint(float *point) {
     sceVu0FMATRIX lw_matrix;
     sceVu0FMATRIX inverse_matrix;
 
-    if (collision == 0) {
-        return 0;
+    if (collision == NULL) {
+        return false;
     }
 
     GetLWMatrix(lw_matrix);
@@ -428,25 +427,25 @@ int CColFrame::GetWorldBBox(mgVu0FBOX *box) {
     mgVu0FBOX  world_box;
     float      matrix[4][4];
     mgVu0FBOX  child_box;
-    int        found = 0;
+    int        found = false;
     mgCFrame  *node = this;
 
     if (collision != NULL && bound != NULL) {
-        found = 1;
+        found = true;
         GetLWMatrix(matrix);
         mgApplyMatrix(world_box.max, world_box.min, matrix, bound->max, bound->min);
     }
 
     for (node = node->child; node != NULL; node = node->brother) {
         if (node->GetWorldBBox(&child_box) != 0) {
-            if (found == 0) {
+            if (!found) {
                 world_box = child_box;
             } else {
                 mgVectorMaxMin(world_box.max, world_box.min, world_box.max, world_box.min, child_box.max,
                                child_box.min);
             }
 
-            found = 1;
+            found = true;
         }
     }
 
@@ -472,10 +471,10 @@ CColFrame *LoadCollisionFile(MDS_HEADER *header, mgCMemory *memory) {
     cursor += sizeof(MDS_HEADER);
 
     if (header->object_num == 0) {
-        return 0;
+        return NULL;
     }
 
-    frames = new ((u_long128 *) memory->Alloc(Align16Blocks(header->object_num * sizeof(CColFrame)) + 2)) CColFrame[header->object_num];
+    frames = new (memory->Alloc(Align16Blocks(header->object_num * sizeof(CColFrame)) + 2)) CColFrame[header->object_num];
 
     i = 0;
 
@@ -495,7 +494,7 @@ CColFrame *LoadCollisionFile(MDS_HEADER *header, mgCMemory *memory) {
         frame->SetTransMatrix(matrix);
 
         if (object->parent < 0) {
-            frame->SetParent(0);
+            frame->SetParent(NULL);
         } else {
             frame->SetParent(&frames[object->parent]);
         }
@@ -507,12 +506,12 @@ CColFrame *LoadCollisionFile(MDS_HEADER *header, mgCMemory *memory) {
 
             frame->collision = CreateCollisionMDT(model, memory);
 
-            if (frame->collision != 0) {
+            if (frame->collision != NULL) {
                 *(u_long128 *) max = *(u_long128 *) frame->collision->bbox.max;
                 *(u_long128 *) min = *(u_long128 *) frame->collision->bbox.min;
             }
 
-            frame->bound = new ((u_long128 *) memory->Alloc(sizeof(mgCFrame::BoundInfo) / 16 + 2)) mgCFrame::BoundInfo;
+            frame->bound = new (memory->Alloc(sizeof(mgCFrame::BoundInfo) / 16 + 2)) mgCFrame::BoundInfo;
             frame->SetBBox(max, min);
         }
     }
@@ -522,7 +521,7 @@ CColFrame *LoadCollisionFile(MDS_HEADER *header, mgCMemory *memory) {
 
 void CColFrame::Initialize() {
     flags = COL_FRAME_FLAG_SELF;
-    collision = 0;
+    collision = NULL;
     mgCFrame::Initialize();
 }
 
@@ -548,7 +547,7 @@ CCollisionMDT *CreateCollisionMDT(u_int *model, mgCMemory *memory) {
     int            polygon_no;
     int            i;
 
-    collision = new ((u_long128 *) memory->Alloc(Align16Blocks(sizeof(CCollisionMDT)) + 2)) CCollisionMDT;
+    collision = new (memory->Alloc(Align16Blocks(sizeof(CCollisionMDT)) + 2)) CCollisionMDT;
 
     vertices = (sceVu0FVECTOR *) ((char *) header + header->vertex_ofs);
     materials = (MDT_MATERIAL_ *) ((char *) header + header->material_ofs);
@@ -562,25 +561,25 @@ CCollisionMDT *CreateCollisionMDT(u_int *model, mgCMemory *memory) {
     for (i = 0; i < prim_num; i++) {
         int type = words[0];
 
-        if ((type & 7) == 4) {
-            return 0;
+        if ((type & MG_FACE_PRIM_MASK) == MG_PRIM_TRIANGLE_STRIP) {
+            return NULL;
         }
 
-        if (type & 0x100) {
-            return 0;
+        if (type & MG_FACE_COLOUR) {
+            return NULL;
         }
 
-        int face_num = words[1];
+        int vertex_num = words[1];
         words = (int *) &((FACES_ID *) words)->material;
         words++;
-        poly_count += face_num / 3;
-        words += face_num;
+        poly_count += vertex_num / 3;
+        words += vertex_num;
     }
 
     polys = (CCPoly *) memory->Alloc(poly_count * sizeof(CCPoly) / 16);
 
-    if (polys == 0) {
-        return 0;
+    if (polys == NULL) {
+        return NULL;
     }
 
     polygon_no = 0;
@@ -598,7 +597,7 @@ CCollisionMDT *CreateCollisionMDT(u_int *model, mgCMemory *memory) {
             *(u_long128 *) poly->vertex[2] = *(u_long128 *) vertices[words[2]];
             words += 3;
 
-            if (material_no >= 0 && materials != 0) {
+            if (material_no >= 0 && materials != NULL) {
                 poly->ground_kind = materials[material_no].diffuse[0] * 0.7f + 0.01f;
                 poly->foot_sound = materials[material_no].diffuse[1] * 0.7f + 0.01f;
                 poly->area_kind = materials[material_no].diffuse[2] * 0.7f + 0.01f;
@@ -617,20 +616,12 @@ CCollisionMDT *CreateCollisionMDT(u_int *model, mgCMemory *memory) {
     return collision;
 }
 
-// Defined in collision.hpp.
-// Defined in collision.hpp.
-// Defined in collision.hpp.
 void CCollisionMDT::Initialize() {
     CCollision::Initialize();
-    poly = 0;
+    poly = NULL;
     poly_count = 0;
 }
 
-// Defined in collision.hpp.
 void CCollision::Copy(CCollision &dest, mgCMemory *memory) {
     dest.bbox = bbox;
 }
-
-// Defined in collision.hpp.
-// Defined in collision.hpp.
-// Defined in collision.hpp.

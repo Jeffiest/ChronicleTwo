@@ -508,7 +508,7 @@ void PauseEnd() {
         sndMasterVolFadeInOut(1, 15, SeCoreVol, 0.0f);
     }
 
-    sndSePlay(GetSystemSndID(), 0x19, 0);
+    sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
 }
 
 int PauseLoop() {

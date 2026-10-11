@@ -49,6 +49,17 @@ enum FILE_CACHE_TYPE {
 
 /**
  *
+ * Sizes of the background read queue, the file cache and a disc sector.
+ *
+ */
+enum DATAREAD_SIZE {
+    BG_READ_MAX = 32,            /**< Files that the background read queue holds. */
+    FILE_CACHE_MAX = 16,         /**< Files that the file cache holds. */
+    DATAREAD_SECTOR_SIZE = 2048, /**< Bytes in one disc sector. */
+};
+
+/**
+ *
  * Locates one file inside DATA.DAT, as a record of the
  * index that is read from DATA.HD4 at start-up.
  *

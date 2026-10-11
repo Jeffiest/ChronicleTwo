@@ -36,6 +36,22 @@ enum MapSelType {
 
 /**
  *
+ * Kinds of map, as a map's type holds them and GetMapType returns them.
+ *
+ */
+// clang-format off
+enum MapType {
+    MAP_TYPE_GEORAMA          = 1, /**< A Georama town with edit data. */
+    MAP_TYPE_GEORAMA_INTERIOR = 2, /**< An interior of a Georama town. */
+    MAP_TYPE_INTERIOR         = 4, /**< An interior map. */
+    MAP_TYPE_FUTURE           = 5, /**< A map of the future, where the time board and world map are hidden. */
+    MAP_TYPE_FUTURE_INTERIOR  = 6, /**< An interior of a future map. */
+};
+
+// clang-format on
+
+/**
+ *
  * Screens of the debug map selection, as SelectMode holds them.
  *
  */
@@ -118,7 +134,7 @@ struct MAP_NAME_INFO {
     char *name;        /**< File name of the map, by which SearchMapNo finds it. */
     char *title;       /**< Name of the map shown to the player, or null. */
     char *add_path;    /**< Additional path given with the map, or null. */
-    int   type;        /**< Kind of map; 1 for a georama map that has edit data. */
+    int   type;        /**< Kind of map. @see MapType */
     int   sel_type;    /**< Category of the map selection list. @see MapSelType */
     int   snd_data_id; /**< Sound data the map loads, or -1 for none. */
     int   area_no;     /**< Area the map belongs to. */

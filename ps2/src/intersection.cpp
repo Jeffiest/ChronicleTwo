@@ -139,7 +139,7 @@ int IntersectionSpherePoly3(float *sphere, float (*tri)[4], float *normal, float
     }
 
     if (!(distance <= radius)) {
-        return 0;
+        return SPHERE_POLY3_NONE;
     }
 
     float push = -height;
@@ -151,34 +151,34 @@ int IntersectionSpherePoly3(float *sphere, float (*tri)[4], float *normal, float
     mgAddVector(to_center, sphere);
 
     if (mgCheckPointPoly3_XYZ(to_center, tri[0], tri[1], tri[2], normal) != 0) {
-        return 1;
+        return SPHERE_POLY3_FACE;
     }
 
     if (mgDistVector2(sphere, tri[0]) <= radius_squared) {
-        return 2;
+        return SPHERE_POLY3_VERTEX;
     }
 
     if (mgDistVector2(sphere, tri[1]) <= radius_squared) {
-        return 2;
+        return SPHERE_POLY3_VERTEX;
     }
 
     if (mgDistVector2(sphere, tri[2]) <= radius_squared) {
-        return 2;
+        return SPHERE_POLY3_VERTEX;
     }
 
     if (mgIntersectionSphereLine(sphere, tri[0], tri[1], hits) > 0) {
-        return 3;
+        return SPHERE_POLY3_EDGE;
     }
 
     if (mgIntersectionSphereLine(sphere, tri[1], tri[2], hits) > 0) {
-        return 3;
+        return SPHERE_POLY3_EDGE;
     }
 
     if (mgIntersectionSphereLine(sphere, tri[2], tri[0], hits) > 0) {
-        return 3;
+        return SPHERE_POLY3_EDGE;
     }
 
-    return 0;
+    return SPHERE_POLY3_NONE;
 }
 
 int IntersectionBox(float *from, float *to, mgVu0FBOX *box, float (*hits)[4]) {

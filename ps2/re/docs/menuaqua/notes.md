@@ -207,7 +207,7 @@ buffer, 0x32 per line), 0x225C/0x2278/0x228C (cursor), 0x258C/0x2590 widths.
   0x1C unused bytes, prizes pointer at 0x40); each "PRIZE rate, item, num, item, num, item, num;" fills a
   fish_prize_record {rate; FISH_PRIZE_INFO rank[3]} where FISH_PRIZE_INFO is {item_no, num}. Every retail record
   has rate 100; the group rates are never read. The fish race uses group race_class * 3 + wins (short flags
-  0x16..0x19), the tournament group GYORACE_SHORT_FLAG_TOUR_COUNT.
+  0x16..0x19), the tournament group SAVE_SHORT_FLAG_FISH_TOUR_COUNT.
 - The source defines and documents the row types beside their data: aqua_food_info,
   aqua_fish_info, fish_breed_pair, aqua_col_point, fish_prize_group and fish_prize_record.
 

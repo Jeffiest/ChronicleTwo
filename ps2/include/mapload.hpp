@@ -76,6 +76,7 @@ enum FUNC_PLIGHT_TYPE {
     FUNC_PLIGHT_DIRECTIONAL = 0, /**< A directional light from the point's direction. */
     FUNC_PLIGHT_AMBIENT = 1,     /**< The ambient colour. */
     FUNC_PLIGHT_POINT = 2,       /**< A point light at the point's position; the only kind GetLight hands out. */
+    FUNC_PLIGHT_ADD_AMBIENT = 3, /**< Adds its colour to the ambient colour. */
 };
 
 /**
@@ -253,7 +254,7 @@ public:
     char *name; /**< Name the point is searched by, or null. */
     int   type; /**< Kind of point, a FUNC_POINT_TYPE. */
     int   unk_8;
-    int   flag_no;
+    int   flag_no; /**< Map flag that records the point's state, such as an opened treasure box; 0 for none. */
     int   enable; /**< Non-zero while the point works. */
     float start;  /**< Hour of the day the point starts working. */
     float end;    /**< Hour of the day the point stops working; equal to start for all day. */
@@ -348,7 +349,7 @@ public:
     mgCFrame     *frame;       /**< Frame of the piece that holds the material. */
     int           material_no; /**< Index of the material in the frame's visual. */
     mgMaterial   *material;    /**< Material whose colour is replaced, or null. */
-    int           color_no;
+    int           color_no; /**< Colour number of the placed part (CMapParts::color) that also recolours this material. */
     sceVu0FVECTOR color; /**< Colour the material takes while the piece is drawn. */
 
     /**

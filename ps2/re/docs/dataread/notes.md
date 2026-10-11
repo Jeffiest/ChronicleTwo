@@ -23,11 +23,9 @@ No classes are owned by this unit (`class_units.tsv` has none).
     `static int (*error_cb)(int); static int old_vsync; static int start_vsync;`
     `static u_long128 *CacheAddress; static u_long128 *NowCacheAddress; static int FileCacheType;`
     (.sbss, in this order).
-  - `u_char header_buff[0x50000]` (code indexes it as 12-byte records and reads word 0 as an
-    int). It is retail-LOCAL but the source keeps external binding: the split library assembly
-    (`intr`, `libgraph`, `libdev`, `e_rem_pio2`) references it by name for words that have no
-    relocation in the retail ELF, so a `static` definition leaves those references unresolved.
-  - `static BG_READ_INFO bg_read_info[32]`, `static FILE_CACHE FileCache[16]`.
+  - `static u_char header_buff[0x50000]` (code indexes it as 12-byte records and reads word 0 as an
+    int). It is file-local in retail.
+  - `static BG_READ_INFO bg_read_info[BG_READ_MAX]`, `static FILE_CACHE FileCache[FILE_CACHE_MAX]`.
 - Four `.bss` zero templates are local array initializers: `char path[256] = ""` in `LoadFileBG`
   (after the argument checks), `LoadFile2` (after the cache-hit return) and `WriteFile` (at its
   start), and `char dev[16] = ""` in `GetFullPath` (after device selection); MWCC copies each with
@@ -63,14 +61,16 @@ No classes are owned by this unit (`class_units.tsv` has none).
   sceRead/sceIoctl/sceClose). Mode-2 open uses flags 0x8001 (SCE_RDONLY|SCE_NOWAIT).
 - `FILE_CACHE_TYPE` (InitFileCache arg 2): 0 disabled (MainLoop, DeleteFileCache),
   1 downward (CScene::PreLoadVillager passes 1; NowCacheAddress starts at aligned address - 0x40
-  and is decremented by align_size(size,0x800)/16 quads before each load), 2 upward.
+  and is decremented by align_size(size,DATAREAD_SECTOR_SIZE)/16 quads before each load), 2 upward.
+- `DATAREAD_SIZE`: BG_READ_MAX (32) background read slots, FILE_CACHE_MAX (16) cache entries,
+  DATAREAD_SECTOR_SIZE (2048) bytes per disc sector.
   CacheAddress = align_size(address, 0x40) only when type is 1 or 2, else left 0 (disabled).
 
 ## Struct layouts
 ### DATA_HEADER (0xC) - DATA.HD4 record
 SearchFile walks `header_buff` with stride 12, `strcasecmp(*(char**)rec, name)`. InitCDFile:
-`header_num = *(int*)header_buff / 12` (first name offset = table size), then each word 0 is
-rebased `+= header_buff` and '\\' -> '/'. +4 size (LoadFileBG/CDRead/LoadFile2 mode 1),
+`header_num = *(int*)header_buff / sizeof(DATA_HEADER)` (first name offset = table size), then
+each word 0 is rebased `+= header_buff` and '\\' -> '/'. +4 size (LoadFileBG/CDRead/LoadFile2 mode 1),
 +8 sector relative to DATA.DAT (`+ data_sector`, which is the lsn of `\DATA.DAT;1`).
 First game PAL record was 0x20 (name, 3 unused, offset, size, sector, sectors); this game's is 12.
 

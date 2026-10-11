@@ -181,6 +181,18 @@ enum ACTION_PROG {
 
 /**
  *
+ * Stages of the charging effect that the action script moves it through.
+ *
+ */
+enum ACCUME_EFFECT_MODE {
+    ACCUME_EFFECT_MODE_OFF = 0,     /**< Stops the charge and clears its state. */
+    ACCUME_EFFECT_MODE_START = 1,   /**< Starts the charge, clearing its state and setting its scale. */
+    ACCUME_EFFECT_MODE_END = 3,     /**< Ends the charge. */
+    ACCUME_EFFECT_MODE_END_ALT = 4, /**< Ends the charge; the action script uses both 3 and 4 to end it. */
+};
+
+/**
+ *
  * Charging effect that gathers on the player's weapon.
  *
  */
@@ -188,7 +200,7 @@ struct ACCUME_EFFECT {
     mgCFrame *frame; /**< Frame that the effect gathers on. */
     u8        unk_4[0x28C];
     int       clear[32];
-    int       mode; /**< Stage of the effect that the action script set. */
+    int       mode; /**< Stage of the effect that the action script set, an ACCUME_EFFECT_MODE value. */
     int       unk_314;
     int       unk_318;
     float     scale;
@@ -350,7 +362,7 @@ public:
     s16               chara_kind;    /**< What the character is in its chain, an ACTION_CHARA_KIND value. */
     sceVu0FVECTOR     front_vec;     /**< Direction that the character faces. */
     s32               mask_flag;     /**< Bits that monster scripts set and clear. */
-    s32               attack_type;   /**< Attack type that the action script reads. */
+    s32               attack_type;   /**< Attack type that the action script reads. @see WEAPON_ATTACK_TYPE */
     s32               move_type;     /**< Way of moving, an ACTION_MOVE_TYPE value. */
     float             max_speed;     /**< Speed at which the ridepod moves at its fastest. */
     s32               unk_6b0;

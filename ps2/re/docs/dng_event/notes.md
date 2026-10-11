@@ -4,6 +4,9 @@ Header: `ps2/include/dng_event.hpp`. All STATIC_ASSERTs compile.
 
 ## Source status
 
+Enums in `dng_event.hpp`: `MapEventPartsKind`, `MessageTaskManagerFlag`, `MESSAGE_TASK_MAX` and
+`ScriptDebugCommandKind`, with `TREASURE_BOX_MAX` as the box slot count.
+
 Every function is native C++ (no `NONMATCHING` guards or `INCLUDE_ASM`). The
 complete object is 0x5440 bytes. Compiler-profile dependencies in
 `scripts/build/satansfiddle.json`: the per-unit GPR helper mask 0x30 / FPR
@@ -14,8 +17,8 @@ evaluated before the nested `GetKeyDoorIndex` call and kept in `f20`).
 
 The unit's data is still largely assembly-backed: `INCLUDE_RODATA` markers for
 the strings listed under "Globals", `gatekey_index`, `keydoor_key_index`,
-`xchg_rot_list`, `tag__5`, `tag2`, the compiler templates `at_1082__2`,
-`at_1248`, `at_1466__5`..`at_1468__5`, `at_1825__2`..`at_1829__3`,
+`xchg_rot_list`, `tag__5`, `tag2`, the compiler templates
+`at_1466__5`..`at_1468__5`, `at_1825__2`..`at_1829__3`,
 `at_2198__2`..`at_2200__2`, `at_2446`..`at_2456`, `at_2529`, and the vtables
 `__vt__9CGeoStone` / `__vt__13CRedMarkModel`; `INCLUDE_BSS` for `counter_1489`
 (the `StatusWarningSnd` function-local static `counter`), `nowTbFloor`,
@@ -42,7 +45,9 @@ no `extern`s; they belong in the `.cpp` as `static`:
   `at_1732__2` the SearchMapFlatPosition failure message,
   `at_1905__2` "ERR:GROUP_ID OVER!! %d\n", `at_2159` "dungeon/cfg_file/tbox_d0%d.cfg",
   `at_2447` "dungeon/minimap/%s.img", `at_2456` "dungeon/cfg_file/%s.".
-- `at_1082__2` (qword) {0, -99999, 0, 1}: position that SetFlag gives the automap's gio part to hide it.
+- The SetFlag hidden position {0, -99999, 0, 1} is the constant initializer of the local `hidden_pos` in
+  SetFlag (no static symbol). The DrawShadow up vector {0, 1, 0, 0} is the constant initializer of the
+  local `up` in CTreasureBox::DrawShadow (no static symbol).
 
 ## Local (static) functions, not in the header
 StatusWarningSnd, BattleAreaBGMCtrl, _GROUP_START, _GROUP, _ITEM, _FLOOR_START, _FLOOR,
@@ -83,7 +88,7 @@ override it (same as CLockOnModel in dng_hud). Initialize is inline (emitted in 
 at pi), 0x668 s32 anime (AutoSetTreasureBox 1, _GEOSTONE_ANIME_OFF 0; when 0 the stone is drawn at
 any distance and does not bob). 0x66C padding. Vtable `__vt__9CGeoStone` (dng_event) = CCharacter2's
 with Initialize replaced; no new slots. Constructed by implicit ctor in `__sinit_dng_main_cpp`.
-SetFlag(0) calls `AutoMapGen.gio_parts->SetPosition(at_1082__2)` (vtable +0x10) when non-NULL.
+SetFlag(0) calls `AutoMapGen.gio_parts->SetPosition(hidden_pos)` (vtable +0x10) when non-NULL.
 Mini map symbol 3 = MINIMAP_SYMBOL_GEOSTONE (automap.hpp), 1 = TREASURE_BOX, 2 = RANDOM_CIRCLE.
 
 ## CRandomCircle (0x6A0 = global RandomCircle size)

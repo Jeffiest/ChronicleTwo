@@ -39,8 +39,6 @@ static inline u_int align16_blocks(u_int size) {
  * after it in the form mgSetFrameAttr reads, and returns the length of the result with its end.
  *
  */
-#pragma schedule off
-#pragma opt_loop_invariants off
 #pragma global_optimizer off
 
 int conv_new_text(char *dst, char *src) {
@@ -167,18 +165,11 @@ int conv_new_text(char *dst, char *src) {
     return strlen(dst) + 1;
 }
 
-#pragma schedule reset
-
 /**
  *
  * Reads a string of hexadecimal digits and returns its value; any other character counts as zero.
  *
  */
-#pragma schedule off
-#pragma global_optimizer reset
-#pragma opt_loop_invariants reset
-#pragma global_optimizer off
-
 static int htoi(char *text) {
     char *end = text;
     s32   length = 0;
@@ -214,13 +205,6 @@ static int htoi(char *text) {
 
     return value;
 }
-
-#pragma schedule reset
-
-#pragma global_optimizer reset
-#pragma schedule off
-#pragma global_optimizer off
-#pragma opt_loop_invariants off
 
 void mgSetFrameAttr(mgCFrame *input_frame, int input_recursive) {
     mgCFrameAttr *attr;
@@ -441,17 +425,13 @@ void mgSetFrameAttr(mgCFrame *input_frame, int input_recursive) {
     }
 }
 
-#pragma schedule reset
 #pragma global_optimizer reset
-#pragma opt_loop_invariants reset
 
 /**
  *
  * Finds the entry of a visual type table that applies to an object name, or NULL if none does.
  *
  */
-#pragma schedule off
-
 mgCreateVisualType *SearchVisualType(mgCreateVisualType *table, char *name) {
     mgCreateVisualType *entry;
     mgCreateVisualType *found;
@@ -483,14 +463,13 @@ mgCreateVisualType *SearchVisualType(mgCreateVisualType *table, char *name) {
     return found;
 }
 
-#pragma schedule reset
-
 /**
  *
  * Sets up one frame from a scene object: its name, transform, parent and attributes, and the
  * visual of the given type built from its model. Returns non-zero if a visual was attached.
  *
  */
+#pragma optimization_level 3
 #pragma schedule off
 #pragma opt_loop_invariants off
 
@@ -631,8 +610,8 @@ static int CreateFrameVisual(mgCFrame *input_frame, mgCMemory *input_memory, mgC
 
 #pragma opt_loop_invariants reset
 #pragma schedule reset
+#pragma optimization_level reset
 
-#pragma optimization_level 1
 // Defined inline in mg_frame.hpp.
 // Defined inline in mg_visual.hpp.
 
@@ -642,9 +621,6 @@ void mgCVisualFixMDT::Initialize() {
     mgCVisualMDT::Initialize();
 }
 
-#pragma optimization_level reset
-#pragma schedule off
-
 // Defined inline in mg_dataset.hpp.
 void mgCVisual::Initialize() {
     unk_00 = 0;
@@ -653,9 +629,6 @@ void mgCVisual::Initialize() {
     vu1_offset = 0;
     vu1_base = 0;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 mgCFrame *mgLoadMDSFile(MDS_HEADER *mds, mgCMemory *memory, mgCreateVisualType *visual_type, mgCTextureManager *texture_manager) {
     mgLoadData load;
@@ -795,12 +768,6 @@ mgCFrame *mgLoadMDSFile(mgLoadData *load) {
     return frames;
 }
 
-#pragma schedule reset
-#pragma global_optimizer reset
-
-#pragma schedule off
-#pragma global_optimizer off
-
 void mgCreateBBoxSphere(float *max, float *min, float *sphere, float (*vertex)[4], int vertex_num) {
     if (vertex == 0) {
         min[0] = 0;
@@ -854,8 +821,6 @@ void mgCreateBBoxSphere(float *max, float *min, float *sphere, float (*vertex)[4
  * visual when asked; a copied motion model follows the given frame table.
  *
  */
-#pragma schedule off
-
 void CopyFrame(mgCFrame *dst, mgCFrame *src, mgCMemory *memory, int copy_visual, mgCFrame **frame_table) {
     *dst = *src;
 
@@ -908,22 +873,15 @@ void CopyFrame(mgCFrame *dst, mgCFrame *src, mgCMemory *memory, int copy_visual,
     }
 }
 
-#pragma schedule reset
-
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::Iam() {
     return 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 // Defined inline in mg_dataset.hpp.
 mgCVisual *mgCVisual::Copy(mgCMemory *memory) {
     return this;
 }
-
-#pragma schedule reset
 
 /**
  *
@@ -931,8 +889,6 @@ mgCVisual *mgCVisual::Copy(mgCMemory *memory) {
  * the frame, or NULL if memory ran out.
  *
  */
-#pragma optimization_level 2
-
 mgCFrame *CopyFrameSub(mgCFrame *src, mgCMemory *memory, int copy_visual, mgCFrame **frame_table) {
     mgCFrame *frame;
 
@@ -955,9 +911,6 @@ mgCFrame *CopyFrameSub(mgCFrame *src, mgCMemory *memory, int copy_visual, mgCFra
     return frame;
 }
 
-#pragma optimization_level reset
-
-#pragma schedule off
 #pragma global_optimizer off
 
 mgCFrame *mgCopyFrame(mgCFrame *frame, mgCMemory *memory, int copy_visual) {
@@ -1031,9 +984,6 @@ mgCFrame *mgCopyFrame(mgCFrame *frame, mgCMemory *memory, int copy_visual) {
 }
 
 #pragma global_optimizer reset
-#pragma schedule reset
-
-#pragma schedule off
 
 void mgCMDTBuilder::Begin(mgCMemory *memory) {
     this->memory = memory;
@@ -1053,18 +1003,10 @@ void mgCMDTBuilder::Begin(mgCMemory *memory) {
     }
 }
 
-#pragma schedule reset
-
-#pragma schedule off
-
 MDT_HEADER *mgCMDTBuilder::End() {
     memory->Alloc((end - (char *) header) / 16);
     return header;
 }
-
-#pragma schedule reset
-
-#pragma schedule off
 
 void mgCMDTBuilder::End(mgCFrame *frame, mgCVisualMDT *visual, mgLoadData *load) {
     mgCTextureManager *textures;
@@ -1100,8 +1042,6 @@ void mgCMDTBuilder::End(mgCFrame *frame, mgCVisualMDT *visual, mgLoadData *load)
     frame->attr = attr;
 }
 
-#pragma schedule reset
-
 void mgCMDTBuilder::BeginData(int type) {
     if (data_type == MG_MDT_DATA_NONE) {
         data = end;
@@ -1109,8 +1049,6 @@ void mgCMDTBuilder::BeginData(int type) {
         data_type = type;
     }
 }
-
-#pragma schedule off
 
 void mgCMDTBuilder::SetData(float *vector) {
     switch (data_type) {
@@ -1125,10 +1063,6 @@ void mgCMDTBuilder::SetData(float *vector) {
             return;
     }
 }
-
-#pragma schedule reset
-
-#pragma schedule off
 
 #pragma global_optimizer off
 
@@ -1146,9 +1080,6 @@ void mgCMDTBuilder::SetData(float x, float y, float z, float w) {
     SetData(vector);
 }
 
-#pragma schedule reset
-
-#pragma schedule off
 #pragma global_optimizer reset
 
 void mgCMDTBuilder::SetMaterial(float *colour, char *texture) {
@@ -1160,10 +1091,6 @@ void mgCMDTBuilder::SetMaterial(float *colour, char *texture) {
         data_num++;
     }
 }
-
-#pragma schedule reset
-
-#pragma schedule off
 
 void mgCMDTBuilder::EndData() {
     switch (data_type) {
@@ -1193,10 +1120,6 @@ void mgCMDTBuilder::EndData() {
     data_type = MG_MDT_DATA_NONE;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
-
 void mgCMDTBuilder::BeginFaces() {
     header->faces_ofs = end - (char *) header;
     faces = (MDT_FACES *) end;
@@ -1205,10 +1128,6 @@ void mgCMDTBuilder::BeginFaces() {
     end += sizeof(MDT_FACES);
     index = (int *) end;
 }
-
-#pragma schedule reset
-
-#pragma schedule off
 
 void mgCMDTBuilder::EndFaces() {
     header->faces_size = face_end - face_block_addr;
@@ -1221,15 +1140,11 @@ void mgCMDTBuilder::EndFaces() {
     cursor = face_end;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
-
 void mgCMDTBuilder::BeginPrim(int type, int material) {
     prim = (FACES_ID *) index;
     index += 2;
     prim->type = type;
-    prim->face_num = 0;
+    prim->vertex_num = 0;
 
     face_index_num = 3;
 
@@ -1249,10 +1164,6 @@ void mgCMDTBuilder::BeginPrim(int type, int material) {
     *index++ = material;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
-
 void mgCMDTBuilder::AddFace(int vertex) {
     s32 *p = face_cursor;
     face_cursor = &p[1];
@@ -1260,18 +1171,10 @@ void mgCMDTBuilder::AddFace(int vertex) {
     index_num += 1;
 }
 
-#pragma schedule reset
-
-#pragma schedule off
-
 void mgCMDTBuilder::EndPrim() {
-    prim->face_num = index_num / face_index_num;
+    prim->vertex_num = index_num / face_index_num;
     faces->prim_num++;
 }
-
-#pragma schedule reset
-
-#pragma schedule off
 
 // Defined inline in mg_visual.hpp.
 
@@ -1279,92 +1182,57 @@ int mgCVisualMDT::Iam() {
     return MG_VISUAL_KIND_MDT;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 // Defined inline in mg_visual.hpp.
 int mgCVisualMDT::GetMaterialNum() {
     return material_num;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 // Defined inline in mg_visual.hpp.
 mgMaterial *mgCVisualMDT::GetpMaterial() {
     return material;
 }
 
-#pragma schedule reset
-#pragma optimization_level 1
-
 // Defined inline in mg_visual.hpp.
 void mgCVisualMDT::Draw(float (*matrix)[4], mgCDrawManager *draw_manager) {
     Draw(NULL, matrix, draw_manager);
 }
-
-#pragma optimization_level reset
-#pragma schedule off
 
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::CreatePacket(mgCMemory *memory, mgCMemory *scratch) {
     return 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::GetMaterialNum() {
     return 0;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 // Defined inline in mg_dataset.hpp.
 mgMaterial *mgCVisual::GetpMaterial() {
     return 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 // Defined inline in mg_dataset.hpp.
 mgMaterial *mgCVisual::GetMaterial(int index) {
     return 0;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::CreateBBox(float *box_min, float *box_max, float (*matrix)[4]) {
     return 0;
 }
 
-#pragma schedule reset
-#pragma schedule off
-
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
     return 0;
 }
-
-#pragma schedule reset
-#pragma schedule off
 
 // Defined inline in mg_dataset.hpp.
 int mgCVisual::Draw(u_int *packet, float (*matrix)[4], mgCDrawManager *manager) {
     return 0;
 }
 
-#pragma schedule reset
-#pragma optimization_level 1
-
 // Defined inline in mg_dataset.hpp.
 void mgCVisual::Draw(float (*matrix)[4], mgCDrawManager *manager) {
     Draw(0, matrix, manager);
 }
-
-#pragma optimization_level reset

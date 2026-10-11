@@ -31,10 +31,10 @@ enum DA_FRAME_POSE_TYPE {
  *
  */
 struct DA_FRAME_POSE {
-    int  type;       /**< How the vertices give the orientation, a DA_FRAME_POSE_TYPE. */
-    int  vertex_num; /**< Number of entries in vertex_id. */
-    int *vertex_id;  /**< Indices of the vertices the pose is built from. */
-    int  local;      /**< Whether the pose is made relative to the frame's parent rather than set as the frame's world transform. */
+    DA_FRAME_POSE_TYPE type;       /**< How the vertices give the orientation. */
+    int                vertex_num; /**< Number of entries in vertex_id. */
+    int               *vertex_id;  /**< Indices of the vertices the pose is built from. */
+    int                local;      /**< Whether the pose is made relative to the frame's parent rather than set as the frame's world transform. */
 };
 
 STATIC_ASSERT(sizeof(DA_FRAME_POSE) == 0x10);

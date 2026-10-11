@@ -37,14 +37,14 @@ EnemyReset, LockOnMode, Information, SkipFloor, Sound Flag, Monster Talk, Effect
 
 ## command_int (0x0033CFB0, .data, retail size 0x5C)
 Pairs {value, minimum} per menu line, indexed `command_int + cursor*8` (+4 = minimum, Key clamps
-value up to it). Initial values: [0]=100 (event no), [12]=1 (entry 6 Information), [16]=1
-(entry 8 Sound Flag), rest 0. Retail size 0x5C = 23 ints, so entry 11's minimum (offset 0x5C)
-is outside the symbol: likely declared as a flat `int command_int[23]` (or `[][2]` cannot give
-0x5C). Decide when migrating data. Synced in Start/Exit:
+value up to it), i.e. `command_int[DNG_DEBUG_COMMAND * 2]` and `[DNG_DEBUG_COMMAND * 2 + 1]`.
+Declared as a flat `static int command_int[23]`, the size of the retail symbol. Initial values:
+[0]=100 (event no), [12]=1 (entry 6 Information), [16]=1 (entry 8 Sound Flag), rest 0. Synced in Start/Exit:
 entry 2 <-> `DebugInfo[0]` (mainloop), entry 3 <-> `DebugInfo[1]`, entry 5 <-> s16 at
 `BattleAreaScene+0x9E`, entries 8..11 <-> dbinfo 0x10..0x1C.
-Entry 6 (Information): `DrawDebugWindow` calls `DrawSystemParamInfo` for 2,
-`DrawSystemParamInfo2` for 3.
+Entry 6 (Information) value is a `DNG_DEBUG_INFORMATION`: `DNG_DEBUG_INFORMATION_SYSTEM` (2)
+selects `DrawSystemParamInfo`, `DNG_DEBUG_INFORMATION_TARGET` (3) selects `DrawSystemParamInfo2`.
+`pause_flag = 15` sets DNG_PAUSE bits 0x1|0x2|0x4|0x8 (0x8 is unnamed in scenesnd.hpp).
 
 ## dngDebugKey actions (accept = pad 0x20)
 - 0 RunEvent: command=0, event_no=value, Exit, return 1.
@@ -90,6 +90,12 @@ s16 at +0x44 when +2 > 0. `base_monster_define`'s row type belongs to the monste
 `dngDebugStart` copies the live camera, movement, lock-on, sound, talk and effect settings into the editable command values. It configures pad repeat for 0xF000 and 0x5000, saves the battle pause flag, then sets that flag to 15. The guarded C++ draft compiles and differs from retail in nine instruction words.
 
 `dngDebugDraw` constructs a `CPreSprite` after reloading its texture, while the debug window is active. Declaring the sprite before the text buffer within the active branch preserves the retail stack layout and eliminates the base-constructor alias.
+
+## Matching outcomes of the cleanup pass
+- `DBGCMD_ReloadEnemy` reset loop: indexing `ActiveMonster->memory[i]` directly (with or without a
+  `CMonsterMan *manager` local) changes the function's code. Keeping the original address arithmetic
+  with `offsetof(CMonsterMan, memory)` and `sizeof(mgCMemory)` matches; `<cstddef>` supplies `offsetof`.
+- `DrawSystemParamInfo2` casts to `CCharacter2 *` are unnecessary and removed; `dbFont` is `static`.
 
 ## Native static initialization
 

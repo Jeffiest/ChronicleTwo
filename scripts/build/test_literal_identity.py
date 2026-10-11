@@ -20,7 +20,7 @@ class LiteralIdentityTests(unittest.TestCase):
 
     def apply(self, fixture):
         elf, pieces, retail, rows = fixture
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             addresses={'table': 0x4000}, rows=rows)
         return elf.symtab.symbols[0].name
 

@@ -74,10 +74,10 @@ whose first name byte is 0, which is the 8 bytes of zero padding after the table
 | 0x22 | `stagger` s8 | added to target `+0xBF4` (monster and actionchara CheckDamage). Values 0..3 |
 | 0x23 | `unk_23` | always 0 |
 | 0x24 | `critical_rate` s16 | damage *= value * 0.01 on a critical (both CheckDamage). Values 0..0x64 |
-| 0x26 | `hit_flags` s16 | `HitEffectSet` 3rd arg; `& 8` disables the critical; `& 1` monster state 500/600. Every reader (monster, actionchara) loads it with `lh`, hence `s16` |
+| 0x26 | `hit_flags` s16 | `HitEffectSet` 3rd arg; `& 8` disables the critical; `& 1` monster state 500/600. Every reader (monster, actionchara) loads it with `lh`, hence `s16`. Bit `0x10` (`DAMAGE_HIT_CHARGED`) is set only on the two charged sword rows (Max's and Monica's) and no code reads it |
 | 0x28 | `unk_28` s32 | always -1 |
 | 0x2C | `element[8]` s16 | memcpy to prim 0x90; actionchara CheckDamage reads shorts. Order seen: fire, ice, thunder, wind, holy (rows 火弾/氷弾/雷弾/風弾/魔石聖) |
-| 0x3C | `source_type` s32 | stored to monster `+0x1210`. Values 0,1 (player melee),2 (player shots),3 (items),4 (ridepod),8 (monsters) - meaning inferred from row names only |
+| 0x3C | `source_type` s32 | `DamageSource`, stored to monster `+0x1210`. See Enums |
 | 0x40 | `status` u32 | -> prim 0xA0 |
 | 0x44 | `stun_time` s16 | -> target `+0xBE8` (x1, x2, x3, x7 in actionchara) |
 | 0x46 | `hit_count` s16 | damage divisor in monster CheckDamage; `calcWeaponParam2` arg |
@@ -88,9 +88,19 @@ whose first name byte is 0, which is the 8 bytes of zero padding after the table
   `CScene::GetType(1, chara_id)`; 1 = player side (player attacks use owner 0 -> flag 4 and
   `CActionChara::CheckDamage` calls `CheckHit(0)`), 3 = monsters (`CMonsterMan::CheckDamage` calls
   `CheckHit(slot + 0x18)`).
+- `DamageHitFlag` (row 0x26): `0x1` stun, `0x2` knockdown, `0x4` no stagger, `0x8` ignore guard
+  (see the `hit_flags` row above for the uses already read), `0x10` charged (unread).
+- `DamageSource` (row 0x3C, `source_type`): what the attacker is. `AddExpWeaponParam`
+  (`maintex.cpp`) gives the experience of a kill to the weapon when the attacker is the owner
+  character: 1 main weapon (slot 0, with level-up), 2 sub weapon (slot 1, with level-up), 3 split
+  equally between both slots, 4 main weapon without a level-up check, 8 main weapon with a level-up
+  check. Kinds 0 and 5-7 give no experience. The table's rows with 0 are monster attacks; 8 is
+  used by generic named attacks, such as those of a transformed Monica. Names are the table's
+  naming and the code's use, not a retail symbol.
 - `DamageKind` (row 0x18): names inferred from the table's row names (ユリス = Max, モニカ =
-  Monica, ロボ = ridepod, サムライソード/ドリルアーム = ridepod arms). Monster CheckDamage also
-  tests 0x0E and 0x15, which no row in this table uses.
+  Monica, ロボ = ridepod, サムライソード/ドリルアーム = ridepod arms). `DAMAGE_KIND_RIDEPOD_OTHER`
+  (0x0E) and `DAMAGE_KIND_MONSTER_OTHER` (0x15) appear only in monster.cpp's `react_tbl` and in the
+  hit-sound switch; no table row uses them, and they react like ridepod guns and monster attacks.
 - `ColPrimCoordType` (prim 0x30).
 - `status` bits are left as plain u32 (owned by CBattleCharaInfo's special-status flags).
 

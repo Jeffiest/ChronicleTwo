@@ -17,20 +17,19 @@ renames North American (`BASCUS-97213...`) memory card save directories to this 
 
 ## Globals (all file-local; none go in the header)
 Every data symbol of the unit is LOCAL in retail (`local_symbols.tsv`), so they are `static` in
-the .cpp, except `SaveFileInfoTableSizeConvert`, which keeps external linkage because the
-`Vu_progmain` assembly references it. The unit has no data markers: screen text, directory masks,
+the .cpp, `SaveFileInfoTableSizeConvert` included. The unit has no data markers: screen text, directory masks,
 suffixes and diagnostic formats are inline strings.
 | Symbol | Addr | Size | Type / meaning |
 |---|---|---|---|
 | `MovieScene` | 0x37EA70 | 4 | `CScene*` from `GetMainScene()`; Init calls its object at +0x10548's vtable slot +8 (same pattern as movieviewlp). |
-| `ConvMode` | 0x37EA74 | 4 | `int`, `SV_CONV_MODE` (0 select, 2 convert, 3 result; 1 never used). |
+| `ConvMode` | 0x37EA74 | 4 | `SV_CONV_MODE` (0 select, 2 convert, 3 result; 1 never used). |
 | `SlotSelect` | 0x37EA78 | 4 | `int`, memory card port passed to every `sceMc*` call (0/1, set by Left/Right). |
 | `FileListNum` | 0x37EA7C | 4 | `int`, number of entries copied into `SaveFileInfoTablePtr`. |
-| `ConvertPhase` | 0x37EA80 | 4 | `int`, `SAVEDATA_CONVERT_PHASE`. |
+| `ConvertPhase` | 0x37EA80 | 4 | `SAVEDATA_CONVERT_PHASE`. |
 | `ConvertFileNum` | 0x37EA84 | 4 | `int`, directories renamed. |
-| `ConvertResult` | 0x37EA88 | 4 | `int`, `SAVEDATA_CONVERT_RESULT` (0, 1, 100, 101). |
+| `ConvertResult` | 0x37EA88 | 4 | `SAVEDATA_CONVERT_RESULT` (0, 1, 100, 101). |
 | `ConvertResultDispTime` | 0x37EA8C | 4 (piece 0x34) | `int` (only 4-byte accesses; set to 0x1E in convert mode, 0 on reset; only written in this unit). Its .sbss piece runs to the next piece at 0x37EAC0; the 0x30 zero tail is linker alignment, not part of the object. |
-| `SaveFileInfoTablePtr` | 0x37EAC0 | 4 | `sceMcTblGetDir*` (0x40-byte entries): `new[]` of 0x800 bytes (32 entries) from the main stack; `memcpy` of 0x40 per entry; `EntryName` at +0x20 is cleared/compared/printed. NB: the copy loop allows up to 0x40 entries although only 32 fit. `sceMcTblGetDir` is not declared in `ps2/include/sce/libmc.h` yet (`sceMcGetDir` takes `void*`). |
+| `SaveFileInfoTablePtr` | 0x37EAC0 | 4 | `sceMcTblGetDir*` (0x40-byte entries): `new[]` of 0x800 bytes (32 entries) from the main stack; `memcpy` of 0x40 per entry; `EntryName` at +0x20 is cleared/compared/printed. NB: the copy loop allows up to 0x40 entries although only 32 fit. |
 | `SAVEDATA_BUFFER` | 0x37EAC4 | 4 | Pointer to a 0x659C0-byte object (`operator new(0x659c0, Alloc(0x659e))`); constructs 5 x `CEditData` (stride 0x5510) at +0x1CA4..+0x1C5F4, `CUserDataManager` at +0x1D320, `CQuestData::Initialize` at +0x62AC0, `CMenuSystemData` at +0x64140. Identical allocation is in `CMemoryCardManager::Initialize` (memcard, stored at +0x8EC). `CSaveData::GetEditData` uses edit data at +0x1C24, so this object likely holds a `CSaveData` at +0x80 -- type unresolved; owned by memcard/savedata. Only written here. |
 | (guards) | 0x37EAC8.. | 1 each | compiler-generated guard flags for the function-local statics `buf0`, `buf1`, `dbuf0`, `dbuf1` (the first three own four-byte pieces, the last one byte). |
 | `DataBuffer` | 0x1F646B0 | 0x30 | `mgCMemory`, 100000-byte texture/data buffer, passed to `SetTextureTable(100, 0x14, ...)`. |
@@ -43,6 +42,8 @@ suffixes and diagnostic formats are inline strings.
 a different symbol from mainloop's 4-byte `GamePad` (0x37CF44).
 
 ## Enums (declared in convviewlp.hpp; names are descriptive, not retail)
+- `SAVEDATA_CONVERT_SIZE`: 32 source directory slots (`SAVEDATA_CONVERT_FILE_MAX`, the file list)
+  and 64 directory entries per memory card listing (`SAVEDATA_CONVERT_DIR_MAX`).
 - `SV_CONV_MODE`: transitions in `SVConvViewLoop`: 0 -(Cross 0x40)-> 2 (calls
   `InitSaveFileInfoTablePtr`); 2 -(SaveDataConvertLoop()!=0)-> 3; 3 -(Circle 0x20)-> 0, clearing
   result/time. In mode 0, Start (0x800) or Triangle (0x10) returns 1. Left 0x8000 -> slot 0,
@@ -71,7 +72,7 @@ a different symbol from mainloop's 4-byte `GamePad` (0x37CF44).
 
 ## Source status
 All six game functions are native, including the conversion loop; the unit has no `NONMATCHING`
-guards, `INCLUDE_ASM` gaps, or data markers. The source uses `MC_DIR_ENTRY` (a 0x40-byte
+guards, `INCLUDE_ASM` gaps, or data markers. The source uses `sceMcTblGetDir` (a 0x40-byte
 directory entry with the name at +0x20) and `SAVE_CONVERT_WORK` (the save image at +0x80 of the
 conversion allocation). `sceMcEnd` and `sceMcRename` are declared in the SDK memory-card header.
 

@@ -235,15 +235,15 @@ void AddExpWeaponParam(float amount, int weapon_owner, int kind) {
         }
     } else {
         switch (kind) {
-            case 1:
+            case DAMAGE_SOURCE_MAIN_WEAPON:
                 info->AddAbs(0, amount, &leveled_up);
                 slot = 0;
                 break;
-            case 2:
+            case DAMAGE_SOURCE_SUB_WEAPON:
                 info->AddAbs(1, amount, &leveled_up);
                 slot = 1;
                 break;
-            case 3: {
+            case DAMAGE_SOURCE_ITEM: {
                 float half = amount / 2.0f;
 
                 if (!(info->AddAbs(0, half, &leveled_up) < 1.0f)) {
@@ -256,14 +256,14 @@ void AddExpWeaponParam(float amount, int weapon_owner, int kind) {
 
                 break;
             }
-            case 4:
+            case DAMAGE_SOURCE_RIDEPOD:
                 info->AddAbs(0, amount, NULL);
                 break;
             case 5:
             case 6:
             case 7:
                 break;
-            case 8:
+            case DAMAGE_SOURCE_GENERIC:
                 info->AddAbs(0, amount, &leveled_up);
                 slot = 0;
                 break;
@@ -272,7 +272,7 @@ void AddExpWeaponParam(float amount, int weapon_owner, int kind) {
 
     if (leveled_up != 0) {
         LevelupInfo.SetLevelUpInfo(0x100, mgScreenHeight / 2, slot, 0);
-        sndSePlay(SystemSND_ID, 30, 0);
+        sndSePlay(SystemSND_ID, SYSTEM_SE_PARAM_UP, 0);
     }
 }
 

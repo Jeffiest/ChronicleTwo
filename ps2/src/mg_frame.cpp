@@ -23,7 +23,7 @@ void mgCFrameAttr::Initialize() {
     z_write = MG_ZBUF_WRITE;
     unk_3c = 0;
     unk_20 = 100.0f;
-    fog = 1;
+    fog = MG_FOG_SCENE;
     obj_alpha = 1.0f;
     point_light = 1;
     unk_50[3] = 0.0f;
@@ -882,10 +882,6 @@ void mgCFrame::GetBBoardMatrix(int mode, float (*matrix)[4], mgRENDER_INFO *info
     changed = 0;
     ClearChildFlag();
 }
-
-#pragma global_optimizer reset
-
-#pragma global_optimizer off
 
 void mgCFrame::GetLWMatrix(float (*matrix)[4]) {
     float parent_matrix[4][4];

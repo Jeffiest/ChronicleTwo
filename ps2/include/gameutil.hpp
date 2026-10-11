@@ -38,7 +38,7 @@ enum MotionKeyType {
     MOTION_KEY_MATERIAL_ALPHA  = 40, /**< Transparency of one material of the frame's visual. */
     MOTION_KEY_MATERIAL_COLOR  = 41, /**< Colour of one material of the frame's visual. */
     MOTION_KEY_VISIBLE         = 50, /**< Visibility of the frame. */
-    MOTION_KEY_VISIBLE_TREE          = 51, /**< Visibility of the frame, with the other pair of draw modes. */
+    MOTION_KEY_VISIBLE_TREE    = 51, /**< Visibility of the frame, with the other pair of draw modes. */
 };
 
 // clang-format on
@@ -144,7 +144,7 @@ struct tagMOTION_TYPE {
     sceVu0FMATRIX *base_matrices; /**< Bind-pose matrix of each frame, loaded from the motion's first file. */
     Mot_List      *motion_list;   /**< Key lists that pose the frames, applied by SetMotionTime and ChangeMotion. */
     Mot_List      *skin_list;     /**< Key lists that skin the visuals, applied by DeformMesh. */
-    u32            unk_0C;
+    u32            unk_0C; /**< Unknown; the loaders leave it zero and _MOTION copies it from shadow motion set 0 with the pointers above. */
     tagFRAME_INF  *frame_info; /**< Skinning data of each frame of the model. */
 };
 

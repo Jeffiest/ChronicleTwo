@@ -183,6 +183,16 @@ void CList<CFuncPoint>::Initialize();
 
 /**
  *
+ * Bits of the mode CFuncPointMngr::GetLight collects lights by.
+ *
+ */
+enum FUNC_POINT_LIGHT_MODE {
+    FUNC_POINT_LIGHT_CHARA = 0x1, /**< Lights a character. */
+    FUNC_POINT_LIGHT_PARTS = 0x2, /**< Includes the lights of placed parts. */
+};
+
+/**
+ *
  * Keeps the function points of a map or placed part in one list per kind and walks through them.
  *
  */

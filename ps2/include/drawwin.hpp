@@ -15,7 +15,7 @@
 
 /**
  *
- * Rows of data: the texture rectangles the versatile windows are cut from.
+ * Parts a versatile window is cut into, indexing the rows of data.
  *
  */
 // clang-format off
@@ -41,7 +41,7 @@ enum VersatileWinPart {
     VWIN_TOP4_L         = 18, /**< Top-left corner of the fourth style. */
     VWIN_TOP4_C         = 19, /**< Top edge of the fourth style. */
     VWIN_TOP4_R         = 20, /**< Top-right corner of the fourth style. */
-    VWIN_PART_MAX       = 21, /**< Rows of data. */
+    VWIN_PART_MAX       = 21, /**< Number of parts. */
 };
 
 // clang-format on
@@ -158,5 +158,9 @@ void DrawVersatileWin_4(mgCDrawPrim *prim, RECT win, RGBAQ_TYPE *color, int alph
 void DrawDQFukidashi(mgCDrawPrim *prim, RECT win, int tail_x, int tail_y, RGBAQ_TYPE *color, int tail_on,
                      int mode);
 
-/** Texture rectangles of the versatile windows' parts: x, y, width and height, by VersatileWinPart. */
+/**
+ *
+ * Texture rectangles of the versatile windows' parts: x, y, width and height, by VersatileWinPart.
+ *
+ */
 extern s32 data[VWIN_PART_MAX][4];

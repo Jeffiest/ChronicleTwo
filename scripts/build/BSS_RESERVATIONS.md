@@ -1,7 +1,7 @@
 # BSS reservation evidence
 
-Fresh raw linked compiles classify 162 BSS gaps. Two have original compiler
-alignment proof and need no reservation; the other 160 placements across 23
+Fresh raw linked compiles classify 155 BSS gaps. Two have original compiler
+alignment proof and need no reservation; the other 153 placements across 22
 units are explicit unresolved retail storage in
 `postprocess_object.py:BSS_RETAIL_RESERVATIONS`. One of them belongs to a
 function-local static: `CMenuChrCngMenu::KeyChangeMain` in `menuchr.cpp`
@@ -13,11 +13,10 @@ one does not explain that gap.
 | Classification | Count | Evidence |
 |---|---:|---|
 | Native alignment | 2 | Exact following native extent and original alignment explain the gap. |
-| Four-byte placement | 148 | Retail small-data placement fits minimum-four-byte alignment; its original policy is unproved. |
-| Retained following marker | 8 | The following retail object has no native alignment proof. |
+| Four-byte placement | 149 | Retail small-data placement fits minimum-four-byte alignment; its original policy is unproved. |
 | Larger gap | 4 | Original following alignment contradicts the observed gap. |
 
-The four-byte group contains 146 scalar/guard slots and two aggregate slots:
+The four-byte group contains 147 scalar/guard slots and two aggregate slots:
 `editmenu:GeoramaMesMakeManner` is five bytes followed by a short;
 `menuaqua:GyoraceFishSel` is six bytes followed by a byte. Their own alignment
 of eight does not round their tails under default MWLD.
@@ -71,35 +70,22 @@ The four larger gaps are `convviewlp:ConvertResultDispTime` to
 4, 4, 4 and 16. None explains the retail placement.
 
 Exact exception tuples retain known section storage through the first
-canonical cut. They preserve the owner symbol's declared size and do not
-materialize the following marker-owned payload. Unknown tuples, changed
-extents, ambiguous native ownership, interior declarations and relocation
+canonical cut and preserve the owner symbol's declared size. Unknown tuples,
+changed extents, ambiguous native ownership, interior declarations and relocation
 fields cannot use an exception. The ordinary path separately requires
 measured original following-object alignment. Both paths use the same native
 extent snapshot for linked and source-only objects.
-The list also records measured following alignments and explicitly distinguishes
-retained marker storage from rejected live native evidence. A marker state
-requires the source to retain that marker; current native or placeholder
-storage must fit its object/piece bound, and live competing objects block
-canonical fragment traversal. `dng_main:init_1107` records both a linked
-following marker and a valid one-byte source-only native guard; the retained
-guard itself is still excluded from comparison credit.
-References bound to the same retained placeholder may keep declaration aliases
-at offset zero, with the exact declared object or complete piece extent. The
-`dbinfo` aliases share that one fallback payload; unrelated
-names, offsets, types, sizes or sections remain rejected.
 
 Existing objdiff credit includes accepted BSS reservation storage. Keeping that
 metric unchanged supplies no independent proof of these gaps' compiler/linker
-cause. Retained marker pieces continue to supply no native data credit.
-Complete object-byte and PAL checks remain required. Regression coverage is
-in `test_bss_original_alignment.py` and `test_data_padding.py`.
+cause. Complete object-byte and PAL checks remain required. Regression coverage
+is in `test_bss_original_alignment.py` and `test_data_padding.py`.
 
 ## Complete inventory
 
 Addresses and sizes are retail declarations. Alignment is the following
-object's original native section alignment; `none` means absent native proof. The two native-alignment rows are excluded from the exception
-list. Every other row is an unresolved placement.
+object's original native section alignment. The two native-alignment rows are
+excluded from the exception list. Every other row is an unresolved placement.
 
 | Unit | Owner | Start | Size | Gap | Following object | Alignment | Classification |
 |---|---|---:|---:|---:|---|---:|---|
@@ -107,9 +93,7 @@ list. Every other row is an unresolved placement.
 | convviewlp | `init_817` | 0x0037eac8 | 1 | 3 | `init_820` | 1 | Four-byte placement |
 | convviewlp | `init_820` | 0x0037eacc | 1 | 3 | `init_823` | 1 | Four-byte placement |
 | convviewlp | `init_823` | 0x0037ead0 | 1 | 3 | `init_826` | 1 | Four-byte placement |
-| dng_debug | `dbFont` | 0x01ecdc30 | 184 | 8 | `dbinfo` | none | Retained following marker |
-| dng_main | `nowload` | 0x01ee5210 | 60 | 4 | `at_941__2` | none | Retained following marker |
-| dng_main | `init_1107` | 0x0037d470 | 1 | 3 | `init_1824` | none | Retained following marker |
+| dng_main | `init_1107` | 0x0037d470 | 1 | 3 | `init_1824` | 1 | Four-byte placement |
 | dngmenu | `dngfloor_infoview` | 0x0037d52c | 1 | 3 | `dngfloor_backdraw` | 1 | Four-byte placement |
 | dngmenu | `DngInfoFishOkFlag` | 0x0037d53c | 1 | 3 | `DngInfoSphidaOkFlag` | 1 | Four-byte placement |
 | dngmenu | `DngInfoSphidaOkFlag` | 0x0037d540 | 1 | 3 | `DngAskMessageDrawFlag` | 1 | Four-byte placement |
@@ -220,10 +204,8 @@ list. Every other row is an unresolved placement.
 | menusys | `SpectolBreakNum` | 0x0037dca8 | 2 | 2 | `SpectolBreakSpPoint` | 2 | Four-byte placement |
 | menusys | `MenuSpectolTransPos` | 0x0037dcc0 | 2 | 2 | `itemmenu_chr_rotflag` | 1 | Four-byte placement |
 | menusys | `itemmenu_chr_rotflag` | 0x0037dcc4 | 1 | 3 | `sndflag_1665` | 1 | Four-byte placement |
-| menusys | `MenuDebugCamera` | 0x0037dd88 | 4 | 4 | `at_6133` | none | Retained following marker |
 | menusys | `init_4683` | 0x0037dd3c | 1 | 3 | `BuildEndFlag_4703` | 1 | Four-byte placement |
 | menusys | `BuildEndFlag_4703` | 0x0037dd40 | 1 | 3 | `init_4704` | 1 | Four-byte placement |
-| menusys | `init_6162` | 0x0037dd9c | 1 | 3 | `at_6176` | none | Retained following marker |
 | menusys | `cmd_counter_1048` | 0x0037dc8c | 1 | 3 | `init_1049` | 1 | Four-byte placement |
 | menusys | `sndflag_1665` | 0x0037dcc8 | 1 | 3 | `init_1666` | 1 | Four-byte placement |
 | menusys | `count_time_3839` | 0x0037dd08 | 1 | 3 | `init_3840` | 1 | Four-byte placement |
@@ -247,8 +229,6 @@ list. Every other row is an unresolved placement.
 | title | `TitleOmakeFlag` | 0x0037e0cc | 2 | 2 | `TitleMCCheckBootMode` | 1 | Four-byte placement |
 | title | `TitlePhase` | 0x0037e038 | 2 | 2 | `TitlePushStart_AlphaPlus` | 2 | Four-byte placement |
 | title | `TitleMCActivePort` | 0x0037e024 | 2 | 2 | `TitleMCCheckNow` | 1 | Four-byte placement |
-| title | `DCSelectedMovie` | 0x0037e008 | 1 | 3 | `DCRuncherCounter` | none | Retained following marker |
-| title | `TitleRushWaitCountBoot` | 0x0037dfd4 | 1 | 3 | `TitleSelectInit` | none | Retained following marker |
 | title | `debug_start_drawflag` | 0x0037e098 | 1 | 3 | `HDDPhase` | 2 | Four-byte placement |
 | title | `TitleCopyRightDispPhase` | 0x0037e044 | 1 | 3 | `TitleCopyRightDispCounter` | 2 | Four-byte placement |
 | title | `TitleCopyRightDispCounter` | 0x0037e048 | 2 | 2 | `TitleSkipLogoFlag` | 1 | Four-byte placement |
@@ -256,7 +236,6 @@ list. Every other row is an unresolved placement.
 | title | `HDDConfirmType` | 0x0037e0a0 | 2 | 2 | `HDDnowDisplayImageNo` | 2 | Four-byte placement |
 | title | `HDDnowDisplayImageNo` | 0x0037e0a4 | 2 | 2 | `HDDDlBarDrawFlag` | 1 | Four-byte placement |
 | title | `HDDModeSelect` | 0x0037e0c8 | 2 | 2 | `TitleOmakeFlag` | 2 | Four-byte placement |
-| title | `TitleSkipLogoFlag` | 0x0037e04c | 1 | 3 | `Tex_TitleBG` | none | Retained following marker |
 | title | `TitleMCCheckBootMode` | 0x0037e0d0 | 1 | 3 | `TitleMCCheckPort` | 2 | Four-byte placement |
 | title | `TitleMCCheckPort` | 0x0037e0d4 | 2 | 2 | `TitleMCCheckPhase` | 2 | Four-byte placement |
 | title | `MasterDebugModeOn` | 0x0037dffc | 1 | 3 | `TitleBootEventNo` | 1 | Four-byte placement |

@@ -267,6 +267,18 @@ STATIC_ASSERT(sizeof(mgCVisualAttr) == 0x18);
 
 /**
  *
+ * Fog modes of a frame, as mgCFrameAttr::fog holds them.
+ *
+ */
+enum MG_FOG_MODE {
+    MG_FOG_OFF = 0,   /**< No fog. */
+    MG_FOG_SCENE = 1, /**< The scene's fog colour. */
+    MG_FOG_BLACK = 2, /**< Black fog. */
+    MG_FOG_WHITE = 3, /**< White fog. */
+};
+
+/**
+ *
  * Drawing attributes of one frame: the visual's GS settings plus visibility, lighting, fog and billboarding.
  *
  */
@@ -278,7 +290,7 @@ public:
     int           unk_24;
     int           unk_28;
     int           program_option; /**< Sets bit 2 of the microprogram's draw flags; set by the 'S' name flag. */
-    int           fog;            /**< Fog mode: 0 off, 1 the scene's fog colour, 2 black fog, 3 white fog; set by the 'F' name flag. */
+    int           fog;            /**< Fog mode; set by the 'F' name flag. @see MG_FOG_MODE */
     int           unk_34;
     float         unk_38;
     int           unk_3c;

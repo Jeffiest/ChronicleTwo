@@ -595,7 +595,7 @@ void CActionChara::ThrowItemObject() {
 
     if (hold_type != ACTION_HOLD_NONE) {
         if (throw_effect >= 0) {
-            effect_man->SetScriptProgNo(0x12C, 0, throw_effect);
+            effect_man->SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, 0, throw_effect);
             sceVu0CopyVector(target, front_vec);
             GetPosition(position);
             sceVu0ScaleVector(target, target, 120.0f);
@@ -628,17 +628,17 @@ int CActionChara::UsedItemAction() {
     info = GetItemInfoData(item_no);
 
     if (info != NULL) {
-        if (info->status_flags & 6) {
+        if (info->action_flags & (ITEM_ACTION_THROW | ITEM_ACTION_THROW_ALT)) {
             EntryThrowItem();
             return ACTION_ITEM_THROW;
         }
 
-        if (info->status_flags & 0x19) {
+        if (info->action_flags & (ITEM_ACTION_USE | ITEM_ACTION_DRINK_WATER | ITEM_ACTION_EAT)) {
             if (battle_info->UseActiveItem(item) != 0) {
-                if (info->status_flags & 0x18) {
+                if (info->action_flags & (ITEM_ACTION_DRINK_WATER | ITEM_ACTION_EAT)) {
                     effect_kind = 0;
 
-                    if (item_no == 0x112) {
+                    if (item_no == ITEM_ID_STAMINA_DRINK) {
                         effect_kind = 1;
                     }
 
@@ -674,7 +674,7 @@ void CActionChara::EntryThrowItem() {
     item_no = item->item_no;
     ThrowItemTable table = {
         {0x114, 0x118, 0x119, 0x11A, 0x11B, 0x11C, 0x11D, 0x11E, 0x11F,
-         0x120, 0x121, 0x122, 0x123, 0x124, 0x130, 0x186, 0x187, 0x133, -1}
+         0x120, 0x121, 0x122, 0x123, 0x124, ITEM_ID_GIFT_CAPSULE, 0x186, 0x187, 0x133, -1}
     };
     index = 0;
 
@@ -706,7 +706,7 @@ void CActionChara::EntryThrowItem() {
             effect_man->SetTexb(action_info.env->texb, 0, throw_effect);
             index = 0;
 
-            if (item_no == 0x130) {
+            if (item_no == ITEM_ID_GIFT_CAPSULE) {
                 do {
                     effect_man->SetValue(index + 2, item->GetGiftBoxItemNo(index), 0,
                                          throw_effect);
@@ -1256,7 +1256,7 @@ int DistCheck_Action2(CScene *scene, float unused, float range, float *out_dist,
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT && target->state == ACTIVE_MONSTER_LIVE &&
             target->catch_state != ACTION_CATCH_HELD &&
             !(target->attrib & MONSTER_ATTRIB_NO_LOCK_ON)) {
-            target->GetEntryObjectPos(0, 0, entry_pos);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, entry_pos);
             dist = target->target_dist;
 
             if (dist < range || target->tbl->boss != 0) {
@@ -1364,7 +1364,7 @@ int Check_LockOn(CScene *scene, float range, int index) {
         return true;
     }
 
-    target->GetEntryObjectPos(0, 0, target_pos);
+    target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
     own_pos[3] = 1.0f;
     target_pos[3] = 1.0f;
     out_of_range = true;
@@ -1407,8 +1407,8 @@ void CActionChara::CollisionCheck(float *pos, float *velocity, float *out_veloci
 
         int body_no = 0;
 
-        for (body = monster->GetEntryObjectPos(4, body_no, body_position); body != NULL;
-             body = monster->GetEntryObjectPos(4, body_no, body_position)) {
+        for (body = monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_BODY, body_no, body_position); body != NULL;
+             body = monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_BODY, body_no, body_position)) {
             if (body->enable == 0) {
                 body_no++;
                 continue;
@@ -1465,7 +1465,7 @@ void CActionChara::RockOn() {
         target = static_cast<CActiveMonster *>(nowScene__2->GetCharacter(target_no));
 
         if (target != NULL) {
-            target->GetEntryObjectPos(0, 0, target_pos);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_pos);
             sceVu0SubVector(to_target, target_pos, own_pos);
             sceVu0Normalize(to_target, to_target);
             sceVu0Normalize(front_vec, velocity);
@@ -1476,12 +1476,12 @@ void CActionChara::RockOn() {
     if (PadCtrl.Btn(PAD_BTN_ACTION_CANCEL) != 0) {
         if (lock_on != 0) {
             if (target_dot < -0.2f) {
-                sndSePlay(SystemSND_ID, 0x1B, 0);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_OFF, 0);
                 lock_on = false;
                 return;
             }
 
-            if (scene_input->lock_on_mode == 2) {
+            if (scene_input->lock_on_mode == DNG_LOCK_ON_SELECT) {
                 if (target_no < 0) {
                     target_no = MONSTER_ACTIVE_MAX;
                 } else {
@@ -1501,7 +1501,7 @@ void CActionChara::RockOn() {
             if (target != NULL) {
                 if (ActiveMonster->GetPriorityLevelIndex(
                         target->priority + 1, &priority_index) != NULL) {
-                    sndSePlay(SystemSND_ID, 0x1A, 0);
+                    sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_ON, 0);
                     target_no = priority_index;
                     return;
                 }
@@ -1509,7 +1509,7 @@ void CActionChara::RockOn() {
                 target_no = MONSTER_ACTIVE_MAX;
             }
         } else if (target_no != -1) {
-            sndSePlay(SystemSND_ID, 0x1A, 0);
+            sndSePlay(SystemSND_ID, SYSTEM_SE_LOCK_ON, 0);
             lock_on = true;
         }
     }
@@ -1659,7 +1659,7 @@ int CActionChara::HumanMoveIF() {
         }
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             facing = unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f);
             SetRotation(0.0f, facing, 0.0f);
 
@@ -1727,7 +1727,7 @@ int CActionChara::HumanMoveIF() {
         }
 
         if (target != NULL && boss != 0 && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f), 0.0f);
         }
     }
@@ -1832,7 +1832,7 @@ int CActionChara::HumanShrowMoveIF() {
         target = static_cast<CActionChara *>(nowScene__2->GetCharacter(target_no));
 
         if (target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             rotation = unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f);
             SetRotation(0.0f, rotation, 0.0f);
         }
@@ -1915,7 +1915,7 @@ int CActionChara::HumanGunMoveIF(char *stand_motion, char *move_motion) {
         target = static_cast<CActionChara *>(nowScene__2->GetCharacter(target_no));
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             float target_angle = atan2f(target_position[0] - position[0], target_position[2] - position[2]);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, target_angle, 5.0f), 0.0f);
 
@@ -2749,7 +2749,7 @@ int CActionChara::MonsterMoveIF() {
 
         if (target != NULL && target->chara_kind == ACTION_KIND_SCRIPT) {
             sceVu0FVECTOR target_position;
-            target->GetEntryObjectPos(0, 0, target_position);
+            target->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, target_position);
             SetRotation(0.0f, unitRotation(CObjectFrame::frame, atan2f(target_position[0] - position[0], target_position[2] - position[2]), 5.0f), 0.0f);
         }
     } else {
@@ -2979,7 +2979,7 @@ int CActionChara::CheckDamage() {
         immobilized = false;
         attributes = battle->GetAttr();
 
-        if ((attributes & (CHARA_STATUS_UNK_8 | CHARA_STATUS_UNK_20)) != 0) {
+        if ((attributes & (CHARA_STATUS_STOP | CHARA_STATUS_STONE)) != 0) {
             immobilized = true;
         }
 
@@ -2998,7 +2998,7 @@ int CActionChara::CheckDamage() {
 
         damage += 1.0f + fRand(2.0f);
 
-        if ((hit->status & 0x1000) != 0) {
+        if ((hit->status & WEAPON_SPECIAL_RATIO_DAMAGE) != 0) {
             damage = (int) (max_hp * (0.01f * hit->damage));
 
             if (now_hp - damage < 0.0f) {
@@ -3006,7 +3006,7 @@ int CActionChara::CheckDamage() {
             }
         }
 
-        if ((hit->status & 0x2000) != 0) {
+        if ((hit->status & WEAPON_SPECIAL_HALF_HP) != 0) {
             damage = now_hp / 2;
 
             if (damage <= 1.0f) {
@@ -3037,39 +3037,39 @@ int CActionChara::CheckDamage() {
 
         if ((damage_points = (int) damage) > 0) {
             if ((hit->status & WEAPON_SPECIAL_POISON) != 0 && iRand(100) < 30 &&
-                (attributes & CHARA_STATUS_POISON) == 0 && CheckAmuletAvoid(0x101) == 0) {
+                (attributes & CHARA_STATUS_POISON) == 0 && CheckAmuletAvoid(ITEM_ID_ANTIDOTE_AMULET) == 0) {
                 battle->SetAttr(CHARA_STATUS_POISON, 0);
                 sndSePlay(battle_sound, 0x18, 0);
             }
 
-            if ((hit->status & 0x10000) != 0 && battle_area->weather != DNG_WEATHER_RAIN && iRand(100) < 30 &&
-                (attributes & CHARA_STATUS_SLOW) == 0 && CheckAmuletAvoid(0x100) == 0) {
+            if ((hit->status & WEAPON_SPECIAL_SLOW) != 0 && battle_area->weather != DNG_WEATHER_RAIN && iRand(100) < 30 &&
+                (attributes & CHARA_STATUS_SLOW) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_GOO_AMULET) == 0) {
                 battle->SetAttrVol(CHARA_STATUS_SLOW, 3600);
                 sndSePlay(battle_sound, 0x52, 0);
             }
 
-            if ((hit->status & 0x8000) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_20) == 0 && CheckAmuletAvoid(0xFD) == 0) {
-                battle->SetAttrVol(CHARA_STATUS_UNK_20, 900);
+            if ((hit->status & WEAPON_SPECIAL_STONE) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_STONE) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_PETRIFY_AMULET) == 0) {
+                battle->SetAttrVol(CHARA_STATUS_STONE, 900);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x53, 0);
             }
 
-            if ((hit->status & 0x8) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_8) == 0 && CheckAmuletAvoid(0xFE) == 0) {
-                battle->SetAttrVol(CHARA_STATUS_UNK_8, 300);
+            if ((hit->status & WEAPON_SPECIAL_STOP) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_STOP) == 0 && CheckAmuletAvoid(ITEM_ID_NON_STOP_AMULET) == 0) {
+                battle->SetAttrVol(CHARA_STATUS_STOP, 300);
                 immobilized = true;
                 sndSePlay(battle_sound, 0x54, 0);
             }
 
-            if ((hit->status & 0x20000) != 0 && iRand(100) < 50 &&
-                (attributes & CHARA_STATUS_UNK_4) == 0 && CheckAmuletAvoid(0xFF) == 0) {
-                battle->SetAttr(CHARA_STATUS_UNK_4, 0);
+            if ((hit->status & WEAPON_SPECIAL_CURSE) != 0 && iRand(100) < 50 &&
+                (attributes & CHARA_STATUS_CURSE) == 0 && CheckAmuletAvoid(ITEM_ID_ANTI_CURSE_AMULET) == 0) {
+                battle->SetAttr(CHARA_STATUS_CURSE, 0);
                 sndSePlay(battle_sound, 0x55, 0);
             }
 
-            if ((hit->status & 0x100000) != 0 && iRand(100) < 50) {
-                battle->SetAttr(CHARA_STATUS_UNK_40, 0);
+            if ((hit->status & WEAPON_SPECIAL_DRY) != 0 && iRand(100) < 50) {
+                battle->SetAttr(CHARA_STATUS_DRY, 0);
                 sndSePlay(battle_sound, 0x52, 0);
             }
         }
@@ -3093,7 +3093,7 @@ int CActionChara::CheckDamage() {
         }
 
         if (battle->GetNowHp_i() <= 0) {
-            if (CheckEquipSetItem(0x111) == 0) {
+            if (CheckEquipSetItem(ITEM_ID_RESURRECTION_POWDER) == 0) {
                 reaction = ACTION_REACTION_DEAD;
             } else {
                 battle->SetHpRate(0.5f);
@@ -3101,7 +3101,7 @@ int CActionChara::CheckDamage() {
                 effect_man->CreateEffSpt("\x92\xCA\x8F\xED\x89\xF1\x95\x9C", 0, 0);
                 effect_man->SetScriptTargetId(0, -1, -1);
                 effect_man->SetValue(0, 0, 0, -1);
-                sndSePlay(SystemSND_ID, 0xA, 0);
+                sndSePlay(SystemSND_ID, SYSTEM_SE_REVIVE, 0);
             }
         }
 
@@ -3453,11 +3453,11 @@ void CActionChara::RunScript(CScene *scene, RUN_SCRIPT_ENV *env) {
         }
     }
 
-    if (area->lock_on_mode == 2) {
+    if (area->lock_on_mode == DNG_LOCK_ON_SELECT) {
         target_no = RockOn_TargetSel(scene, target_no);
     }
 
-    if (area->lock_on_mode == 0) {
+    if (area->lock_on_mode == DNG_LOCK_ON_NEAREST) {
         if (lock_on == 0) {
             target_no = DistCheck_Action2(scene, 0.5f, 400.0f, &target_distance, 0, NULL);
         } else {
@@ -3655,8 +3655,8 @@ void CActionChara::Step() {
 
     StepParam();
 
-    if (self->sound_info.se_positional != 2) {
-        self->sound_info.se_positional = 1;
+    if (self->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+        self->sound_info.se_positional = CHARA_SE_POSITIONAL_HEAD;
     }
 
     self->CCharacter2::Step();
@@ -3666,8 +3666,8 @@ void CActionChara::Step() {
         do {
             chained = link;
 
-            if (chained->sound_info.se_positional != 2) {
-                chained->sound_info.se_positional = 0;
+            if (chained->sound_info.se_positional != CHARA_SE_POSITIONAL_LEADER) {
+                chained->sound_info.se_positional = CHARA_SE_POSITIONAL_CHAINED;
             }
 
             chained->CCharacter2::Step();

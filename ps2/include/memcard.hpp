@@ -100,6 +100,60 @@ enum MC_DATA_SIZE_TYPE {
 
 /**
  *
+ * Table sizes of CMemoryCardManager.
+ *
+ */
+// clang-format off
+enum MC_TABLE_SIZE {
+    MC_SAVE_FILE_NUM = 13, /**< Save files the manager keeps a record of, one per save slot. */
+    MC_DIR_TABLE_NUM = 17, /**< Directory entries one sceMcGetDir may write into dir_table. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Result a memory card library command gives when it could not be started because the previous one has not finished.
+ *
+ */
+// clang-format off
+enum MC_COMMAND_RESULT {
+    MC_COMMAND_BUSY = -200, /**< The previous command is still running; the command is retried on a later frame. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Titles a save directory's icon.sys can carry, as the second index of the browser title tables.
+ *
+ */
+// clang-format off
+enum MC_BROWSER_NAME_KIND {
+    MC_BROWSER_NAME_SAVE     = 0, /**< Title of a save directory without a number. */
+    MC_BROWSER_NAME_ALBUM    = 1, /**< Title of the photo album directory. */
+    MC_BROWSER_NAME_OMAKE    = 2, /**< Title of the bonus data directory. */
+    MC_BROWSER_NAME_SAVE_NUM = 3, /**< Format of a numbered save directory's title, taking the number as a string. */
+};
+
+// clang-format on
+
+/**
+ *
+ * Release versions the browser title tables hold titles for, as their first index.
+ *
+ */
+// clang-format off
+enum MC_BROWSER_REGION {
+    MC_BROWSER_REGION_JAPAN  = 0, /**< Japanese release, "Dark Chronicle" in Japanese. */
+    MC_BROWSER_REGION_US     = 1, /**< English release, "Dark Cloud 2". */
+    MC_BROWSER_REGION_EUROPE = 2, /**< European release, "Dark Chronicle". */
+};
+
+// clang-format on
+
+/**
+ *
  * Describes one memory card icon resource used by a save file.
  *
  */
@@ -128,20 +182,6 @@ struct MC_CARD_INFO {
 };
 
 STATIC_ASSERT(sizeof(MC_CARD_INFO) == 0x20);
-
-/**
- *
- * One entry that sceMcGetDir writes into CMemoryCardManager::dir_table.
- *
- */
-struct MC_DIR_ENTRY {
-    u8   unk_00[0x10];
-    u32  file_size; /**< Size of the file in bytes. */
-    u8   unk_14[0xC];
-    char name[0x20]; /**< Name of the file or directory. */
-};
-
-STATIC_ASSERT(sizeof(MC_DIR_ENTRY) == 0x40);
 
 /**
  *
@@ -246,7 +286,7 @@ public:
     s32              step; /**< Step that the current operation has reached. */
     s32              fd;   /**< File that the last sceMcOpen returned, -1 until one does. */
     u8               unk_60[0x20];
-    MC_DIR_ENTRY     dir_table[17];        /**< Table that sceMcGetDir fills with directory entries. */
+    sceMcTblGetDir   dir_table[MC_DIR_TABLE_NUM];        /**< Table that sceMcGetDir fills with directory entries. */
     s32              dir_entries;          /**< Entries the last sceMcGetDir found, or the error it reported. */
     s32              album_buffer_set;     /**< One once SetBuff_Album has been given an album buffer. */
     s32              port;                 /**< Port that every command of the manager names. */
@@ -272,7 +312,7 @@ public:
     sceMcIconSys     icon_sys;             /**< icon.sys image that MakeDir writes into a new directory. */
     MC_CARD_INFO     card[2];              /**< What the manager found out about the card in each port. */
     u8               unk_D9C[4];
-    SAVEDATA_INFO    file_info[13]; /**< Save files of the card, as the menus show them. */
+    SAVEDATA_INFO    file_info[MC_SAVE_FILE_NUM]; /**< Save files of the card, as the menus show them. */
     s32              file_exists;   /**< Whether the last album or bonus data check found the file. */
     u32              omake_flag;    /**< Bonus content that the bonus data file unlocks. */
     u8               unk_10E8[0x18];

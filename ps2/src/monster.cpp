@@ -506,10 +506,10 @@ static MONSTER_REACT react_tbl[14] = {
     {DAMAGE_KIND_ITEM,          DNG_PRACTICE_ACTION_ITEM,         1, 0},
     {DAMAGE_KIND_RIDEPOD_PUNCH, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_RIDEPOD_SWORD, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
-    {14,                        DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
+    {DAMAGE_KIND_RIDEPOD_OTHER, DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_RIDEPOD_GUN,   DNG_PRACTICE_ACTION_RIDEPOD,      1, 0},
     {DAMAGE_KIND_MONSTER,       DNG_PRACTICE_ACTION_MONSTER,      1, 0},
-    {21,                        DNG_PRACTICE_ACTION_MONSTER,      1, 0},
+    {DAMAGE_KIND_MONSTER_OTHER, DNG_PRACTICE_ACTION_MONSTER,      1, 0},
     {-1,                        0,                                0, 0}
 };
 
@@ -942,7 +942,7 @@ CActiveMonster *CMonsterMan::CheckThrowTarget(mgCFrame *frame) {
             if (mgDistVector(monster_pos, frame_pos) <= 30.0f) {
                 monster = active[i];
 
-                if (monster->tbl->unk_98 & 1) {
+                if (monster->tbl->lift_flags & MONSTER_LIFT_FORBIDDEN) {
                     MsgTaskMan.Print(dung_progtxt_notlift_mons[LanguageCode], 0x2D, 8, 0);
                     return NULL;
                 }
@@ -1160,7 +1160,7 @@ CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0F
     monster = active[slot];
     tbl = GetReferPtr2(refer[refer_no].id);
 
-    if (tbl->unk_b4 == 0) {
+    if (tbl->share_model == 0) {
         refer[refer_no].chara.SetPosition(0.0f, 0.0f, 0.0f);
         refer[refer_no].chara.SetRotation(0.0f, 0.0f, 0.0f);
         refer[refer_no].chara.Copy(*monster, &memory[slot]);
@@ -1410,6 +1410,42 @@ void CMonsterMan::DrawInvisibleMonster() {
     }
 }
 
+void CMonsterMan::DrawShadowActMonster() {
+    float           light_direction[4][4];
+    float           light_color[4][4];
+    int             index;
+    CActiveMonster *monster;
+
+    if (scene->GetMap(scene->active_map) == NULL) {
+        return;
+    }
+
+    mgGetLight(light_direction, light_color);
+    float shadow_direction[4] = {light_direction[0][0], light_direction[1][0], light_direction[2][0]};
+    shadow_direction[1] = shadow_direction[1] < 0.0f ? -shadow_direction[1] : shadow_direction[1];
+
+    if (shadow_direction[1] < 0.8f) {
+        shadow_direction[1] = 0.8f;
+    }
+
+    float shadow_normal[4] = {0.0f, 1.0f, 0.0f, 0.0f};
+
+    for (index = 0; index < MONSTER_ACTIVE_MAX; index++) {
+        monster = active[index];
+
+        if (monster != NULL && monster->chara_kind == ACTION_KIND_SCRIPT && monster->catch_state != ACTION_CATCH_HELD &&
+            monster->target_dist <= 0.6f * monster->clip_dist && monster->priority < priority_limit &&
+            !(monster->alpha < 0.6f)) {
+            float shadow_position[4] = {0.0f, -10.0f, 0.0f, 0.0f};
+            active[index]->GetEntryObjectPos(1, shadow_position);
+            shadow_position[1] -= 20.0f;
+            mgSetDropShadowMatrix(shadow_direction, shadow_position, shadow_normal);
+            active[index]->ShadowStep();
+            active[index]->DrawShadowDirect();
+        }
+    }
+}
+
 void CMonsterMan::PriorityLevelCheck() {
     int order[MONSTER_ACTIVE_MAX];
     int count = 0;
@@ -1459,6 +1495,78 @@ CActiveMonster *CMonsterMan::GetPriorityLevelIndex(int level, int *slot) {
     }
 
     return NULL;
+}
+
+int CMonsterMan::CheckPhoto(CScene::InScreenCharaInfo *info) {
+    float     position[4];
+    float     rotation[4];
+    float     direction[4];
+    float     object_matrix[4][4];
+    float     photo_matrix[4][4];
+    mgVu0FBOX box;
+    float     screen_max[4];
+    float     screen_min[4];
+    int       selected_index = -1;
+    float     nearest_distance = 0.0f;
+    float     distance;
+    float     radius;
+
+    info->chara_no = -1;
+
+    for (int index = 0; index < MONSTER_ACTIVE_MAX; index++) {
+        if (active[index] == NULL || active[index]->chara_kind != ACTION_KIND_SCRIPT || active[index]->alpha < 1.0f) {
+            continue;
+        }
+
+        active[index]->GetRotation(rotation);
+        CHARA_ENTRY_OBJECT *entry = active[index]->GetEntryObjectPos(0, 0, position);
+        radius = 5.0f * entry->size;
+        mgGetDirFromCamera(direction, position);
+        distance = mgDistVector(direction);
+
+        if (!(distance <= 300.0f) && active[index]->tbl->boss == 0) {
+            continue;
+        }
+
+        sceVu0Normalize(direction, direction);
+        mgUnitMatrix(object_matrix);
+        mgUnitMatrix(photo_matrix);
+        sceVu0RotMatrixY(object_matrix, object_matrix, rotation[1]);
+        ((EffectVector *) object_matrix[3])->qw = ((EffectVector *) position)->qw;
+        object_matrix[3][3] = 1.0f;
+        ((EffectVector *) photo_matrix[3])->qw = ((EffectVector *) position)->qw;
+        photo_matrix[3][3] = 1.0f;
+        sceVu0InnerProduct(direction, object_matrix[2]);
+        mgZeroVectorW(box.max);
+        mgZeroVectorW(box.min);
+        box.max[1] = radius;
+        box.min[1] = -radius;
+        box.max[0] = radius;
+        box.min[0] = -radius;
+        box.min[2] = -radius;
+        box.max[2] = radius;
+
+        if (mgInsideScreen(&box, photo_matrix, screen_max, screen_min) &&
+            !(screen_max[0] < -50.0f) && screen_min[0] <= 50.0f &&
+            !(screen_max[1] < -50.0f) && screen_min[1] <= 50.0f &&
+            (selected_index < 0 || !(nearest_distance <= distance))) {
+            selected_index = index;
+            nearest_distance = distance;
+        }
+    }
+
+    if (selected_index < 0) {
+        return -1;
+    }
+
+    info->chara_no = active[selected_index]->tbl->id;
+    info->dist = nearest_distance - 10.0f;
+
+    if (active[selected_index]->scoop.ok != 0) {
+        return active[selected_index]->scoop.no;
+    }
+
+    return -1;
 }
 
 void CMonsterMan::SetNearAreaPiyori(float limit) {
@@ -1880,7 +1988,7 @@ void CMonsterMan::CheckDamage() {
     se_id = now_scene->se_battle_id;
     player = (CActionChara *) now_scene->GetCharacter(0);
     chara_info = GetBattleCharaInfo();
-    gift_pack_num = GetUserItemHaveNum(0x134);
+    gift_pack_num = GetUserItemHaveNum(ITEM_ID_BADGE_BOX);
 
     for (i = 0; i < MONSTER_ACTIVE_MAX; i++) {
         monster = active[i];
@@ -1942,12 +2050,12 @@ void CMonsterMan::CheckDamage() {
 
             float damage = prim->damage - monster->defense;
 
-            if (prim->status & 0x1000) {
+            if (prim->status & WEAPON_SPECIAL_RATIO_DAMAGE) {
                 damage = (float) monster->max_life * (0.01f * (float) prim->param->damage);
                 damage *= 0.01f * (float) monster->tbl->ratio_damage_rate;
             }
 
-            if (prim->status & 0x40000) {
+            if (prim->status & WEAPON_SPECIAL_HOLY_WATER) {
                 if (monster->tbl->user_mons_id != 9) {
                     damage = 0.0f;
                 }
@@ -2042,21 +2150,21 @@ void CMonsterMan::CheckDamage() {
                     monster->status.poison_count = 120;
                 }
 
-                if ((prim->status & 0x8) && !(monster->status.attr & (MONSTER_STATUS_STOP | MONSTER_STATUS_STONE)) &&
-                    !(monster->tbl->resist_attr & 0x8) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_STOP) && !(monster->status.attr & (MONSTER_STATUS_STOP | MONSTER_STATUS_STONE)) &&
+                    !(monster->tbl->resist_attr & WEAPON_SPECIAL_STOP) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_STOP;
                     monster->status.grey_time = 300;
                     greyed = true;
                 }
 
-                if ((prim->status & 0x8000) && !(monster->status.attr & MONSTER_STATUS_STONE) &&
-                    !(monster->tbl->resist_attr & 0x8000) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_STONE) && !(monster->status.attr & MONSTER_STATUS_STONE) &&
+                    !(monster->tbl->resist_attr & WEAPON_SPECIAL_STONE) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_STONE;
                     monster->status.grey_time = 900;
                     greyed = true;
                 }
 
-                if ((prim->status & 0x10000) && !(monster->tbl->resist_attr & 0x10000) && status_rate >= iRand(100)) {
+                if ((prim->status & WEAPON_SPECIAL_SLOW) && !(monster->tbl->resist_attr & WEAPON_SPECIAL_SLOW) && status_rate >= iRand(100)) {
                     monster->status.attr |= MONSTER_STATUS_SLOW;
                     monster->status.slow_time = 1800;
                 }
@@ -2216,7 +2324,7 @@ void CMonsterMan::CheckDamage() {
 
             switch (prim->param->kind) {
                 case DAMAGE_KIND_MONSTER:
-                case 21:
+                case DAMAGE_KIND_MONSTER_OTHER:
                 case DAMAGE_KIND_ITEM:
                 case DAMAGE_KIND_MAX_MELEE:
                     se_no = 0x1C;
@@ -2231,7 +2339,7 @@ void CMonsterMan::CheckDamage() {
                 case DAMAGE_KIND_RIDEPOD_PUNCH:
                     se_no = 0x19;
                     break;
-                case 14:
+                case DAMAGE_KIND_RIDEPOD_OTHER:
                 case DAMAGE_KIND_RIDEPOD_GUN:
                 case DAMAGE_KIND_MONICA_MAGIC:
                 case DAMAGE_KIND_LASER_GUN:
@@ -2321,11 +2429,11 @@ void CMonsterMan::CheckDamage() {
                 reaction = MONSTER_HIT_DEAD;
 
                 if (gift_pack_num != 0) {
-                    if (monster->monster_id >= 0xB0 && monster->monster_id < 0xB5 && (prim->status & 0x40000)) {
+                    if (monster->monster_id >= 0xB0 && monster->monster_id < 0xB5 && (prim->status & WEAPON_SPECIAL_HOLY_WATER)) {
                         monster->drop_badge = true;
                     }
 
-                    if (monster->monster_id == 0xDC && (prim->status & 0x80000)) {
+                    if (monster->monster_id == 0xDC && (prim->status & WEAPON_SPECIAL_BADGE_DROP)) {
                         monster->drop_badge = true;
                     }
                 }
@@ -2356,7 +2464,7 @@ void CMonsterMan::CheckDamage() {
                         break;
                     }
 
-                    if ((tbl->flags & 1) || monster->piyori_time > 0) {
+                    if ((tbl->flags & MONSTER_TBL_FLAG_NO_STAGGER) || monster->piyori_time > 0) {
                         break;
                     }
 
@@ -2375,7 +2483,7 @@ void CMonsterMan::CheckDamage() {
 
                     break;
                 case MONSTER_HIT_KNOCK:
-                    if (tbl->flags & 4) {
+                    if (tbl->flags & MONSTER_TBL_FLAG_NO_KNOCK) {
                         break;
                     }
 
@@ -2881,112 +2989,4 @@ void LoadMonsterLanguage(int language) {
         interpreter.SetScript(script, size);
         interpreter.Run();
     }
-}
-
-void CMonsterMan::DrawShadowActMonster() {
-    float           light_direction[4][4];
-    float           light_color[4][4];
-    int             index;
-    CActiveMonster *monster;
-
-    if (scene->GetMap(scene->active_map) == NULL) {
-        return;
-    }
-
-    mgGetLight(light_direction, light_color);
-    float shadow_direction[4] = {light_direction[0][0], light_direction[1][0], light_direction[2][0]};
-    shadow_direction[1] = shadow_direction[1] < 0.0f ? -shadow_direction[1] : shadow_direction[1];
-
-    if (shadow_direction[1] < 0.8f) {
-        shadow_direction[1] = 0.8f;
-    }
-
-    float shadow_normal[4] = {0.0f, 1.0f, 0.0f, 0.0f};
-
-    for (index = 0; index < MONSTER_ACTIVE_MAX; index++) {
-        monster = active[index];
-
-        if (monster != NULL && monster->chara_kind == ACTION_KIND_SCRIPT && monster->catch_state != ACTION_CATCH_HELD &&
-            monster->target_dist <= 0.6f * monster->clip_dist && monster->priority < priority_limit &&
-            !(monster->alpha < 0.6f)) {
-            float shadow_position[4] = {0.0f, -10.0f, 0.0f, 0.0f};
-            active[index]->GetEntryObjectPos(1, shadow_position);
-            shadow_position[1] -= 20.0f;
-            mgSetDropShadowMatrix(shadow_direction, shadow_position, shadow_normal);
-            active[index]->ShadowStep();
-            active[index]->DrawShadowDirect();
-        }
-    }
-}
-
-int CMonsterMan::CheckPhoto(CScene::InScreenCharaInfo *info) {
-    float     position[4];
-    float     rotation[4];
-    float     direction[4];
-    float     object_matrix[4][4];
-    float     photo_matrix[4][4];
-    mgVu0FBOX box;
-    float     screen_max[4];
-    float     screen_min[4];
-    int       selected_index = -1;
-    float     nearest_distance = 0.0f;
-    float     distance;
-    float     radius;
-
-    info->chara_no = -1;
-
-    for (int index = 0; index < MONSTER_ACTIVE_MAX; index++) {
-        if (active[index] == NULL || active[index]->chara_kind != ACTION_KIND_SCRIPT || active[index]->alpha < 1.0f) {
-            continue;
-        }
-
-        active[index]->GetRotation(rotation);
-        CHARA_ENTRY_OBJECT *entry = active[index]->GetEntryObjectPos(0, 0, position);
-        radius = 5.0f * entry->size;
-        mgGetDirFromCamera(direction, position);
-        distance = mgDistVector(direction);
-
-        if (!(distance <= 300.0f) && active[index]->tbl->boss == 0) {
-            continue;
-        }
-
-        sceVu0Normalize(direction, direction);
-        mgUnitMatrix(object_matrix);
-        mgUnitMatrix(photo_matrix);
-        sceVu0RotMatrixY(object_matrix, object_matrix, rotation[1]);
-        ((EffectVector *) object_matrix[3])->qw = ((EffectVector *) position)->qw;
-        object_matrix[3][3] = 1.0f;
-        ((EffectVector *) photo_matrix[3])->qw = ((EffectVector *) position)->qw;
-        photo_matrix[3][3] = 1.0f;
-        sceVu0InnerProduct(direction, object_matrix[2]);
-        mgZeroVectorW(box.max);
-        mgZeroVectorW(box.min);
-        box.max[1] = radius;
-        box.min[1] = -radius;
-        box.max[0] = radius;
-        box.min[0] = -radius;
-        box.min[2] = -radius;
-        box.max[2] = radius;
-
-        if (mgInsideScreen(&box, photo_matrix, screen_max, screen_min) &&
-            !(screen_max[0] < -50.0f) && screen_min[0] <= 50.0f &&
-            !(screen_max[1] < -50.0f) && screen_min[1] <= 50.0f &&
-            (selected_index < 0 || !(nearest_distance <= distance))) {
-            selected_index = index;
-            nearest_distance = distance;
-        }
-    }
-
-    if (selected_index < 0) {
-        return -1;
-    }
-
-    info->chara_no = active[selected_index]->tbl->id;
-    info->dist = nearest_distance - 10.0f;
-
-    if (active[selected_index]->scoop.ok != 0) {
-        return active[selected_index]->scoop.no;
-    }
-
-    return -1;
 }

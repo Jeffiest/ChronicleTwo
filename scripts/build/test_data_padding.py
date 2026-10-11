@@ -1,7 +1,5 @@
 """Data padding must preserve object sizes and referenced retail boundaries."""
 from types import SimpleNamespace
-from pathlib import Path
-import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -49,19 +47,15 @@ class AlignmentFragmentTests(unittest.TestCase):
                               ranges=lambda unit: {kind: (0x3000, 0x302c, 0x3030)})
         return compiled, ctx
 
-    def prepare(self, compiled, ctx, source='', literal_padding=None):
-        with tempfile.TemporaryDirectory() as directory:
-            cpp = Path(directory) / 'owner.cpp'
-            cpp.write_text(source)
-            ctx.layout = SimpleNamespace(source=lambda unit: cpp,
-                                          sections=lambda unit: [(ctx.pieces.unit('')[0][0],
-                                                                  0x3000, 0x3030)])
-            with patch.object(p, 'name_literal_data', side_effect=literal_padding), \
-                 patch.object(p, 'bind_suffixed_references'), \
-                 patch.object(p, 'retail_sections', side_effect=lambda obj, *args:
-                              {index: section.name for index, section in enumerate(obj.sections)
-                               if section.sh_flags & p.SHF_ALLOC}):
-                d.prepare_native_data(compiled, 'owner', ctx)
+    def prepare(self, compiled, ctx, literal_padding=None):
+        ctx.layout = SimpleNamespace(sections=lambda unit: [(ctx.pieces.unit('')[0][0],
+                                                              0x3000, 0x3030)])
+        with patch.object(p, 'name_literal_data', side_effect=literal_padding), \
+             patch.object(p, 'bind_suffixed_references'), \
+             patch.object(p, 'retail_sections', side_effect=lambda obj, *args:
+                          {index: section.name for index, section in enumerate(obj.sections)
+                           if section.sh_flags & p.SHF_ALLOC}):
+            d.prepare_native_data(compiled, 'owner', ctx)
 
     def test_native_alignment_owns_separately_referenced_zero_fragment(self):
         for nobits in (False, True):
@@ -97,21 +91,14 @@ class AlignmentFragmentTests(unittest.TestCase):
             _index, label = compiled.symtab.get_symbol_by_name(name)
             self.assertEqual(p.section_size(compiled.sections[label.st_shndx]), size)
 
-    def test_held_alignment_marker_supplies_no_native_credit(self):
-        compiled, ctx = self.fixture()
-        self.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", D_0000301C__DATA);')
-        self.assertEqual(compiled.symtab.symbols[3].st_shndx, 0)
-
     def test_native_alignment_evidence_fails_closed(self):
         for invalid in ('left_size', 'right_size', 'left_alias', 'right_alias', 'left_offset',
                         'alignment', 'small_alignment', 'wrong_alignment', 'left_type',
                         'right_type', 'flags', 'nonzero', 'short_bytes', 'retail_relocation',
                         'native_relocation', 'declared_boundary', 'live_boundary', 'duplicate_boundary',
-                        'unknown_boundary', 'noncontiguous', 'terminal', 'missing_right', 'held_left',
-                        'held_right', 'left_placeholder', 'right_placeholder'):
+                        'unknown_boundary', 'noncontiguous', 'terminal', 'missing_right'):
             with self.subTest(invalid=invalid):
                 compiled, ctx = self.fixture()
-                source = ''
                 if invalid == 'left_size': ctx.rows[0] = (0x3000, 'first', 20, False)
                 elif invalid == 'right_size': ctx.rows[1] = (0x3020, 'following', 8, False)
                 elif invalid.endswith('_alias'):
@@ -140,13 +127,8 @@ class AlignmentFragmentTests(unittest.TestCase):
                     elif invalid == 'noncontiguous': run[1] = ('D_0000301C', 0x301d, 0x3020)
                     else: run.pop()
                 elif invalid == 'missing_right': compiled.symtab.symbols[2].st_shndx = 0
-                elif invalid in ('held_left', 'held_right'):
-                    source = 'INCLUDE_BSS(%s, 0x18);' % ('first' if invalid == 'held_left' else 'following')
-                else:
-                    index = 1 if invalid == 'left_placeholder' else 2
-                    compiled.symtab.symbols[index].name += '__DATA'
                 before = d.code_snapshot(compiled)
-                self.prepare(compiled, ctx, source)
+                self.prepare(compiled, ctx)
                 self.assertEqual(compiled.symtab.symbols[3].st_shndx,
                                  2 if invalid == 'live_boundary' else 0)
                 self.assertEqual(d.code_snapshot(compiled), before)
@@ -171,7 +153,7 @@ class BssReservationCutTests(unittest.TestCase):
 
     def apply(self, compiled, rows, run):
         with patch.object(p.layout, 'section_of', return_value='.bss'):
-            p.pad_data(compiled, 'unit', set(), rows=rows,
+            p.pad_data(compiled, 'unit', rows=rows,
                        pieces=SimpleNamespace(unit=lambda unit: [('.bss', run)]),
                        retail=SimpleNamespace(relocations={}))
 
@@ -203,7 +185,7 @@ class BssReservationCutTests(unittest.TestCase):
 
 class DataPaddingTests(unittest.TestCase):
     def run_padding(self, size=12, declared=12, end=16, nobits=True, tail=b"\0" * 4,
-                    terminal=False, section_name=None, retail_name=None, placeholder=False, relocations=(),
+                    terminal=False, section_name=None, retail_name=None, relocations=(),
                     next_alignment=16):
         section = SimpleNamespace(sh_type=p.SHT_NOBITS if nobits else 1,
                                   sh_size=size, data=b"x" * size,
@@ -233,10 +215,9 @@ class DataPaddingTests(unittest.TestCase):
              patch.object(p.disassemble, "Pieces", return_value=pieces), \
              patch.object(p.layout, "Retail", return_value=retail), \
              patch.object(p.layout, "read_symbols", return_value=rows):
-            placeholders = {1} if placeholder else set()
-            p.pad_data(elf, "test", placeholders)
+            p.pad_data(elf, "test")
             once = p.section_size(section)
-            p.pad_data(elf, "test", placeholders)
+            p.pad_data(elf, "test")
             self.assertEqual(p.section_size(section), once)
         return once
 
@@ -282,7 +263,7 @@ class DataPaddingTests(unittest.TestCase):
         compiled = SimpleNamespace(sections=[None, section, following],
                                    symtab=SimpleNamespace(symbols=[sym, next_sym]))
         with patch.object(p.layout, "section_of", return_value=".bss"):
-            p.pad_data(compiled, "unit", set(), pieces=pieces, rows=rows,
+            p.pad_data(compiled, "unit", pieces=pieces, rows=rows,
                        retail=SimpleNamespace(relocations={}))
         self.assertEqual(pieces.unit("unit")[0][1][0], ("object", 0x3000, 0x3020))
         self.assertEqual(section.sh_size, 0x20)
@@ -311,11 +292,6 @@ class DataPaddingTests(unittest.TestCase):
                                           tail=b'\0\0\1\0'), 12)
         self.assertEqual(self.run_padding(nobits=False, section_name='.vtables',
                                           terminal=True), 12)
-
-    def test_vtable_placeholder_is_not_padded(self):
-        self.assertEqual(self.run_padding(nobits=False, section_name='.vtables',
-                                          placeholder=True), 12)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,7 +14,7 @@ class LiteralNameTests(unittest.TestCase):
                                sh_flags=p.SHF_ALLOC, data=b'X'))
         elf.symtab.symbols.append(fixtures.symbol('at_2', 3, 1))
         before = elf.sections[1].data
-        p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+        p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                             addresses={'table': 0x4000}, rows=rows)
         self.assertEqual(elf.symtab.symbols[0].name, 'at_999')
         self.assertEqual(elf.sections[1].data, before)
@@ -27,7 +27,7 @@ class LiteralNameTests(unittest.TestCase):
                 elf.sections.append(NS(name=p.DEAD, sh_type=p.SHT_PROGBITS,
                                        sh_flags=p.SHF_ALLOC, data=b'X'))
                 elf.symtab.symbols.append(fixtures.symbol('at_2', index, 1))
-                p.name_literal_data(elf, 'unit', set(), retail=retail, pieces=pieces,
+                p.name_literal_data(elf, 'unit', retail=retail, pieces=pieces,
                                     addresses={'table': 0x4000}, rows=rows)
                 self.assertEqual(elf.symtab.symbols[0].name, 'at_2')
 

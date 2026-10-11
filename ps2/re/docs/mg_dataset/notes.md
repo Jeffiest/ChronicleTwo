@@ -153,7 +153,7 @@ BeginPrim flags (0x10/0x100/0x200) meaning unresolved; EditInit uses 0x214.
   0x58/0x5C floats. Member types from SetMaterial's member-wise copy (lwc1 vs lw, 2-byte char loop of 0x20).
 - `MDT_FACES` (0x10): **name invented** (no retail symbol); +4 = 0x10, +8 prim count
   (mgCVisualMDT::DataAssignMDT reads `faces+8`, records from `faces+0x10`).
-- `FACES_ID`: retail name (mg_visual/mg_shadow `CreateFace(FACES_ID*, ...)`): type, face_num,
+- `FACES_ID`: retail name (mg_visual/mg_shadow `CreateFace(FACES_ID*, ...)`): type, vertex_num,
   material (+8, grouped by in CreateFace), indices from +0xC. Variable length.
 - `MDS_HEADER` (0x10): +8 object count, +0xC offset to first object (LoadCollisionFile assumes 0x10).
 - `MDTOBJ_HEADER` (0x70): +4 record size (loader strides by it; collision assumes 0x70), +8 name[32],
@@ -275,3 +275,11 @@ Reading the first child, or each sibling, through an inline accessor numbers
 the iterator below the placement temporary and gives a byte-identical
 level-2 draft. Retail has no out-of-line `mgCFrame` child or sibling getter,
 and the headers define none, so this does not establish a source form.
+
+## Compiler options
+
+The unit is compiled with `-O2,p` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`) in place
+of the game's `-O3,p`. With that option and none of its former `schedule off` / `optimization_level` /
+`opt_loop_invariants off` pragmas the object is byte-identical to the build that used them.
+ `CreateFrameVisual` alone is generated at level 3, with scheduling and loop-invariant motion off; its
+global-optimizer regions stay function-specific.

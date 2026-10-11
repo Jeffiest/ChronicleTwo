@@ -39,6 +39,16 @@ enum MONSTER_MAN_SIZE {
 
 /**
  *
+ * Kinds of monster that the code singles out by number.
+ *
+ */
+enum MONSTER_ID {
+    MONSTER_ID_MIMIC_FIRST = 245, /**< First of the mimic monsters, which become treasure boxes. */
+    MONSTER_ID_MIMIC_LAST = 268   /**< Last of the mimic monsters. */
+};
+
+/**
+ *
  * Life states of a monster slot, as an active monster's state holds them.
  *
  */

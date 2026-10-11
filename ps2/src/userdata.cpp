@@ -383,7 +383,7 @@ void GameDataSwap(CGameDataUsed *first, CGameDataUsed *second, int mode) {
         second->CopyGameData(&spare);
 
         if (mode == 1) {
-            equipped = &GetUserDataMan()->chara_data[USER_CHARA_MAX].equip[0];
+            equipped = &GetUserDataMan()->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE];
 
             if (equipped == first || equipped == second) {
                 first_is_rod = first->IsFishingRod();
@@ -456,7 +456,7 @@ int CGameDataUsed::CheckTypeEnableStack() {
             return false;
         }
 
-        return (item_no == 0x17F) ^ 1;
+        return (item_no == ITEM_ID_MONSTER_DROP) ^ 1;
     }
 
     return false;
@@ -472,11 +472,11 @@ int CGameDataUsed::IsWhoEquip() {
     if (this->used_type == USED_ITEM_TYPE_WEAPON) {
         item_type = this->item_type;
 
-        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == 5 || item_type == 6 || item_type == 7) {
+        if (item_type == ITEM_DATA_MAX_MELEE || item_type == ITEM_DATA_MAX_GUN || item_type == ITEM_DATA_MAX_CLOTHES || item_type == ITEM_DATA_MAX_HAT || item_type == ITEM_DATA_MAX_SHOES) {
             return USER_CHARA_MAX;
         }
 
-        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == 8 || item_type == 9 || item_type == 0xA) {
+        if (item_type == ITEM_DATA_MONICA_MELEE || item_type == ITEM_DATA_MONICA_MAGIC || item_type == ITEM_DATA_MONICA_CLOTHES || item_type == ITEM_DATA_MONICA_ACCESSORY || item_type == ITEM_DATA_MONICA_BOOTS) {
             return USER_CHARA_MONICA;
         }
 
@@ -553,11 +553,11 @@ int CGameDataUsed::GetNum() {
         case USED_ITEM_TYPE_COSTUME:
             return this->data.item.num;
         case USED_ITEM_TYPE_ATTACH:
-            if (item_type == ITEM_DATA_UNK_11) {
+            if (item_type == ITEM_DATA_SPECTOL) {
                 return 1;
             }
 
-            if (item_type == ITEM_DATA_UNK_22) {
+            if (item_type == ITEM_DATA_MONSTER_DROP) {
                 return 1;
             }
 
@@ -679,7 +679,7 @@ int CGameDataUsed::Boiled() {
     fish->data.boiled.value = value + 0x14;
     fish->item_type = ITEM_DATA_BOILED;
     fish->used_type = USED_ITEM_TYPE_BOILED;
-    fish->item_no = 0x1AA;
+    fish->item_no = ITEM_ID_BOILED_FISH;
     return true;
 }
 
@@ -1027,7 +1027,7 @@ void CGameDataUsed::GetMsgAddInfo(char **message, char **extra_message, int *val
 
     switch (used_type) {
         case USED_ITEM_TYPE_ITEM:
-            if (item_no == 0x137) {
+            if (item_no == ITEM_ID_MEDAL_HOLDER) {
                 values[0] = GetUserDataMan()->GetYarikomiMedal();
             }
 
@@ -1486,7 +1486,7 @@ void CGameDataUsed::ToSpectolTrans(CGameDataUsed *attach, int num) {
                 spectol->spectol_type = SPECTOL_TYPE_ATTACH;
                 spectol->spectol_value = count;
 
-                if (item_no == 0x17F) {
+                if (item_no == ITEM_ID_MONSTER_DROP) {
                     spectol->spectol_value = source->spectol_value;
                 }
 
@@ -1561,7 +1561,7 @@ void CGameDataUsed::GetStatusParam(short *param) {
 void CGameDataUsed::GetStatusParam(short *param, float time) {
     this->GetStatusParam(param);
 
-    if (this->item_no == 0x38) {
+    if (this->item_no == ITEM_ID_LAMBS_SWORD) {
         if (GetTimeBand(time) == MAP_TIME_BAND_NIGHT) {
             *param = *param + (*param >> 1);
         } else {
@@ -1726,7 +1726,7 @@ int GetMainCharaModelName(int character_index, char *model_name, int alternate) 
         return false;
     }
 
-    int model_number = character_data->equip[0].GetModelNo();
+    int model_number = character_data->equip[CHARA_EQUIP_MELEE].GetModelNo();
 
     if (model_number < 0) {
         model_number = 0;
@@ -1958,7 +1958,7 @@ void CGameDataUsed::CopyGameData(CGameDataUsed *other) {
         memcpy(this, other, sizeof(CGameDataUsed));
         robo = &GetUserDataMan()->robo_data;
 
-        if (robo != NULL && &robo->parts[2] == this) {
+        if (robo != NULL && &robo->parts[ROBO_PART_PACK] == this) {
             old_max = fptosi(robo->hp.max);
             robo->hp.max = this->data.robopart.energy.max;
 
@@ -2460,7 +2460,7 @@ float ROBO_DATA::AddPoint(float amount) {
 }
 
 int ROBO_DATA::GetDefenceVol() {
-    return parts[1].data.robopart.defence + (shield_kit_num << 2);
+    return parts[ROBO_PART_BODY].data.robopart.defence + (shield_kit_num << 2);
 }
 
 BASE_MONSTER_TBL *GetMonsterBaseInfo(int monster_no) {
@@ -2898,7 +2898,7 @@ float CUserDataManager::AddHp_Rate(int chara_no, float rate) {
 
 COMMON_GAGE *CUserDataManager::GetWHpGage(int group, int member) {
     if (group == USER_CHARA_ROBO) {
-        return &robo_data.parts[0].data.robopart.whp;
+        return &robo_data.parts[ROBO_PART_ARM].data.robopart.whp;
     }
 
     if (group == USER_CHARA_MONSTER) {
@@ -3027,7 +3027,7 @@ int CUserDataManager::GetNowPartyMember() {
     int mask = party_member;
     int result = mask;
 
-    if (SearchItemOnItemBrd(0x134, ITEM_BOARD_MAIN) != NULL) {
+    if (SearchItemOnItemBrd(ITEM_ID_BADGE_BOX, ITEM_BOARD_MAIN) != NULL) {
         result = mask | (1 << USER_CHARA_MONSTER);
     }
 
@@ -3069,7 +3069,7 @@ int CUserDataManager::CheckEnableCharaChange(int chara_no, int *out) {
 
         int status = GetCharaStatusAttirbute(chara_no);
 
-        if ((status & CHARA_STATUS_UNK_8) != 0 || (status & CHARA_STATUS_UNK_20) != 0) {
+        if ((status & CHARA_STATUS_STOP) != 0 || (status & CHARA_STATUS_STONE) != 0) {
             able = false;
         }
     }
@@ -3151,7 +3151,7 @@ int CUserDataManager::CheckQuickChange(int chara_no, int *out) {
     }
 
     if (chara_no == USER_CHARA_MONSTER) {
-        CGameDataUsed *badge_item = SearchItemOnItemBrd(0x134, ITEM_BOARD_MAIN);
+        CGameDataUsed *badge_item = SearchItemOnItemBrd(ITEM_ID_BADGE_BOX, ITEM_BOARD_MAIN);
         state = 0;
         int          changeable;
         int          i;
@@ -3194,7 +3194,7 @@ int CUserDataManager::CheckQuickChange(int chara_no, int *out) {
 
     int status = GetCharaStatusAttirbute(active_chr_no);
 
-    if ((status & CHARA_STATUS_UNK_8) != 0 || (status & CHARA_STATUS_UNK_20) != 0) {
+    if ((status & CHARA_STATUS_STOP) != 0 || (status & CHARA_STATUS_STONE) != 0) {
         state &= ~QUICK_CHANGE_STATE_ENABLED;
     }
 
@@ -3316,11 +3316,11 @@ int CUserDataManager::SetCharaStatusAttirbuteVol(int chara_no, unsigned int attr
             chara->status_time[1] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_8) {
+        if (attr & CHARA_STATUS_STOP) {
             chara->status_time[2] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_20) {
+        if (attr & CHARA_STATUS_STONE) {
             chara->status_time[3] = value;
         }
     }
@@ -3332,11 +3332,11 @@ int CUserDataManager::SetCharaStatusAttirbuteVol(int chara_no, unsigned int attr
             robot->status_time[0] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_8) {
+        if (attr & CHARA_STATUS_STOP) {
             robot->status_time[1] = value;
         }
 
-        if (attr & CHARA_STATUS_UNK_20) {
+        if (attr & CHARA_STATUS_STONE) {
             robot->status_time[2] = value;
         }
     }
@@ -3693,7 +3693,7 @@ void CUserDataManager::AllWeaponRepair() {
         }
     }
 
-    robo_data.parts[0].Repair(999);
+    robo_data.parts[ROBO_PART_ARM].Repair(999);
     robo_data.AddPoint(999.0f);
 }
 
@@ -3786,11 +3786,11 @@ void CUserDataManager::RefreshNPCStatus(int mode) {
 }
 
 int CUserDataManager::GetFishingRodNo() {
-    return chara_data[USER_CHARA_MAX].equip[0].item_no;
+    return chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].item_no;
 }
 
 int CUserDataManager::NowFishingStyle() {
-    CGameDataUsed *rod = &chara_data[USER_CHARA_MAX].equip[0];
+    CGameDataUsed *rod = &chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE];
 
     if (rod != NULL) {
         return rod->IsFishingRod();
@@ -3862,7 +3862,7 @@ int CUserDataManager::GetFishInAquarium(int fish_no, float size, float weight) {
         return FISH_STORE_KEPT;
     }
 
-    if (GetNumSameItem(0x135) != 0) {
+    if (GetNumSameItem(ITEM_ID_AQUARIUM) != 0) {
         if (FishInAquarium(&fish, AQUARIUM_TANK_FIRST) != 0) {
             return FISH_STORE_KEPT;
         }
@@ -3916,11 +3916,11 @@ void CUserDataManager::GetFishRecord(int fish_no, float *size_out, float *weight
 
 void CUserDataManager::GetRodStatus(int *out) {
     if (out != NULL && GetFishingRodNo() > 0) {
-        out[0] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[0];
-        out[1] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[1];
-        out[2] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[2];
-        out[3] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[3];
-        out[4] = chara_data[USER_CHARA_MAX].equip[0].data.weapon.attribute[4];
+        out[0] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[0];
+        out[1] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[1];
+        out[2] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[2];
+        out[3] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[3];
+        out[4] = chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].data.weapon.attribute[4];
     }
 }
 
@@ -3929,7 +3929,7 @@ int CUserDataManager::AddFp(int points) {
         return 0;
     }
 
-    return chara_data[USER_CHARA_MAX].equip[0].AddFusionPoint(points);
+    return chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].AddFusionPoint(points);
 }
 
 int CUserDataManager::SetChrEquip(int chara_no, CGameDataUsed *item) {
@@ -4324,7 +4324,7 @@ int CUserDataManager::GetItem(int item_no, int count) {
     over = count - fit;
     common = GetCommonItemData(item_no);
 
-    if (common != NULL && (common->attribute & 0x40)) {
+    if (common != NULL && (common->attribute & ITEM_ATTRIBUTE_UNIQUE)) {
         limit = common->max_num;
 
         if (limit <= GetNumSameItem(item_no)) {
@@ -4346,8 +4346,8 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
         return 0;
     }
 
-    if (item_no == 0xF6) {
-        int robo_part_no[4] = {0x87, 0x91, 0x9B, 0xA5};
+    if (item_no == ITEM_ID_CORE) {
+        int robo_part_no[4] = {ITEM_ID_DRUM_CAN_BODY, ITEM_ID_CANNONBALL_ARM, ITEM_ID_IRON_LEG, ITEM_ID_ENERGY_PACK};
 
         for (int i = 0; i < 4; i++) {
             CGameDataUsed *part = SearchItemOnItemBrd(robo_part_no[i], ITEM_BOARD_ALL);
@@ -4364,17 +4364,17 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
 
     DNG_BATTLE_AREA *battle_area = &GetMainScene()->battle_area;
 
-    if (item_no == 0x131) {
+    if (item_no == ITEM_ID_MAP) {
         battle_area->minimap_reveal |= MINIMAP_REVEAL_ROOMS;
         return 1;
     }
 
-    if (item_no == 0x132) {
+    if (item_no == ITEM_ID_MAGIC_CRYSTAL) {
         battle_area->minimap_reveal |= MINIMAP_REVEAL_SYMBOLS;
         return 1;
     }
 
-    if (item_no == 0x134) {
+    if (item_no == ITEM_ID_BADGE_BOX) {
         CMonsterBox *box = &monster_box;
 
         if (box != NULL) {
@@ -4385,7 +4385,7 @@ int CUserDataManager::GetItemNotOver(int item_no, int num) {
     GetCostume(item_no);
 
     if (item_no == ITEM_ID_LURE_ROD) {
-        GetSaveData()->SetBitFlag(0x30, 1);
+        GetSaveData()->SetBitFlag(SAVE_FLAG_LURE_ROD, 1);
     }
 
     int added = 0;
@@ -4833,7 +4833,7 @@ void CBattleCharaInfo::SetChrNo(int new_chara_no) {
         chara_type = BATTLE_CHARA_ROBO;
         chara_data.robo = &manager->robo_data;
         active_item = NULL;
-        equip = &chara_data.robo->parts[0];
+        equip = &chara_data.robo->parts[ROBO_PART_ARM];
         hp = &chara_data.robo->hp;
         disp_hp = hp->now;
         disp_hp_max = hp->max;
@@ -5570,11 +5570,11 @@ int SetRandamCircleStatus(int trap, float &amount_out) {
 
         if (manager != NULL) {
             CHARA_DATA *max = manager->GetCharaDataPtr(USER_CHARA_MAX);
-            max->equip[0].Repair(999);
-            max->equip[1].Repair(999);
+            max->equip[CHARA_EQUIP_MELEE].Repair(999);
+            max->equip[CHARA_EQUIP_SUB].Repair(999);
             CHARA_DATA *monica = manager->GetCharaDataPtr(USER_CHARA_MONICA);
-            monica->equip[0].Repair(999);
-            monica->equip[1].Repair(999);
+            monica->equip[CHARA_EQUIP_MELEE].Repair(999);
+            monica->equip[CHARA_EQUIP_SUB].Repair(999);
             return true;
         }
     }
@@ -5711,28 +5711,28 @@ int CBattleCharaInfo::StatusParamStep(int *poison_damage) {
         }
     }
 
-    if (attr & CHARA_STATUS_UNK_8) {
+    if (attr & CHARA_STATUS_STOP) {
         if (chara_type == BATTLE_CHARA_HUMAN) {
             chara_data.human->status_time[2]--;
 
             if (chara_data.human->status_time[2] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_8, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STOP, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         } else if (chara_type == BATTLE_CHARA_ROBO) {
             chara_data.robo->status_time[1]--;
 
             if (chara_data.robo->status_time[1] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_8, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STOP, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         }
     }
 
-    if (attr & CHARA_STATUS_UNK_20) {
+    if (attr & CHARA_STATUS_STONE) {
         if (chara_type == BATTLE_CHARA_HUMAN) {
             chara_data.human->status_time[3]--;
 
             if (chara_data.human->status_time[3] <= 0) {
-                SetAttr(CHARA_STATUS_UNK_20, CHARA_STATUS_ATTR_MODE_CLEAR);
+                SetAttr(CHARA_STATUS_STONE, CHARA_STATUS_ATTR_MODE_CLEAR);
             }
         }
     }
@@ -5748,7 +5748,7 @@ void CBattleCharaInfo::Step() {
 
         switch (chr_no) {
             case USER_CHARA_MONICA:
-                if (equip->item_no == 0x38) {
+                if (equip->item_no == ITEM_ID_LAMBS_SWORD) {
                     CScene *scene = GetMainScene();
 
                     if (scene != NULL && BattleParamater_TimeBand != GetTimeBand(scene->time)) {
@@ -5824,24 +5824,24 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
         add_attr |= CHARA_STATUS_SLOW;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_4) {
-        add_attr |= CHARA_STATUS_UNK_4;
+    if (attr & ITEM_USE_FLAG_ADD_CURSE) {
+        add_attr |= CHARA_STATUS_CURSE;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_8) {
-        add_attr |= CHARA_STATUS_UNK_8;
+    if (attr & ITEM_USE_FLAG_ADD_STOP) {
+        add_attr |= CHARA_STATUS_STOP;
     }
 
     if (attr & ITEM_USE_FLAG_ADD_POWER) {
         add_attr |= CHARA_STATUS_POWER;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_20) {
-        add_attr |= CHARA_STATUS_UNK_20;
+    if (attr & ITEM_USE_FLAG_ADD_STONE) {
+        add_attr |= CHARA_STATUS_STONE;
     }
 
-    if (attr & ITEM_USE_FLAG_ADD_STATUS_UNK_40) {
-        add_attr |= CHARA_STATUS_UNK_40;
+    if (attr & ITEM_USE_FLAG_ADD_DRY) {
+        add_attr |= CHARA_STATUS_DRY;
     }
 
     if (attr & ITEM_USE_FLAG_CURE_POISON) {
@@ -5852,20 +5852,20 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
         cure_attr |= CHARA_STATUS_SLOW;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_4) {
-        cure_attr |= CHARA_STATUS_UNK_4;
+    if (attr & ITEM_USE_FLAG_CURE_CURSE) {
+        cure_attr |= CHARA_STATUS_CURSE;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_8) {
-        cure_attr |= CHARA_STATUS_UNK_8;
+    if (attr & ITEM_USE_FLAG_CURE_STOP) {
+        cure_attr |= CHARA_STATUS_STOP;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_20) {
-        cure_attr |= CHARA_STATUS_UNK_20;
+    if (attr & ITEM_USE_FLAG_CURE_STONE) {
+        cure_attr |= CHARA_STATUS_STONE;
     }
 
-    if (attr & ITEM_USE_FLAG_CURE_STATUS_UNK_40) {
-        cure_attr |= CHARA_STATUS_UNK_40;
+    if (attr & ITEM_USE_FLAG_CURE_DRY) {
+        cure_attr |= CHARA_STATUS_DRY;
     }
 
     if (add != NULL) {
@@ -5879,8 +5879,8 @@ void ConvertItemAttrToCharaAttr(int attr, int *add, int *cure) {
 
 int CheckBadStatus(int attr) {
     if ((attr & CHARA_STATUS_POISON) || (attr & CHARA_STATUS_SLOW) ||
-        (attr & CHARA_STATUS_UNK_4) || (attr & CHARA_STATUS_UNK_8) ||
-        (attr & CHARA_STATUS_UNK_20) || (attr & CHARA_STATUS_UNK_40)) {
+        (attr & CHARA_STATUS_CURSE) || (attr & CHARA_STATUS_STOP) ||
+        (attr & CHARA_STATUS_STONE) || (attr & CHARA_STATUS_DRY)) {
         return true;
     }
 
@@ -5969,9 +5969,9 @@ int KillMonsterCount(int monster, int amount) {
 int SearchEquipType(int category, int slot) {
     // Gives the item type accepted by each human or ridepod equipment slot.
     static signed char equip_type_tbl[3][5] = {
-        {1,  2,  6,  7,  5},
-        {3,  4,  9,  10, 8},
-        {13, 12, 15, 14, 0},
+        {ITEM_DATA_MAX_MELEE,    ITEM_DATA_MAX_GUN,      ITEM_DATA_MAX_HAT,          ITEM_DATA_MAX_SHOES,    ITEM_DATA_MAX_CLOTHES},
+        {ITEM_DATA_MONICA_MELEE, ITEM_DATA_MONICA_MAGIC, ITEM_DATA_MONICA_ACCESSORY, ITEM_DATA_MONICA_BOOTS, ITEM_DATA_MONICA_CLOTHES},
+        {ITEM_DATA_ROBO_ARM,     ITEM_DATA_ROBO_BODY,    ITEM_DATA_ROBO_ENERGY_PACK, ITEM_DATA_ROBO_LEG,     ITEM_DATA_NONE},
     };
 
     if (category < USER_CHARA_MAX || category > USER_CHARA_ROBO) {
@@ -6105,13 +6105,13 @@ int CheckGetItemLimmitOver(int item_no, int count) {
         take = limit;
     }
 
-    if (item_no == 0x132 || item_no == 0x131) {
+    if (item_no == ITEM_ID_MAGIC_CRYSTAL || item_no == ITEM_ID_MAP) {
         return count;
     }
 
     int type = ConvertUsedItemType(info->type);
 
-    if (type == USED_ITEM_TYPE_ITEM || (type == USED_ITEM_TYPE_ATTACH && item_no != ITEM_ID_SPECTOL && item_no != 0x17F)) {
+    if (type == USED_ITEM_TYPE_ITEM || (type == USED_ITEM_TYPE_ATTACH && item_no != ITEM_ID_SPECTOL && item_no != ITEM_ID_MONSTER_DROP)) {
         bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
         bag_room = 0;
         i = 0;
@@ -6724,8 +6724,8 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
         CHARA_DATA *chara = manager->GetCharaDataPtr(USER_CHARA_MAX);
 
         if (mode == 1) {
-            chara->equip[0].Init();
-            chara->equip[1].Init();
+            chara->equip[CHARA_EQUIP_MELEE].Init();
+            chara->equip[CHARA_EQUIP_SUB].Init();
         }
 
         items = NULL;
@@ -6777,8 +6777,8 @@ void DebugGetItem(CUserDataManager *user_data, int mode) {
     }
 
     if (mode == 0x10 || mode == 0xF) {
-        manager->chara_data[USER_CHARA_MAX].equip[0].Init();
-        manager->chara_data[USER_CHARA_MAX].equip[1].Init();
+        manager->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_MELEE].Init();
+        manager->chara_data[USER_CHARA_MAX].equip[CHARA_EQUIP_SUB].Init();
 
         if (mode == 0xF) {
             items = subgame1;

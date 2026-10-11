@@ -73,3 +73,7 @@ data markers. `data[VWIN_PART_MAX][4]` is a typed definition of the 21 texture r
 (exactly 0x150 bytes). The unit emits the weak `mgRect<int>::Set` specialization; MWCC mangles
 the template type as `9mgRect_i_` (`Set__9mgRect_i_Fiiii`), which is the name the retail
 `set2DSprite` callers resolve.
+
+## Constants
+`MySetPrim` is called with `MES_PRIM_SPRITE` (1) for every frame and `MES_PRIM_SHADED_2` (4) for the floating
+window's pointer. Row indices of `data` are named by `VersatileWinPart`.

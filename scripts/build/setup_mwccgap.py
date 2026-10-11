@@ -19,6 +19,4 @@ def apply_patch(patch_name):
 
 
 if __name__ == '__main__':
-    # Separate patches also upgrade checkouts with the ELF patch already applied.
     apply_patch('mwccgap-elf.patch')
-    apply_patch('mwccgap-repro.patch')

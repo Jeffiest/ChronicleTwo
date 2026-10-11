@@ -66,7 +66,7 @@ STATIC_ASSERT(sizeof(CMenuFont) == 0xB8);
  */
 class CDC2Mes : public ClsMes {
 public:
-    u8          msg_change;    /**< Non-zero when an inserted string or number changed, so the message is laid out again. */
+    s8          msg_change;    /**< Non-zero when an inserted string or number changed, so the message is laid out again. */
     s8          cursor;        /**< Choice the cursor is on; -1 for none. */
     s16         text_off_x;    /**< Distance of the text from the fixed frame's left edge; negative to use the frame's margins. */
     s16         text_off_y;    /**< Distance of the text from the fixed frame's top edge; negative to use the frame's margins. */
@@ -584,7 +584,7 @@ void MenuMesInit(ClsMes *mes);
 
 /**
  *
- * Checks whether a shield kit can raise the ridepod's shield, raising it when @p use is
+ * Checks whether a shield kit can raise the ridepod's shield, raising it when @p apply is
  * non-zero; gives back the sound to play, or -1.
  *
  * @mangled CheckRoboShieldKit__FP16CUserDataManagerP13CGameDataUsediPiPi
@@ -615,17 +615,37 @@ int MenuUseItemCheckFunc(CGameDataUsed *item, CItemUseTarget *target, int use);
  */
 int CheckNowStateUseThisItem(CGameDataUsed *item, CItemUseTarget *target);
 
-/** Full-width digit strings, zero to nine. */
+/**
+ *
+ * Full-width digit strings, zero to nine.
+ *
+ */
 extern char *MenuBigNum[10];
 
-/** Item the menus last checked or used. */
+/**
+ *
+ * Item the menus last checked or used.
+ *
+ */
 extern int MenuUsedItemNo;
 
-/** Use flags of the item the menus last checked or used. */
+/**
+ *
+ * Use flags of the item the menus last checked or used.
+ *
+ */
 extern u32 MenuUsedItemType;
 
-/** One when the last check refused the item because of its target's condition, otherwise zero. */
+/**
+ *
+ * Whether the last check refused the item because of its target's condition.
+ *
+ */
 extern int MenuUsedNotErrorCode;
 
-/** Target the menus last used an item on. */
+/**
+ *
+ * Target the menus last used an item on.
+ *
+ */
 extern CItemUseTarget MenuUsedTarget;

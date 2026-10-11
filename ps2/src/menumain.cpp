@@ -842,8 +842,8 @@ int CheckStartChapter8(CSaveData *save_data) {
         return false;
     }
 
-    if (save_data->GetBitFlag(0x2E0) == 1) {
-        if (!save_data->GetBitFlag(0x320)) {
+    if (save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8) == 1) {
+        if (!save_data->GetBitFlag(SAVE_FLAG_CHAPTER_8_STARTED)) {
             return true;
         }
     }
@@ -1038,8 +1038,8 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
     MenuNowTime = MenuMainScene->time;
     MakeMenuTopic();
 
-    if (CheckBitFlagMenu(0x68) == 0) {
-        if (CheckBitFlagMenu(4) == 1) {
+    if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_FORCED_OFF) == 0) {
+        if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_EVENING) == 1) {
             MenuNowTime = 18.25f;
             int event = CheckShortFlagMenu(5);
 
@@ -1055,11 +1055,11 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
                 MenuNowTime = 21.5f;
             }
         } else {
-            if (CheckBitFlagMenu(0x66) == 1) {
+            if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_MIDNIGHT) == 1) {
                 MenuNowTime = 0.0f;
             }
 
-            if (CheckBitFlagMenu(0x67) == 1) {
+            if (CheckBitFlagMenu(SAVE_FLAG_MENU_TIME_1AM) == 1) {
                 MenuNowTime = 1.0f;
             }
         }
@@ -1105,7 +1105,7 @@ int MenuMainInit(MENU_INIT_ARG *arg) {
     MenuTimeBrdForm = NULL;
     TopicTex = NULL;
     InitMenuEtcSpecialFlag();
-    SetModeMenuDrawItemBoard(0);
+    SetModeMenuDrawItemBoard(MENU_ITEM_BOARD_BAG);
     TreeMapSaveFlag = false;
     TreeMapCallDungeonSubMap = false;
     TreeMapCalledWorldMap = false;
@@ -1766,7 +1766,7 @@ void MenuAreaBoardNameStep() {
 
             MenuTimeBrdForm->SetNumber("\x93\xFA\x8A\xD4", day);
 
-            if (MenuNowMapType == 5 || MenuNowMapType == 6) {
+            if (MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
                 MenuTimeBrdForm->SetPartDrawFlag("AM", false);
                 MenuTimeBrdForm->SetPartDrawFlag("PM", false);
                 MenuTimeBrdForm->SetPartDrawFlag("\x8E\x9E", false);
@@ -1868,7 +1868,7 @@ void DrawMenuTopic() {
     float       w;
     float       h;
 
-    if (MenuTopicType <= 0 || MenuNowMapType == 5 || MenuNowMapType == 6) {
+    if (MenuTopicType <= 0 || MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
         return;
     }
 
@@ -1884,7 +1884,7 @@ void DrawMenuTopic() {
         mgCTextureManager *manager = &mgTexManager;
         mgCDrawPrim       *prim = GetMenuPrim();
         manager->ReloadTexture(TopicTex->block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(TopicTex);
         prim->Color(0x80, 0x80, 0x80, MenuTopicAlpha);
@@ -1897,7 +1897,7 @@ void DrawMenuTopic() {
         PrimQuad(prim, 22.0f, 22.0f, mgRect<int>(0x66, 0, title_width, 0xC));
         prim->End();
         manager->ReloadTexture(MenuArg.mes_tex_block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 1);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_COLOR);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Color(0x2A, 0x22, 0x1E, MenuTopicAlpha * 6 / 10);
         prim->Vertex(box.left - 2, box.top - 2, 0);
@@ -1959,7 +1959,7 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
 
     int early_game = true;
 
-    if (CheckBitFlagMenu(0x36) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_EARLY_GAME_DONE) != 0) {
         early_game = false;
     }
 
@@ -2004,13 +2004,13 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
     MenuPosData->AttachCommonTexInfo();
     HatumeiMenuOkFlag = false;
 
-    if (0 < MenuUserDataManPtr->GetNumSameItem(0x171)) {
+    if (0 < MenuUserDataManPtr->GetNumSameItem(ITEM_ID_CAMERA)) {
         HatumeiMenuOkFlag = true;
     }
 
     ManualMenuOkFlag = false;
 
-    if (0 < MenuUserDataManPtr->GetNumSameItem(0x167)) {
+    if (0 < MenuUserDataManPtr->GetNumSameItem(ITEM_ID_HELP_RECEIVER)) {
         ManualMenuOkFlag = true;
     }
 
@@ -2031,7 +2031,7 @@ int MenuInternInit(mgCMemory *stack, int open_type, int capture) {
     if (open_type != MENU_OPEN_INVENT) {
         MenuMainSubDataPackAdr = stack->stack + stack->stack_used;
         MenuCommonReadData(stack, fname_1858, 0);
-        MenuMainFrameModeSet(0, 1);
+        MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, 1);
         int icon_count = 0;
 
         for (int k = 0; 0 <= CMenuInterPt->mode_list[k]; k++) {
@@ -2254,12 +2254,12 @@ void CMenuInter::PushOk() {
         case MENU_MODE_OPTION:
             break;
         case MENU_MODE_WORLD_MOVE:
-            if (MenuNowMapType == 5 || MenuNowMapType == 6) {
+            if (MenuNowMapType == MAP_TYPE_FUTURE || MenuNowMapType == MAP_TYPE_FUTURE_INTERIOR) {
                 show_message = true;
                 message_no = 0x28;
 
-                if (CheckBitFlagMenu(0x258) == 1) {
-                    if (CheckBitFlagMenu(0x2E0) == 0) {
+                if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_2) == 1) {
+                    if (CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8) == 0) {
                         message_no = 0x2E;
                     }
                 }
@@ -2511,7 +2511,7 @@ int MenuInternSelectKey() {
 
                         if (NextMenuInit(CMenuInterPt->next_mode, &MenuMainStack_Next, &MenuCommonInfo->tex_block[3]) != 0) {
                             if (CMenuInterPt->next_mode != MENU_MODE_DNG_TREE_MAP && CMenuInterPt->next_mode != MENU_MODE_WORLD_MOVE) {
-                                MenuSePlay(2);
+                                MenuSePlay(SYSTEM_SE_PAGE);
                             }
                         }
 
@@ -2527,11 +2527,11 @@ int MenuInternSelectKey() {
                 }
 
                 if (GamePad__2.Down(PAD_CROSS) != 0) {
-                    MenuActiveSaveData->SetBitFlag(0x36, 1);
+                    MenuActiveSaveData->SetBitFlag(SAVE_FLAG_EARLY_GAME_DONE, 1);
                 }
 
                 if (GamePad__2.Down(PAD_TRIANGLE) != 0) {
-                    MenuActiveSaveData->SetBitFlag(0x36, 1);
+                    MenuActiveSaveData->SetBitFlag(SAVE_FLAG_EARLY_GAME_DONE, 1);
                     MenuActiveSaveData->SetBitFlag(SAVE_FLAG_FISHING_CONTEST_UNLOCKED, 1);
                     MenuActiveSaveData->SetBitFlag(SAVE_FLAG_FINNY_FRENZY_UNLOCKED, 1);
                     MenuActiveSaveData->ForceBootTour(MenuActiveSaveData->day, 1);
@@ -2560,7 +2560,7 @@ int MenuInternSelectKey() {
                     }
 
                     ReturnMenuIntern(1);
-                    MenuMainFrameModeSet(1, 1);
+                    MenuMainFrameModeSet(MENU_MAIN_FRAME_CLOSE, 1);
                     MenuMesForm[0]->SetAction("\x8A\x4F\x82\xD6");
                     MenuSePlay(SYSTEM_SE_CANCEL);
                     break;

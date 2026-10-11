@@ -93,6 +93,7 @@ enum DNG_WEATHER {
 #define DNG_PAUSE_MONSTER_AI 0x1
 #define DNG_PAUSE_PLAYER_STEP 0x2
 #define DNG_PAUSE_PLAYER_CONTROL 0x4
+#define DNG_PAUSE_FIELD_STEP 0x8
 #define DNG_PAUSE_MONSTER_DRAW 0x10
 #define DNG_PAUSE_SKY_DRAW 0x20
 #define DNG_PAUSE_MAP_DRAW 0x80
@@ -119,6 +120,28 @@ enum DNG_FLOOR_STATUS {
 
 /**
  *
+ * Dungeon camera behaviours, as DNG_BATTLE_AREA::camera_mode holds them.
+ *
+ */
+enum DNG_CAMERA_MODE {
+    DNG_CAMERA_FOLLOW = 0,     /**< Follows the player under pad control. */
+    DNG_CAMERA_BOSS = 1,       /**< Looks past the player at the boss character in the first monster slot. */
+    DNG_CAMERA_ARENA = 2,      /**< Circles a fixed point of the arena. */
+    DNG_CAMERA_FOLLOW_LOW = 4, /**< Follows the player with a lower minimum height. */
+};
+
+/**
+ *
+ * Lock-on behaviours, as DNG_BATTLE_AREA::lock_on_mode holds them.
+ *
+ */
+enum DNG_LOCK_ON_MODE {
+    DNG_LOCK_ON_NEAREST = 0, /**< Locks on to the nearest target automatically. */
+    DNG_LOCK_ON_SELECT = 2,  /**< Cycles through targets with the lock-on button. */
+};
+
+/**
+ *
  * Dungeon state a scene keeps: pause and floor flags, the floor manager, the status bar, camera quake and battle music.
  *
  */
@@ -137,7 +160,7 @@ struct DNG_BATTLE_AREA {
     u8                   unk_4a[0x2];
     float                statusbar_rate;  /**< How far the status bar is shown, 0 (hidden) to 1 (shown). */
     float                statusbar_speed; /**< Amount statusbar_rate moves by in one frame. */
-    s32                  camera_mode;     /**< Camera mode used while a dungeon battle area runs. */
+    s32                  camera_mode;     /**< Camera behaviour. @see DNG_CAMERA_MODE */
     s32                  boss_map;        /**< Non-zero on a boss floor, where the mini map symbols are hidden. */
     s32                  battle_clear;    /**< Non-zero after a dungeon battle area has been cleared. */
     u8                   unk_60[0x4];
@@ -158,7 +181,7 @@ struct DNG_BATTLE_AREA {
     u32                  practice_actions; /**< Battle actions performed toward the floor goal. */
     s8                   map_effect_id;    /**< Map effect number set by event scripts, or -1. */
     u8                   unk_9d;
-    s16                  lock_on_mode; /**< How the player picks a target: 0 nearest with lock-on, 2 the RockOn target selection; set by _SET_LOCKON_MODE. */
+    s16                  lock_on_mode; /**< Lock-on behaviour. @see DNG_LOCK_ON_MODE */
     s32                  free_texb;    /**< First texture block left free after the dungeon's own textures. */
     u8                   unk_a4[0x4];
 
@@ -1862,7 +1885,7 @@ public:
      * @address 0x2CC7D0
      * @size 0x204
      */
-    int GetMapEvent(float *pos, int map_no, CSceneEventData *event);
+    int GetMapEvent(float *pos, int check_type, CSceneEventData *event);
 
     /**
      *

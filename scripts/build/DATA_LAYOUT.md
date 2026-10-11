@@ -12,8 +12,8 @@ This rule also applies to splat's `data/` fragments, including fragments of
 game units whose linked data comes from C++. Those fragments must not create
 phantom alignment pieces from packed numeric contents. For example, the
 unrelocated word `0x003F3F6C` at `0x00361600` in memcard data does not point
-into sound's BSS. Once its explicit padding marker is removed, the correctly
-sized native MIDI context owns its complete alignment tail.
+into sound's BSS. The correctly sized native MIDI context owns its complete
+alignment tail.
 
 `test_data_references.py` checks positive pointer evidence, unrelocated words,
 complete byte verification, unsupported expressions, code references and source
@@ -37,10 +37,9 @@ Such fragments contain only the zero storage the native alignment requires.
 Their symbols are address labels rather than C++ objects. Existing undefined
 labels keep their symbol indices, preserving every serialized code relocation.
 No terminal reservation, missing object contents or nonzero initializer is
-supplied. Held source markers remain authoritative and receive no native data
-credit. `test_data_padding.py` covers positive initialized/BSS and multiple-cut
+supplied. `test_data_padding.py` covers positive initialized/BSS and multiple-cut
 layouts, original extent evidence, unchanged code and rejection of incomplete,
-aliased, relocated, nonzero, misaligned or marker-held candidates.
+aliased, relocated, nonzero or misaligned candidates.
 
 Source-only comparison keeps each function's original identity and serialized
 code relocations. When the existing local-name mapper identifies a duplicate
@@ -51,7 +50,7 @@ The table must be a uniquely owned native object with the original exact
 declared extent. Each changed pointer needs a real R_MIPS_32 site, zero addend
 and the exact retail callback address. Only data relocations change; aliases
 append without moving existing symbol indices. Unknown, ambiguous, incomplete,
-interior, competing or marker-held references retain their original form.
+interior or competing references retain their original form.
 `test_data_callbacks.py` checks this identity path and code preservation.
 
 Anonymous native BSS may also be referenced by a file-local function whose
@@ -87,21 +86,16 @@ next retail start. Searching for an alignment that happens to fit an address
 supplies no proof.
 
 Unresolved retail storage is listed separately in
-`postprocess_object.py:BSS_RETAIL_RESERVATIONS`: 155 exact placements across
-23 units. Every entry fixes the unit, owner, section kind, address, declared
+`postprocess_object.py:BSS_RETAIL_RESERVATIONS`: 153 exact placements across
+22 units. Every entry fixes the unit, owner, section kind, address, declared
 size and following object's name, address and declared size. These exceptions
 preserve existing retail piece extents; they do not establish compiler alignment,
 provide a following object's payload or authorize other gaps. Changes to any
 listed identity or extent require new evidence. Missing or malformed native
 ownership and changed retail tuples allow no reservation.
-Each entry also fixes the measured following native alignment or an explicit
-retained-marker state. A present native object must pass the same ownership,
-extent, kind and alignment checks as the ordinary path. Only a retained source
-marker permits an absent or valid placeholder-backed following definition;
-rejected live native evidence cannot be treated as missing marker storage.
-Same-name, zero-offset declarations may alias that one retained placeholder
-when their extents equal its declared object or complete piece. A distinct
-name, offset, section, type or extent rejects the placeholder evidence.
+Each entry also fixes the measured following native alignment. A present
+native object must pass the same ownership, extent, kind and alignment checks
+as the ordinary path.
 
 Both paths reject declarations and retail/native relocation fields inside the
 gap. A reference cut may divide it only through contiguous canonical
@@ -124,7 +118,7 @@ internal piece, with padding below 16 bytes. Internal initialized gaps stay belo
 An object with a size different from its declared retail size is not padded.
 The same policy covers compiler-generated vtables; their final section tail
 belongs to linker alignment.
-Discarding an external or placeholder-backed vtable requires the native copy's
+Discarding an external vtable requires the native copy's
 original extent to equal the complete declared retail object, with matching
 resolved bytes and relocation shapes. Appended piece padding cannot establish
 that original extent; a missing declaration or a truncated copy rejects removal.
@@ -137,23 +131,10 @@ Literal identity uses declared objects; padding additionally uses the canonical
 reference boundaries, so an alignment tail cannot swallow a separately
 referenced word. Referenced interior addresses and explicit `D_<address>` source identifiers
 remain separate piece boundaries. A timestamp-preserving manifest tracks the
-global source-address set and splat's per-source definition, INCLUDE_ASM and
-INCLUDE_RODATA classifications. Adding or removing a cut or fallback refreshes
-the split before compiling; ordinary body and comment edits preserve it.
-The classifier follows the pinned splat comment/string and include syntax.
-A negative-addend table access cannot bind the table to a placeholder for the
-preceding word. Its original addend remains intact, and an established native
-name must agree with the inferred retail base. If the table itself has a
-retained placeholder, that base may supply it while preserving the negative
-addend. Binding only repoints equal-offset symbols; native instruction fields
-remain unchanged.
-Every incoming reference must infer the same exact placeholder base, with the
-retail relocation kind and non-immediate operands. Both initialized and NOBITS
-copies require an exact declared retail object extent; a missing declaration or
-shorter native prefix supplies no binding proof, even when its omitted bytes
-are zero. Initialized copies additionally require the whole object's resolved
-native bytes and complete real relocation shape to equal retail. Invalid copies
-remain live. A rejected parent also prevents discarding its dependent child.
+global source-address set and splat's per-source function definitions. Adding
+or removing a cut refreshes the split before compiling; ordinary body and
+comment edits preserve it.
+The classifier follows the pinned splat comment and string syntax.
 
 External weak function copies are discarded according to retail ownership.
 Their complete body extent, instruction bytes and resolved relocation targets
@@ -190,9 +171,7 @@ reject naming. This pass changes only the data identity; existing bounded paddin
 supplies its alignment gap afterward.
 Equal declared initialized extents distinguish a literal from a larger object's
 byte prefix; established code or native-data destinations still reject competing
-identities. Discarding a fallback parent removes a compiler-owned child only when
-that child's retail storage also has a retained placeholder. Native children
-remain available for naming and comparison.
+identities. Native children remain available for naming and comparison.
 
 VU instructions and initialized game or library words that resemble addresses
 remain numeric when retail has no relocation. The splitter checks their emitted
@@ -221,9 +200,7 @@ unresolved BSS list preserves the existing data metric, including previously
 credited reservation storage; unchanged credit is not independent proof of
 those gaps' compiler or linker cause.
 
-Reservation arrays and every retained data-marker piece are excluded from the
-source comparison, including coincidental compiler copies. No fallback payload
-is imported. Native function bytes, declared sizes and relocation fields remain
+Reservation arrays are excluded from the source comparison. Native function bytes, declared sizes and relocation fields remain
 intact; function names use the existing template/initializer projection.
 Reference copies resolve splat's undefined `D_<hex>` constant guesses below the
 retail image base only for zero-addend HI16/LO16 fields. The retail relocation

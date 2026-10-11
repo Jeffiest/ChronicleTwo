@@ -1124,7 +1124,7 @@ void RodStep(CScene *scene, u_long128 *poly_buffer) {
     for (int i = 0; i < poly_count; i++) {
         CCPoly *poly = &polys[i];
 
-        if (poly->area_kind == 7) {
+        if (poly->area_kind == COL_AREA_FISHING_WATER) {
             poly->ignore_mask |= 8;
         }
     }

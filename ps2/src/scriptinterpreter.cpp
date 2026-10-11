@@ -6,9 +6,6 @@
 
 #include "scriptinterpreter.hpp"
 
-// The inline members of the header are called here, never expanded.
-#pragma dont_inline on
-
 static int  SkipSpace(input_str &in);
 static u8   CheckChar(char c);
 static void PreProcess(input_str &in);

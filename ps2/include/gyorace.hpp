@@ -31,6 +31,36 @@ enum GYORACE_MODE {
 
 /**
  *
+ * Messages of the race commentary file gyore%d.mes.
+ *
+ */
+enum GYORACE_MES {
+    GYORACE_MES_INTRO = 0,         /**< Opening words before the start. */
+    GYORACE_MES_START = 5,         /**< "And they're off!" */
+    GYORACE_MES_SHAKY_START = 6,   /**< Some fish got off to a shaky start. */
+    GYORACE_MES_GOOD_START = 7,    /**< Every fish got off to a beautiful start. */
+    GYORACE_MES_LEADER = 9,        /**< The fish in the lead, by grCHARA_BONUS_TYPE of the fish. */
+    GYORACE_MES_CLOSE_SECOND = 13, /**< A fish at a close second, by grCHARA_BONUS_TYPE of the fish. */
+    GYORACE_MES_THIRD = 17,        /**< The fish in third place, by grCHARA_BONUS_TYPE of the fish. */
+    GYORACE_MES_LAST = 21,         /**< The fish in last place, by grCHARA_BONUS_TYPE of the fish. */
+    GYORACE_MES_BATTLE = 29,       /**< A fish is pushing against another. */
+    GYORACE_MES_FINAL_LAP = 30,    /**< The race is down to the final lap. */
+    GYORACE_MES_FINISHED = 31,     /**< A fish has finished in a place. */
+};
+
+/**
+ *
+ * Sizes of the fish race display.
+ *
+ */
+enum {
+    GYORACE_STEP_MAX = 1000,       /**< Simulation steps that each fish's progress record holds. */
+    GYORACE_EFFECT_NUM = 96,       /**< Splash effects of the race. */
+    GYORACE_EFFECT_SPARK_NUM = 32, /**< Sparks of each splash effect. */
+};
+
+/**
+ *
  * State of one racing fish that the race keeps beside the simulation.
  *
  */
@@ -40,7 +70,7 @@ struct GYORACE_FISH_INF {
     int   fish_no;  /**< Race fish of CGyoraceFishData that races; -1 for a fish not taken from it. */
     int   rank;     /**< Place of the fish in the race, from 1. */
     u_int lap;      /**< Lap that the fish swims, from 0. */
-    int   unk_14;
+    int   second_lap; /**< Set once the fish has started its second lap. */
     float lap_start; /**< Value of race_cnt at which the fish started its second lap. */
     int   unk_1c;
     float time;        /**< Race time of the fish, in sixtieths of a second. */
@@ -153,7 +183,7 @@ int Jikkyou(SubGameInfo *info);
  * @address 0x362150
  * @size 0x48
  */
-extern char *fish_name[18];
+extern char *fish_name[GR_FISH_KIND_NUM];
 
 /**
  *
@@ -234,7 +264,7 @@ extern ClsMes *gyo_mes;
  * @address 0x1F593B0
  * @size 0xD8
  */
-extern GYORACE_RESULT fish_game_data[6];
+extern GYORACE_RESULT fish_game_data[GR_FISH_MAX];
 
 /**
  *
@@ -252,7 +282,7 @@ extern grRACE_INFO RaceInfo;
  * @address 0x1F59670
  * @size 0x90
  */
-extern grRACE_PROGRESS old_prog[6];
+extern grRACE_PROGRESS old_prog[GR_FISH_MAX];
 
 /**
  *
@@ -270,4 +300,4 @@ extern mgCCamera camera0;
  * @address 0x1F59840
  * @size 0x108
  */
-extern GYORACE_FISH_INF fish_inf[6];
+extern GYORACE_FISH_INF fish_inf[GR_FISH_MAX];

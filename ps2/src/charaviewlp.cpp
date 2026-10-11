@@ -8,5 +8,5 @@ void InitCharaViewerMain(INIT_LOOP_ARG arg) {}
 void FinishCharaVieweMain() {}
 
 int LoopCharaViewerMain() {
-    return 1;
+    return true;
 }

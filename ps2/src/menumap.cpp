@@ -315,7 +315,7 @@ int _WMAP_POS(SPI_STACK *stack, int argument_count) {
 
     pos->type = spiGetStackInt(stack);
 
-    if (pos->type == WMAP_POS_TYPE_GEORAMA && CheckBitFlagMenu(0x2E0) != 0) {
+    if (pos->type == WMAP_POS_TYPE_GEORAMA && CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8) != 0) {
         pos->enable = false;
     }
 
@@ -373,12 +373,12 @@ int _WMAP_AREA(SPI_STACK *stack, int argument_count) {
     }
 
     if (area->area_no == 8) {
-        if (CheckBitFlagMenu(0x268) != 0) {
+        if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_4) != 0) {
             area->enable = false;
         }
     }
 
-    if (CheckBitFlagMenu(0x320) != 0 && (area->area_no == 6 || area->area_no == 7)) {
+    if (CheckBitFlagMenu(SAVE_FLAG_CHAPTER_8_STARTED) != 0 && (area->area_no == 6 || area->area_no == 7)) {
         area->enable = false;
     }
 
@@ -804,7 +804,7 @@ int CWorldMapMenu::KeyStep() {
                                 MenuArg.result[2] = select_pos->floor;
                             }
                         } else {
-                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(0x2BC) != 0) {
+                            if (WorldMap_MapNo == SearchMapNo("s12") && CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_S12_REDIRECT) != 0) {
                                 WorldMap_MapNo = SearchMapNo("s34");
                             }
 
@@ -955,7 +955,7 @@ void CWorldMapMenu::Draw() {
     }
 
     DrawMenuFillBox((int) back_alpha, 0, 0, 0);
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
 
     if (map_tex != NULL) {
         mgRect<int> map_source(0, 0, 0x200, 0x16E);
@@ -964,7 +964,7 @@ void CWorldMapMenu::Draw() {
         PrimQuad(prim, map_tex, map_dest, map_source, 0x80, 0x80, 0x80, 0x80);
 
         if (map_type == 2 && anim_tex != NULL && pulse_tex != NULL) {
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(anim_tex);
             prim->Color(0, 0, 0, 0x5E);
@@ -988,7 +988,7 @@ void CWorldMapMenu::Draw() {
             }
 
             prim->End();
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(anim_tex);
             prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -997,7 +997,7 @@ void CWorldMapMenu::Draw() {
             prim->TextureCrd(0x100, 0x100);
             prim->Vertex(0x200, 0x126, 0);
             prim->End();
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             float pulse_color[2][4] = {
                 {230.0f, 0.0f, 0.0f,   0.0f},
                 {0.0f,   0.0f, 230.0f, 0.0f}
@@ -1130,7 +1130,7 @@ void CWorldMapMenu::Draw() {
         frame_step[1] = name_mes->line_w[0] - 0x1E;
         int         shadow_u = 0;
         mgRect<int> frame(frame_x, frame_y, 0x1E, 0x2E);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(mark_tex);
 
@@ -1188,7 +1188,7 @@ void CWorldMapMenu::Draw() {
         MenuReloadTexture(loaded_tex, mark_tex->block);
         float icon_x = 24.0f + put_pos[0];
         float icon_y = 25.0f + put_pos[1];
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(mark_tex);
 
@@ -1310,15 +1310,15 @@ int WorldMoveInit(mgCMemory *stack, int *tex_block, int open_type) {
     WorldMapPtr->capture_tex = mgTexManager.GetTexture("menuwork2", -1);
     buffer = WorldMapStack.stGetTop();
 
-    if (CheckBitFlagMenu(0x258) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_2) != 0) {
         WorldMapPtr->map_type = 2;
     }
 
-    if (CheckBitFlagMenu(0x268) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_4) != 0) {
         WorldMapPtr->map_type = 4;
     }
 
-    if (CheckBitFlagMenu(0x280) != 0) {
+    if (CheckBitFlagMenu(SAVE_FLAG_WORLD_MAP_3) != 0) {
         WorldMapPtr->map_type = 3;
     }
 
@@ -1860,7 +1860,7 @@ void SphidaMenuDraw() {
 
         for (int rank = 0; rank < SPHIDA_PLAYER_MAX; rank++, y += 0x18, player++) {
             mgRect<int> digits(0, 0xEC, 0x12, 0x14);
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(SphidaTex);
             prim->Color(0x80, 0x80, 0x80, 0x80);
@@ -2050,7 +2050,7 @@ void SphidaScoreViewDraw() {
     if (SphidaTex_Sys != NULL) {
         hole_digits.Set(0, 0x60, 0x1C, 0x20);
         textures->ReloadTexture(SphidaTex_Sys->block, (sceVif1Packet *) NULL);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(SphidaTex_Sys);
         prim->Color(128, 128, 128, 128);
@@ -2086,7 +2086,7 @@ void SphidaScoreViewDraw() {
             DrawSubGameUnderLine(SphidaTex, 0x158, row_y, 0x6E);
             score_digits.Set(0, 0xEC, 0x12, 0x14);
             number_digits.Set(0, 0x74, 0xE, 0x14);
-            SetSpriteEnv(prim, 0);
+            SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
             prim->Begin(MG_PRIM_SPRITE);
             prim->Texture(SphidaTex);
             prim->Color(128, 128, 128, 128);

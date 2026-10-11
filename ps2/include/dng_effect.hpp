@@ -49,6 +49,15 @@
 /** Number of bolts that the thunder element can arc between its sparks. */
 #define WEAPON_ELEMENT_BOLT_MAX 16
 
+/** Number of sparks that each pooled hit effect holds. */
+#define HIT_EFFECT_SPARK_MAX 32
+
+/** Number of streaks that each pooled power line holds. */
+#define POWER_LINE_PRIM_MAX 20
+
+/** Number of flecks that each pooled death cloud holds. */
+#define DEAD_EFFECT_PRIM_MAX 48
+
 /**
  *
  * Names the element that a weapon is charged with, which picks the way its sparks move and are drawn.
@@ -150,6 +159,27 @@ enum MAP_EFFECT_TYPE {
 enum DEAD_EFFECT_FLECK_KIND {
     DEAD_EFFECT_FLECK_CLOUD = 0,   /**< A cloud puff. */
     DEAD_EFFECT_FLECK_GLITTER = 1, /**< A shrinking glitter. */
+};
+
+/**
+ *
+ * Pairs of models that a thrown-sparkle model effect draws.
+ *
+ */
+enum SPARC_EFFECT_PATTERN {
+    SPARC_EFFECT_PATTERN_FIRST_PAIR = 0, /**< The first and second models. */
+    SPARC_EFFECT_PATTERN_LAST_PAIR = 1,  /**< The second and third models. */
+    SPARC_EFFECT_PATTERN_OUTER_PAIR = 2, /**< The first and third models. */
+};
+
+/**
+ *
+ * Tints of a mini effect sprite.
+ *
+ */
+enum MINI_EFF_PRIM_COLOR {
+    MINI_EFF_PRIM_GREEN = 0, /**< Green. */
+    MINI_EFF_PRIM_GOLD = 1,  /**< Gold. */
 };
 
 /**
@@ -534,9 +564,9 @@ public:
     u8            unk_20[0x80];
     float         alpha_max; /**< Blend the models fade in to. */
     float         alpha;     /**< Current blend of the models. */
-    s8            pattern;   /**< Pair of models drawn: 0 the first two, 1 the last two, 2 the first and last. */
+    s8            pattern;   /**< Pair of models drawn, a SPARC_EFFECT_PATTERN value. */
     s8            state;     /**< Fade state, a SPARC_EFFECT_STATE value. */
-    s8            color;     /**< Tint: 0 fire, 1 cold, 2 thunder, 3 wind. */
+    s8            color;     /**< Tint, a WEAPON_ELEMENT_KIND value. */
 
     /**
      *
@@ -580,7 +610,7 @@ class CMiniEffPrim {
 public:
     sceVu0FVECTOR pos;   /**< Position of the sprite. */
     s8            state; /**< State, a MINI_EFF_PRIM_STATE value. */
-    s8            color; /**< Tint: 0 green, 1 gold. */
+    s8            color; /**< Tint, a MINI_EFF_PRIM_COLOR value. */
     float         alpha; /**< Blend, from one down to nothing. */
     float         size;  /**< Drawn size. */
 
@@ -1007,13 +1037,6 @@ STATIC_ASSERT(sizeof(CAfterWire) == 0x120);
 
 /**
  *
- * Dungeon trail slots used by weapon experience pickups.
- *
- */
-extern CAfterWire afterWire[16];
-
-/**
- *
  * Burst of sparks thrown from the point of a hit or a guard.
  *
  */
@@ -1239,7 +1262,7 @@ public:
      * @address 0x1C4A20
      * @size 0x70
      */
-    void SetDeadEffect(float *pos, float value14, float value10, float value18, int value1_c);
+    void SetDeadEffect(float *pos, float radius, float height, float size, int duration);
 
     /**
      *

@@ -36,8 +36,6 @@ public:
      */
     CObject() { Initialize(); }
 
-    CObject(const CObject &other);
-
     /**
      *
      * Draws the object. The base object draws nothing.
