@@ -296,3 +296,32 @@ int mgCVisualPrim::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgR
     (void) info;
     return 0;
 }
+
+// Retail keeps each data stream's address in an int, and sizes the material block by the PS2's
+// 0x30-byte material. On the host the header's high half would be lost and the streams would land
+// low, and a host material is wider than 0x30, so both the addresses and the block follow the
+// host.
+void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemory *memory) {
+    mgCTextureManager *textures = GetTextureManager();
+    u_char            *vertex_address = (u_char *) header + header->vertex_ofs;
+    u_char            *normal_address = (u_char *) header + header->normal_ofs;
+    u_char            *colour_address = (u_char *) header + header->colour_ofs;
+    u_char            *uv_address = (u_char *) header + header->uv_ofs;
+    MDT_MATERIAL_     *file_materials = (MDT_MATERIAL_ *) ((u_char *) header + header->material_ofs);
+    vertex_num = header->vertex_num;
+    normal_num = header->normal_num;
+    colour_num = header->colour_num;
+    uv_num = header->uv_num;
+    material_num = header->material_num;
+    vertex = (sceVu0FVECTOR *) vertex_address;
+    normal = (sceVu0FVECTOR *) normal_address;
+    colour = (sceVu0FVECTOR *) colour_address;
+    uv = (sceVu0FVECTOR *) uv_address;
+    material = (mgMaterial *) memory->Alloc((material_num * sizeof(mgMaterial) + 15) / 16);
+
+    if (material != NULL) {
+        for (int i = 0; i < material_num; i++) {
+            CopyMaterial(&material[i], &file_materials[i], textures);
+        }
+    }
+}
