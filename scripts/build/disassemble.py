@@ -6,15 +6,10 @@
     disassemble.py --no-splat   only write the per-symbol files
 
 splat (run from ps2/config/<region>, as main.yaml expects) writes the
-whole-unit file `ps2/asm/<region>/<unit>.s` for every unit and, for a game
-unit whose source marks a function `INCLUDE_ASM`, that function's file under
-`ps2/asm/<region>/nonmatchings/<unit>/`. This script adds the rest of what a
-game unit's markers name, in the same directory:
-
-- its static initialiser (the `.sinit` subsegment, linked as `.init`), cut out
-  of the whole-unit file, since splat writes no file of its own for it;
-- one file per initialised datum in `.data`, `.rodata`, `.ctor`, `.vtables`
-  and `.sdata`, written from the retail executable's bytes and relocations.
+whole-unit file `ps2/asm/<region>/<unit>.s` for every unit. This script adds
+each game unit's static initialiser to `ps2/asm/<region>/nonmatchings/<unit>/`:
+the `.sinit` subsegment, linked as `.init`, cut out of the whole-unit file,
+since splat writes no file of its own for it.
 
 A unit's run of a data section is cut at every symbol main.symbols.txt lists
 in it, and at every unnamed address (`D_<ADDR8>`) that splat's assembly refers
@@ -42,7 +37,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import layout  # noqa: E402
 
 CODE_SECTIONS = (".text", ".init")
-DATA_SECTIONS = (".data", ".rodata", ".ctor", ".vtables", ".sdata")
 BSS_SECTIONS = (".sbss", ".bss")
 
 NONMATCHINGS = layout.ASM / "nonmatchings"
@@ -62,8 +56,8 @@ BRANCH_TARGET = re.compile(
     re.M,
 )
 GLOBAL_LABEL = re.compile(r"^[ \t]*(?:glabel|jlabel) (\S+)$", re.M)
-# gas treats a label starting with `.L` as local, and tools/mwccgap skips
-# exactly the lines that look like `.L...:` when it sizes a function.
+# gas treats a label starting with `.L` as local and leaves it out of the
+# object's symbol table.
 TWIN_PREFIX = ".L"
 TWIN_SUFFIX = "$b"
 
@@ -242,46 +236,6 @@ class Resolver:
         return name if offset == 0 else f"{name} + 0x{offset:X}"
 
 
-def placeholder(name):
-    """The name a datum's placeholder goes by in the source and its file.
-
-    A placeholder is an untyped array, so it cannot share its name with the
-    typed declaration a header gives the datum;
-    scripts/build/postprocess_object.py gives the symbol its own name back.
-    """
-    return name + layout.PLACEHOLDER_SUFFIX
-
-
-def data_file(name, start, end, retail, resolve):
-    """One datum's assembly, as tools/mwccgap's INCLUDE_RODATA reads it."""
-    # `.align 0` stops gas aligning `.word` to four bytes, so a datum that
-    # starts off a word boundary still assembles to exactly its extent.
-    lines = ['.include "macro.inc"', "", ".section .rodata", ".align 0", "",
-             f"glabel {placeholder(name)}"]
-    data = retail.bytes(start, end)
-    address = start
-    while address < end:
-        kind = retail.relocations.get(address)
-        if address % 4 == 0 and address + 4 <= end:
-            if kind is not None:
-                if kind != R_MIPS_32:
-                    raise ValueError(f"{name}: relocation type {kind} at 0x{address:08X}")
-                target = resolve(retail.word(address))
-                if target is None:
-                    raise ValueError(f"{name}: no symbol for 0x{retail.word(address):08X}")
-                lines.append(f"    /* {address:08X} */ .word {target}")
-            else:
-                value = int.from_bytes(data[address - start:address - start + 4], "little")
-                lines.append(f"    /* {address:08X} */ .word 0x{value:08X}")
-            address += 4
-        else:
-            if kind is not None:
-                raise ValueError(f"{name}: relocation at 0x{address:08X} straddles a symbol")
-            lines.append(f"    /* {address:08X} */ .byte 0x{data[address - start]:02X}")
-            address += 1
-    return "\n".join(lines) + "\n"
-
-
 def sinit_files(lay, unit):
     """{name: assembly} for the functions of the unit's `.init` run."""
     text = (ROOT / lay.reference(unit)).read_text(encoding="utf-8").splitlines()
@@ -317,12 +271,7 @@ def write_unit_files(pieces, retail, resolve, unit):
     directory.mkdir(parents=True, exist_ok=True)
     count = 0
     for section, run in pieces.unit(unit):
-        if section in DATA_SECTIONS:
-            for name, start, end in run:
-                write_if_changed(directory / f"{placeholder(name)}.s",
-                                 data_file(name, start, end, retail, resolve))
-                count += 1
-        elif section == ".init":
+        if section == ".init":
             expected = {name for name, _s, _e in run}
             files = sinit_files(lay, unit)
             if set(files) != expected:

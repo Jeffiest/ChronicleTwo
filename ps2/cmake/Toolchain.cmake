@@ -7,7 +7,7 @@ set(AS ${MIPS_TOOL_PREFIX}as)
 # GNU as, for the split assembly of the library units and the data-only units.
 set(AS_FLAGS -EL -march=r5900 -mabi=eabi -mno-pdr -non_shared -G0 -I ${INCLUDE_DIR})
 
-# MWCC, through tools/mwccgap (scripts/build/mwccgap.sh), for the game units.
+# MWCC, through Satan's Fiddle (scripts/build/mwccgap.sh), for the game units.
 # Satan's Fiddle controls compiler state; MWLD below continues to use plain wibo.
 if(DEFINED ENV{SATANSFIDDLE})
     set(SATANSFIDDLE_DEFAULT "$ENV{SATANSFIDDLE}")

@@ -4,9 +4,9 @@
     postprocess_object.py OBJECT [--order-only]
 
 MWCC emits one section per function or datum. Retail addresses select each
-section's name, flags, alignment and order. Placeholder aliases identify the
-assembly-supplied pieces; binding a native copy to one preserves instruction
-fields and requires consistent references, equal declared object extents and
+section's name, flags, alignment and order. Binding a native copy to its
+retail piece preserves instruction fields and requires consistent references,
+equal declared object extents and
 resolved initialized bytes plus real relocation shapes, or NOBITS storage.
 
 Native identity passes use their required extent, section-kind, byte,
