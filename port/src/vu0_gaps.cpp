@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include "common.h"
@@ -321,6 +322,29 @@ static int LogDrawRect(const mgCFrame *frame, mgVu0FBOX *rect, int visible, int 
                      (const void *) frame, visible, rect->max[0], rect->max[1], rect->max[2], rect->max[3],
                      rect->min[0], rect->min[1], rect->min[2], rect->min[3], (const void *) visual,
                      visual != NULL ? (int) const_cast<mgCVisual *>(visual)->Iam() : -1, lw[3][0], lw[3][1], lw[3][2]);
+
+        if (visual != NULL) {
+            int kind = (int) const_cast<mgCVisual *>(visual)->Iam();
+            if (kind == MG_VISUAL_KIND_MOTION_MDT || kind == MG_VISUAL_KIND_FIX_MDT) {
+                const mgCVisualMDT *mdt = static_cast<const mgCVisualMDT *>(visual);
+                float lo[3] = {1e30f, 1e30f, 1e30f}, hi[3] = {-1e30f, -1e30f, -1e30f};
+                double sum = 0.0;
+                for (int i = 0; i < mdt->vertex_num; i++) {
+                    for (int k = 0; k < 3; k++) {
+                        lo[k] = std::min(lo[k], mdt->vertex[i][k]);
+                        hi[k] = std::max(hi[k], mdt->vertex[i][k]);
+                    }
+                    sum += mdt->vertex[i][0] * 1.0 + mdt->vertex[i][1] * 3.0 + mdt->vertex[i][2] * 7.0;
+                }
+                const void *weight = kind == MG_VISUAL_KIND_MOTION_MDT
+                                         ? (const void *) static_cast<const mgCVisualMotionMDT *>(visual)->weight
+                                         : NULL;
+                std::fprintf(stderr,
+                             "  visual %p verts %d vertex %p weight %p sum %.2f bbox [%.1f %.1f %.1f]..[%.1f %.1f %.1f]\n",
+                             (const void *) visual, mdt->vertex_num, (const void *) mdt->vertex, weight, sum, lo[0],
+                             lo[1], lo[2], hi[0], hi[1], hi[2]);
+            }
+        }
     }
     return visible;
 }
