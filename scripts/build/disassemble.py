@@ -8,8 +8,8 @@
 splat (run from ps2/config/<region>, as main.yaml expects) writes the
 whole-unit file `ps2/asm/<region>/<unit>.s` for every unit and, for a game
 unit whose source marks a function `INCLUDE_ASM`, that function's file under
-`ps2/asm/<region>/nonmatchings/<unit>/`. This script adds the rest of what a
-game unit's markers name, in the same directory:
+`ps2/asm/<region>/nonmatchings/<unit>/`. No source marks one now; this script
+adds the rest of what a game unit's markers would name, in the same directory:
 
 - its static initialiser (the `.sinit` subsegment, linked as `.init`), cut out
   of the whole-unit file, since splat writes no file of its own for it;
@@ -253,7 +253,7 @@ def placeholder(name):
 
 
 def data_file(name, start, end, retail, resolve):
-    """One datum's assembly, as tools/mwccgap's INCLUDE_RODATA reads it."""
+    """One datum's assembly, as tools/mwccgap's data marker reads it."""
     # `.align 0` stops gas aligning `.word` to four bytes, so a datum that
     # starts off a word boundary still assembles to exactly its extent.
     lines = ['.include "macro.inc"', "", ".section .rodata", ".align 0", "",

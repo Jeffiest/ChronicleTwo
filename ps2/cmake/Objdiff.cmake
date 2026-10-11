@@ -1,10 +1,10 @@
 # objdiff's two objects per game unit, its configuration, and m2c's context.
 #
 # The target is retail: the unit's whole reference file, assembled as splat
-# wrote it. The base is the source alone, compiled through Satan's Fiddle without
-# tools/mwccgap, so a function still behind INCLUDE_ASM is absent from it and
-# counts as not decompiled. A header changing recompiles every base: the set
-# is small, and scripts/build/globs.sh reconfigures when one is added.
+# wrote it. The base is the source alone, compiled through Satan's Fiddle
+# without tools/mwccgap's marker overlay. A header changing recompiles every
+# base: the set is small, and scripts/build/globs.sh reconfigures when one is
+# added.
 
 set(OBJDIFF_DIR ${BUILD_DIR}/objdiff)
 set(OBJDIFF_CONFIG objdiff.json)

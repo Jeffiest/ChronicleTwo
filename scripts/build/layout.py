@@ -8,8 +8,8 @@ units in link order, the sections each one owns, and the symbols in them.
                                for every object assembled from splat's output
 
 A unit is `asm` when its yaml entry is `asmtu` (linked from the one file splat
-writes for it) and `cpp` when it is compiled from ps2/src/<unit>.cpp, with
-tools/mwccgap putting retail's assembly wherever the source has a marker.
+writes for it) and `cpp` when it is compiled from ps2/src/<unit>.cpp through
+tools/mwccgap.
 """
 
 import argparse
