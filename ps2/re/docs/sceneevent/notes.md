@@ -17,7 +17,7 @@ exactly 0x00..0xCF into `CScene+0x2E90`, and the next CScene field is at `+0x2F6
 | Off | Field | Evidence |
 |---|---|---|
 | 0x00 | `CFuncPoint::EventData event` (0x28, from mapload.hpp) | `GetMapEvent` copies `CFuncPoint+0x20..0x47` (6 words, then 16 bytes from `+0x38` by a 2-bytes-per-step loop). `StartEvent` tests flag bits 0x8/0x10/0x80/0x200/0x400 at +0 (= `FUNC_EVENT_FLAG` DOOR/ED_DOOR/CLOSE_DOOR/TREASURE_BOX/BOOK). |
-| 0x08 | (`event.unk_28`) | Event number for non-map events: `GetMapEvent` writes 300 (game object returning slot 0x78) or 400 (slot 0x7A) when `check_type == 1`; `GetTalkEvent` writes `slot - 8`; `StartEvent` overwrites with 0xF9 for close doors. mapload.hpp names it `unk_28`; a better name belongs in mapload.hpp. |
+| 0x08 | (`event.unk_28`) | Event number for non-map events: `GetMapEvent` writes 300 (game object returning slot 0x78) or 400 (slot 0x7A) when `check_type == MAP_EVENT_CHECK_ACTION`; `GetTalkEvent` writes `slot - 8`; `StartEvent` overwrites with 0xF9 for close doors. mapload.hpp names it `unk_28`; a better name belongs in mapload.hpp. |
 | 0x0C, 0x10, 0x14 | (`event.unk_2c/30/34`) | `InitLadder` (editctrl): +0xC ladder height (int, added to a float), +0x10 `LdrSound`, +0x14 foot value. |
 | 0x28 | implicit padding | Not copied by `RunEvent`/`StartEvent`; produced by the 16-byte alignment of `sceVu0FVECTOR`. |
 | 0x30 | `sceVu0FVECTOR position` | From `CFuncPoint::position` (+0x180); `GetGameObjectEvent` stores the object position with w=1; `_GET_EVENT_DATA` case 10 reads floats. |

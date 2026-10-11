@@ -57,7 +57,7 @@ These offsets were seen in EditMoveChara and CharaControl, for whoever writes `d
   The code reads `(*p)[0..2]`, and pbuggy passes the address of a `float[4]`.
 - EditStepChara/EditDrawShadowChara/EditDrawChara/EditDrawEffectChara run over the player
   (`scene+0x2E50`) and characters 8..63. EditStepChara also steps 0x78..0x7B. The draw passes
-  split on `CScene::GetType(1,i) == 4`: types other than 4 use draw mode 1 and type 4 uses
+  split on `CScene::GetType(1,i) == SCENE_CHARA_TYPE_EFFECT`: types other than SCENE_CHARA_TYPE_EFFECT use draw mode 1 and SCENE_CHARA_TYPE_EFFECT uses
   draw mode 2.
 - Virtual calls on the character (`CCharacter2`) are made by vtable offset: 0x10 SetPos,
   0x18 GetPos, 0x24 GetRot, 0xB0 set motion (name, mode), 0xB8 set motion speed, 0xC0 get
@@ -123,7 +123,7 @@ argument instructions differently.
 `LadderStep` holds an `EditLadderStep` (value 6 is never used), `ViewMode` an `EditViewMode`, `CharaMotionMode`
 an `EditCharaMotionMode`, `LadderMode` an `EditLadderMode`. The edit map's other characters use scene slots
 `EDIT_CHARA_SLOT_OTHER` to `EDIT_CHARA_SLOT_OTHER_END`, plus four fixed slots from `EDIT_CHARA_SLOT_EXTRA`; slots of
-type `EDIT_CHARA_TYPE_EFFECT` are drawn in a pass of their own. `CameraControl`, `InitEyeCamera`, `EndLadder`,
+type `SCENE_CHARA_TYPE_EFFECT` are drawn in a pass of their own. `CameraControl`, `InitEyeCamera`, `EndLadder`,
 `GetUserData`, `CharaControl`, `EyeCamera`, `InitLadder` and `LadderControl` are local in retail (`static`).
 Pad button 6 (R2, eye view) and analog inputs 4/5 (second bindings of the left stick's Y/X) have no enumerator
 in padcontrol.hpp yet.

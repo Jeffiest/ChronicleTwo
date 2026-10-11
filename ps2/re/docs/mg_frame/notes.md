@@ -117,7 +117,7 @@ mgCObject/mgCFrameBase vtables end at 0x3c. No destructors. Trailing zero word i
 ## mgCFrameAttr (0x90)
 Size: Initialize memsets 0x90; `dmy_attr` bss 0x90. Fields copied member-wise by SetAttrParam
 (mask 0): 0x64-0x6c are not copied -> padding before the 16-aligned colour vector.
-Defaults (Initialize): base Initialize, draw=1, unk_20=100.0, fog=1, unk_3c=0, obj_alpha=1.0,
+Defaults (Initialize): base Initialize, draw=1, unk_20=100.0, fog=MG_FOG_SCENE, unk_3c=0, obj_alpha=1.0,
 unk_50=(0,1,0,0), color=(128,128,128,128), point_light=1, unk_84=0, depth_bias=0; also overwrites
 base 0x0=-1 and 0x8=1.
 | off | field | evidence |
@@ -129,7 +129,7 @@ base 0x0=-1 and 0x8=1.
 | 0x24 | unk_24 | mask 0x80 only |
 | 0x28 | unk_28 | gameutil MotionProc* set 1/2 |
 | 0x2c | program_option | 'S'; mgCVisualMDT::CreateRenderInfoPacket ORs 4 into microprogram flags |
-| 0x30 | fog | 'F'+digit; nonzero enables PRIM.FGE if scene fog; 2 -> fog colour 0, 3 -> 0xffffff |
+| 0x30 | fog | 'F'+digit; nonzero enables PRIM.FGE if scene fog; 2 -> MG_FOG_BLACK (fog colour 0), 3 -> MG_FOG_WHITE (0xffffff) |
 | 0x34/0x38/0x3c | unk | masks 0x800/0x1000/0x2000 only |
 | 0x40 | program_mode | 'M'+digit; bit1 -> flag 8, bit2 -> flag 0x100 + extra matrix; nonzero sends eye pos in model space; Draw tests bit 2 |
 | 0x44 | obj_alpha float | SetAttrParamObjAlpha; multiplies colour alphas in CreateRenderInfoPacket |

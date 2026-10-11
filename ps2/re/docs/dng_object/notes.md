@@ -25,7 +25,7 @@ No class has virtual functions, base classes or constructors; all instances are 
 
 ## CRocketLauncher (0x190) / CRocketLauncherMan (0x2580)
 Man: `Get/Draw/Step/Clear/Initialize` loop 24 times with stride 0x190; `Get` returns first slot with state (0x174) == 0.
-- 0x00 int target_chara: `SetPos` callers (`ShotGrenadGun`, `_SHOT`) store `action_info+0x770` (s16), `_SHOT_ROCKET_LAUNCHER` stores 0. Step: if != -1, `DngMainScene->GetCharacter(id)->GetEntryObjectPos(0,0,&target_pos)`. `Initialize` sets -1.
+- 0x00 int target_chara: `SetPos` callers (`ShotGrenadGun`, `_SHOT`) store `action_info+0x770` (s16), `_SHOT_ROCKET_LAUNCHER` stores 0. Step: if != -1, `DngMainScene->GetCharacter(id)->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET,0,&target_pos)`. `Initialize` sets -1.
 - 0x04-0x0F: never touched (alignment gap before the first sceVu0FVECTOR).
 - 0x10 pos, 0x20 start_pos (written only in SetPos), 0x30 target_pos, 0x40 dir (interpolated towards target by `mgVectorInterpolate(dir,dir,to_target,0.05235988,0)`).
 - 0x50 trail[16]: SetPos fills all 16 with pos; Step writes `trail[trail_index]` every 3rd frame; Draw passes `this+0x50` to `CreatSmoothPass(out, trail, 16, 6, trail_index, 16)`.

@@ -44,7 +44,7 @@ External callers: `AnalyzeEditMap` <- `EditDataSave`, `EditDataLoad` (editloop, 
   pointer at +0x324 null -> 0. Meaning of `chara` values not established beyond being villager
   kinds from the removal menu; no enum made.
 - `EditMapInitEvent(map_no, map)`: only for map_no == 14: `CFuncPointMngr::Search` at
-  `CEditMap+0xcb0` for `"dun07"`, sets found point `+0x10` = `GetBitFlag(800)`;
+  `CEditMap+0xcb0` for `"dun07"`, sets found point `+0x10` = `GetBitFlag(SAVE_FLAG_CHAPTER_8_STARTED)`;
   `CMap::GetPlaceParts("p02_e05a02-0")` then virtual at vtable 0x54 with
   `flag == 0` (likely a show/hide). Map 14 is not named; no map-number enum exists yet.
 

@@ -89,7 +89,7 @@ copied one by one, arrays/structs as 16-byte groups. That fixes 0x12A8..0x12C0 a
 | 0x12A4 | att_type s16 | CheckDamage (s8 of hit); _GET_ATT_TYPE |
 | 0x12A8 | scoop | _SET_SCOOP (1 arg: type 2 + no; 4 args: type 1, motion, start, end, no); ThinkHost sets ok (0x12BC); CheckPhoto reads ok/no |
 | 0x12C0/0x12C8 | reserv_img[2] / sizes | _LOAD_RESERV_IMG, _TRANS_RESERV_IMG |
-| 0x12D0 | center_pos | ThinkHost GetEntryObjectPos(0,0); effect positions in CheckDamage |
+| 0x12D0 | center_pos | ThinkHost GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET,0); effect positions in CheckDamage |
 | 0x12E0 | event_no | _RUN_EVENT_SCRIPT; IsRunEvent takes and clears |
 | 0x12E2 | target_no | _GET_TARGET_* GetCharacter |
 | 0x12E4/0x12E8 | view_state / view_alpha | CheckView, ThinkHost fade +-0.05 |
