@@ -19,12 +19,6 @@
 #include "mglib.hpp"
 #include "object.hpp"
 
-enum {
-    kFuncPointHasFire = 2,
-    kFuncPointHasPLight = 0x40,
-    kMapPartsSize = 0x310
-};
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -975,7 +969,7 @@ int CMap::DrawSub(int direct) {
         parts = *list;
         parts->CopyFuncPointCheck(check);
 
-        if (func_point.flag & kFuncPointHasPLight) {
+        if (func_point.flag & FUNC_POINT_MNGR_LIGHT) {
             parts->GetBoundSphere(sphere);
             light_count = SetFuncPLight(sphere, &check);
         } else {
@@ -1082,7 +1076,7 @@ void CMap::DrawFireEffect(int tex_block) {
         for (i = 0; i < draw_parts_num; i++, list++) {
             parts = *list;
 
-            if ((parts->func_point_mngr.flag & kFuncPointHasFire) == 0) {
+            if ((parts->func_point_mngr.flag & FUNC_POINT_MNGR_BURN) == 0) {
                 continue;
             }
 
