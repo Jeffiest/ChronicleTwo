@@ -103,6 +103,20 @@ void BuildSkinMatrices(const mgCVisualMotionMDT *visual, mgCFrame *frame, int sl
 }
 
 void SkinMotionVisual(mgCVisualMotionMDT *visual, mgCFrame *frame) {
+    // Diagnostic: DC_DUMP_DRAWS=1 says once per visual why it is or is not skinned.
+    static const bool why = std::getenv("DC_DUMP_DRAWS") != nullptr;
+    static std::unordered_map<const void *, int> why_seen;
+    if (why && why_seen[visual]++ == 0) {
+        int slots = 0;
+        while (slots < 32 && visual->bone[slots] >= 0) {
+            slots++;
+        }
+        std::fprintf(stderr,
+                     "skinwhy visual %p verts %d vertex %p frame %p base_matrix %p weight %p weight_num %d slots %d\n",
+                     (const void *) visual, visual->vertex_num, (const void *) visual->vertex, (const void *) visual->frame,
+                     (const void *) visual->base_matrix, (const void *) visual->weight, visual->weight_num, slots);
+    }
+
     if (visual->vertex == NULL || visual->vertex_num <= 0) {
         return;
     }
