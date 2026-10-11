@@ -89,7 +89,7 @@ static SAVEDATA_CONVERT_RESULT ConvertResult;
  * Directory records for the source save files.
  *
  */
-static MC_DIR_ENTRY *SaveFileInfoTablePtr;
+static sceMcTblGetDir *SaveFileInfoTablePtr;
 
 /**
  *
@@ -159,7 +159,7 @@ void SVConvViewInit(INIT_LOOP_ARG arg) {
     mgTexManager.EnterIMGFile(GetFontTex2ImgPtr(), 0, NULL, NULL);
     sceMcInit();
     main_stack->Align64();
-    SaveFileInfoTablePtr = new (main_stack->Alloc(sizeof(MC_DIR_ENTRY) * SAVEDATA_CONVERT_FILE_MAX / 16 + 2)) MC_DIR_ENTRY[SAVEDATA_CONVERT_FILE_MAX];
+    SaveFileInfoTablePtr = new (main_stack->Alloc(sizeof(sceMcTblGetDir) * SAVEDATA_CONVERT_FILE_MAX / 16 + 2)) sceMcTblGetDir[SAVEDATA_CONVERT_FILE_MAX];
     main_stack->Align64();
     SAVEDATA_BUFFER = new (main_stack->Alloc(sizeof(SAVE_CONVERT_WORK) / 16 + 2)) SAVE_CONVERT_WORK;
     main_stack->Align64();
@@ -318,14 +318,14 @@ static void InitSaveFileInfoTablePtr() {
     ConvertResultDispTime = 0;
 
     for (int i = 0; i < SAVEDATA_CONVERT_FILE_MAX; i++) {
-        SaveFileInfoTablePtr[i].name[0] = '\0';
+        SaveFileInfoTablePtr[i].entry_name[0] = '\0';
         SaveFileInfoTableSizeConvert[i] = 0;
     }
 }
 
 int SaveDataConvertLoop() {
-    MC_DIR_ENTRY dir_entries[SAVEDATA_CONVERT_DIR_MAX] __attribute__((aligned(64)));
-    MC_DIR_ENTRY inside_entries[32] __attribute__((aligned(64)));
+    sceMcTblGetDir dir_entries[SAVEDATA_CONVERT_DIR_MAX] __attribute__((aligned(64)));
+    sceMcTblGetDir inside_entries[32] __attribute__((aligned(64)));
     char         path[128];
     int          card_type, free_size, formatted;
     int          command, result, existing_count;
@@ -357,7 +357,7 @@ int SaveDataConvertLoop() {
             sceMcSync(0, &command, &result);
 
             for (int i = 0; i < result && i < SAVEDATA_CONVERT_DIR_MAX; i++) {
-                memcpy(&SaveFileInfoTablePtr[FileListNum], &dir_entries[i], sizeof(MC_DIR_ENTRY));
+                memcpy(&SaveFileInfoTablePtr[FileListNum], &dir_entries[i], sizeof(sceMcTblGetDir));
                 FileListNum++;
             }
 
@@ -393,10 +393,10 @@ int SaveDataConvertLoop() {
                 int listed = 0;
 
                 for (int i = 0; i < existing_count; i++) {
-                    strcpy(existing_names[file], dir_entries[i].name);
-                    int number = atoi(&dir_entries[i].name[16]);
+                    strcpy(existing_names[file], dir_entries[i].entry_name);
+                    int number = atoi(&dir_entries[i].entry_name[16]);
 
-                    if ((u8) dir_entries[i].name[16] != 0) {
+                    if ((u8) dir_entries[i].entry_name[16] != 0) {
                         existing_numbers[listed] = number;
                     } else {
                         existing_numbers[listed] = 32;
@@ -410,20 +410,20 @@ int SaveDataConvertLoop() {
                 int                   number = -1;
                 SAVEDATA_CONVERT_TYPE type = SAVEDATA_CONVERT_TYPE_NONE;
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dkcl", 4) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dkcl", 4) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_GAME;
                 }
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dc2album", 8) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dc2album", 8) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_ALBUM;
                 }
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dc2omake", 8) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dc2omake", 8) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_OMAKE;
                 }
 
                 if (type < 0) {
-                    printf("not convert type : %s\n", SaveFileInfoTablePtr[file].name);
+                    printf("not convert type : %s\n", SaveFileInfoTablePtr[file].entry_name);
                     continue;
                 }
 
@@ -439,7 +439,7 @@ int SaveDataConvertLoop() {
                 }
 
                 if (type == SAVEDATA_CONVERT_TYPE_GAME) {
-                    number = atoi(&SaveFileInfoTablePtr[file].name[16]);
+                    number = atoi(&SaveFileInfoTablePtr[file].entry_name[16]);
 
                     if (0 <= number) {
                         for (int i = 0; i < listed; i++) {
@@ -464,11 +464,11 @@ int SaveDataConvertLoop() {
                     continue;
                 }
 
-                sceMcChdir(SlotSelect, 1, SaveFileInfoTablePtr[file].name, previous_dir);
+                sceMcChdir(SlotSelect, 1, SaveFileInfoTablePtr[file].entry_name, previous_dir);
                 sceMcSync(0, NULL, NULL);
 
                 if (type == SAVEDATA_CONVERT_TYPE_GAME) {
-                    strcpy(path, SaveFileInfoTablePtr[file].name);
+                    strcpy(path, SaveFileInfoTablePtr[file].entry_name);
                     sceMcGetDir(SlotSelect, 1, path, 0, 16, inside_entries);
                     sceMcSync(0, &command, &result);
 
@@ -487,7 +487,7 @@ int SaveDataConvertLoop() {
                 }
 
                 if (type == SAVEDATA_CONVERT_TYPE_ALBUM || type == SAVEDATA_CONVERT_TYPE_OMAKE) {
-                    strcpy(path, SaveFileInfoTablePtr[file].name);
+                    strcpy(path, SaveFileInfoTablePtr[file].entry_name);
                     sceMcGetDir(SlotSelect, 1, path, 0, 16, inside_entries);
                     sceMcSync(0, &command, &result);
                     sceMcRename(SlotSelect, 1, path, target);
