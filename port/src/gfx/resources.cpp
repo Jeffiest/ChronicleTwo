@@ -67,6 +67,15 @@ uint32_t AllocateTextureSlot() {
         return slot;
     }
     if (g.textures.size() >= kMaxTextures) {
+        // Loading screens upload thousands of textures without presenting a frame, so the
+        // deferred releases never run; retiring the open upload batch under pressure is safe
+        // outside a frame and returns the slots the released images held.
+        SubmitUploadsAndWait();
+        if (!g.free_texture_slots.empty()) {
+            uint32_t slot = g.free_texture_slots.back();
+            g.free_texture_slots.pop_back();
+            return slot;
+        }
         return 0;
     }
     g.textures.emplace_back();
