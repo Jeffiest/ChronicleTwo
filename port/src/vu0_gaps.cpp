@@ -7,6 +7,7 @@
 
 #include "collision.hpp"
 #include "gameutil.hpp"
+#include "visualmotion.hpp"
 #include "mg_drawenv.hpp"
 #include "mg_frame.hpp"
 #include "mg_math.hpp"
