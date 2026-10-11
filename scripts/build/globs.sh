@@ -16,11 +16,9 @@ cd "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 dir=$1
 mkdir -p "$dir"
 out=$dir/globbed.txt
-# tools/mwccgap compiles a temporary named tmp*; that comes and goes during a
-# build and must not trigger a reconfigure.
 listing=$(
     {
-        find ps2/src -type f \( -name '*.cpp' -o -name '*.c' \) ! -name 'tmp*'
+        find ps2/src -type f \( -name '*.cpp' -o -name '*.c' \)
         find ps2/include -type f \( -name '*.hpp' -o -name '*.h' \)
     } 2>/dev/null | LC_ALL=C sort
 )

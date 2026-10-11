@@ -1,9 +1,9 @@
 # objdiff's two objects per game unit, its configuration, and m2c's context.
 #
 # The target is retail: the unit's whole reference file, assembled as splat
-# wrote it. The base is the source alone, compiled through Satan's Fiddle without
-# tools/mwccgap, so a function still behind INCLUDE_ASM is absent from it and
-# counts as not decompiled. A header changing recompiles every base: the set
+# wrote it. The base is the source alone, compiled through Satan's Fiddle, so a
+# function the source does not define is absent from it and counts as not
+# decompiled. A header changing recompiles every base: the set
 # is small, and scripts/build/globs.sh reconfigures when one is added.
 
 set(OBJDIFF_DIR ${BUILD_DIR}/objdiff)
@@ -43,8 +43,7 @@ foreach(row IN LISTS unit_rows)
         COMMENT "AS (objdiff target) ${reference}"
         VERBATIM)
 
-    # `-lang` is given because the linked object's compile gives it too
-    # (scripts/build/mwccgap.sh).
+    # `-lang` matches the game unit's compile in scripts/build/mwccgap.sh.
     set(base ${OBJDIFF_DIR}/base/${unit}.cpp.o)
     get_filename_component(logical_source "${source}" NAME)
     add_custom_command(

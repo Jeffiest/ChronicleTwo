@@ -69,14 +69,5 @@ class TerminalComparisonTests(unittest.TestCase):
         self.assertTrue(any(entry.r_offset == 12 for record in compiled.relocations
                             if record.sh_info == sym.st_shndx for entry in record.relocations))
 
-    def test_marker_held_coincidental_native_payload_receives_no_credit(self):
-        helper = fixtures.AlignmentFragmentTests()
-        compiled, ctx = helper.fixture()
-        before = d.code_snapshot(compiled)
-        helper.prepare(compiled, ctx, 'INCLUDE_RODATA("dir", first__DATA);')
-        self.assertEqual(compiled.symtab.symbols[1].st_shndx, 0)
-        self.assertEqual(d.code_snapshot(compiled), before)
-
-
 if __name__ == '__main__':
     unittest.main()

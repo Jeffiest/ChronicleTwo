@@ -59,9 +59,7 @@ function(add_asm_object obj src fixup_args)
         VERBATIM)
 endfunction()
 
-# Compile one game unit. tools/mwccgap puts retail's assembly wherever the
-# source has an INCLUDE_ASM or INCLUDE_RODATA marker, reading the per-symbol
-# files the split wrote, so every object depends on the split.
+# Compile one game unit with MWCC. Every object depends on the split.
 function(add_cpp_object obj src unit)
     add_custom_command(
         OUTPUT ${CMAKE_SOURCE_DIR}/${obj}
@@ -75,7 +73,6 @@ function(add_cpp_object obj src unit)
                 ${CMAKE_SOURCE_DIR}/${SPLIT_STAMP}
                 ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/mwccgap.sh
                 ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/postprocess_object.py
-                ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/objdiff_data.py
                 ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/lcf.py
                 ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/fixup_sections.sh
                 ${MWCCGAP_SOURCES}

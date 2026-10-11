@@ -51,7 +51,7 @@ class DataReferenceTests(unittest.TestCase):
         line = '/* 261680 00361600 6C3F3F00 */ addiu $2, $2, %lo(D_003F3F6C)\n'
         self.assertEqual(self.references(line, section='.text', code_only=True), {0x3f3f6c})
         self.assertEqual(self.references('', code_only=True,
-                                         source='INCLUDE_BSS(D_003F3F6C, 4);'), {0x3f3f6c})
+                                         source='char D_003F3F6C[4];'), {0x3f3f6c})
 
 
 if __name__ == '__main__':
