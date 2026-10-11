@@ -2026,7 +2026,7 @@ int gcMONSTER(SPI_STACK *stack, int arg_count) {
     }
 
     manager->JoinPartyMember(USER_CHARA_MONSTER);
-    manager->GetItemNotOver(0x134, 1);
+    manager->GetItemNotOver(ITEM_ID_BADGE_BOX, 1);
 
     for (i = 0; i < arg_count; i++) {
         monster_id = spiGetStackInt(stack++);
