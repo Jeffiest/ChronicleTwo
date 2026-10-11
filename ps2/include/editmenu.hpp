@@ -742,14 +742,14 @@ void MenuMapPartsDraw(int &draw_wait);
 
 /**
  *
- * Gives non-zero when a town's Georama menu shows the pictures of its
- * check points rather than its house list.
+ * Gives non-zero when the town is the Moon Flower Palace and the Gekka view
+ * flag is set.
  *
  * @mangled CheckGekkaViewMode__Fi
  * @address 0x1F9A90
  * @size 0x40
  */
-int CheckGekkaViewMode(int view_mode);
+int CheckGekkaViewMode(int town_no);
 
 /**
  *

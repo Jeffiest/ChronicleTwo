@@ -57,28 +57,7 @@ enum RemovalAction {
 
 /**
  *
- * Attribute bits of a Georama part definition that decide where the part is listed and whether it can be destroyed.
- *
- */
-enum GeoramaPartAttr {
-    GEORAMA_PART_ATTR_DESTROY_SINGLE  = 0x1,     /**< Destroying takes one part at a time, with no count to set. */
-    GEORAMA_PART_ATTR_HIDDEN          = 0x8000,  /**< The part is not offered in the Georama part lists. */
-    GEORAMA_PART_ATTR_DESTROY_BLOCKED = 0x40000, /**< The part cannot be destroyed in the town. */
-};
-
-/**
- *
- * Values of the Georama menu mode that the part-building flow sets.
- *
- */
-enum GeoramaMenuMode {
-    GEORAMA_MENU_MODE_BROWSE = 0,      /**< Browsing the pages and their part lists. */
-    GEORAMA_MENU_MODE_MAKE_OBJECT = 6, /**< Choosing how many parts to build from the materials board. */
-};
-
-/**
- *
- * Steps of the part-building flow, as CMenuGeorama::step holds them while the mode is GEORAMA_MENU_MODE_MAKE_OBJECT.
+ * Steps of the part-building flow, as CMenuGeorama::step holds them while the mode is MENU_ASK_MODE_MAKE.
  *
  */
 enum GeoramaMakeStep {
@@ -1419,7 +1398,7 @@ int MenuGeoramaKey() {
     static int GeoAlpha = 0x80;
 
     switch (menu->mode) {
-        case 1:
+        case MENU_ASK_MODE_OPEN:
             menu->start_wait++;
 
             if (menu->opened == 0 && loading == 0) {
@@ -1428,13 +1407,13 @@ int MenuGeoramaKey() {
             }
 
             if (menu->start_wait > 10 && loading == 0) {
-                menu->mode = 0;
+                menu->mode = MENU_ASK_MODE_NONE;
                 MenuScreenBlackBeltSet(1);
                 GeoAlpha = 0x80;
             }
 
             break;
-        case 2:
+        case MENU_ASK_MODE_CLOSE:
             GeoAlpha -= 8;
 
             if (GeoAlpha <= 0) {
@@ -1444,7 +1423,7 @@ int MenuGeoramaKey() {
             }
 
             break;
-        case 0:
+        case MENU_ASK_MODE_NONE:
             menu->LRCheck();
             MenuGeoramaPushKey(lr_key, push_button);
             break;
@@ -1453,7 +1432,7 @@ int MenuGeoramaKey() {
             break;
     }
 
-    if (menu->mode != 2 && menu->opened != 0) {
+    if (menu->mode != MENU_ASK_MODE_CLOSE && menu->opened != 0) {
         CalcMenuAdd(&menu->fade_alpha, -6, 0x40);
 
         if (GeoramaParts_DrawWaitCnt < 0) {
@@ -2979,7 +2958,7 @@ void MenuPlacedHouseMessMake(CEditPartsInfo *info, CEditHouse *house, int update
         HouseChildPartInfo[0] = Dmy;
     }
 
-    if (info->attr & GEORAMA_PART_ATTR_HIDDEN) {
+    if (info->attr & EDIT_PARTS_ATR_NO_REFUND) {
         HouseChildPartInfo[0] = Dmy;
     }
 
@@ -2992,7 +2971,7 @@ void MenuPlacedHouseMessMake(CEditPartsInfo *info, CEditHouse *house, int update
         if (0 < child_no[i]) {
             CEditParts *child = MenuMainMapInfo->GetePlaceParts(child_no[i]);
 
-            if (child != NULL && child->info != NULL && !(child->info->attr & GEORAMA_PART_ATTR_HIDDEN)) {
+            if (child != NULL && child->info != NULL && !(child->info->attr & EDIT_PARTS_ATR_NO_REFUND)) {
                 HouseChildPartInfo[2 + child_num++] = child->info->edit_name;
             }
         }
@@ -3204,8 +3183,8 @@ void MenuGeoramaMessageMake(int mode) {
     }
 }
 
-int CheckGekkaViewMode(int view_mode) {
-    if (view_mode == GEORAMA_VIEW_CHECK_POINT && CheckBitFlagMenu(SAVE_FLAG_GEKKA_VIEW) != 0) {
+int CheckGekkaViewMode(int town_no) {
+    if (town_no == EDIT_ANALYZE_MAP_MOON_FLOWER && CheckBitFlagMenu(SAVE_FLAG_GEKKA_VIEW) != 0) {
         return 1;
     }
 
@@ -3559,7 +3538,7 @@ void CMenuGeorama::UpdateGeoramaPartsList() {
 
         info = parts->info;
 
-        if (info == NULL || (info->attr & GEORAMA_PART_ATTR_HIDDEN)) {
+        if (info == NULL || (info->attr & EDIT_PARTS_ATR_NO_REFUND)) {
             continue;
         }
 
@@ -3665,7 +3644,7 @@ void CMenuGeorama::UpdateGeoramaPartsList() {
             break;
         }
 
-        if (!(make_info->attr & GEORAMA_PART_ATTR_HIDDEN)) {
+        if (!(make_info->attr & EDIT_PARTS_ATR_NO_REFUND)) {
             int found = 0;
 
             for (j = 0; j < PartsMakeOkTableNum && found == 0; j++) {
@@ -3994,7 +3973,7 @@ int CMenuGeorama::IsMakeObject(int buttons_held, int buttons_pressed) {
                     }
                 case 2:
                     ExeScript("NOT_MAKE_GEOPARTS");
-                    mode = GEORAMA_MENU_MODE_BROWSE;
+                    mode = MENU_ASK_MODE_NONE;
                     step = GEORAMA_MAKE_STEP_CHOOSE_AMOUNT;
                     break;
             }
@@ -4005,7 +3984,7 @@ int CMenuGeorama::IsMakeObject(int buttons_held, int buttons_pressed) {
             if (buttons_pressed != 0) {
                 ExeScript("MAKEMODE\x8FI\x97\xB9");
                 make_parts = NULL;
-                mode = GEORAMA_MENU_MODE_BROWSE;
+                mode = MENU_ASK_MODE_NONE;
                 step = GEORAMA_MAKE_STEP_CHOOSE_AMOUNT;
             }
 
@@ -4094,7 +4073,7 @@ void CMenuGeorama::CalcCursorPosition() {
             }
         }
 
-        if (mode == GEORAMA_MENU_MODE_MAKE_OBJECT) {
+        if (mode == MENU_ASK_MODE_MAKE) {
             pos[0] = (int) (-50.0f + MakeBoardDrawInfo[make_cursor * 2]);
             pos[1] = (int) MakeBoardDrawInfo[make_cursor * 2 + 1];
         }
@@ -4234,7 +4213,7 @@ void CMenuGeorama::CalcMakeBrd() {
     int                owned;
     EditPartsMaterial *material;
 
-    if (make_brd_form != NULL && mode == GEORAMA_MENU_MODE_MAKE_OBJECT && step == GEORAMA_MAKE_STEP_CHOOSE_AMOUNT) {
+    if (make_brd_form != NULL && mode == MENU_ASK_MODE_MAKE && step == GEORAMA_MAKE_STEP_CHOOSE_AMOUNT) {
         i = 0;
         make_brd.make_num = CBaseMenuClass::make_num;
 
@@ -4544,7 +4523,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                         msg->MakeMsg(0x672);
                         int flags = edparts_info->attr;
 
-                        if ((flags & GEORAMA_PART_ATTR_DESTROY_SINGLE) || (flags & GEORAMA_PART_ATTR_DESTROY_BLOCKED)) {
+                        if ((flags & EDIT_PARTS_ATR_NO_REMOVE) || (flags & EDIT_PARTS_ATR_NO_STOCK_DESTROY)) {
                             msg->line_color[1] = 0x80303030;
                         }
 
@@ -4585,7 +4564,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
             int cursor = msg->GetMsgCursor();
             int flags = edparts_info->attr;
 
-            if (cursor == 1 && !(flags & GEORAMA_PART_ATTR_DESTROY_BLOCKED)) {
+            if (cursor == 1 && !(flags & EDIT_PARTS_ATR_NO_STOCK_DESTROY)) {
                 int old_num = DestroyNum[0];
                 int delta = 0;
 
@@ -4605,7 +4584,7 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                     delta += 5;
                 }
 
-                if (flags & GEORAMA_PART_ATTR_DESTROY_SINGLE) {
+                if (flags & EDIT_PARTS_ATR_NO_REMOVE) {
                     delta = 0;
                 }
 
@@ -4678,9 +4657,9 @@ int MenuGeoramaPlacePush(CMenuGeorama *menu, int buttons_held, int buttons_press
                     }
 
                     if (cursor == 1) {
-                        if (flags & GEORAMA_PART_ATTR_DESTROY_SINGLE) {
+                        if (flags & EDIT_PARTS_ATR_NO_REMOVE) {
                             MenuSePlay(SYSTEM_SE_CANCEL);
-                        } else if (flags & GEORAMA_PART_ATTR_DESTROY_BLOCKED) {
+                        } else if (flags & EDIT_PARTS_ATR_NO_STOCK_DESTROY) {
                             MenuSePlay(SYSTEM_SE_CANCEL);
                         } else {
                             form->draw_flag = 0;
@@ -4823,7 +4802,7 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
                         parts = menu->make_parts;
                         count = menu->make_num_max;
 
-                        if (parts->attr & 0x80) {
+                        if (parts->attr & EDIT_PARTS_ATR_RIVER) {
                             sceVu0FVECTOR position = {0.0f, 0.0f, 0.0f, -1.0f};
                             river = MenuMainMapInfo->GetRiverNum(position);
                             menu->make_num_max = menu->make_num_max - river;
@@ -4842,8 +4821,8 @@ int MenuGeoramaMakePush(CMenuGeorama *menu, int keys, int pushed) {
                             MenuDCMsg[2]->SetMsgVolumeNoOne(count);
                             menu->step = 1;
                         } else {
-                            menu->mode = GEORAMA_MENU_MODE_MAKE_OBJECT;
-                            menu->step = 0;
+                            menu->mode = MENU_ASK_MODE_MAKE;
+                            menu->step = GEORAMA_MAKE_STEP_CHOOSE_AMOUNT;
                             menu->ExeScript("MAKE_GEOPARTS?");
                             MakeMsgPartsItemInfo(MenuDCMsg[2], menu->make_parts, &menu->make_brd);
                         }
@@ -5197,7 +5176,7 @@ int MenuGeoramaPushKey(int keys, int pushed) {
     }
 
     if (MenuGeoramaPushFunc[CMenuGeoPt->key_arg_no](CMenuGeoPt, keys, pushed) == 1) {
-        CMenuGeoPt->mode = 2;
+        CMenuGeoPt->mode = MENU_ASK_MODE_CLOSE;
         CMenuGeoPt->ExeScript("\x8FI\x97\xB9\x8F\x88\x97\x9D");
         CMenuGeoPt->LoadGeoramaPart(-1, 0);
     }
@@ -5266,7 +5245,7 @@ int CRemovalMenu::KeyStep() {
     reload = 0;
 
     switch (mode) {
-        case 1:
+        case MENU_ASK_MODE_OPEN:
             if (HouseDrawInfo == NULL) {
                 return 1;
             }
@@ -5342,12 +5321,12 @@ int CRemovalMenu::KeyStep() {
                 MenuChangeNpcMemory.stSetBuffer(MenuGeoramaStack.stGetTop(), rest);
                 MenuCommonInfo->key_enable = 1;
                 key_arg_no = 0;
-                mode = 0;
+                mode = MENU_ASK_MODE_NONE;
                 step = 0;
             }
 
             break;
-        case 2:
+        case MENU_ASK_MODE_CLOSE:
             exit_wait++;
 
             if (exit_wait >= 10) {
@@ -5576,7 +5555,7 @@ int CRemovalMenu::KeyStep() {
                 case REMOVAL_ACTION_WAIT:
                     break;
                 case REMOVAL_ACTION_CLOSE:
-                    mode = 2;
+                    mode = MENU_ASK_MODE_CLOSE;
                     ExeScript("\x8FI\x97\xB9\x8F\x88\x97\x9D");
                     exit_wait = 0;
 
@@ -5752,7 +5731,7 @@ int CRemovalMenu::KeyStep() {
     SetMessagePositionNPCForm(npc_win_form, npc_mes);
 
     switch (mode) {
-        case 0:
+        case MENU_ASK_MODE_NONE:
             switch (key_arg_no) {
                 case 1: {
                     int cursor_pos[2];
