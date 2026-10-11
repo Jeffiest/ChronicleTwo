@@ -326,8 +326,15 @@ void dbgCJISFont::PrintDirect(int start_x, int start_y, char *format, ...) {
     x = start_x;
     y = start_y;
     prev_serno = 0;
+#ifdef PORT
+    va_list port_args;
+    va_start(port_args, format);
+    vsprintf((char *) text, format, port_args);
+    va_end(port_args);
+#else
     char *args = (char *) __builtin_next_arg(format) - (__builtin_args_info(2) >= 8 ? 0 : (8 - __builtin_args_info(2)) * 8);
     vsprintf((char *) text, format, args);
+#endif
 
     while ((ch = *cursor) != '\0') {
         long code = ch;

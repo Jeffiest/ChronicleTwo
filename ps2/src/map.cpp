@@ -893,7 +893,11 @@ int CMap::GetCharaLight(mgCObject *chara, CFuncPoint *points, int max, int use_p
 
                     if (distance < nearest_distance) {
                         nearest_distance = (int) distance;
+#ifdef PORT
+                        memcpy(&nearest, &candidate, sizeof(CFuncPoint));
+#else
                         nearest = candidate;
+#endif
                         nearest.position[3] = 1.0f;
                         sceVu0ApplyMatrix(nearest.position, world_matrix, nearest.position);
                     }
