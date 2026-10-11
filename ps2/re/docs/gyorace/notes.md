@@ -80,7 +80,7 @@ Work, then `camera0`.
 | 0x08 | fish_no | -1 or index passed to `CGyoraceFishData::GetRaceFish`; copied to result +0x1C |
 | 0x0C | rank | computed per frame from progress (+1 per fish ahead or already goaled); used for place sprite x = rank*0x18 |
 | 0x10 | lap | u32 (`fptoui(pos/8)`, unsigned compare); 2 laps of 8 course units |
-| 0x14 | unk_14 | written 0 by sgInit, set to 1 entering lap 1 (with `lap_start`), never read |
+| 0x14 | second_lap | written 0 by sgInit, set to 1 entering lap 1 (with `lap_start`), never read |
 | 0x18 | lap_start | race_cnt on entering lap 1 |
 | 0x1C | unk_1c | never accessed in this unit |
 | 0x20 | time | race_cnt*20 (or goal time*20 from RaceInfo+0x1C4[i]) for hero_no only |
@@ -258,6 +258,24 @@ filled field by field stores the offsets directly and reorders the function's op
 Strings supplied inline by the native functions (no markers): `snd2/mon/EN_902.snd`,
 `/sg/gyo/`, `gyore%d.mes`, the seed/fatigue/entrant diagnostics, `info.cfg`,
 `grttex_new6_%d.img`, `grttex_new6.img`, `grt_moji` and `grt1`.
+
+## Race enums and commentary (gyorace.hpp)
+`GYORACE_MODE`: 0 READY, 1 GATE_OPEN, 2 RACE, 3 FINISH, 4 GOAL_VIEW, 5 END.
+
+`GYORACE_MES` names the lines of the commentary file `gyore%d.mes` (English text from
+sg/gyo/gyore1.mes):
+- 0 INTRO: opening words before the start.
+- 5 START: "And they're off!"
+- 6 SHAKY_START: some fish got off to a shaky start.
+- 7 GOOD_START: every fish got off to a beautiful start.
+- 9 LEADER, 13 CLOSE_SECOND, 17 THIRD, 21 LAST, each plus grCHARA_BONUS_TYPE 0..3 (clownish,
+  competitive, gambler, moody): the fish in the lead, a close second, third, and last place.
+- 29 BATTLE: a fish isn't going out without a fight.
+- 30 FINAL_LAP: the race is down to the final lap.
+- 31 FINISHED: a fish has finished in a place.
+
+Sizes: GYORACE_STEP_MAX 1000 (steps per progress record), GYORACE_EFFECT_NUM 96 (splash effects),
+GYORACE_EFFECT_SPARK_NUM 32 (sparks per splash).
 
 ## Unresolved
 - Retail names of the two structs (neutral names chosen).

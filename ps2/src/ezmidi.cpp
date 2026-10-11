@@ -29,7 +29,7 @@ int ezMidiInit() {
     sceSifInitRpc(0);
 
     while (1) {
-        if (sceSifBindRpc(&gCd.client, 0x12346, 0) < 0) {
+        if (sceSifBindRpc(&gCd.client, EZMIDI_RPC_SERVER, 0) < 0) {
             printf("error: sceSifBindRpc \n");
 
             for (;;) {
@@ -61,14 +61,14 @@ int ezMidi(int command, int argument) {
     } while (wait < 2000);
 
     if ((command & EZMIDI_RESPONSE) != 0) {
-        receive_size = 64;
+        receive_size = sizeof(sbuff__2);
     }
 
     if ((command & EZMIDI_ARGUMENT_BLOCK) != 0) {
-        sceSifCallRpc(&gCd.client, command, 0, (void *) argument, 64, sbuff__2, receive_size, 0, 0);
+        sceSifCallRpc(&gCd.client, command, 0, (void *) argument, 64, sbuff__2, receive_size, NULL, NULL);
     } else {
         sbuff__2[0] = argument;
-        sceSifCallRpc(&gCd.client, command, 0, sbuff__2, 16, sbuff__2, receive_size, 0, 0);
+        sceSifCallRpc(&gCd.client, command, 0, sbuff__2, 16, sbuff__2, receive_size, NULL, NULL);
     }
 
     return sbuff__2[0];

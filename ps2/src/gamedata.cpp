@@ -480,7 +480,7 @@ CGameData GameItemDataManage;
  * Common records for the master item catalog.
  *
  */
-static CDataCommon local_com_itemdata[432];
+static CDataCommon local_com_itemdata[ITEM_COMMON_DATA_MAX];
 
 /**
  *
@@ -529,7 +529,7 @@ static short local_guarddata[35];
  * Lookup from item numbers to common-record indices.
  *
  */
-static short local_itemdatano_converttable[512];
+static short local_itemdatano_converttable[ITEM_NO_MAX];
 
 /**
  *
@@ -578,7 +578,7 @@ CGameData *GetGameDataPt() {
 
 CDataItem::CDataItem() {
     use_flags = 0;
-    status_flags = 0;
+    action_flags = 0;
     value[0] = 0;
     value[1] = 0;
     value[2] = 0;
@@ -590,8 +590,8 @@ CDataAttach::CDataAttach() {
 
 CDataWeapon::CDataWeapon() {
     memset(this, 0, sizeof(*this));
-    durability = 0x14;
-    levelup_exp = 0x14;
+    durability = 20;
+    levelup_exp = 20;
 }
 
 int CDataRoboPart::GetOffsetNo() { return this->offset_no; }
@@ -658,7 +658,7 @@ int _DATACOM(SPI_STACK *stack, int arg_count) {
     comdatapt->message_no = spiGetStackInt(stack++);
     name_stack = spiGetStackString(stack++);
 
-    if (name_stack != 0) {
+    if (name_stack != NULL) {
         strcpy(comdatapt->file_name, name_stack);
     }
 
@@ -789,7 +789,7 @@ int _DATAWEP2_ST(SPI_STACK *stack, int arg_count) {
     int i;
     int offset;
 
-    if (SpiWeaponPt == 0) {
+    if (SpiWeaponPt == NULL) {
         return 0;
     }
 
@@ -814,7 +814,7 @@ int _DATAWEP2_ST_L(SPI_STACK *stack, int arg_count) {
     int i;
     int offset;
 
-    if (SpiWeaponPt == 0) {
+    if (SpiWeaponPt == NULL) {
         return 0;
     }
 
@@ -901,15 +901,16 @@ int _DATAITEM(SPI_STACK *stack, int arg_count) {
 
     SpiItemPt = GetItemInfoData(spiGetStackInt(stack++));
 
-    if (SpiItemPt != 0) {
+    if (SpiItemPt != NULL) {
         flags = spiGetStackInt(stack++);
 
         if (flags & ITEM_USE_FLAG_CURE_ALL) {
-            flags = (flags & 0xFF7FFFFF) | 0x142A8000;
+            flags = (flags & ~ITEM_USE_FLAG_CURE_ALL) | ITEM_USE_FLAG_CURE_STOP | ITEM_USE_FLAG_CURE_POISON |
+                    ITEM_USE_FLAG_CURE_CURSE | ITEM_USE_FLAG_CURE_SLOW | ITEM_USE_FLAG_CURE_STONE | ITEM_USE_FLAG_CURE_DRY;
         }
 
         SpiItemPt->use_flags = flags;
-        SpiItemPt->status_flags = spiGetStackInt(stack++);
+        SpiItemPt->action_flags = spiGetStackInt(stack++);
         SpiItemPt->target_flags = spiGetStackInt(stack++);
         SpiItemPt->value[0] = spiGetStackInt(stack++);
         SpiItemPt->value[1] = spiGetStackInt(stack++);
@@ -1193,7 +1194,7 @@ int CGameData::LoadData() {
         }
 
         item_no += 1;
-    } while (item_no < 0x200);
+    } while (item_no < ITEM_NO_MAX);
 
     return unk_0;
 }
@@ -1234,30 +1235,30 @@ void CGameData::InitItemMes(int clear, int unused) {
 
         do {
             clear += 8;
-            local_com_itemdata[index].name = 0;
-            local_com_itemdata[index + 1].name = 0;
-            local_com_itemdata[index + 2].name = 0;
-            local_com_itemdata[index + 3].name = 0;
-            local_com_itemdata[index + 4].name = 0;
-            local_com_itemdata[index + 5].name = 0;
-            local_com_itemdata[index + 6].name = 0;
-            local_com_itemdata[index + 7].name = 0;
+            local_com_itemdata[index].name = NULL;
+            local_com_itemdata[index + 1].name = NULL;
+            local_com_itemdata[index + 2].name = NULL;
+            local_com_itemdata[index + 3].name = NULL;
+            local_com_itemdata[index + 4].name = NULL;
+            local_com_itemdata[index + 5].name = NULL;
+            local_com_itemdata[index + 6].name = NULL;
+            local_com_itemdata[index + 7].name = NULL;
             index += 8;
-        } while (clear < 0x1B0);
+        } while (clear < ITEM_COMMON_DATA_MAX);
     }
 }
 
 CDataCommon *CGameData::GetCommonData(int item_no) {
     short index;
 
-    if (item_no <= 0 || item_no > 0x1FF) {
-        return 0;
+    if (item_no <= 0 || item_no > ITEM_NO_MAX - 1) {
+        return NULL;
     }
 
     index = local_itemdatano_converttable[item_no];
 
     if (index < 0) {
-        return 0;
+        return NULL;
     }
 
     return common_data + index;
@@ -1270,21 +1271,21 @@ CDataWeapon *CGameData::GetWeaponData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) weapon_num <= list_no) {
-        return 0;
+    if (weapon_num <= list_no) {
+        return NULL;
     }
 
-    if (weapon_data == 0) {
-        return 0;
+    if (weapon_data == NULL) {
+        return NULL;
     }
 
     if (ConvertUsedItemType(record->type) != USED_ITEM_TYPE_WEAPON) {
-        return 0;
+        return NULL;
     }
 
     return weapon_data + record->list_no;
@@ -1298,17 +1299,17 @@ CDataItem *CGameData::GetItemData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) item_num <= list_no) {
-        return 0;
+    if (item_num <= list_no) {
+        return NULL;
     }
 
-    if (item_data == 0) {
-        return 0;
+    if (item_data == NULL) {
+        return NULL;
     }
 
     type = ConvertUsedItemType(record->type);
@@ -1317,7 +1318,7 @@ CDataItem *CGameData::GetItemData(int item_no) {
         return item_data + record->list_no;
     }
 
-    return 0;
+    return NULL;
 }
 
 CDataAttach *CGameData::GetAttachData(int item_no) {
@@ -1327,21 +1328,21 @@ CDataAttach *CGameData::GetAttachData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) attach_num <= list_no) {
-        return 0;
+    if (attach_num <= list_no) {
+        return NULL;
     }
 
-    if (attach_data == 0) {
-        return 0;
+    if (attach_data == NULL) {
+        return NULL;
     }
 
     if (ConvertUsedItemType(record->type) != USED_ITEM_TYPE_ATTACH) {
-        return 0;
+        return NULL;
     }
 
     return attach_data + record->list_no;
@@ -1355,22 +1356,22 @@ CDataRoboPart *CGameData::GetRoboData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) robo_num <= list_no) {
-        return 0;
+    if (robo_num <= list_no) {
+        return NULL;
     }
 
     table = robo_data;
 
-    if (table != 0) {
+    if (table != NULL) {
         return table + list_no;
     }
 
-    return 0;
+    return NULL;
 }
 
 CDataBreedFish *CGameData::GetFishData(int item_no) {
@@ -1380,21 +1381,21 @@ CDataBreedFish *CGameData::GetFishData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) fish_num <= list_no) {
-        return 0;
+    if (fish_num <= list_no) {
+        return NULL;
     }
 
-    if (fish_data == 0) {
-        return 0;
+    if (fish_data == NULL) {
+        return NULL;
     }
 
     if (ConvertUsedItemType(record->type) != USED_ITEM_TYPE_FISH) {
-        return 0;
+        return NULL;
     }
 
     return fish_data + record->list_no;
@@ -1409,20 +1410,20 @@ s16 *CGameData::GetGuardData(int item_no) {
     record = GetCommonData(item_no);
 
     if (record == NULL) {
-        return 0;
+        return NULL;
     }
 
     list_no = record->list_no;
 
-    if ((int) guard_num <= list_no) {
-        return 0;
+    if (guard_num <= list_no) {
+        return NULL;
     }
 
-    if (guard_data != 0) {
+    if (guard_data != NULL) {
         return guard_data + list_no;
     }
 
-    return 0;
+    return NULL;
 }
 
 #pragma optimization_level reset
@@ -1492,7 +1493,7 @@ char *GetItemFileName(int item_no, int variant) {
     CSaveData *save_data = GetSaveData();
     u8         type = record->type;
 
-    if ((type == 5 || type == 8) && save_data->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK) != 0) {
+    if ((type == ITEM_DATA_MAX_CLOTHES || type == ITEM_DATA_MONICA_CLOTHES) && save_data->GetBitFlag((int) SAVE_FLAG_COSTUME_UNLOCK) != 0) {
         strcat(filename, "t");
     }
 
@@ -1539,12 +1540,12 @@ char *GetItemFilePath(int item_no, int variant) {
         strcat(item_file_path, ".chr");
 
         if (variant == 1) {
-            if (type == (int) USED_ITEM_TYPE_WEAPON) {
+            if (type == USED_ITEM_TYPE_WEAPON) {
                 sprintf(item_file_path, "wep_t/%s_item.chr", name);
             }
         }
 
-        if (variant == 1 && (record->type == (int) ITEM_DATA_ROBO_ARM || record->type == (int) ITEM_DATA_ROBO_LEG)) {
+        if (variant == 1 && (record->type == ITEM_DATA_ROBO_ARM || record->type == ITEM_DATA_ROBO_LEG)) {
             sprintf(item_file_path, "wep_t/%s.chr", name);
         }
     }
@@ -1573,15 +1574,15 @@ int ConvertUsedItemType(int item_type) {
 
     type = USED_ITEM_TYPE_NONE;
 
-    if (item_type > 0 && item_type < 5) {
+    if (item_type > ITEM_DATA_NONE && item_type < ITEM_DATA_MAX_CLOTHES) {
         type = USED_ITEM_TYPE_WEAPON;
-    } else if (item_type >= 5 && item_type < 11) {
+    } else if (item_type >= ITEM_DATA_MAX_CLOTHES && item_type < ITEM_DATA_ROBO_CORE) {
         type = USED_ITEM_TYPE_COSTUME;
-    } else if (item_type > 11 && item_type <= 15) {
+    } else if (item_type > ITEM_DATA_ROBO_CORE && item_type <= ITEM_DATA_ROBO_ENERGY_PACK) {
         type = USED_ITEM_TYPE_ROBO_PART;
-    } else if ((item_type >= 16 && item_type <= 19) || item_type == 0x22) {
+    } else if ((item_type >= ITEM_DATA_CRYSTAL && item_type <= ITEM_DATA_COIN) || item_type == ITEM_DATA_MONSTER_DROP) {
         type = USED_ITEM_TYPE_ATTACH;
-    } else if (item_type == ITEM_DATA_ROBO_CORE || item_type >= 20) {
+    } else if (item_type == ITEM_DATA_ROBO_CORE || item_type >= ITEM_DATA_GEORAMA_MATERIAL) {
         type = USED_ITEM_TYPE_ITEM;
     }
 
@@ -1606,7 +1607,7 @@ int GetItemMessageNo(int item_no, int message_kind) {
         return -1;
     }
 
-    return (record)->message_no + msg_offsettbl[message_kind];
+    return record->message_no + msg_offsettbl[message_kind];
 }
 
 char *GetItemMessage(int item_no) {
@@ -1618,7 +1619,7 @@ char *GetItemMessage(int item_no) {
         return record->name;
     }
 
-    return 0;
+    return NULL;
 }
 
 int GetItemIconNo(int item_no) {
@@ -1651,14 +1652,14 @@ void SetItemSpectolPoint(int item_no, ATTACH_USED *used, int multiplier) {
     }
 }
 
-int ItemCmdMsgSet(int item_no, int *messages) {
+int ItemCmdMsgSet(int group, int *messages) {
     int count;
     int i;
 
     count = 0;
 
     for (i = 0; i < 8; i++) {
-        messages[i] = ItemCmdMsgTbl[item_no][i] + 5000;
+        messages[i] = ItemCmdMsgTbl[group][i] + 5000;
 
         if (messages[i] < 5000) {
             break;
@@ -1685,28 +1686,28 @@ int GetMenuCommandMsg(int item_no, int *message_list) {
         case ITEM_DATA_MONICA_MAGIC:
             count = ItemCmdMsgSet(0, message_list);
 
-            if (item_no == (int) ITEM_ID_FISHING_ROD || item_no == (int) ITEM_ID_LURE_ROD) {
+            if (item_no == ITEM_ID_FISHING_ROD || item_no == ITEM_ID_LURE_ROD) {
                 count = ItemCmdMsgSet(14, message_list);
             }
 
             break;
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-        case 10:
+        case ITEM_DATA_MAX_CLOTHES:
+        case ITEM_DATA_MAX_HAT:
+        case ITEM_DATA_MAX_SHOES:
+        case ITEM_DATA_MONICA_CLOTHES:
+        case ITEM_DATA_MONICA_ACCESSORY:
+        case ITEM_DATA_MONICA_BOOTS:
             count = ItemCmdMsgSet(8, message_list);
             break;
-        case 16:
-        case 18:
-        case 34:
+        case ITEM_DATA_CRYSTAL:
+        case ITEM_DATA_GEM:
+        case ITEM_DATA_MONSTER_DROP:
             count = ItemCmdMsgSet(1, message_list);
             break;
-        case 19:
+        case ITEM_DATA_COIN:
             count = ItemCmdMsgSet(24, message_list);
             break;
-        case 17:
+        case ITEM_DATA_SPECTOL:
             count = ItemCmdMsgSet(5, message_list);
             break;
         case ITEM_DATA_ROBO_CORE:
@@ -1722,43 +1723,43 @@ int GetMenuCommandMsg(int item_no, int *message_list) {
         case ITEM_DATA_ROBO_ENERGY_PACK:
             count = ItemCmdMsgSet(16, message_list);
             break;
-        case 22:
+        case ITEM_DATA_RECOVERY:
             count = ItemCmdMsgSet(3, message_list);
             break;
-        case 20:
-        case 23:
-        case 24:
-        case 25:
-        case 26:
-        case 27:
-        case 33:
-            if (item_no == (int) ITEM_ID_MELEE_REPAIR) {
+        case ITEM_DATA_GEORAMA_MATERIAL:
+        case ITEM_DATA_THROWING:
+        case ITEM_DATA_POWDER:
+        case ITEM_DATA_AMULET:
+        case ITEM_DATA_DUNGEON_KEY:
+        case ITEM_DATA_KEY_ITEM:
+        case ITEM_DATA_ETC:
+            if (item_no == ITEM_ID_MELEE_REPAIR) {
                 count = ItemCmdMsgSet(13, message_list);
-            } else if (item_no == (int) ITEM_ID_GUN_REPAIR || item_no == (int) ITEM_ID_MAGIC_REPAIR) {
+            } else if (item_no == ITEM_ID_GUN_REPAIR || item_no == ITEM_ID_MAGIC_REPAIR) {
                 count = ItemCmdMsgSet(17, message_list);
-            } else if (item_no == (int) ITEM_ID_RIDEPOD_FUEL) {
+            } else if (item_no == ITEM_ID_RIDEPOD_FUEL) {
                 count = ItemCmdMsgSet(23, message_list);
-            } else if (item_no == 0x128) {
+            } else if (item_no == ITEM_ID_FRUIT_OF_EDEN) {
                 count = ItemCmdMsgSet(20, message_list);
-            } else if (item_no == 0x184) {
+            } else if (item_no == ITEM_ID_POTATO_PIE) {
                 count = ItemCmdMsgSet(18, message_list);
-            } else if (item_no == 0x185) {
+            } else if (item_no == ITEM_ID_WITCH_PARFAIT) {
                 count = ItemCmdMsgSet(19, message_list);
-            } else if (item_no == 0x182) {
+            } else if (item_no == ITEM_ID_NOTEBOOK) {
                 count = ItemCmdMsgSet(21, message_list);
-            } else if (item_no == 0x11F || item_no == 0x124 || item_no == 0x111) {
+            } else if (item_no == ITEM_ID_HEART_THROB_CHERRY || item_no == ITEM_ID_MELLOW_BANANA || item_no == ITEM_ID_RESURRECTION_POWDER) {
                 count = ItemCmdMsgSet(3, message_list);
-            } else if (item_no == 0x163) {
+            } else if (item_no == ITEM_ID_INSIDE_SCOOP_MEMO) {
                 count = ItemCmdMsgSet(26, message_list);
-            } else if (item_no == 0x1A7) {
+            } else if (item_no == ITEM_ID_SHIELD_KIT) {
                 count = ItemCmdMsgSet(25, message_list);
-            } else if (item_no == 0x125) {
+            } else if (item_no == ITEM_ID_ESCAPE_POWDER) {
                 count = ItemCmdMsgSet(27, message_list);
-            } else if (item_no == 0xAE) {
+            } else if (item_no == ITEM_ID_SEAL_BREAKING_SCROLL) {
                 count = ItemCmdMsgSet(28, message_list);
-            } else if (item_no == 0xAC) {
+            } else if (item_no == ITEM_ID_MONSTER_NOTES) {
                 count = ItemCmdMsgSet(30, message_list);
-            } else if (item_no == 0x127) {
+            } else if (item_no == ITEM_ID_LEVEL_UP_POWDER) {
                 count = ItemCmdMsgSet(31, message_list);
             } else {
                 count = ItemCmdMsgSet(4, message_list);
@@ -1768,7 +1769,7 @@ int GetMenuCommandMsg(int item_no, int *message_list) {
         case ITEM_DATA_AQUARIUM:
             count = ItemCmdMsgSet(9, message_list);
             break;
-        case 21:
+        case ITEM_DATA_BADGE_BOX:
             count = ItemCmdMsgSet(10, message_list);
             break;
         case ITEM_DATA_GIFT_BOX:
@@ -1777,7 +1778,7 @@ int GetMenuCommandMsg(int item_no, int *message_list) {
         case ITEM_DATA_FISH:
             count = ItemCmdMsgSet(12, message_list);
             break;
-        case 32:
+        case ITEM_DATA_LURE:
             count = ItemCmdMsgSet(15, message_list);
             break;
         case ITEM_DATA_BOILED:
@@ -1790,37 +1791,37 @@ int GetMenuCommandMsg(int item_no, int *message_list) {
 
 int CheckItemEquip(int chara, int item_no) {
     if (GetItemInfoData(item_no) == NULL) {
-        return 0;
+        return false;
     }
 
-    if (item_no == (int) ITEM_ID_GUN_REPAIR) {
-        if (chara != 0) {
-            return 0;
+    if (item_no == ITEM_ID_GUN_REPAIR) {
+        if (chara != USER_CHARA_MAX) {
+            return false;
         }
-    } else if (item_no == (int) ITEM_ID_MAGIC_REPAIR) {
-        if (chara != 1) {
-            return 0;
+    } else if (item_no == ITEM_ID_MAGIC_REPAIR) {
+        if (chara != USER_CHARA_MONICA) {
+            return false;
         }
-    } else if (item_no == 0x171) {
-        if (chara != 0) {
-            return 0;
+    } else if (item_no == ITEM_ID_CAMERA) {
+        if (chara != USER_CHARA_MAX) {
+            return false;
         }
     }
 
-    return 1;
+    return true;
 }
 
 int SearchItemByName(char *name) {
     int          item_no;
     CDataCommon *record;
 
-    for (item_no = 1; item_no < 512; item_no++) {
+    for (item_no = 1; item_no < ITEM_NO_MAX; item_no++) {
         record = GetCommonItemData(item_no);
 
         if (record != NULL) {
             char *item_name = record->name;
 
-            if ((item_name != 0) && (strcmp(item_name, name) == 0)) {
+            if (item_name != NULL && strcmp(item_name, name) == 0) {
                 return item_no;
             }
         }
@@ -1830,7 +1831,8 @@ int SearchItemByName(char *name) {
 }
 
 int GetRidePodCore(int index) {
-    static s16 table[8] = {0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, -1};
+    static s16 table[8] = {ITEM_ID_CORE, ITEM_ID_IMPROVED_CORE, ITEM_ID_CORE_II, ITEM_ID_CORE_III,
+                           ITEM_ID_SUPER_CORE, ITEM_ID_HYPER_CORE, ITEM_ID_MASTER_GRADE_CORE, -1};
 
     if (index < 0 || index > 6) {
         return 0;
@@ -1847,7 +1849,7 @@ int GetRidePodCore(int index) {
 static void Init_USEITEM_EFFECT(USEITEM_EFFECT *effect) {
     effect->target_flags = 0;
     effect->use_flags = 0;
-    effect->status_flags = 0;
+    effect->action_flags = 0;
     effect->value[3] = 0;
     effect->value[2] = 0;
     effect->value[1] = 0;
@@ -1861,34 +1863,34 @@ int GetUsedItemAfterEffect(int item_no, USEITEM_EFFECT *effect) {
     data = GetItemInfoData(item_no);
 
     if (data == NULL || effect == NULL) {
-        return 0;
+        return false;
     }
 
-    effect->status_flags = data->status_flags;
+    effect->action_flags = data->action_flags;
     effect->use_flags = data->use_flags;
     effect->target_flags = data->target_flags;
     effect->value[0] = data->value[0];
     effect->value[1] = data->value[1];
     effect->value[2] = data->value[2];
-    return 1;
+    return true;
 }
 
-void CItemUseTarget::SetPtr(int new_kind, void *new_ptr) {
-    type = new_kind;
+void CItemUseTarget::SetPtr(int new_type, void *new_ptr) {
+    type = new_type;
 
-    if (type == 0) {
+    if (type == ITEM_USE_TARGET_CHARA) {
         target.data = new_ptr;
     }
 
-    if (type == 1) {
+    if (type == ITEM_USE_TARGET_ITEM) {
         target.data = new_ptr;
     }
 
-    if (type == 2) {
+    if (type == ITEM_USE_TARGET_ROBO) {
         target.data = new_ptr;
     }
 
-    if (type == 3) {
+    if (type == ITEM_USE_TARGET_MONSTER) {
         target.data = new_ptr;
     }
 }

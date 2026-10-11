@@ -233,13 +233,25 @@ STATIC_ASSERT(sizeof(CHRINFO_EFFECT_IMAGE) == 0x28);
 
 /**
  *
+ * Kinds of entry object, as CHARA_ENTRY_OBJECT::group holds them.
+ *
+ */
+enum CHARA_ENTRY_GROUP {
+    CHARA_ENTRY_GROUP_TARGET = 0, /**< The point that lock-on, aiming and status displays use. */
+    CHARA_ENTRY_GROUP_SHADOW = 1, /**< The point the drop shadow is cast from. */
+    CHARA_ENTRY_GROUP_HIT = 2,    /**< Spheres that attacks hit with. */
+    CHARA_ENTRY_GROUP_BODY = 4,   /**< Spheres that make up the body. */
+};
+
+/**
+ *
  * A frame of the character's model named as a place to put objects.
  *
  */
 struct CHARA_ENTRY_OBJECT {
     mgCFrame *frame;  /**< Frame of the model; NULL for a free slot. */
     float     size;   /**< Size used when checking a frame against a character entry. */
-    s32       group;  /**< Group that the frame belongs to; -1 for a free slot. */
+    s32       group;  /**< Group that the frame belongs to; -1 for a free slot. @see CHARA_ENTRY_GROUP */
     s32       enable; /**< Nonzero while the slot is in use. */
 };
 
@@ -296,6 +308,17 @@ STATIC_ASSERT(sizeof(CCharaFrameMatching) == 0xC);
 
 /**
  *
+ * Roles a character takes in its chain of characters' sounds.
+ *
+ */
+enum CHARA_SE_POSITIONAL {
+    CHARA_SE_POSITIONAL_CHAINED = 0, /**< A part chained behind the head; its sounds are not positional. */
+    CHARA_SE_POSITIONAL_HEAD = 1,    /**< The head of the chain, and the default of a lone character; only its sounds are positional. */
+    CHARA_SE_POSITIONAL_LEADER = 2,  /**< The leader of the chain; CActionChara::Step leaves this role alone. */
+};
+
+/**
+ *
  * Sound banks and playback settings attached to a character.
  *
  */
@@ -305,7 +328,7 @@ struct CHARA_SOUND_INFO {
     s32          foot_sound_enable; /**< Nonzero while the feet play sounds. */
     u32          se_bank;           /**< Sound bank of the character's sounds. */
     u32          se_bank_2;         /**< Second sound bank of the character's sounds. */
-    s32          se_positional;     /**< Nonzero to take the volume and pan of the sounds from the character's position. */
+    s32          se_positional;     /**< Role of the character in its sound chain, a CHARA_SE_POSITIONAL value. */
     float        se_volume;         /**< Volume that the sounds play at. */
     float        se_pan;            /**< Pan that the sounds play at. */
     s32          foot_effect_wait;  /**< Steps left in which a foot touched the ground. */

@@ -36,7 +36,7 @@ enum EditAnalyzeMap {
  * @address 0x31BDD0
  * @size 0xD0
  */
-void AnalyzeEditMap(int chara_no, CEditMap *edit_map);
+void AnalyzeEditMap(int map_no, CEditMap *map);
 
 /**
  *
@@ -46,7 +46,7 @@ void AnalyzeEditMap(int chara_no, CEditMap *edit_map);
  * @address 0x31BEA0
  * @size 0xC0
  */
-int CountPartsType(int parts_type, CEditMap *edit_map, int *parts_nos, int count);
+int CountPartsType(int parts_type, CEditMap *map, int *parts_nos, int count);
 
 /**
  *
@@ -56,7 +56,7 @@ int CountPartsType(int parts_type, CEditMap *edit_map, int *parts_nos, int count
  * @address 0x31BF60
  * @size 0xC0
  */
-int CountPartsInfoID(int info_id, CEditMap *edit_map, int *parts_nos, int count);
+int CountPartsInfoID(int info_id, CEditMap *map, int *parts_nos, int count);
 
 /**
  *
@@ -66,7 +66,7 @@ int CountPartsInfoID(int info_id, CEditMap *edit_map, int *parts_nos, int count)
  * @address 0x31C130
  * @size 0xB0
  */
-int GetHouseParts(CEditMap *edit_map, int *out, int max);
+int GetHouseParts(CEditMap *map, int *out, int max);
 
 /**
  *
@@ -76,7 +76,7 @@ int GetHouseParts(CEditMap *edit_map, int *out, int max);
  * @address 0x31C230
  * @size 0x70
  */
-CEditParts *GetPartsPos(CEditMap *edit_map, int no, float *pos);
+CEditParts *GetPartsPos(CEditMap *map, int parts_no, float *position);
 
 /**
  *
@@ -86,7 +86,7 @@ CEditParts *GetPartsPos(CEditMap *edit_map, int no, float *pos);
  * @address 0x31DDE0
  * @size 0x470
  */
-int CheckLiveChara(int map_no, CEditMap *edit_map, int no, int chara);
+int CheckLiveChara(int map_no, CEditMap *map, int no, int chara);
 
 /**
  *
@@ -97,63 +97,3 @@ int CheckLiveChara(int map_no, CEditMap *edit_map, int no, int chara);
  * @size 0xC0
  */
 void EditMapInitEvent(int map_no, CEditMap *edit_map);
-
-/**
- *
- * Checks the Sharlot town layout against its analysis conditions.
- *
- * @mangled AnalyzeSharlot__FP9CEditDataP8CEditMap
- * @address 0x31C2A0
- * @size 0x54C
- */
-void AnalyzeSharlot(CEditData *data, CEditMap *map);
-
-/**
- *
- * Checks the Stera town layout against its analysis conditions.
- *
- * @mangled AnalyzeStera__FP9CEditDataP8CEditMap
- * @address 0x31C7F0
- * @size 0x230
- */
-void AnalyzeStera(CEditData *data, CEditMap *map);
-
-/**
- *
- * Checks the Benietio town layout against its analysis conditions.
- *
- * @mangled AnalyzeBenietio__FP9CEditDataP8CEditMap
- * @address 0x31CA20
- * @size 0x48C
- */
-void AnalyzeBenietio(CEditData *data, CEditMap *map);
-
-/**
- *
- * Checks the Heim town layout against its analysis conditions.
- *
- * @mangled AnalyzeHeim__FP9CEditDataP8CEditMap
- * @address 0x31CFE0
- * @size 0x564
- */
-void AnalyzeHeim(CEditData *data, CEditMap *map);
-
-/**
- *
- * Checks the Moon Flower town layout against its analysis conditions.
- *
- * @mangled AnalyzeMoonFlower__FP9CEditDataP8CEditMap
- * @address 0x31D550
- * @size 0x884
- */
-void AnalyzeMoonFlower(CEditData *data, CEditMap *map);
-
-/**
- *
- * Classifies a placed part color for the town analysis checks.
- *
- * @mangled GetColorType__FP10CEditPartsi
- * @address 0x31CEB0
- * @size 0x128
- */
-int GetColorType(CEditParts *parts, int no);

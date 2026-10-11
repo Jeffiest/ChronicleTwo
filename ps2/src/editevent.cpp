@@ -6,6 +6,7 @@
 #include "cameracontrol.hpp"
 #include "character.hpp"
 #include "dataread.hpp"
+#include "editanalyze.hpp"
 #include "editevent.hpp"
 #include "editloop.hpp"
 #include "editmap.hpp"
@@ -344,7 +345,7 @@ int CEditEvent::Step(CScene *scene) {
             case EDIT_HOUSE_DOOR_STEP_MENU_END: {
                 mgSetProjection(projection);
 
-                if (MenuInfo->end_code == 9) {
+                if (MenuInfo->end_code == MENU_END_ENTER_HOUSE) {
                     type = EDIT_EVENT_TYPE_DOOR;
                     count = 0;
                     step = 0;
@@ -360,7 +361,7 @@ int CEditEvent::Step(CScene *scene) {
                     info = parts->GetInfoID();
                 }
 
-                if (MenuInfo->end_code == 0xD && info == 0x49) {
+                if (MenuInfo->end_code == MENU_END_RESIDENT_CHANGE && info == EDIT_GEO_NPC_PARTS_ID) {
                     scene->fade.FadeOut(0x12, 0.0f, 0.0f, 0.0f);
                     reload_geo_npc = 1;
                 } else {
@@ -463,7 +464,7 @@ int CEditEvent::Step(CScene *scene) {
 
                 break;
             case EDIT_TREASURE_BOX_STEP_MESSAGE:
-                if (pad->Btn(0) || pad->Btn(1)) {
+                if (pad->Btn(PAD_BTN_CONFIRM) || pad->Btn(PAD_BTN_CANCEL)) {
                     close_message(message);
                     sndSePlay(GetSystemSndID(), 0x19, 0);
                     ++step;
@@ -475,7 +476,7 @@ int CEditEvent::Step(CScene *scene) {
                 result = EDIT_EVENT_RESULT_END;
                 break;
             case EDIT_TREASURE_BOX_STEP_FULL_MESSAGE:
-                if (pad->Btn(0) || pad->Btn(1)) {
+                if (pad->Btn(PAD_BTN_CONFIRM) || pad->Btn(PAD_BTN_CANCEL)) {
                     close_message(message);
                     sndSePlay(GetSystemSndID(), 0x19, 0);
                     ++step;
@@ -499,7 +500,7 @@ int CEditEvent::Step(CScene *scene) {
                 break;
             case EDIT_BOOK_STEP_READ: {
                 int message_state = message->State();
-                int button = ((bool) pad->Btn(0)) || ((bool) pad->Btn(1));
+                int button = ((bool) pad->Btn(PAD_BTN_CONFIRM)) || ((bool) pad->Btn(PAD_BTN_CANCEL));
 
                 switch (message_state) {
                     case 5:
@@ -693,7 +694,7 @@ int LoadGeoNPC(GeoFuncParam *param, int mode) {
     float        parts_rotation[4];
     float        matrix[4][4];
 
-    if (scene->GetMainMapNo() != 1) {
+    if (scene->GetMainMapNo() != EDIT_ANALYZE_MAP_STERA) {
         return 0;
     }
 
@@ -707,7 +708,7 @@ int LoadGeoNPC(GeoFuncParam *param, int mode) {
         scene->DeleteVillager();
     }
 
-    if (map->GetePlacePartsAtInfoID(0x49, &parts_index, 1) <= 0) {
+    if (map->GetePlacePartsAtInfoID(EDIT_GEO_NPC_PARTS_ID, &parts_index, 1) <= 0) {
         return 0;
     }
 
@@ -776,10 +777,10 @@ void GeoUpdateNpcPos(CScene *scene) {
     float        parts_rotation[4];
     float        matrix[4][4];
 
-    if (scene->GetMainMapNo() == 1) {
+    if (scene->GetMainMapNo() == EDIT_ANALYZE_MAP_STERA) {
         map = (CEditMap *) scene->GetMap(scene->active_map);
 
-        if (map != NULL && map->GetePlacePartsAtInfoID(0x49, &parts_index, 1) > 0) {
+        if (map != NULL && map->GetePlacePartsAtInfoID(EDIT_GEO_NPC_PARTS_ID, &parts_index, 1) > 0) {
             parts = map->GetePlaceParts(parts_index);
 
             if (parts != NULL) {

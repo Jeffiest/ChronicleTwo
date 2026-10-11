@@ -26,6 +26,7 @@
  */
 // clang-format off
 enum MENU_SWAP_TYPE {
+    MENU_SWAP_TYPE_NONE        = -1, /**< No slot. */
     MENU_SWAP_TYPE_ACTIVE_ITEM = 0,  /**< One of a character's active item slots. */
     MENU_SWAP_TYPE_EQUIP       = 1,  /**< One of a character's equipment slots. */
     MENU_SWAP_TYPE_ROBO_PART   = 2,  /**< One of the ridepod's part slots. */
@@ -374,7 +375,7 @@ enum MENU_BAG {
  */
 struct MENU_SWAPITEM_INFO {
     s16 flag;  /**< Non-zero once the source has been recorded. */
-    s16 type;  /**< Kind of place the item came from; -1 for none. @see MENU_SWAP_TYPE */
+    s16 type;  /**< Kind of place the item came from. @see MENU_SWAP_TYPE */
     s16 no;    /**< Slot within that place. */
     s16 chara; /**< Character owning that place; -1 for none. */
 

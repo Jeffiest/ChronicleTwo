@@ -52,6 +52,15 @@ enum EditControlMode {
 
 /**
  *
+ * Event numbers the town loop reserves, as CScene::event_no holds them.
+ *
+ */
+enum EditLoopEvent {
+    EDIT_LOOP_EVENT_EDIT_EVENT = 99999, /**< Makes the town loop start the edit event (CEditEvent) of the door, treasure box, book or house door the player used. */
+};
+
+/**
+ *
  * Reports whether the town loop is in Georama mode, including the wait before its menu opens.
  *
  * @mangled IsEditMode__Fv

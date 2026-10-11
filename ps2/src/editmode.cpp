@@ -9,6 +9,7 @@
 #include "character.hpp"
 #include "dataread.hpp"
 #include "dng_effect.hpp"
+#include "editanalyze.hpp"
 #include "editctrl.hpp"
 #include "editeff.hpp"
 #include "editmap.hpp"
@@ -1178,7 +1179,7 @@ int RemoveEditParts(CScene *scene, int parts_index, float *pos) {
         for (j = 0; j < 0x100; j++) {
             CEditPartsInfo *river_info = map->GetePartsInfoAtID(j);
 
-            if (river_info != NULL && !(river_info->attr & 0x8000)) {
+            if (river_info != NULL && !(river_info->attr & EDIT_PARTS_ATR_NO_REFUND)) {
                 count = info.parts_num[j];
 
                 if (count > 0) {
@@ -2913,7 +2914,7 @@ void DrawEditSystem(int block, CScene *scene, float *pos, int edit) {
                 prim.End();
             }
 
-            if (scene->GetMainMapNo() == 1) {
+            if (scene->GetMainMapNo() == EDIT_ANALYZE_MAP_STERA) {
                 CEditMap *map = (CEditMap *) scene->GetMap(scene->active_map);
 
                 if (map != NULL) {
@@ -3121,7 +3122,7 @@ int CheckEditToWalk(CScene *scene, float *position) {
 
     *(u_long128 *) position = *(u_long128 *) ground_hit;
 
-    if (polys[ground_index].area_kind != 9) {
+    if (polys[ground_index].area_kind != COL_AREA_EDIT_WALK) {
         return 0;
     }
 

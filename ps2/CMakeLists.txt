@@ -1,4 +1,4 @@
-# The PS2 build: compiles every game unit with MWCC through tools/mwccgap,
+# The PS2 build: compiles every game unit with MWCC through Satan's Fiddle,
 # assembles the libraries and data-only units from the split, links the
 # executable with MWLD and verifies it against retail.
 #
@@ -60,9 +60,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/globbed.txt)
         ${CMAKE_BINARY_DIR}/globbed.txt)
 endif()
 
-file(GLOB MWCCGAP_SOURCES
-     ${CMAKE_SOURCE_DIR}/${TOOLS_DIR}/mwccgap/mwccgap.py
-     ${CMAKE_SOURCE_DIR}/${TOOLS_DIR}/mwccgap/mwccgap/*.py)
+set(MWCCGAP_SOURCES ${CMAKE_SOURCE_DIR}/${TOOLS_DIR}/mwccgap/mwccgap/elf.py)
 
 set(SATANSFIDDLE_DEPENDENCIES
     ${CMAKE_SOURCE_DIR}/${SCRIPTS_DIR}/build/satansfiddle-wibo.py
@@ -91,7 +89,7 @@ foreach(row IN LISTS unit_rows)
         endif()
         set(obj ${BUILD_DIR}/obj/${unit}.cpp.o)
         list(APPEND CPP_OBJS ${obj})
-        add_cpp_object(${obj} ${source})
+        add_cpp_object(${obj} ${source} ${unit})
     endif()
 endforeach()
 if(MISSING_SOURCES)

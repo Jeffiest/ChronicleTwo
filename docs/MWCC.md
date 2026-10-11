@@ -93,10 +93,10 @@ These rows were accepted through the canonical object comparison. They establish
 the listed functions' bytes and resolved relocations, not whole-unit matching
 when other source or data-layout failures remain.
 
-`mg_texture.cpp` needs one shared `#pragma optimization_level 2` region around
-its three hash-table methods. Direct indexing yields the retail table access;
-whole-unit level 2 changes unrelated functions. The scoped region preserves
-the exact 0x3674-byte object and 160 resolved relocations.
+`mg_dataset`, `mg_shadow`, `mg_tanime` and `mg_texture` are compiled with `-O2,p`, `password` with `-O0` and
+`scriptinterpreter` with `-inline off` (`UNIT_CC_FLAGS_<unit>` in `ps2/cmake/Toolchain.cmake`). Each
+setting reproduces the whole unit's object without the pragmas it replaces; the other `mg_*`
+units differ at level 2.
 Unit-specific evidence is in the tracked mapjump and event_func RE notes and
 [pbuggy calibration notes](../ps2/re/docs/pbuggy/notes.md).
 
@@ -235,8 +235,8 @@ class initializers must be generated naturally by the compiler.
   top-level declaration, under the pragmas in force there. A scoped
   `optimization_level 2` / `optimization_level reset` pair around such a
   function therefore does not apply to it, and the reset lands on the
-  functions that follow instead; mg_tanime sets `#pragma optimization_level 2`
-  for the whole unit. Ordinary functions also read the global-optimizer
+  functions that follow instead; mg_tanime is compiled at level 2 as a whole for this reason.
+  Ordinary functions also read the global-optimizer
   state there: under `global_optimizer off`, a function containing an inline
   aggregate copy or a `new` of a class without a user-declared constructor
   folds an inline helper's constant result (`li a1,0x13`) and keeps the

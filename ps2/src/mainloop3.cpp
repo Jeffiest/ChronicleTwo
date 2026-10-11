@@ -93,7 +93,7 @@ static int sel_hdd;
 
 /**
  *
- * Whether an installation thread is active.
+ * Non-zero while an installation thread is running.
  *
  */
 static int now_install;
@@ -213,7 +213,7 @@ int FutureMapSelect() {
             arg.event_no = 100;
         }
 
-        NextLoop((int) LOOP_EDIT, arg);
+        NextLoop(LOOP_EDIT, arg);
         return FUTURE_MAP_SELECT_CHOSEN;
     }
 
@@ -222,13 +222,13 @@ int FutureMapSelect() {
 }
 
 void InitHDDMenu(u_long128 *work) {
-    HddConnect = HddConectCheck(0);
+    HddConnect = HddConectCheck(NULL);
     AppInstall = CheckAppInstall();
     int space = CheckInstallSpace();
     inst_work = work;
     sel_hdd = HDD_MENU_INSTALL;
     FreeSpace = space;
-    now_install = 0;
+    now_install = false;
     error_code = 0;
 }
 
@@ -310,7 +310,7 @@ int HDDMenuLoop() {
 
             if (sel_hdd == HDD_MENU_INSTALL && AppInstall == 0 && FreeSpace > 0 &&
                 CreateInstallThread(inst_work, 0xA0000)) {
-                now_install = 1;
+                now_install = true;
             }
 
             if (sel_hdd == HDD_MENU_MOUNT) {
@@ -334,7 +334,7 @@ int HDDMenuLoop() {
 
         if (result <= 0) {
             error_code = result;
-            now_install = 0;
+            now_install = false;
             DeleteInstallThread();
             HddConnect = HddConectCheck(NULL);
             AppInstall = CheckAppInstall();
@@ -361,8 +361,7 @@ int EmergencyMessage(int error) {
     mgWaitFrame();
     sndSeAllStop(-1);
     mgCMemory *main_stack = GetMainStack();
-    main_stack->stack_used = 0;
-    main_stack->lock = 0;
+    main_stack->stReset();
     u_long128 *vif0 = main_stack->stAlloc64(10000);
     u_long128 *vif1 = main_stack->stAlloc64(10000);
     mgInitVif1Packet(vif0, vif1, 160000);
@@ -386,7 +385,7 @@ int EmergencyMessage(int error) {
     // Localized message shown by the hard-disk error display.
     static char *txt;
 
-    if (LanguageCode >= 0 && LanguageCode < 2) {
+    if (LanguageCode >= LANG_JAPANESE && LanguageCode <= LANG_ENGLISH) {
         txt = emergency_mes[LanguageCode];
     }
 

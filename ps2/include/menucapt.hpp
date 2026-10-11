@@ -45,7 +45,7 @@ STATIC_ASSERT(sizeof(MENU_CHAPTER_INFO) == 0x20);
  *
  * @mangled MenuChapterInit__FP9mgCMemoryPiii
  * @address 0x2AEF10
- * @size 0x0x2D8
+ * @size 0x2D8
  */
 void MenuChapterInit(mgCMemory *stack, int *tex_block, int open_type, int chapter);
 
@@ -65,6 +65,6 @@ int MenuChapterKey();
  *
  * @mangled MenuChapterDraw__Fv
  * @address 0x2AF3F0
- * @size 0x0x1B4
+ * @size 0x1B4
  */
 void MenuChapterDraw();

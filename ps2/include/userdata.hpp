@@ -44,12 +44,12 @@ enum BATTLE_CHARA_TYPE {
 enum CHARA_STATUS_ATTR {
     CHARA_STATUS_POISON = 0x01, /**< Loses a little health every 100 steps while above 1. */
     CHARA_STATUS_SLOW = 0x02,   /**< Timed condition counted down by CHARA_DATA::status_time[1]. */
-    CHARA_STATUS_UNK_4 = 0x04,
-    CHARA_STATUS_UNK_8 = 0x08,  /**< Timed condition that blocks changing character. */
+    CHARA_STATUS_CURSE = 0x04,  /**< Cursed. */
+    CHARA_STATUS_STOP = 0x08,   /**< Stopped: a timed condition that blocks changing character. */
     CHARA_STATUS_POWER = 0x10,  /**< Timed boost that raises attack by half and wards off the first two bits. */
-    CHARA_STATUS_UNK_20 = 0x20, /**< Timed condition that blocks changing character. */
-    CHARA_STATUS_UNK_40 = 0x40,
-    CHARA_STATUS_ALL = 0x7F, /**< Every status bit. */
+    CHARA_STATUS_STONE = 0x20,  /**< Petrified: a timed condition that blocks changing character. */
+    CHARA_STATUS_DRY = 0x40,    /**< Thirsty. */
+    CHARA_STATUS_ALL = 0x7F,    /**< Every status bit. */
 };
 
 /**
@@ -200,6 +200,10 @@ enum BREEDFISH_SEX {
 enum BREEDFISH_FLAGS {
     BREEDFISH_FLAG_RAISED = 0x1,              /**< Marks a fish fed or bred in the aquarium; its weight is shown and the fishing tournament refuses it. */
     BREEDFISH_FLAG_ELECTRIC = 0x2,            /**< Marks an electric fish, which is never rubbish. */
+    BREEDFISH_FLAG_WON_CLASS_0 = 0x04,        /**< Marks a fish that has won the first race class. */
+    BREEDFISH_FLAG_WON_CLASS_1 = 0x08,        /**< Marks a fish that has won the second race class. */
+    BREEDFISH_FLAG_WON_CLASS_2 = 0x10,        /**< Marks a fish that has won the third race class. */
+    BREEDFISH_FLAG_WON_CLASS_3 = 0x20,        /**< Marks a fish that has won the fourth race class. */
     BREEDFISH_FLAG_FEED_LIMIT_REACHED = 0x80, /**< Marks a fish that has used up its feedings and no longer eats. */
 };
 
@@ -218,6 +222,19 @@ enum SPECTOL_TYPE {
 
 /**
  *
+ * Equipment slots of CHARA_DATA::equip.
+ *
+ */
+enum CHARA_EQUIP_SLOT {
+    CHARA_EQUIP_MELEE = 0,   /**< Max's wrench or hammer, Monica's sword. */
+    CHARA_EQUIP_SUB = 1,     /**< Max's gun, Monica's armband. */
+    CHARA_EQUIP_HEAD = 2,    /**< Max's hat, Monica's hair accessory. */
+    CHARA_EQUIP_FEET = 3,    /**< Max's shoes, Monica's boots. */
+    CHARA_EQUIP_CLOTHES = 4, /**< The outfit. */
+};
+
+/**
+ *
  * Status of Max or Monica: health, conditions, active items and equipment.
  *
  */
@@ -229,10 +246,22 @@ struct CHARA_DATA {
     u8            unk_14[0x17];
     u8            keep_costume_on_equip_change; /**< Keeps the selected costume when equipment changes. */
     CGameDataUsed active_item[3];               /**< Active items. */
-    CGameDataUsed equip[5];                     /**< Equipment, by slot; slots 0 and 1 are the two weapons. */
+    CGameDataUsed equip[5];                     /**< Equipment, by CHARA_EQUIP_SLOT. */
 };
 
 STATIC_ASSERT(sizeof(CHARA_DATA) == 0x38C);
+
+/**
+ *
+ * Part slots of ROBO_DATA::parts.
+ *
+ */
+enum ROBO_PART_SLOT {
+    ROBO_PART_ARM = 0,   /**< The arm, which sets the attack, its sound and its durability. */
+    ROBO_PART_BODY = 1,  /**< The body. */
+    ROBO_PART_PACK = 2,  /**< The energy pack. */
+    ROBO_PART_LEG = 3,   /**< The legs, which set the movement type. */
+};
 
 /**
  *
@@ -247,7 +276,7 @@ struct ROBO_DATA {
     u8            unk_1e[2];
     COMMON_GAGE   hp;             /**< Energy gauge. */
     COMMON_GAGE   abs;            /**< Absorption gauge. */
-    CGameDataUsed parts[4];       /**< Fitted parts, by slot. */
+    CGameDataUsed parts[4];       /**< Fitted parts, by ROBO_PART_SLOT. */
     s16           status_time[3]; /**< Time left of the 0x2, 0x8 and 0x20 conditions. */
     u8            unk_1e6[2];
     u16           shield_kit_num; /**< Shield kits used, each adding 4 to the defence. */
@@ -743,7 +772,7 @@ STATIC_ASSERT(sizeof(PARTY_CHARA_INFO) == 0xC);
  */
 struct USER_PICTURE_INFO {
     s8    used;       /**< Non-zero when the slot holds a photo. */
-    u8    is_new;     /**< Non-zero for a photo not yet looked at in the menu. */
+    s8    is_new;     /**< Non-zero for a photo not yet looked at in the menu. */
     short map_no;     /**< Map the photo was taken on, or -1. */
     short npc_no;     /**< Townsperson the photo shows, or -1. */
     short monster_no; /**< Monster the photo shows, or -1. */

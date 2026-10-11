@@ -20,8 +20,6 @@ static char txt_table__2[] = "0123456789abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQR
  */
 static unsigned int random_seed = 1;
 
-#pragma optimization_level 0
-
 /**
  *
  * Gives the digit value of a password character,
@@ -37,10 +35,6 @@ static int search_txt(char c) {
 
     return -1;
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 0
 
 /**
  *
@@ -64,10 +58,6 @@ static void ConvLongToTxt(unsigned long value, char *text) {
         value = value / 58;
     }
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 0
 
 /**
  *
@@ -95,10 +85,6 @@ static int ConvTxtToLong(char *text, unsigned long *value) {
     *value = result;
     return 1;
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 0
 
 int ConvertBinToTxt(u8 *data, int size, char *text) {
     s32 remaining = size;
@@ -142,10 +128,6 @@ int ConvertBinToTxt(u8 *data, int size, char *text) {
     return strlen(text);
 }
 
-#pragma optimization_level reset
-
-#pragma optimization_level 0
-
 int ConvertTxtToBin(char *text, u8 *data) {
     char *in = text;
     u8   *out = data;
@@ -182,10 +164,6 @@ int ConvertTxtToBin(char *text, u8 *data) {
     return written;
 }
 
-#pragma optimization_level reset
-
-#pragma optimization_level 0
-
 /**
  *
  * Gives the inverted CRC-16/CCITT checksum
@@ -210,10 +188,6 @@ static int GetCRC(u8 *data, int size) {
     return ~crc & 0xFFFF;
 }
 
-#pragma optimization_level reset
-
-#pragma schedule off
-
 /**
  *
  * Advances the scrambling generator
@@ -224,10 +198,6 @@ static unsigned int random() {
     random_seed = random_seed * 0x21FC436 + 1;
     return random_seed;
 }
-
-#pragma schedule reset
-
-#pragma optimization_level 0
 
 /**
  *
@@ -261,10 +231,6 @@ static void EncodeBinData(u8 *data, int size, u8 *key, int key_size) {
     data[size - 2] = data[swap];
     data[swap] = saved;
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 0
 
 /**
  *
@@ -306,10 +272,6 @@ static int DecodeBinData(u8 *data, int size, u8 *key, int key_size) {
     return 1;
 }
 
-#pragma optimization_level reset
-
-#pragma optimization_level 0
-
 int EncodePassword(u8 *data, int size, u8 *key, int key_size, char *text, int text_size) {
     if (size % 8 != 0) {
         return 0;
@@ -328,10 +290,6 @@ int EncodePassword(u8 *data, int size, u8 *key, int key_size, char *text, int te
 
     return 1;
 }
-
-#pragma optimization_level reset
-
-#pragma optimization_level 0
 
 int DecodePassword(char *text, u8 *data, int size, u8 *key, int key_size) {
     s32 length = strlen(text);
@@ -356,5 +314,3 @@ int DecodePassword(char *text, u8 *data, int size, u8 *key, int key_size) {
 
     return 1;
 }
-
-#pragma optimization_level reset

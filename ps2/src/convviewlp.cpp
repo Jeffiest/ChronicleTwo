@@ -17,67 +17,93 @@
 #include "snd_mngr.hpp"
 
 /**
+ *
  * Display-time value recorded for the conversion result.
+ *
  */
 static int ConvertResultDispTime;
 /**
+ *
  * Texture and data storage used by the conversion screen.
+ *
  */
 static mgCMemory DataBuffer;
 /**
+ *
  * Read buffer backed by the remaining main-stack storage.
+ *
  */
 static mgCMemory Stack_ReadBuff;
 
 /**
+ *
  * Scene used by the save-data conversion screen.
+ *
  */
 static CScene *MovieScene;
 
 /**
+ *
  * Current mode of the save-data conversion screen.
+ *
  */
-static int ConvMode;
+static SV_CONV_MODE ConvMode;
 
 /**
+ *
  * Selected memory-card port.
+ *
  */
 static int SlotSelect;
 
 /**
+ *
  * Number of source save directories in the conversion list.
+ *
  */
 static int FileListNum;
 
 /**
+ *
  * Current phase of memory-card checking and conversion.
+ *
  */
-static int ConvertPhase;
+static SAVEDATA_CONVERT_PHASE ConvertPhase;
 
 /**
+ *
  * Number of directories converted in the current run.
+ *
  */
 static int ConvertFileNum;
 
 /**
+ *
  * Result reported by the save-data conversion run.
+ *
  */
-static int ConvertResult;
+static SAVEDATA_CONVERT_RESULT ConvertResult;
 
 /**
+ *
  * Directory records for the source save files.
+ *
  */
-static MC_DIR_ENTRY *SaveFileInfoTablePtr;
+static sceMcTblGetDir *SaveFileInfoTablePtr;
 
 /**
+ *
  * Allocated work image for converting saved game data.
+ *
  */
 static SAVE_CONVERT_WORK *SAVEDATA_BUFFER;
 
 /**
+ *
  * Per-file size information for the conversion list.
+ *
  */
-int SaveFileInfoTableSizeConvert[128];
+static int SaveFileInfoTableSizeConvert[128];
 
 static void InitSaveFileInfoTablePtr();
 
@@ -89,22 +115,30 @@ void SVConvViewInit(INIT_LOOP_ARG arg) {
     main_stack->stReset();
 
     /**
+     *
      * First packet buffer for the conversion screen.
+     *
      */
     static mgCMemory buf0;
 
     /**
+     *
      * Second packet buffer for the conversion screen.
+     *
      */
     static mgCMemory buf1;
 
     /**
+     *
      * First data buffer for the conversion screen.
+     *
      */
     static mgCMemory dbuf0;
 
     /**
+     *
      * Second data buffer for the conversion screen.
+     *
      */
     static mgCMemory dbuf1;
 
@@ -125,9 +159,9 @@ void SVConvViewInit(INIT_LOOP_ARG arg) {
     mgTexManager.EnterIMGFile(GetFontTex2ImgPtr(), 0, NULL, NULL);
     sceMcInit();
     main_stack->Align64();
-    SaveFileInfoTablePtr = new (main_stack->Alloc(0x82)) MC_DIR_ENTRY[32];
+    SaveFileInfoTablePtr = new (main_stack->Alloc(sizeof(sceMcTblGetDir) * SAVEDATA_CONVERT_FILE_MAX / 16 + 2)) sceMcTblGetDir[SAVEDATA_CONVERT_FILE_MAX];
     main_stack->Align64();
-    SAVEDATA_BUFFER = new (main_stack->Alloc(0x659E)) SAVE_CONVERT_WORK;
+    SAVEDATA_BUFFER = new (main_stack->Alloc(sizeof(SAVE_CONVERT_WORK) / 16 + 2)) SAVE_CONVERT_WORK;
     main_stack->Align64();
     int rest = main_stack->stGetRest();
     Stack_ReadBuff.stSetBuffer(main_stack->stGetTop(), rest);
@@ -151,7 +185,7 @@ int SVConvViewLoop() {
 
     if (ConvMode == SV_CONV_MODE_SELECT &&
         (GamePad__2.Down(PAD_START) || GamePad__2.Down(PAD_TRIANGLE))) {
-        return 1;
+        return true;
     }
 
     if (ConvMode == SV_CONV_MODE_SELECT) {
@@ -268,7 +302,7 @@ int SVConvViewLoop() {
         font.DrawDirect("Return to SlotSelect : (X)", 40, y);
     }
 
-    return 0;
+    return false;
 }
 
 /**
@@ -283,15 +317,15 @@ static void InitSaveFileInfoTablePtr() {
     ConvertResult = SAVEDATA_CONVERT_RESULT_NONE;
     ConvertResultDispTime = 0;
 
-    for (int i = 0; i < 32; i++) {
-        SaveFileInfoTablePtr[i].name[0] = '\0';
+    for (int i = 0; i < SAVEDATA_CONVERT_FILE_MAX; i++) {
+        SaveFileInfoTablePtr[i].entry_name[0] = '\0';
         SaveFileInfoTableSizeConvert[i] = 0;
     }
 }
 
 int SaveDataConvertLoop() {
-    MC_DIR_ENTRY dir_entries[64] __attribute__((aligned(64)));
-    MC_DIR_ENTRY inside_entries[32] __attribute__((aligned(64)));
+    sceMcTblGetDir dir_entries[SAVEDATA_CONVERT_DIR_MAX] __attribute__((aligned(64)));
+    sceMcTblGetDir inside_entries[32] __attribute__((aligned(64)));
     char         path[128];
     int          card_type, free_size, formatted;
     int          command, result, existing_count;
@@ -304,12 +338,12 @@ int SaveDataConvertLoop() {
 
             if (card_type != sceMcTypePS2 || formatted != 1) {
                 ConvertResult = SAVEDATA_CONVERT_RESULT_CARD_ERROR;
-                return 1;
+                return true;
             }
 
             if (result < -1) {
                 ConvertResult = SAVEDATA_CONVERT_RESULT_CARD_ERROR;
-                return 1;
+                return true;
             }
 
             ConvertPhase = SAVEDATA_CONVERT_PHASE_READ_DIR;
@@ -319,17 +353,17 @@ int SaveDataConvertLoop() {
             memset(dir_entries, 0, sizeof(dir_entries));
             strcpy(path, "BASCUS-97213*");
             memset(dir_entries, 0, sizeof(dir_entries));
-            sceMcGetDir(SlotSelect, 1, path, 0, 64, dir_entries);
+            sceMcGetDir(SlotSelect, 1, path, 0, SAVEDATA_CONVERT_DIR_MAX, dir_entries);
             sceMcSync(0, &command, &result);
 
-            for (int i = 0; i < result && i < 64; i++) {
-                memcpy(&SaveFileInfoTablePtr[FileListNum], &dir_entries[i], sizeof(MC_DIR_ENTRY));
+            for (int i = 0; i < result && i < SAVEDATA_CONVERT_DIR_MAX; i++) {
+                memcpy(&SaveFileInfoTablePtr[FileListNum], &dir_entries[i], sizeof(sceMcTblGetDir));
                 FileListNum++;
             }
 
             if (FileListNum <= 0) {
                 ConvertResult = SAVEDATA_CONVERT_RESULT_NO_FILES;
-                return 1;
+                return true;
             }
 
             ConvertPhase = SAVEDATA_CONVERT_PHASE_CONVERT;
@@ -339,19 +373,19 @@ int SaveDataConvertLoop() {
             char dkcl_name[128] = "BESCES-51190dkcl%d";
             char album_name[128] = "BESCES-51190dc2album";
             char omake_name[128] = "BESCES-51190dc2omake";
-            char existing_names[64][128];
-            int  existing_numbers[64];
+            char existing_names[SAVEDATA_CONVERT_DIR_MAX][128];
+            int  existing_numbers[SAVEDATA_CONVERT_DIR_MAX];
             char previous_dir[128];
             char new_name[128];
 
             for (int file = 0; file < FileListNum; file++) {
                 strcpy(path, "BESCES-51190*");
                 memset(dir_entries, 0, sizeof(dir_entries));
-                sceMcGetDir(SlotSelect, 1, path, 0, 64, dir_entries);
+                sceMcGetDir(SlotSelect, 1, path, 0, SAVEDATA_CONVERT_DIR_MAX, dir_entries);
                 existing_count = 0;
                 sceMcSync(0, &command, &existing_count);
 
-                for (int i = 0; i < 64; i++) {
+                for (int i = 0; i < SAVEDATA_CONVERT_DIR_MAX; i++) {
                     existing_numbers[i] = -1;
                     existing_names[i][0] = '\0';
                 }
@@ -359,10 +393,10 @@ int SaveDataConvertLoop() {
                 int listed = 0;
 
                 for (int i = 0; i < existing_count; i++) {
-                    strcpy(existing_names[file], dir_entries[i].name);
-                    int number = atoi(&dir_entries[i].name[16]);
+                    strcpy(existing_names[file], dir_entries[i].entry_name);
+                    int number = atoi(&dir_entries[i].entry_name[16]);
 
-                    if ((u8) dir_entries[i].name[16] != 0) {
+                    if ((u8) dir_entries[i].entry_name[16] != 0) {
                         existing_numbers[listed] = number;
                     } else {
                         existing_numbers[listed] = 32;
@@ -373,23 +407,23 @@ int SaveDataConvertLoop() {
                 }
 
                 printf("\n");
-                int number = -1;
-                int type = SAVEDATA_CONVERT_TYPE_NONE;
+                int                   number = -1;
+                SAVEDATA_CONVERT_TYPE type = SAVEDATA_CONVERT_TYPE_NONE;
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dkcl", 4) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dkcl", 4) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_GAME;
                 }
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dc2album", 8) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dc2album", 8) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_ALBUM;
                 }
 
-                if (strncmp(&SaveFileInfoTablePtr[file].name[12], "dc2omake", 8) == 0) {
+                if (strncmp(&SaveFileInfoTablePtr[file].entry_name[12], "dc2omake", 8) == 0) {
                     type = SAVEDATA_CONVERT_TYPE_OMAKE;
                 }
 
                 if (type < 0) {
-                    printf("not convert type : %s\n", SaveFileInfoTablePtr[file].name);
+                    printf("not convert type : %s\n", SaveFileInfoTablePtr[file].entry_name);
                     continue;
                 }
 
@@ -405,7 +439,7 @@ int SaveDataConvertLoop() {
                 }
 
                 if (type == SAVEDATA_CONVERT_TYPE_GAME) {
-                    number = atoi(&SaveFileInfoTablePtr[file].name[16]);
+                    number = atoi(&SaveFileInfoTablePtr[file].entry_name[16]);
 
                     if (0 <= number) {
                         for (int i = 0; i < listed; i++) {
@@ -430,11 +464,11 @@ int SaveDataConvertLoop() {
                     continue;
                 }
 
-                sceMcChdir(SlotSelect, 1, SaveFileInfoTablePtr[file].name, previous_dir);
+                sceMcChdir(SlotSelect, 1, SaveFileInfoTablePtr[file].entry_name, previous_dir);
                 sceMcSync(0, NULL, NULL);
 
                 if (type == SAVEDATA_CONVERT_TYPE_GAME) {
-                    strcpy(path, SaveFileInfoTablePtr[file].name);
+                    strcpy(path, SaveFileInfoTablePtr[file].entry_name);
                     sceMcGetDir(SlotSelect, 1, path, 0, 16, inside_entries);
                     sceMcSync(0, &command, &result);
 
@@ -453,7 +487,7 @@ int SaveDataConvertLoop() {
                 }
 
                 if (type == SAVEDATA_CONVERT_TYPE_ALBUM || type == SAVEDATA_CONVERT_TYPE_OMAKE) {
-                    strcpy(path, SaveFileInfoTablePtr[file].name);
+                    strcpy(path, SaveFileInfoTablePtr[file].entry_name);
                     sceMcGetDir(SlotSelect, 1, path, 0, 16, inside_entries);
                     sceMcSync(0, &command, &result);
                     sceMcRename(SlotSelect, 1, path, target);
@@ -471,9 +505,9 @@ int SaveDataConvertLoop() {
 
             ConvertPhase = SAVEDATA_CONVERT_PHASE_END;
             ConvertResult = SAVEDATA_CONVERT_RESULT_DONE;
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }

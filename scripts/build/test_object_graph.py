@@ -24,10 +24,9 @@ class ObjectGraphTests(unittest.TestCase):
             for name in ('scripts/build/postprocess_object.py', 'tools/mwccgap/elf.py',
                          'src/first.cpp', 'src/second.cpp', 'out/split'):
                 write(name, '')
-            for name in ('objdiff_data', 'lcf'):
-                write(f'scripts/build/{name}.py', name)
+            write('scripts/build/lcf.py', 'lcf')
             write('scripts/build/mwccgap.sh', '''#!/bin/sh
-cat scripts/build/objdiff_data.py scripts/build/lcf.py > "$1"
+cat scripts/build/lcf.py > "$1"
 printf '%s:\\n' "$PWD/$1" > "$2"
 ''')
             write('scripts/build/fixup_sections.sh', 'exit 0\n')
@@ -41,7 +40,7 @@ include(ObjectLists.cmake)
 set(objects out/first.cpp.o out/second.cpp.o)
 make_object_dirs("${objects}")
 foreach(unit first second)
-  add_cpp_object(out/${unit}.cpp.o src/${unit}.cpp)
+  add_cpp_object(out/${unit}.cpp.o src/${unit}.cpp ${unit})
 endforeach()
 add_custom_target(objects DEPENDS ${objects})
 ''')
@@ -54,7 +53,7 @@ add_custom_target(objects DEPENDS ${objects})
             run('cmake', '-S', '.', '-B', 'out', '-G', 'Ninja')
             run('cmake', '--build', 'out', '--target', 'objects')
             self.assertNotIn('CC src/', run('ninja', '-C', 'out', '-n', 'objects'))
-            for tool in ('objdiff_data', 'lcf'):
+            for tool in ('lcf',):
                 with self.subTest(tool=tool):
                     time.sleep(0.01)
                     write(f'scripts/build/{tool}.py', tool + ' changed')
@@ -62,8 +61,7 @@ add_custom_target(objects DEPENDS ${objects})
                     for unit in ('first', 'second'):
                         self.assertIn(f'CC src/{unit}.cpp', pending)
                     run('cmake', '--build', 'out', '--target', 'objects')
-                    expected = b''.join((root / f'scripts/build/{name}.py').read_bytes()
-                                        for name in ('objdiff_data', 'lcf'))
+                    expected = (root / 'scripts/build/lcf.py').read_bytes()
                     for unit in ('first', 'second'):
                         self.assertEqual((root / f'out/{unit}.cpp.o').read_bytes(), expected)
                     self.assertNotIn('CC src/', run('ninja', '-C', 'out', '-n', 'objects'))

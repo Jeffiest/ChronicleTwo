@@ -37,6 +37,7 @@ enum {
     MAP_PARTS_GROUP_MAX = 32, /**< Parts groups a map holds. */
     MAP_DRAW_RECT_MAX = 16,   /**< Draw-off areas a map holds. */
     MAP_OCCLUSION_MAX = 8,    /**< Occlusion planes a map holds. */
+    MAP_WATER_PARTS_MAX = 16, /**< Placed parts one water surface can be drawn at. */
 };
 
 /**
@@ -161,11 +162,22 @@ STATIC_ASSERT(sizeof(MapDrawOffRect) == 0x30);
 
 /**
  *
+ * Kinds of event search, as CMap::GetEvent and CScene::GetMapEvent take them.
+ *
+ */
+enum MapEventCheck {
+    MAP_EVENT_CHECK_TOUCH = 0,  /**< Events that start on contact. */
+    MAP_EVENT_CHECK_ACTION = 1, /**< Events started with the confirm button. */
+    MAP_EVENT_CHECK_ITEM = 2,   /**< Events started with the item (square) button. */
+};
+
+/**
+ *
  * Event function point found at a position, with the matrix that places it.
  *
  */
 struct MapEventInfo {
-    s32           check_type; /**< Kind of check the event was searched for. */
+    s32           check_type; /**< Kind of check the event was searched for. @see MapEventCheck */
     s32           event_no;   /**< Event number of the point, or of the last event point passed through. */
     sceVu0FMATRIX matrix;     /**< World matrix of the event point. */
     s32           parts_no;   /**< Placed parts the point belongs to, or -1 for a point of the map itself. */

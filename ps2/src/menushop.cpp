@@ -629,7 +629,7 @@ int CShopMenu::IsCancelNoneLoadItem() {
         return 0;
     }
 
-    MenuSePlay(5);
+    MenuSePlay(SYSTEM_SE_CANCEL);
     return 1;
 }
 
@@ -728,9 +728,9 @@ void CShopMenu::InitEnd() {
     AttachMessageForm();
     AttachForm();
     MenuMoveItemPtr->AttachForm();
-    int bag_max = GetNowBagMax(0);
+    int bag_max = GetNowBagMax(ITEM_BOARD_MAIN);
     MenuItemBrdSetInfo(bag_pos, bag_top, bag_max / 6, 5);
-    MenuItemBrdCalcManner = 0;
+    MenuItemBrdCalcManner = MENU_ITEM_BRD_CALC_EASE;
     UpdataScrlBar();
     MenuLocalStack.Align64();
     MenuMainScene->LoadBGM(0x32, MenuLocalStack.stGetTop());
@@ -1079,7 +1079,7 @@ int CShopMenu::KeyStep() {
 
             if (item != NULL) {
                 item_no = item->item_no;
-                item_name = item->GetName(1);
+                item_name = item->GetName(ITEM_NAME_TYPE_LEVEL);
             }
 
             if (trade_brd != NULL) {
@@ -1100,7 +1100,7 @@ int CShopMenu::KeyStep() {
 
             switch (command) {
                 case 5:
-                    MenuSePlay(5);
+                    MenuSePlay(SYSTEM_SE_CANCEL);
                     break;
                 case 0x14:
                     switch (MenuCommonInfo->EnableSwapNowPos(&swap)) {
@@ -1112,7 +1112,7 @@ int CShopMenu::KeyStep() {
                             MenuSePlay(SYSTEM_SE_DECIDE);
                             break;
                         default:
-                            MenuSePlay(5);
+                            MenuSePlay(SYSTEM_SE_CANCEL);
                             break;
                     }
 
@@ -1138,7 +1138,7 @@ int CShopMenu::KeyStep() {
                     int            room = 0;
                     CGameDataUsed *bag = user->GetUsedDataPtr(0);
 
-                    for (int slot = 0; slot < GetNowBagMax(0); bag++, slot++) {
+                    for (int slot = 0; slot < GetNowBagMax(ITEM_BOARD_MAIN); bag++, slot++) {
                         if (bag->item_no <= 0) {
                             room += common->stack_num;
                         }
@@ -1287,9 +1287,9 @@ int CShopMenu::KeyStep() {
                     CGameDataUsed *sell_item = SearchNowPosItemExist();
 
                     if (sell_item->GetNum() <= 0) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (CShopPtr->price[item_no].sell <= 0) {
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                     } else if (CheckEquipFishRod(sell_item) == 1) {
                         refuse = (int) SHOP_MENU_ERROR_LAST_WEAPON;
                     } else {
@@ -1347,7 +1347,7 @@ int CShopMenu::KeyStep() {
                         char          *name = NULL;
 
                         if (trade_item != NULL) {
-                            name = trade_item->GetName(0);
+                            name = trade_item->GetName(ITEM_NAME_TYPE_PLAIN);
                         }
 
                         char *names[2] = {NULL, NULL};
@@ -1774,7 +1774,7 @@ void ShopSellListDraw(int &tex_block, float *pos) {
 
     mgRect<int>  line_rect(0, 0x8E, 0xB0, 6);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     float price_x;
     int   price;
     float mark_x;
@@ -1943,7 +1943,7 @@ void MenuShopInit(mgCMemory *stack, int *tex_block, int arg) {
     MenuPosData->AttachCommonTexInfo();
     MenuCommonInfo->AttachFuncData();
     AttachMessageForm();
-    MenuMainFrameModeSet(0, 1);
+    MenuMainFrameModeSet(MENU_MAIN_FRAME_OPEN, 1);
     CShopMenuPt->AttachForm();
     MenuLocalStack.Alloc(0x180);
     MenuLocalStack.Align64();
@@ -2266,7 +2266,7 @@ int CMenuQuestView::KeyStep() {
                         MenuSePlay(SYSTEM_SE_DECIDE);
                     } else if (push & 2) {
                         FadeOutMenu(0x28, 0.0f);
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                         mode = 2;
                     }
 
@@ -2278,7 +2278,7 @@ int CMenuQuestView::KeyStep() {
                         ActiveQuestInfo = NULL;
                         ScmFlagCtrl = NULL;
                         step = 0;
-                        MenuSePlay(5);
+                        MenuSePlay(SYSTEM_SE_CANCEL);
                         UnderMsg(0);
                     }
 
@@ -2382,10 +2382,10 @@ void MenuNPCQuestViewDraw() {
     mgCTextureManager *textures = &mgTexManager;
     textures->ReloadTexture(Tex_QuestMemo->block, (sceVif1Packet *) NULL);
     mgCDrawPrim *prim = GetMenuPrim();
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     DrawMenuTilePattern(prim, Tex_QuestMemo, QuestTilePatternXY, QuestTilePatternXY,
                         mgRect<int>(0x180, 0, 0x80, 0x80), 0, NULL);
-    SetSpriteEnv(prim, 0);
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
     prim->Begin(MG_PRIM_SPRITE);
     prim->Texture(Tex_QuestMemo);
     mgRect<int> board_rect(0, 0xBA, 0x184, 0x146);
@@ -2580,7 +2580,7 @@ void MenuNPCQuestViewDraw() {
         }
 
         DrawMenuFillBox((float) (box_x + 6), 125.0f, 384.0f, (float) (box_h - 0xC), 0x56, 0, 0, 0);
-        SetSpriteEnv(prim, 0);
+        SetSpriteEnv(prim, MENU_SPRITE_ENV_TEXTURE);
         prim->Begin(MG_PRIM_SPRITE);
         prim->Texture(Tex_QuestMemo);
         prim->Color(0x80, 0x80, 0x80, 0x80);

@@ -616,7 +616,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
         area->battle_clear = 1;
         area->battle_bgm_state = (int) DNG_BGM_MAP;
         area->battle_bgm_vol = 0.0f;
-        area->camera_mode = 0;
+        area->camera_mode = DNG_CAMERA_FOLLOW;
         area->pause_flag = 0;
         area->timer = 0;
         area->minimap_reveal = 0;
@@ -626,7 +626,7 @@ void TitleInit(INIT_LOOP_ARG arg) {
         area->practice_actions = 0;
         area->floor_status = 0;
         area->weather = DNG_WEATHER_NORMAL;
-        area->lock_on_mode = 0;
+        area->lock_on_mode = DNG_LOCK_ON_NEAREST;
     }
 
     InitTitleOmakeFlag();
@@ -981,11 +981,11 @@ int TitleLoop() {
 
                 result = 0;
 
-                if (MenuArg.end_code == 10) {
+                if (MenuArg.end_code == MENU_END_LOAD) {
                     next_loop = 2;
-                } else if (MenuArg.end_code == 12) {
+                } else if (MenuArg.end_code == MENU_END_COSTUME) {
                     next_loop = 1;
-                } else if (MenuArg.end_code == 19) {
+                } else if (MenuArg.end_code == MENU_END_SUBGAME_LOAD) {
                     next_loop = 11;
                 } else {
                     memcpy(&TitleInfo->config, &GetSaveData()->config, sizeof(SV_CONFIG_OPTION));
@@ -1862,7 +1862,7 @@ void TitleModeDraw() {
     TitleMapDraw();
     mgTexManager.ReloadTexture(0x40, (sceVif1Packet *) NULL);
     mgCDrawPrim prim;
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     float left = 0.0f;
     float top = 24.0f;
     float title_alpha = TitleInfo->title_alpha;
@@ -2808,7 +2808,7 @@ int TitleHDDInstallKey() {
             if (status <= 0) {
                 HDDINFO.result = status;
                 next_phase = HDD_PHASE_RESULT;
-                MenuSePlay(0x1F);
+                MenuSePlay(SYSTEM_SE_COMPLETE);
             } else if (push & 2) {
                 next_phase = HDD_PHASE_CANCEL_ASK;
                 MenuSePlay(SYSTEM_SE_CANCEL);
@@ -3052,7 +3052,7 @@ void DrawMenuDl(int x, int y, int width, int alpha, float rate) {
     mgRect<int> shadow_put;
     mgRect<int> body_put;
 
-    SetSpriteEnv(&prim, 0);
+    SetSpriteEnv(&prim, MENU_SPRITE_ENV_TEXTURE);
     prim.Begin(6);
     prim.Texture(HDDDlBar);
     prim.Color(0x80, 0x80, 0x80, alpha);

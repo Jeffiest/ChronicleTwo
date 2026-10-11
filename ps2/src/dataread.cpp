@@ -73,21 +73,21 @@ static int start_vsync;
  * Loaded DATA.HD4 records and their file-name text.
  *
  */
-u_char header_buff[0x50000];
+static u_char header_buff[0x50000];
 
 /**
  *
  * Background file-read request slots.
  *
  */
-static BG_READ_INFO bg_read_info[32];
+static BG_READ_INFO bg_read_info[BG_READ_MAX];
 
 /**
  *
  * File names, addresses, and pending uses held by the cache.
  *
  */
-static FILE_CACHE FileCache[16];
+static FILE_CACHE FileCache[FILE_CACHE_MAX];
 
 /**
  *
@@ -130,9 +130,9 @@ static FILE_CACHE  *SearchFileCache(char *path);
 int size_to_sector(int size) {
     int sectors;
 
-    sectors = size / 2048;
+    sectors = size / DATAREAD_SECTOR_SIZE;
 
-    if (size % 2048) {
+    if (size % DATAREAD_SECTOR_SIZE) {
         sectors++;
     }
 
@@ -225,11 +225,11 @@ static DATA_HEADER *SearchFile(char *name) {
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 void InitReadBG() {
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < BG_READ_MAX; i++) {
         bg_read_info[i].busy = 0;
     }
 
@@ -244,16 +244,16 @@ int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     BG_READ_INFO *info;
     DATA_HEADER  *file;
 
-    if (out_size != 0) {
+    if (out_size != NULL) {
         *out_size = 0;
     }
 
     if (name == NULL) {
-        return 0;
+        return false;
     }
 
-    if (*name == 0) {
-        return 0;
+    if (*name == '\0') {
+        return false;
     }
 
     char full_path[256] = "";
@@ -267,106 +267,106 @@ int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
         device = DefaultFileDev;
     }
 
-    for (i = 0, info = bg_read_info; i < 32; i++, info++) {
-        if (info->busy == 0) {
+    for (i = 0, info = bg_read_info; i < BG_READ_MAX; i++, info++) {
+        if (!info->busy) {
             break;
         }
     }
 
-    if (i == 32) {
-        return 0;
+    if (i == BG_READ_MAX) {
+        return false;
     }
 
     if (device == FILE_DEV_CDROM) {
         file = SearchFile(full_path);
 
         if (file == NULL) {
-            return 0;
+            return false;
         }
 
         strcpy(info->name, full_path);
-        info->busy = 1;
+        info->busy = true;
         info->dev = FILE_DEV_CDROM;
-        info->issued = 0;
-        info->done = 0;
+        info->issued = false;
+        info->done = false;
         info->buffer = buffer;
         info->size = file->size;
 
-        if (out_size != 0) {
+        if (out_size != NULL) {
             *out_size = file->size;
         }
 
         info->fd = file->sector + data_sector;
         info->sectors = size_to_sector(file->size);
-        return 1;
+        return true;
     }
 
     strcpy(info->name, full_path);
-    info->busy = 1;
+    info->busy = true;
     info->dev = device;
-    info->issued = 0;
-    info->done = 0;
+    info->issued = false;
+    info->done = false;
     info->buffer = buffer;
 
-    if (SearchFileCache(name, &loaded_size) != 0) {
+    if (SearchFileCache(name, &loaded_size) != NULL) {
         info->fd = LoadFile2(name, buffer, &loaded_size, LOAD_FILE_READ);
         info->size = loaded_size;
 
         if (info->fd == 0) {
-            info->busy = 0;
-            return 0;
+            info->busy = false;
+            return false;
         }
 
-        info->issued = 1;
-        info->done = 1;
+        info->issued = true;
+        info->done = true;
 
-        if (out_size != 0) {
+        if (out_size != NULL) {
             *out_size = loaded_size;
         }
 
-        return 1;
+        return true;
     }
 
     if (device == FILE_DEV_NET) {
         info->fd = LoadFile2(name, buffer, &loaded_size, LOAD_FILE_READ);
         info->size = loaded_size;
-        info->busy = 1;
-        info->issued = 1;
-        info->done = 1;
+        info->busy = true;
+        info->issued = true;
+        info->done = true;
 
-        if (out_size != 0) {
+        if (out_size != NULL) {
             *out_size = loaded_size;
         }
 
-        return 1;
+        return true;
     }
 
     info->fd = LoadFile2(name, buffer, &loaded_size, LOAD_FILE_OPEN);
     info->size = loaded_size;
 
     if (info->fd < 0) {
-        info->busy = 0;
-        info->issued = 0;
-        info->done = 0;
-        return 0;
+        info->busy = false;
+        info->issued = false;
+        info->done = false;
+        return false;
     }
 
-    info->issued = 0;
-    info->done = 0;
+    info->issued = false;
+    info->done = false;
 
-    if (out_size != 0) {
+    if (out_size != NULL) {
         *out_size = loaded_size;
     }
 
-    return 1;
+    return true;
 }
 
 BG_READ_INFO *GetReadBGFile(char *name) {
     int           i;
     BG_READ_INFO *info = bg_read_info;
 
-    for (i = 0; i < 32; i++, info++) {
-        if (info->busy != 0 && strcasecmp(name, info->name) == 0) {
+    for (i = 0; i < BG_READ_MAX; i++, info++) {
+        if (info->busy && strcasecmp(name, info->name) == 0) {
             return info;
         }
     }
@@ -375,11 +375,11 @@ BG_READ_INFO *GetReadBGFile(char *name) {
 }
 
 BG_READ_INFO *GetReadBGFile(int index) {
-    if (index < 0 || index >= 32) {
-        return 0;
+    if (index < 0 || index >= BG_READ_MAX) {
+        return NULL;
     }
 
-    return bg_read_info[index].busy ? &bg_read_info[index] : 0;
+    return bg_read_info[index].busy ? &bg_read_info[index] : NULL;
 }
 
 void StartReadBG() {
@@ -406,34 +406,34 @@ void ReadBG() {
     mode.datapattern = 0;
     info = bg_read_info;
 
-    for (i = 0; i < 32; i++, info++) {
+    for (i = 0; i < BG_READ_MAX; i++, info++) {
         if (info->busy) {
-            if (info->issued != 0 && info->done == 0) {
+            if (info->issued && !info->done) {
                 break;
             }
 
-            if (info->issued == 0 && info->done == 0) {
+            if (!info->issued && !info->done) {
                 break;
             }
         }
     }
 
-    if (i == 32) {
+    if (i == BG_READ_MAX) {
         return;
     }
 
-    if (info->issued == 0) {
+    if (!info->issued) {
         start_vsync = 0;
 
         if (info->dev == FILE_DEV_CDROM) {
             info->issued = sceCdRead(info->sector, info->sectors, info->buffer, &mode);
         } else {
-            info->issued = 1;
+            info->issued = true;
             sceRead(info->fd, info->buffer, info->size);
         }
 
         return;
-    } else if (info->issued != 0) {
+    } else if (info->issued) {
         if (info->dev == FILE_DEV_CDROM) {
             if (sceCdSync(1)) {
                 return;
@@ -441,18 +441,18 @@ void ReadBG() {
 
             if (sceCdGetError()) {
                 printf("error at %s\n", info->name);
-                info->issued = 0;
+                info->issued = false;
                 return;
             }
 
             printf("LoadBG %s\n", info->name);
-            info->done = 1;
+            info->done = true;
         } else {
             sceIoctl(info->fd, SCE_FS_EXECUTING, &status);
 
             if (status == 0) {
                 sceClose(info->fd);
-                info->done = 1;
+                info->done = true;
             }
         }
     }
@@ -464,15 +464,15 @@ int ReadBGSync() {
     BG_READ_INFO *info = bg_read_info;
 
     do {
-        if (info->busy != 0 && (info->issued == 0 || info->done == 0)) {
+        if (info->busy && (!info->issued || !info->done)) {
             break;
         }
 
         i++;
         info++;
-    } while (i < 32);
+    } while (i < BG_READ_MAX);
 
-    return (i == 32) ^ 1;
+    return (i == BG_READ_MAX) ^ 1;
 }
 
 void BreakReadBG() {
@@ -486,10 +486,10 @@ void BreakReadBG() {
     sceCdBreak();
     info = bg_read_info;
 
-    for (i = 0; i < 32; i++, info++) {
+    for (i = 0; i < BG_READ_MAX; i++, info++) {
         if (info->busy && info->dev != FILE_DEV_CDROM) {
             sceClose(info->fd);
-            info->done = 1;
+            info->done = true;
         }
     }
 
@@ -505,7 +505,7 @@ void InitCDFile() {
     int        offset;
     char      *name;
     s8         c;
-    packfile_buff = 0;
+    packfile_buff = NULL;
 
     do {
         if (sceCdSearchFile(&file, "\\DATA.DAT;1") == 0) {
@@ -517,22 +517,22 @@ void InitCDFile() {
     } while (sceCdGetError() != 0);
 
     data_sector = file.lsn;
-    fd = sceOpen("cdrom0:\\DATA.HD4;1", 1);
+    fd = sceOpen("cdrom0:\\DATA.HD4;1", SCE_RDONLY);
 
     if (fd < 0) {
         printf("File open error \"\"\n \n \n");
         Exit__2(0);
     }
 
-    header_size = sceLseek(fd, 0, 2);
-    sceLseek(fd, 0, 0);
+    header_size = sceLseek(fd, 0, SCE_SEEK_END);
+    sceLseek(fd, 0, SCE_SEEK_SET);
     sceRead(fd, header_buff, header_size);
     sceClose(fd);
-    printf("head size = %d/%d\n", header_size, 0x50000);
+    printf("head size = %d/%d\n", header_size, sizeof(header_buff));
     base = (int) header_buff;
     i = 0;
     offset = 0;
-    header_num = *(u32 *) base / 12;
+    header_num = *(u32 *) base / sizeof(DATA_HEADER);
 
     while (i < header_num) {
         DATA_HEADER *entry = (DATA_HEADER *) (base + offset);
@@ -547,7 +547,7 @@ void InitCDFile() {
             name++;
         }
 
-        offset += 12;
+        offset += sizeof(DATA_HEADER);
         i++;
     }
 }
@@ -565,14 +565,14 @@ static int GetDevType(char *path, char *out_name) {
 
     if (path[1] == ':') {
         strcpy(out_name, path);
-        return -1;
+        return FILE_DEV_DEFAULT;
     }
 
     scan = path;
     out = device;
 
     for (;;) {
-        if (*scan == 0) {
+        if (*scan == '\0') {
             break;
         }
 
@@ -585,31 +585,31 @@ static int GetDevType(char *path, char *out_name) {
         scan++;
     }
 
-    *out = 0;
+    *out = '\0';
 
-    if (*scan != 0) {
+    if (*scan != '\0') {
         strcpy(out_name, &scan[1]);
     } else {
         strcpy(out_name, path);
     }
 
     if (strcmp(device, "host:") == 0) {
-        return 0;
+        return FILE_DEV_HOST;
     }
 
     if (strcmp(device, "host0:") == 0) {
-        return 0;
+        return FILE_DEV_HOST;
     }
 
     if (strcmp(device, "cdrom:") == 0) {
-        return 1;
+        return FILE_DEV_CDROM;
     }
 
     if (strcmp(device, "net:") == 0) {
-        return 2;
+        return FILE_DEV_NET;
     }
 
-    return strcmp(device, "psf0:") == 0 ? 3 : -1;
+    return strcmp(device, "psf0:") == 0 ? FILE_DEV_HDD : FILE_DEV_DEFAULT;
 }
 
 /**
@@ -621,7 +621,7 @@ static int GetDevType(char *path, char *out_name) {
 static void ConvStr(char *text) {
     char ch;
 
-    while ((ch = *text) != 0) {
+    while ((ch = *text) != '\0') {
         if (ch >= 'A' && ch <= 'Z') {
             *text += 'a' - 'A';
         }
@@ -639,33 +639,33 @@ static void ConvStr(char *text) {
 static int GetFullPath(char *path, char *out_path) {
     char rest[256];
     int  device = GetDevType(path, rest);
-    int  has_device = 0;
+    int  has_device = false;
 
-    if (device == -1) {
+    if (device == FILE_DEV_DEFAULT) {
         device = DefaultFileDev;
     } else {
-        has_device = 1;
+        has_device = true;
     }
 
     char prefix[16] = "";
 
-    if (device == 0) {
+    if (device == FILE_DEV_HOST) {
         strcpy(prefix, "host:");
     }
 
-    if (device == 3) {
+    if (device == FILE_DEV_HDD) {
         strcpy(prefix, "pfs0:");
     }
 
     strcpy(out_path, prefix);
 
-    if (has_device == 0) {
+    if (!has_device) {
         strcat(out_path, CurrentDir__2);
     }
 
     strcat(out_path, rest);
 
-    if (device == 3) {
+    if (device == FILE_DEV_HDD) {
         ConvStr(out_path);
     }
 
@@ -678,7 +678,7 @@ int LoadFile(char *path, void *buffer, int *out_size) {
         Exit__2(0);
     }
 
-    return 1;
+    return true;
 }
 
 int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
@@ -857,7 +857,7 @@ static int CDRead(char *path, u_int *buffer, int *out_size) {
     entry = SearchFile(path);
 
     if (entry == NULL) {
-        return 0;
+        return false;
     }
 
     printf("%s %d %d\n", entry->name, entry->sector, size_to_sector(entry->size));
@@ -876,7 +876,7 @@ static int CDRead(char *path, u_int *buffer, int *out_size) {
         *out_size = entry->size;
     }
 
-    return 1;
+    return true;
 }
 
 /**
@@ -885,7 +885,6 @@ static int CDRead(char *path, u_int *buffer, int *out_size) {
  * multiple of an alignment.
  *
  */
-
 static u_int align_size(u_int size, u_int alignment) {
     u32 rest = size % alignment;
 
@@ -905,22 +904,22 @@ static u_int align_size(u_int size, u_int alignment) {
 static FILE_CACHE *GetNewFileCache() {
     int i;
 
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < FILE_CACHE_MAX; i++) {
         if (!FileCache[i].address) {
             return &FileCache[i];
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 void InitFileCache(u_long128 *address, int type) {
     int i;
 
-    CacheAddress = 0;
+    CacheAddress = NULL;
 
-    for (i = 0; i < 16; i++) {
-        FileCache[i].address = 0;
+    for (i = 0; i < FILE_CACHE_MAX; i++) {
+        FileCache[i].address = NULL;
     }
 
     if (type == FILE_CACHE_DOWN || type == FILE_CACHE_UP) {
@@ -936,7 +935,7 @@ void InitFileCache(u_long128 *address, int type) {
 }
 
 void DeleteFileCache() {
-    InitFileCache(0, FILE_CACHE_NONE);
+    InitFileCache(NULL, FILE_CACHE_NONE);
 }
 
 /**
@@ -951,14 +950,14 @@ static int EntryFileCache(char *path, u_long128 *address, int size) {
     entry = GetNewFileCache();
 
     if (!entry) {
-        return 0;
+        return false;
     }
 
     entry->address = address;
     entry->size = size;
     entry->ref_count = 1;
     strcpy(entry->name, path);
-    return 1;
+    return true;
 }
 
 int LoadFileCacheBG(char *path) {
@@ -967,28 +966,28 @@ int LoadFileCacheBG(char *path) {
     u_long128  *buffer;
     FILE_CACHE *entry;
 
-    if (path == NULL || *path == 0) {
-        return 0;
+    if (path == NULL || *path == '\0') {
+        return false;
     }
 
-    if (CacheAddress == 0) {
-        return 0;
+    if (CacheAddress == NULL) {
+        return false;
     }
 
     entry = SearchFileCache(path);
 
     if (entry != NULL) {
         entry->ref_count += 1;
-        return 1;
+        return true;
     }
 
     size = 0;
 
     if (LoadFile2(path, NULL, &size, LOAD_FILE_SIZE) == 0) {
-        return 0;
+        return false;
     }
 
-    aligned = align_size(size, 0x800);
+    aligned = align_size(size, DATAREAD_SECTOR_SIZE);
     buffer = NowCacheAddress;
 
     if (FileCacheType == FILE_CACHE_DOWN) {
@@ -1000,8 +999,8 @@ int LoadFileCacheBG(char *path) {
         NowCacheAddress += aligned / 16;
     }
 
-    if (LoadFileBG(path, buffer, NULL) == 0) {
-        return 0;
+    if (!LoadFileBG(path, buffer, NULL)) {
+        return false;
     }
 
     return EntryFileCache(path, buffer, size);
@@ -1017,19 +1016,19 @@ static FILE_CACHE *SearchFileCache(char *path) {
     int         i;
     FILE_CACHE *entry;
 
-    if (CacheAddress == 0) {
-        return 0;
+    if (CacheAddress == NULL) {
+        return NULL;
     }
 
     entry = FileCache;
 
-    for (i = 0; i < 16; i++, entry = &entry[1]) {
-        if (entry->address != 0 && strcasecmp(entry->name, path) == 0) {
+    for (i = 0; i < FILE_CACHE_MAX; i++, entry++) {
+        if (entry->address != NULL && strcasecmp(entry->name, path) == 0) {
             return entry;
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 u_long128 *SearchFileCache(char *path, int *out_size) {
@@ -1042,7 +1041,7 @@ u_long128 *SearchFileCache(char *path, int *out_size) {
     entry = SearchFileCache(path);
 
     if (!entry) {
-        return 0;
+        return NULL;
     }
 
     if (out_size) {
@@ -1056,21 +1055,21 @@ int WriteFile(char *path, void *buffer, int size) {
     char full_path[256] = "";
     int  fd;
 
-    if (GetFullPath(path, full_path) == 2) {
+    if (GetFullPath(path, full_path) == FILE_DEV_NET) {
         printf("load %s\n", full_path);
         WriteFileSocket(full_path, (u32 *) buffer, size);
-        return 1;
+        return true;
     }
 
-    fd = sceOpen(path, 0x602);
+    fd = sceOpen(path, SCE_WRONLY | SCE_CREAT | SCE_TRUNC);
 
     if (fd < 0) {
-        return 0;
+        return false;
     }
 
     sceWrite(fd, buffer, size);
     sceClose(fd);
-    return 1;
+    return true;
 }
 
 u_int *GetPackFile(u_int *pack, char *name, int *out_size) {
@@ -1080,21 +1079,21 @@ u_int *GetPackFile(u_int *pack, char *name, int *out_size) {
     char        c;
 
     if (pack == NULL) {
-        return 0;
+        return NULL;
     }
 
     if (name == NULL) {
-        return 0;
+        return NULL;
     }
 
-    if (*name == 0) {
-        return 0;
+    if (*name == '\0') {
+        return NULL;
     }
 
     base = name;
     scan = name;
 
-    while ((c = *scan) != 0) {
+    while ((c = *scan) != '\0') {
         if (c == '/') {
             base = scan + 1;
         }
@@ -1102,7 +1101,7 @@ u_int *GetPackFile(u_int *pack, char *name, int *out_size) {
         scan++;
     }
 
-    for (entry = (PACK_ENTRY *) pack; entry->name[0] != 0;
+    for (entry = (PACK_ENTRY *) pack; entry->name[0] != '\0';
          entry = (PACK_ENTRY *) ((u8 *) entry + entry->next)) {
         if (strcasecmp(entry->name, base) == 0) {
             u_int *data = (u_int *) ((u8 *) entry + entry->offset);
@@ -1115,7 +1114,7 @@ u_int *GetPackFile(u_int *pack, char *name, int *out_size) {
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 u_int *GetPackFile(u_int *pack, int index, char **out_name, int *out_size) {
@@ -1123,12 +1122,12 @@ u_int *GetPackFile(u_int *pack, int index, char **out_name, int *out_size) {
     PACK_ENTRY *entry = (PACK_ENTRY *) pack;
 
     if (entry == NULL) {
-        return 0;
+        return NULL;
     }
 
     i = 0;
 
-    for (; entry->name[0] != 0; i++, entry = (PACK_ENTRY *) ((u8 *) entry + entry->next)) {
+    for (; entry->name[0] != '\0'; i++, entry = (PACK_ENTRY *) ((u8 *) entry + entry->next)) {
         if (index == i) {
             u_int *data = (u_int *) ((u8 *) entry + entry->offset);
 
@@ -1141,7 +1140,7 @@ u_int *GetPackFile(u_int *pack, int index, char **out_name, int *out_size) {
         }
     }
 
-    return 0;
+    return NULL;
 }
 
 int GetPackFileExt(u_int *pack, char *extension, u_int **files, int max_files, int *sizes, char **names) {
@@ -1165,7 +1164,7 @@ int GetPackFileExt(u_int *pack, char *extension, u_int **files, int max_files, i
 
         ext_start = name;
 
-        while ((ch = *ext_start) != 0) {
+        while ((ch = *ext_start) != '\0') {
             if (ch == '.') {
                 ext_start++;
                 break;
@@ -1206,7 +1205,7 @@ int GetPackFileNum(u_int *pack) {
     index = 0;
 
     for (;;) {
-        if (GetPackFile(pack, index, &name, &size) == 0) {
+        if (GetPackFile(pack, index, &name, &size) == NULL) {
             break;
         }
 
@@ -1233,7 +1232,7 @@ void DivPathName(char *path, char *out_dir, char *out_name) {
     }
 
     if (last == 0) {
-        *out = 0;
+        *out = '\0';
         strcpy(out_name, path);
         return;
     }
@@ -1244,7 +1243,7 @@ void DivPathName(char *path, char *out_dir, char *out_name) {
         *out++ = *in++;
     }
 
-    *out = 0;
+    *out = '\0';
     strcpy(out_name, path + (last + 1));
 }
 
@@ -1253,9 +1252,9 @@ void DivPathNameExt(char *path, char *out_dir, char *out_name, char *out_ext) {
     s8    c;
     char *cursor = out_name;
 
-    while ((c = *cursor) != 0) {
+    while ((c = *cursor) != '\0') {
         if (c == '.') {
-            *cursor = 0;
+            *cursor = '\0';
             cursor++;
             break;
         }

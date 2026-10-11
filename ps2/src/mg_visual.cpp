@@ -470,7 +470,7 @@ FACES_ID *mgCVisualMDT::CreateFace(FACES_ID *faces, mgCMemory *memory, mgCMemory
 
     GetTextureManager();
     face = (mgCFace *) memory->Alloc(3);
-    face->vertex_num = faces->face_num;
+    face->vertex_num = faces->vertex_num;
     face->type = faces->type;
     face->index_stride = 3;
 

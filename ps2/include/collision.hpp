@@ -2,8 +2,9 @@
 
 #include "common.h"
 
-#include <cstring>
 #include <libvu0.h>
+
+#include <cstring>
 
 #include "mg_dataset.hpp"
 #include "mg_drawenv.hpp"
@@ -34,6 +35,31 @@ enum ColFrameFlag {
 
 /**
  *
+ * Kinds of area that a map collision triangle marks, as CCPoly::area_kind holds them.
+ *
+ */
+enum CCPolyAreaKind {
+    COL_AREA_NONE = 0,          /**< Ordinary ground. */
+    COL_AREA_WATER = 1,         /**< Water surface that characters splash in. */
+    COL_AREA_FLAT = 5,          /**< Flat floor on which events place objects. */
+    COL_AREA_FISHING_WATER = 7, /**< Water surface that characters splash in and that a fishing line passes through. */
+    COL_AREA_HEALING = 8,       /**< Healing spot that restores the player's characters except the ridepod. */
+    COL_AREA_EDIT_WALK = 9,     /**< Ground from which edit mode lets the player walk out. */
+    COL_AREA_NO_PLACE = 11,     /**< Surface that stops the search for a flat floor below it. */
+};
+
+/**
+ *
+ * Parts of CCPoly::parts_no for a polygon taken from a placed Georama part.
+ *
+ */
+enum CCPolyPartsNo {
+    CCPOLY_PARTS_EDIT = 0x1000,     /**< The polygon belongs to a placed Georama part. */
+    CCPOLY_PARTS_SLOT_MASK = 0xFFF, /**< Placed-part slot of such a polygon. */
+};
+
+/**
+ *
  * Stores a collision triangle, its plane normal, and the surface
  * attributes it was given by its material.
  *
@@ -43,9 +69,9 @@ struct CCPoly {
     sceVu0FVECTOR normal;      /**< Normal of the triangle's plane. */
     short         ground_kind; /**< What the surface is made of. */
     short         foot_sound;  /**< Sound the character's feet play on it. */
-    short         area_kind;   /**< Kind of area the surface marks. */
+    short         area_kind;   /**< Kind of area the surface marks, a CCPolyAreaKind on map collision. */
     short         ignore_mask; /**< Collision query modes that pass through the surface. */
-    u_short       parts_no;    /**< Index of the map part the triangle was gathered from. */
+    u_short       parts_no;    /**< Index of the map part the triangle was gathered from. @see CCPolyPartsNo */
     short         attr;        /**< Surface attribute returned by ground collision queries. */
     float         attr_value;  /**< Value associated with the surface attribute. */
 };
@@ -171,7 +197,7 @@ public:
      */
     CCollisionMDT() {
         CCollision::Initialize();
-        poly = 0;
+        poly = NULL;
         poly_count = 0;
     }
 

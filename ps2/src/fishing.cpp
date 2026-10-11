@@ -1737,8 +1737,8 @@ int sgLoopFishing(SubGameInfo *info) {
             break;
     }
 
-    oldPadRx = pad->Analog(5);
-    oldPadRy = pad->Analog(4);
+    oldPadRx = pad->Analog(PAD_ANALOG_LEFT_X_2);
+    oldPadRy = pad->Analog(PAD_ANALOG_LEFT_Y_2);
 
     if (NextCharaMode >= 0) {
         CharaMode = NextCharaMode;
@@ -2133,8 +2133,8 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
             }
 
             camera_angle = camera->GetAngle();
-            stick_y = pad->Analog(5);
-            stick_x = pad->Analog(4);
+            stick_y = pad->Analog(PAD_ANALOG_LEFT_X_2);
+            stick_x = pad->Analog(PAD_ANALOG_LEFT_Y_2);
             move_x = stick_y * cosf(camera_angle) + stick_x * sinf(camera_angle);
             move_z = -stick_y * sinf(camera_angle) + stick_x * cosf(camera_angle);
             move_x *= 3.5f;
@@ -2216,7 +2216,7 @@ static void CharaControl(CScene *scene, CPadControl *pad) {
                     } fields;
                 } event_data;
 
-                if (scene->GetMapEvent(event_pos, 0, &event_data.data) != 0) {
+                if (scene->GetMapEvent(event_pos, MAP_EVENT_CHECK_TOUCH, &event_data.data) != 0) {
                     scene->RunEvent(event_data.fields.event_no, &event_data.data);
                     ExitFishing(scene);
                 }
@@ -2352,7 +2352,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
     }
 
     camera->Rotate(turn);
-    CastDist -= 5.0f * pad->Analog(4);
+    CastDist -= 5.0f * pad->Analog(PAD_ANALOG_LEFT_Y_2);
     max_dist = 240.0f * (0.5f * (1.0f + (float) RodData.status[0] / 100.0f));
     max_dist += 160.0f;
 
@@ -2418,7 +2418,7 @@ void SelectCastingPoint(CScene *scene, CPadControl *pad) {
 
     CastPoint.v[1] = cast_dir[1];
     CastPointCur.v[1] = cast_dir[1];
-    lean = 0.05f * -pad->Analog(5);
+    lean = 0.05f * -pad->Analog(PAD_ANALOG_LEFT_X_2);
     lean_abs = lean < 0.0f ? -lean : lean;
 
     if (!(lean_abs <= 0.01f)) {
@@ -2791,7 +2791,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
         switch (UkiMode) {
             case kUkiStart:
-                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 UkiModeCnt = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 boze_cnt = 0;
                 UkiMode = kUkiWaitBite;
@@ -2846,7 +2846,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                 if (FishData.fish_no <= 0) {
                     UkiMode = kUkiStart;
                 } else {
-                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                    scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
 
                     if (pushed != 0) {
                         caught = 1;
@@ -2868,7 +2868,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
         switch (UkiMode) {
             case kUkiStart:
-                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 RodActionPoint = GetUkiWaitTime(&FishData, scene, hari_now, RodNo, LocalEsaNo);
                 act_count = 0;
                 UkiMode = kUkiCharge;
@@ -2912,7 +2912,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
                     caught = 1;
                 }
 
-                scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+                scene->SetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
                 GamePad__2.SetVibration(1, 0x96, 4);
 
                 if (UkiModeCnt <= 0) {
@@ -2974,7 +2974,7 @@ void UkiWaitLoop(CScene *scene, CPadControl *pad) {
 
     if (caught != 0) {
         ResetUkiCamera(camera);
-        scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, 0x20);
+        scene->ResetStatus(SCENE_DATA_CHARA, scene->player_chara, SCENE_DATA_CHARA_FISHING);
 
         if (InitBattle(scene) != 0) {
             GamePad__2.SetVibration(0, 1, 5);
@@ -3589,7 +3589,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
             }
 
             message->abs_win.height = -1;
-            sndSePlay(GetSystemSndID(), 0x19, 0);
+            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
             FalseStep = 3;
 
             if (GetSaveData()->GetBitFlag(0x3C) == 0) {
@@ -3628,7 +3628,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
                     case 5:
                         if (confirm != 0) {
                             result_message->GoNextPage();
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
 
                             if (FishMesNo == 0x7D2) {
                                 sndSePlay(GetSystemSndID(), 0x12, 0);
@@ -3639,7 +3639,7 @@ void SuccessLoop(CScene *scene, CPadControl *pad) {
                     case 3:
                         if (confirm != 0) {
                             FalseStep2 += 1;
-                            sndSePlay(GetSystemSndID(), 0x19, 0);
+                            sndSePlay(GetSystemSndID(), SYSTEM_SE_MESSAGE, 0);
                         }
 
                         break;
@@ -3710,7 +3710,7 @@ int CheckFishing(float *pos, CCPoly *polys, int count) {
         float height = hit_point[i][1];
         pos[1] = height;
 
-        if (polys[index].area_kind == 7) {
+        if (polys[index].area_kind == COL_AREA_FISHING_WATER) {
             return 1;
         }
     }

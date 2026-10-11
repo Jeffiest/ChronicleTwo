@@ -61,11 +61,11 @@ enum MENU_ITEM_NEED {
     MENU_ITEM_NEED_REFUEL_RIDEPOD     = 0x80,    /**< The ridepod's fuel is low. */
     MENU_ITEM_NEED_CURE_POISON        = 0x100,   /**< The character is poisoned. */
     MENU_ITEM_NEED_CURE_SLOW          = 0x200,   /**< The character has CHARA_STATUS_SLOW. */
-    MENU_ITEM_NEED_CURE_STATUS_UNK_4  = 0x400,   /**< The character has CHARA_STATUS_UNK_4. */
-    MENU_ITEM_NEED_CURE_STATUS_UNK_8  = 0x800,   /**< The character has CHARA_STATUS_UNK_8. */
+    MENU_ITEM_NEED_CURE_CURSE         = 0x400,   /**< The character is cursed. */
+    MENU_ITEM_NEED_CURE_STOP          = 0x800,   /**< The character is stopped. */
     MENU_ITEM_NEED_POWER              = 0x1000,  /**< The character has CHARA_STATUS_POWER; never tested. */
-    MENU_ITEM_NEED_CURE_STATUS_UNK_20 = 0x2000,  /**< The character has CHARA_STATUS_UNK_20. */
-    MENU_ITEM_NEED_CURE_STATUS_UNK_40 = 0x4000,  /**< The character has CHARA_STATUS_UNK_40. */
+    MENU_ITEM_NEED_CURE_STONE         = 0x2000,  /**< The character is petrified. */
+    MENU_ITEM_NEED_CURE_DRY           = 0x4000,  /**< The character is thirsty. */
     MENU_ITEM_NEED_REPAIR_RIDEPOD     = 0x8000,  /**< The ridepod's arm is worn. */
     MENU_ITEM_NEED_RIDEPOD_SHIELD_KIT = 0x10000, /**< The ridepod holds fewer shield kits than it can. */
     MENU_ITEM_NEED_RECOVERY           = 0x6F01,  /**< Every health and status need, cleared where items cannot be used. */

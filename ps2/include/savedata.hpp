@@ -108,14 +108,54 @@
  *
  */
 enum SAVE_BIT_FLAG {
+    SAVE_FLAG_MENU_TIME_EVENING = 4,      /**< The top menu is shown at 18:15, or later per short flag 5. */
+    SAVE_FLAG_LURE_ROD = 0x30,            /**< The lure rod has been obtained. */
+    SAVE_FLAG_GUIDE_RANDOM_STONE = 0x32,  /**< The random-stone explanation has been shown. */
+    SAVE_FLAG_GUIDE_LEVEL_UP = 0x34,      /**< The level-up guide has been shown. */
     SAVE_FLAG_ROBO_BIKE_EVENT_SEEN = 0x35,
+    SAVE_FLAG_EARLY_GAME_DONE = 0x36,     /**< The top menu has passed the early game; the time board and the world and floor maps are enabled. */
+    SAVE_FLAG_GUIDE_MAGIC_SWORD = 0x3B,   /**< The magic-sword guide has been shown. */
+    SAVE_FLAG_FISH_TOUR_CYCLED = 0x3F,    /**< The fishing-tournament count has wrapped once; it then wraps at 8 instead of 9. */
+    SAVE_FLAG_MENU_TIME_MIDNIGHT = 0x66,  /**< The top menu is shown at midnight. */
+    SAVE_FLAG_MENU_TIME_1AM = 0x67,       /**< The top menu is shown at 01:00 instead of midnight. */
+    SAVE_FLAG_MENU_TIME_FORCED_OFF = 0x68, /**< While set, the top menu keeps the scene time instead of the forced times. */
     SAVE_FLAG_FISHING_OPEN = 0xDC, /**< Enables the fishing row of the tree map's floor information. */
     SAVE_FLAG_ITEM_BOARD_EXPANDED = 254,
     SAVE_FLAG_SPHEDA_UNLOCKED = 0x13D,          /**< Enables floor spheda challenges and unrestricted club commands. */
     SAVE_FLAG_FISHING_CONTEST_UNLOCKED = 0x158, /**< Enables Fishing Contest tournaments. */
     SAVE_FLAG_FINNY_FRENZY_UNLOCKED = 0x1A8,    /**< Enables Finny Frenzy tournaments and the fish-race bonus. */
     SAVE_FLAG_EDIT_BLOCKED = 0x208,
+    SAVE_FLAG_WORLD_MAP_2 = 0x258,        /**< The world map uses its second layout (wmap2). */
+    SAVE_FLAG_WORLD_MAP_4 = 0x268,        /**< The world map uses its fourth layout (wmap4) and area 8 is closed. */
+    SAVE_FLAG_WORLD_MAP_3 = 0x280,        /**< The world map uses its third layout (wmap3). */
+    SAVE_FLAG_WORLD_MAP_S12_REDIRECT = 0x2BC, /**< The world map sends area s12 to s34. */
+    SAVE_FLAG_CHAPTER_8 = 0x2E0,          /**< Chapter 8 has been reached. */
     SAVE_FLAG_COSTUME_UNLOCK = 0x31F,
+    SAVE_FLAG_CHAPTER_8_STARTED = 0x320,  /**< The start of chapter 8 has been handled; world-map areas 6 and 7 are closed. */
+};
+
+/**
+ *
+ * Persistent sixteen-bit save counters for specific story and sub-game events.
+ *
+ */
+enum SAVE_SHORT_FLAG {
+    SAVE_SHORT_FLAG_FISH_TOUR_COUNT = 0x15,  /**< Fishing tournaments held, which picks the prize group of the next. */
+    SAVE_SHORT_FLAG_FISH_WINS_CLASS0 = 0x16, /**< Wins, up to two, in the first race class, which pick its prize group. */
+    SAVE_SHORT_FLAG_FISH_WINS_CLASS1 = 0x17, /**< Wins, up to two, in the second race class. */
+    SAVE_SHORT_FLAG_FISH_WINS_CLASS2 = 0x18, /**< Wins, up to two, in the third race class. */
+    SAVE_SHORT_FLAG_FISH_WINS_CLASS3 = 0x19, /**< Wins, up to two, in the fourth race class. */
+};
+
+/**
+ *
+ * Mini-map sizes, as SV_CONFIG_OPTION::map holds them.
+ *
+ */
+enum SV_CONFIG_MAP {
+    SV_CONFIG_MAP_OFF = 0,   /**< No mini-map. */
+    SV_CONFIG_MAP_SMALL = 1, /**< A small mini-map in the corner. */
+    SV_CONFIG_MAP_LARGE = 2, /**< A large mini-map over the screen. */
 };
 
 /**
@@ -129,11 +169,11 @@ struct SV_CONFIG_OPTION {
     s32 message_speed; /**< One to show messages at once instead of letter by letter. */
     s32 sound_mode;    /**< Zero for stereo sound, otherwise mono. */
     s32 fast_time;     /**< Non-zero to make the time of day pass one and a half times as fast. */
-    s32 map;           /**< Size of the dungeon mini-map: zero hides it, one is small, two is large. */
+    s32 map;           /**< Size of the dungeon mini-map: zero hides it, one is small, two is large. @see SV_CONFIG_MAP */
     u8  unk_18[4];
     s32 enemy_hp;   /**< How the dungeon shows the enemies' life gauges. */
     s32 damage_off; /**< Non-zero to hide the damage numbers in battle. */
-    s32 unk_24;
+    s32 unk_24; /**< Option-menu line 9, a two-choice setting shown between the anger counter and the monster name; its purpose is unknown. */
     s32 monster_name;  /**< How the dungeon shows the enemies' names. */
     s32 anger_counter; /**< How the dungeon shows the enemies' anger counters. */
     s32 dof_off;       /**< Non-zero to turn off the depth of field blur. */

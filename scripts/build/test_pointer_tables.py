@@ -36,9 +36,9 @@ class PointerTableTests(unittest.TestCase):
                       rows=[(0x4000, 'geo_table_12', 8, False)])
         return elf, kwargs
 
-    def apply(self, fixture, placeholders=()):
+    def apply(self, fixture):
         elf, kwargs = fixture
-        p.name_literal_data(elf, 'unit', set(placeholders), **kwargs)
+        p.name_literal_data(elf, 'unit', **kwargs)
         return elf.symtab.symbols[0].name
 
     def test_table_then_empty_literal_use_verified_native_identity(self):
@@ -72,7 +72,7 @@ class PointerTableTests(unittest.TestCase):
     def test_anonymous_templates_keep_the_existing_literal_matcher(self):
         fixture = self.fixture()
         fixture[0].symtab.symbols[0].name = 'at_9999'
-        selected = p.pointer_table_names(fixture[0], 'unit', set(), **fixture[1])
+        selected = p.pointer_table_names(fixture[0], 'unit', **fixture[1])
         self.assertEqual(selected, {})
 
     def test_unknown_consumer_and_opcode_change_reject_table(self):
@@ -125,14 +125,12 @@ class PointerTableTests(unittest.TestCase):
                 elf.relocations[0].relocations.append(relocation(4, p.R_MIPS_32, 1))
             self.assertEqual(self.apply(fixture), 'geo_table_9999')
 
-    def test_retained_placeholders_and_live_names_prevent_naming(self):
-        for placeholder in (True, False):
-            fixture = self.fixture()
-            if not placeholder:
-                fixture[0].sections.append(NS(name='.data', sh_type=p.SHT_PROGBITS,
-                                              sh_flags=p.SHF_ALLOC, data=bytes(8)))
-                fixture[0].symtab.symbols.append(symbol('geo_table_12', 4, 8))
-            self.assertEqual(self.apply(fixture, [1] if placeholder else []), 'geo_table_9999')
+    def test_live_names_prevent_naming(self):
+        fixture = self.fixture()
+        fixture[0].sections.append(NS(name='.data', sh_type=p.SHT_PROGBITS,
+                                      sh_flags=p.SHF_ALLOC, data=bytes(8)))
+        fixture[0].symtab.symbols.append(symbol('geo_table_12', 4, 8))
+        self.assertEqual(self.apply(fixture), 'geo_table_9999')
 
     def test_executable_data_cannot_supply_a_verified_table_anchor(self):
         fixture = self.fixture()

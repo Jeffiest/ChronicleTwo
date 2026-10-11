@@ -80,6 +80,22 @@ enum SCENE_DATA_STATUS {
     SCENE_DATA_LOADED = 1 << 0,   /**< The slot's data has finished loading into its memory stack. */
     SCENE_DATA_ACTIVE = 1 << 1,   /**< The slot takes part in stepping and drawing. */
     SCENE_DATA_ASSIGNED = 1 << 2, /**< Data has been given to the slot. */
+
+    /* A character slot gives the bits above the shared ones these meanings. */
+    SCENE_DATA_CHARA_SHADOW_HIDDEN = 1 << 3, /**< The character's shadow is not drawn; CEohMother::SetShadow sets and clears it. */
+    SCENE_DATA_CHARA_FISHING = 1 << 5,       /**< An exclamation mark is drawn above the character; fishing sets it while a fish is on the line. */
+};
+
+/**
+ *
+ * Roles of a character slot, as CScene::SetType and CScene::GetType give them for SCENE_DATA_CHARA.
+ *
+ */
+enum SCENE_CHARA_TYPE {
+    SCENE_CHARA_TYPE_PLAYER = 1,  /**< A party character the player controls. */
+    SCENE_CHARA_TYPE_EVENT = 2,   /**< An event character. */
+    SCENE_CHARA_TYPE_MONSTER = 3, /**< A monster. */
+    SCENE_CHARA_TYPE_EFFECT = 4,  /**< An effect character, drawn after the water and effects. */
 };
 
 /**

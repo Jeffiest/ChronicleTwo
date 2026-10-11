@@ -144,8 +144,11 @@ enum MenuEndCode {
     MENU_END_CHARA_CHANGE      = 1,  /**< The active character changed to result[0]. */
     MENU_END_DNG_MOVE          = 5,  /**< The player chose to leave the dungeon floor; result says where to go. */
     MENU_END_WORLD_MOVE        = 6,  /**< The player chose a place on the world map; result holds its game loop, map and floor. */
+    MENU_END_ENTER_HOUSE       = 9,  /**< The player entered a house from the removal menu. */
     MENU_END_LOAD              = 10, /**< A saved game or its fish data was loaded. */
     MENU_END_FISHING           = 11, /**< A fishing rod is equipped; result holds the rod and bait to fish with. */
+    MENU_END_COSTUME           = 12, /**< The costume screen changed costumes; result[0..2] hold them. */
+    MENU_END_RESIDENT_CHANGE   = 13, /**< The removal menu changed a house's resident. */
     MENU_END_SPHIDA_START      = 18, /**< A new game of Spheda was started under the name entered. */
     MENU_END_SUBGAME_LOAD      = 19, /**< Mini-game data was loaded. */
     MENU_END_CHARA_CHANGE_FADE = 21, /**< The active character changed to result[0] from the main character display, with a cross-fade. */

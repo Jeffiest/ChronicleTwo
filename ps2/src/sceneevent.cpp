@@ -154,7 +154,7 @@ void CScene::RunEvent(int requested_event_no, CSceneEventData *data) {
     }
 }
 
-int CScene::GetMapEvent(float *position, int map_no, CSceneEventData *event) {
+int CScene::GetMapEvent(float *position, int check_type, CSceneEventData *event) {
     CMap        *maps[4];
     MapEventInfo result;
     int          flag_no;
@@ -163,7 +163,7 @@ int CScene::GetMapEvent(float *position, int map_no, CSceneEventData *event) {
     flag_no = 0;
 
     for (i = 0; i < count; i++) {
-        CFuncPoint *point = maps[i]->GetEvent(position, map_no, &result);
+        CFuncPoint *point = maps[i]->GetEvent(position, check_type, &result);
 
         if (result.event_no != 0) {
             flag_no = result.event_no;
@@ -201,7 +201,7 @@ int CScene::GetMapEvent(float *position, int map_no, CSceneEventData *event) {
 
     map_event_no = 1;
 
-    if (map_no != 1) {
+    if (check_type != MAP_EVENT_CHECK_ACTION) {
         return 0;
     }
 

@@ -11,12 +11,6 @@
 
 /**
  *
- * Parameters that the main loop hands to a mode when it enters it.
- *
- */
-
-/**
- *
  * Entry hook for the debug map viewer.
  *
  *

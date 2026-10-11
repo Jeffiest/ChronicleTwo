@@ -256,12 +256,12 @@ void CSWordAfterEffect::SetTexture(int u, int v, int w, int h) {
     tex_h = h;
 }
 
-void CSWordAfterEffect::StartEffect(mgCFrame *start, mgCFrame *end, int value8_c, int frames,
-                                    int hold) {
+void CSWordAfterEffect::StartEffect(mgCFrame *start, mgCFrame *end, int length, int frames,
+                                    int hold_time) {
     frame0 = start;
     frame1 = end;
-    length = value8_c;
-    hold_time = hold;
+    this->length = length;
+    this->hold_time = hold_time;
     active = 1;
     alpha = 1.0f;
     fade_speed = 1.0f / (float) frames;
