@@ -115,14 +115,13 @@ Same class names (`CScriptInterpreter : input_str`) but a different design: firs
 routine}, a tag-name hash, and binary ("BIN") scripts. Nothing in the layout was carried over.
 
 ## Drafting (job scriptinterpreter.1)
-- Promoted (match): `spiGetStackInt`, `spiGetStackFloat`, `Run`, `hash`, `SetScript`. `SetScript`
-  calls the INCLUDE_ASM'd static `PreProcess`; its `static` prototype sits outside `UNMATCHING`
-  at the top of the .cpp and promotion links fine.
+- Matching: `spiGetStackInt`, `spiGetStackFloat`, `Run`, `hash`, `SetScript`. `SetScript`
+  calls the static `PreProcess`, declared at the top of the .cpp.
 - `hash`: `u8 h; h = ((h << 8) + *name++) % 101` matches (signed char added).
 - Inline members (`get`, `back`, `input_str()`, `SPI_STACK::operator=`, `SetStack`,
-  `SetStringBuff`) report NO DRAFT: our callers inline them, whereas retail calls the weak copies
-  with `jal`. The header bodies remain unverified; retail's out-of-line copies suggest the callers
-  were compiled with inlining off for them, or that they are defined differently.
+  `SetStringBuff`) are not inlined in this unit, which is compiled with `-inline off`
+  (`UNIT_CC_FLAGS_scriptinterpreter` in `ps2/cmake/Toolchain.cmake`); retail calls their weak
+  copies with `jal`. The header bodies remain unverified.
 - Constants added to the header: `SPI_LIMIT` enum (`SPI_HASH_BUCKET_COUNT` 101,
   `SPI_HASH_TAG_MAX` 128, `SPI_STACK_SIZE` 64, `SPI_STRING_BUFF_SIZE` 0x2800, `SPI_TOKEN_SIZE`
   0x100). `SPI_TOKEN_SIZE` is a guess for the local buffers: GetArg's word buffer spans sp+0xA0..

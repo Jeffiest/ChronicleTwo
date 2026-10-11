@@ -5,8 +5,8 @@
     symbols.py --check    fail if the checked-in list is out of date
 
 Retail names are kept, respelled only where they could not be written as a C
-identifier, which is what tools/mwccgap needs of anything a source file
-names: `,`, `<`, `>`, `.` and `$` become `_`, and MWCC's `@<n>` constants
+identifier, which is what a source file needs of any name it uses:
+`,`, `<`, `>`, `.` and `$` become `_`, and MWCC's `@<n>` constants
 become `at_<n>`. A name the table holds more than once (those constants,
 file-local statics) takes a `__<n>` suffix from its second appearance on, in
 symbol-table order. Where several symbols share an address only one is
