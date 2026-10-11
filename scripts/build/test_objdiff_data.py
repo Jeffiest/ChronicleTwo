@@ -1,4 +1,4 @@
-"""Data comparison must honor retail relocations and exclude fallback storage."""
+"""Data comparison must honor retail relocations."""
 
 import struct
 from pathlib import Path
@@ -263,57 +263,6 @@ class NativeStorageTests(unittest.TestCase):
                 d.prepare_native_data(elf, 'unit', ctx)
         self.assertEqual(syms[0].name, 'D_00003000')
         self.assertEqual(sections[1].name, '.ctor')
-
-    def test_data_markers_exclude_retained_payloads_only(self):
-        source = '''
-INCLUDE_BSS(buffer, 0x20);
-INCLUDE_RODATA("dir", at_17__2__DATA);
-INCLUDE_ASM("dir", function);
-// INCLUDE_BSS(ignored, 4);
-/* INCLUDE_RODATA("dir", other__DATA); */
-'''
-        self.assertEqual(d.fallback_data_names(source), {'buffer', 'at_17__2'})
-
-    def test_literal_comment_delimiter_does_not_hide_real_markers(self):
-        self.assertEqual(d.fallback_data_names('print("//"); INCLUDE_BSS(buffer, 4);'), {'buffer'})
-
-    def test_marker_identifiers_inside_literals_are_ignored(self):
-        source = r'''print("INCLUDE_BSS(fake, 4);");
-print("escaped \" INCLUDE_BSS(escaped, 4); ");
-'INCLUDE_BSS(character, 4);';
-L"INCLUDE_BSS(wide, 4);";
-R"tag(INCLUDE_BSS(raw, 4); "quote")tag";
-INCLUDE_BSS(real, 4); INCLUDE_RODATA("dir", real_literal__DATA);
-'''
-        self.assertEqual(d.fallback_data_names(source), {'real', 'real_literal'})
-
-    def test_comments_and_filename_literals_preserve_real_marker_tokens(self):
-        source = r'''INCLUDE_BSS /* note */ (buffer, 4);
-INCLUDE_RODATA("dir/INCLUDE_BSS(fake, 4);", value__DATA);
-INCLUDE_RODATA /* note */ ("dir\"quoted", other__DATA);
-INCLUDE /* separated identifier */ _BSS(ignored, 4);
-// INCLUDE_BSS(comment, 4);
-/* INCLUDE_RODATA("dir", comment_literal__DATA); */
-'''
-        self.assertEqual(d.fallback_data_names(source), {'buffer', 'value', 'other'})
-
-    def test_reservation_section_is_removed_and_reference_stays_undefined(self):
-        data = NS(sh_flags=2, sh_link=0)
-        code = NS(sh_flags=6, sh_link=0, data=bytes(8))
-        section = NS(sh_flags=0, sh_link=0)
-        sym = symbol('reservation__DATA', 1, 8, info=0x11)
-        elf = NS(sections=[section, data, code, section, section],
-                 symtab=NS(symbols=[sym]), relocations=[], e_shstrndx=4, symtab_index=3)
-        d.drop_sections(elf, {1})
-        self.assertEqual(len(elf.sections), 4)
-        self.assertEqual((sym.st_shndx, sym.st_value, sym.st_size), (0, 0, 0))
-        self.assertIs(elf.sections[1], code)
-        self.assertEqual(code.data, bytes(8))
-
-    def test_code_cannot_be_removed_as_placeholder_data(self):
-        elf = NS(sections=[NS(sh_flags=6)])
-        with self.assertRaisesRegex(ValueError, 'executable'):
-            d.drop_sections(elf, {0})
 
     def test_bss_padding_is_visible_only_for_exact_declared_object(self):
         for declared, native, extent, expected in ((20, 20, 32, 32), (20, 19, 32, 19),

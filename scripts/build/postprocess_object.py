@@ -4,9 +4,9 @@
     postprocess_object.py OBJECT [--order-only]
 
 MWCC emits one section per function or datum. Retail addresses select each
-section's name, flags, alignment and order. Placeholder aliases identify the
-assembly-supplied pieces; binding a native copy to one preserves instruction
-fields and requires consistent references, equal declared object extents and
+section's name, flags, alignment and order. Binding a native copy to its
+retail piece preserves instruction fields and requires consistent references,
+equal declared object extents and
 resolved initialized bytes plus real relocation shapes, or NOBITS storage.
 
 Native identity passes use their required extent, section-kind, byte,
@@ -84,7 +84,6 @@ CODE = (".text", ".init")
 
 # Unresolved retail storage: exact placements only, never inferred alignments.
 # Values fix (kind, start, size, next name/start/size, measured next alignments).
-# None permits only a retained following marker, absent or placeholder-backed.
 # See BSS_RESERVATIONS.md for the measured classification and remaining gaps.
 BSS_RETAIL_RESERVATIONS = {
     ('convviewlp', 'ConvertResultDispTime'):
@@ -325,10 +324,6 @@ BSS_RETAIL_RESERVATIONS = {
         ('.sbss', 0x0037dd40, 0x1, 'init_4704', 0x0037dd44, 0x1, (1,)),
     ('menusys', 'checkmoveFlag_5411'):
         ('.sbss', 0x0037dd58, 0x1, 'init_5412', 0x0037dd5c, 0x1, (1,)),
-    ('menusys', 'MenuDebugCamera'):
-        ('.sbss', 0x0037dd88, 0x4, 'at_6133', 0x0037dd90, 0x8, (None,)),
-    ('menusys', 'init_6162'):
-        ('.sbss', 0x0037dd9c, 0x1, 'at_6176', 0x0037dda0, 0x8, (None,)),
     ('menusys', 'fusion_blinkcnt_7120'):
         ('.sbss', 0x0037ddd8, 0x1, 'init_7121', 0x0037dddc, 0x1, (1,)),
     ('menusys', 'init_7121'):
@@ -419,25 +414,6 @@ def address_of(name, addresses):
         if m:
             address = int(m.group(1), 16)
     return address
-
-
-def drop_placeholder_aliases(elf):
-    """Give every placeholder's symbol the name of the datum it stands for.
-
-    Returns the indices of the sections the placeholders occupy.
-    """
-    suffix = layout.PLACEHOLDER_SUFFIX
-    sections = set()
-    for symbol in elf.symtab.symbols:
-        if re.fullmatch(r'jtbl_[0-9A-Fa-f]{8}', symbol.name):
-            symbol.name = 'D_' + symbol.name[5:].upper()
-            symbol.st_name = elf.strtab.add_symbol(symbol.name)
-        if symbol.name.endswith(suffix):
-            symbol.name = symbol.name[:-len(suffix)]
-            symbol.st_name = elf.strtab.add_symbol(symbol.name)
-            if 0 < symbol.st_shndx < len(elf.sections):
-                sections.add(symbol.st_shndx)
-    return sections
 
 
 def project_name(name):
@@ -566,138 +542,11 @@ def rename_shared_names(elf, rows, address_of_section, retail, gp):
                 symbol.st_name = elf.strtab.add_symbol(symbol.name)
 
 
-def static_bss_pairs(source, native, held):
-    """Select unique source statics and explicit BSS markers with equal extents.
-
-    The inputs contain (symbol index, symbol name, size), not compiler objects.
-    Compiler-generated local-static suffixes identify no stable source property.
-    A repeated source name or object/marker base is deliberately left unbound.
-    """
-    source = re.sub(r'//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\])*"', '', source,
-                    flags=re.DOTALL)
-    declarations = Counter(re.findall(
-        r'\bstatic\s+(?:const\s+)?[A-Za-z_]\w*(?:\s+|\s*[*&]\s*)'
-        r'([A-Za-z_]\w*)\s*(?=[;=\[])', source))
-    markers = set(re.findall(r'\bINCLUDE_BSS\(\s*([A-Za-z_]\w*)\s*,', source))
-
-    def base(name):
-        # project_name converts MWCC's dollar separator to an underscore.
-        match = re.fullmatch(r'(.+?)[_$]\d+(?:__\d+)?', name)
-        return match.group(1) if match else None
-
-    natives = {}
-    placeholders = {}
-    for index, name, size in native:
-        key = base(name)
-        if key is not None:
-            natives.setdefault(key, []).append((index, size))
-    for index, name, size in held:
-        key = base(name)
-        if key is not None and name in markers:
-            placeholders.setdefault(key, []).append((index, size))
-    pairs = []
-    for key, options in natives.items():
-        targets = placeholders.get(key, [])
-        if declarations[key] != 1 or len(options) != 1 or len(targets) != 1:
-            continue
-        native_index, native_size = options[0]
-        held_index, held_size = targets[0]
-        if native_size and native_size == held_size:
-            pairs.append((native_index, held_index))
-    return pairs
-
-
-def bind_named_static_bss(elf, unit, placeholder_sections):
-    """Bind unambiguous native local BSS to its explicit retail storage.
-
-    This binding uses the unit, source declaration, base name and exact extent,
-    so instruction scheduling cannot move a reference onto the wrong datum.
-    It preserves all relocation addends and never binds initialized storage.
-    """
-    source_path = ROOT / 'ps2' / 'src' / (unit + '.cpp')
-    if not source_path.is_file():
-        return []
-    lay = layout.Layout(ROOT / layout.YAML)
-    ranges = [(lo, hi) for section, lo, hi in lay.sections(unit)
-              if section in ('.bss', '.sbss')]
-    rows = {name: (address, size) for address, name, size, function
-            in layout.read_symbols(ROOT / layout.SYMBOLS)
-            if not function and any(lo <= address < hi and address + size <= hi
-                                    for lo, hi in ranges)}
-    symbols = elf.symtab.symbols
-    sections = elf.sections
-    native, held = [], []
-    for index, symbol in enumerate(symbols):
-        section_index = symbol.st_shndx
-        if (symbol.type != STT_OBJECT or symbol.st_value != 0
-                or not 0 < section_index < len(sections)):
-            continue
-        section = sections[section_index]
-        if (section.name == DEAD or not section.sh_flags & SHF_ALLOC
-                or section.sh_flags & SHF_EXECINSTR):
-            continue
-        size = section_size(section)
-        # A section alias or interior symbol needs a different addend mapping.
-        if any(other.st_shndx == section_index and other.st_value != 0
-               for other in symbols):
-            continue
-        if (symbol.bind == STB_LOCAL and section.sh_type == SHT_NOBITS
-                and symbol.st_size == size
-                and sum(other.st_shndx == section_index and other.type == STT_OBJECT
-                        for other in symbols) == 1):
-            native.append((index, symbol.name, size))
-        expected = rows.get(symbol.name)
-        if (symbol.bind != STB_LOCAL and expected is not None
-                and expected[1] == symbol.st_size == size
-                and (section.sh_type == SHT_NOBITS or not any(section.data))
-                and not any(record.sh_info == section_index and record.relocations
-                            for record in elf.relocations)):
-            held.append((index, symbol.name, size))
-
-    pairs = static_bss_pairs(source_path.read_text(), native, held)
-    dropped = []
-    for native_index, held_index in pairs:
-        original, target = symbols[native_index], symbols[held_index]
-        section_index = original.st_shndx
-        if sections[section_index].name != layout.section_of(rows[target.name][0]):
-            continue
-        aliases = {index for index, symbol in enumerate(symbols)
-                   if symbol.st_shndx == section_index}
-        undefined = {index for index, symbol in enumerate(symbols)
-                     if symbol.st_shndx == 0 and symbol.name == original.name}
-        for record in elf.relocations:
-            for relocation in record.relocations:
-                if relocation.symbol_index in aliases or relocation.symbol_index in undefined:
-                    relocation.symbol_index = held_index
-        # Name the unresolved aliases too, so duplicate folding cannot send a
-        # later reference back to the dead native definition.
-        for index in undefined:
-            symbols[index].name = target.name
-            symbols[index].st_name = elf.strtab.add_symbol(target.name)
-            symbols[index].st_shndx = target.st_shndx
-            symbols[index].st_value = target.st_value
-        section = sections[section_index]
-        section.name = DEAD
-        section.sh_name = elf.add_sh_symbol(DEAD)
-        for record in elf.relocations:
-            if record.sh_info == section_index:
-                record.name = '.rel' + DEAD
-                record.sh_name = elf.add_sh_symbol(record.name)
-        placeholder_sections.add(target.st_shndx)
-        dropped.append(original.name)
-    return dropped
-
-
-def bind_local_data(elf, unit, placeholder_sections):
-    """Point compiled code at verified placeholders for the data it uses.
-
-    Every incoming reference must agree with any established native identity.
-    Both initialized and NOBITS copies need the complete declared object extent.
-    Returns the names of the compiler's copies that were dropped.
-    """
+def bind_local_data(elf, unit):
+    """Point compiled code at the retail addresses of its same-unit undefined symbols."""
     lay = layout.Layout(ROOT / layout.YAML)
     if lay.kinds.get(unit) != "cpp":
-        return []
+        return
     ranges = [(lo, hi) for _s, lo, hi in lay.sections(unit)]
 
     def in_unit(address):
@@ -716,15 +565,11 @@ def bind_local_data(elf, unit, placeholder_sections):
     sections = elf.sections
     symbols = elf.symtab.symbols
     address_of_section = {}
-    defining_symbol = {}
-    for index, symbol in enumerate(symbols):
+    for symbol in symbols:
         at = symbol.st_shndx
         if (not symbol.name or symbol.type == STT_SECTION or symbol.st_value != 0
                 or not 0 < at < len(sections) or not sections[at].sh_flags & SHF_ALLOC
-                or symbol.name.startswith(".")):
-            continue
-        code = bool(sections[at].sh_flags & SHF_EXECINSTR)
-        if not code and at not in placeholder_sections:
+                or not sections[at].sh_flags & SHF_EXECINSTR or symbol.name.startswith(".")):
             continue
         name = project_name(symbol.name)
         address = names.get(name)
@@ -734,18 +579,6 @@ def bind_local_data(elf, unit, placeholder_sections):
                 address = int(m.group(1), 16)
         if address is not None and at not in address_of_section:
             address_of_section[at] = address
-            defining_symbol[at] = index
-
-    held = sorted((address_of_section[i], i) for i in placeholder_sections
-                  if i in address_of_section)
-    held_starts = [a for a, _i in held]
-
-    def placeholder_at(address):
-        k = bisect.bisect_right(held_starts, address) - 1
-        if k < 0:
-            return None
-        start, index = held[k]
-        return (start, index) if address < start + max(section_size(sections[index]), 1) else None
 
     for symbol in symbols:
         if symbol.st_shndx != 0:
@@ -755,154 +588,19 @@ def bind_local_data(elf, unit, placeholder_sections):
         address = int(match.group(1), 16) if match else names.get(name)
         if address is None:
             continue
-        found = placeholder_at(address)
-        if found is None:
-            found = next(((start, index) for index, start in address_of_section.items()
-                          if sections[index].sh_flags & SHF_EXECINSTR
-                          and start <= address < start + section_size(sections[index])), None)
+        found = next(((start, index) for index, start in address_of_section.items()
+                      if sections[index].sh_flags & SHF_EXECINSTR
+                      and start <= address < start + section_size(sections[index])), None)
         if found is not None:
             start, index = found
             symbol.st_shndx = index
             symbol.st_value = address - start
 
     retail = layout.Retail(ROOT / layout.ELF_PATH)
-    addresses = {name: address for address, name, _size, _function in rows}
-    code_starts = {index: start for index, start in address_of_section.items()
-                   if sections[index].sh_flags & SHF_EXECINSTR}
-    data_starts = {index: start for index, start in address_of_section.items()
-                   if not sections[index].sh_flags & SHF_EXECINSTR}
-    native = {index for index, section in enumerate(sections)
-              if index and index not in placeholder_sections and section.name != DEAD
-              and section.sh_flags & SHF_ALLOC and not section.sh_flags & SHF_EXECINSTR}
-    # Infer complete section identities before mutating any reference. A data
-    # consumer becomes an anchor only after its own incoming evidence agrees.
-    inferred = {}
-    while True:
-        additions = {}
-        for index in native - inferred.keys():
-            targets = referenced_data_starts(elf, index, retail, addresses, code_starts,
-                                             data_starts={**data_starts, **inferred})
-            if targets is not None and len(targets) == 1:
-                start = next(iter(targets))
-                if in_unit(start):
-                    additions[index] = start
-        if not additions:
-            break
-        inferred.update(additions)
-
-    declared = {start: size for start, _name, size, function in rows if not function and size}
-    checked = {}
-
-    def verified_copy(index, active=frozenset()):
-        if index in checked:
-            return checked[index]
-        if index in active or index not in inferred:
-            return False
-        section = sections[index]
-        start = inferred[index]
-        size = section_size(section)
-        owners = [symbol for symbol in symbols if symbol.st_shndx == index
-                  and symbol.type != STT_SECTION]
-        if (not size or len(owners) != 1 or owners[0].type != STT_OBJECT
-                or owners[0].st_value or owners[0].st_size != size):
-            checked[index] = False
-            return False
-        identity = address_of(project_name(owners[0].name), names)
-        if identity is not None and identity != start:
-            checked[index] = False
-            return False
-        entries = [entry for record in elf.relocations if record.sh_info == index
-                   for entry in record.relocations]
-        expected = {address - start: kind for address, kind in retail.relocations.items()
-                    if start <= address < start + size}
-        if section.sh_type == SHT_NOBITS:
-            valid = (declared.get(start) == size and not entries and not expected
-                     and any(kind in layout.NOBITS and lo <= start < start + size <= hi
-                             for kind, lo, hi in lay.sections(unit)))
-        elif section.sh_type == SHT_PROGBITS:
-            actual = {entry.r_offset: entry.reloc_type for entry in entries}
-            valid = (declared.get(start) == size
-                     and len(actual) == len(entries) and actual == expected)
-            data = bytearray(section.data)
-            for entry in entries:
-                if (not valid or entry.reloc_type != R_MIPS_32 or entry.r_offset % 4
-                        or not 0 <= entry.r_offset <= size - 4):
-                    valid = False
-                    break
-                target = symbols[entry.symbol_index]
-                if target.st_shndx in inferred:
-                    if not verified_copy(target.st_shndx, active | {index}):
-                        valid = False
-                        break
-                    destination = inferred[target.st_shndx] + target.st_value
-                elif target.st_shndx in address_of_section:
-                    destination = address_of_section[target.st_shndx] + target.st_value
-                else:
-                    destination = address_of(project_name(target.name), addresses)
-                if destination is None:
-                    valid = False
-                    break
-                addend = struct.unpack_from('<I', data, entry.r_offset)[0]
-                struct.pack_into('<I', data, entry.r_offset, (destination + addend) & 0xFFFFFFFF)
-            valid = valid and bytes(data) == retail.bytes(start, start + size)
-        else:
-            valid = False
-        checked[index] = valid
-        return valid
-
-    bound = {}
-    for index, start in inferred.items():
-        found = placeholder_at(start)
-        if (found is None or found[0] != start
-                or section_size(sections[index]) > section_size(sections[found[1]])
-                or not verified_copy(index)):
-            continue
-        # Repointing to the base symbol preserves only zero-offset aliases.
-        # Interior aliases stay live until an explicit equal-offset identity
-        # exists; their offset must never be folded into an instruction field.
-        incoming = [entry for record in elf.relocations if sections[record.sh_info].name != DEAD
-                    for entry in record.relocations if symbols[entry.symbol_index].st_shndx == index]
-        if any(symbols[entry.symbol_index].st_value for entry in incoming):
-            continue
-        bound[index] = defining_symbol[found[1]]
-
-    # A rejected parent remains a live consumer. Do not discard its children
-    # merely because a separate, valid reference established their addresses.
-    while True:
-        rejected = {index for index in bound
-                    if any(record.sh_info not in code_starts
-                           and record.sh_info not in placeholder_sections
-                           and record.sh_info not in bound
-                           and sections[record.sh_info].name != DEAD
-                           and any(symbols[entry.symbol_index].st_shndx == index
-                                   for entry in record.relocations)
-                           for record in elf.relocations)}
-        if not rejected:
-            break
-        for index in rejected:
-            bound.pop(index)
-
-    dropped = []
-    for record in elf.relocations:
-        for entry in record.relocations:
-            replacement = bound.get(symbols[entry.symbol_index].st_shndx)
-            if replacement is not None:
-                entry.symbol_index = replacement
-    for index in bound:
-        label = next((symbol.name for symbol in symbols if symbol.st_shndx == index
-                      and symbol.name and symbol.type != STT_SECTION), f'section {index}')
-        sections[index].sh_name = elf.add_sh_symbol(DEAD)
-        sections[index].name = DEAD
-        for record in elf.relocations:
-            if record.sh_info == index:
-                record.sh_name = elf.add_sh_symbol('.rel' + DEAD)
-                record.name = '.rel' + DEAD
-        dropped.append(label)
     rename_shared_names(elf, rows, address_of_section, retail, gp)
-    return dropped
 
 
-def discard_external_vtables(elf, unit, placeholder_sections):
+def discard_external_vtables(elf, unit):
     lay = layout.Layout(ROOT / layout.YAML)
     ranges = [(lo, hi) for section, lo, hi in lay.sections(unit)]
     addresses = retail_addresses()
@@ -913,8 +611,6 @@ def discard_external_vtables(elf, unit, placeholder_sections):
     for symbol in symbols:
         index = symbol.st_shndx
         if not symbol.name.startswith('__vt__') or not 0 < index < len(elf.sections):
-            continue
-        if index in placeholder_sections:
             continue
         start = address_of(project_name(symbol.name), addresses)
         if start is None or any(lo <= start < hi for lo, hi in ranges):
@@ -1056,7 +752,7 @@ def referenced_data_starts(elf, index, retail, addresses, code_starts, data_star
     return destinations
 
 
-def bss_data_names(elf, unit, placeholders, *, retail, pieces, addresses, rows):
+def bss_data_names(elf, unit, *, retail, pieces, addresses, rows):
     """Select isolated native BSS identities by exact extent and all code consumers."""
     runs = pieces.unit(unit)
     declared = {name: size for _start, name, size, function in rows if not function and size}
@@ -1090,7 +786,7 @@ def bss_data_names(elf, unit, placeholders, *, retail, pieces, addresses, rows):
     assignments = []
     for symbol in symbols:
         index = symbol.st_shndx
-        if (index in placeholders or symbol.bind != STB_LOCAL or symbol.type != STT_OBJECT
+        if (symbol.bind != STB_LOCAL or symbol.type != STT_OBJECT
                 or symbol.st_value or not 0 < index < len(elf.sections)):
             continue
         section = elf.sections[index]
@@ -1136,7 +832,7 @@ def bss_data_names(elf, unit, placeholders, *, retail, pieces, addresses, rows):
             if counts[name] == 1 and symbol.name != name}
 
 
-def pointer_table_names(elf, unit, placeholders, *, retail, pieces, addresses, rows):
+def pointer_table_names(elf, unit, *, retail, pieces, addresses, rows):
     """Select named local pointer tables before their compiler-owned literals.
 
     All code consumers establish the table address. Its nonpointer bytes,
@@ -1152,7 +848,7 @@ def pointer_table_names(elf, unit, placeholders, *, retail, pieces, addresses, r
     assignments = []
     for symbol in symbols:
         index = symbol.st_shndx
-        if (index in placeholders or symbol.bind != STB_LOCAL or symbol.type != STT_OBJECT
+        if (symbol.bind != STB_LOCAL or symbol.type != STT_OBJECT
                 or symbol.st_value or not 0 < index < len(elf.sections)
                 or re.fullmatch(r'at_\d+', symbol.name)
                 or (symbol.name in addresses and addresses[symbol.name] in cuts)):
@@ -1209,7 +905,7 @@ def pointer_table_names(elf, unit, placeholders, *, retail, pieces, addresses, r
                 literal_cut = cuts.get(base)
                 owners = [other for other in symbols
                           if other.st_shndx == literal_index and other.type == STT_OBJECT]
-                valid = (literal_index not in placeholders and literal.name == '.rodata'
+                valid = (literal.name == '.rodata'
                          and literal.sh_type == SHT_PROGBITS and literal.sh_flags & SHF_ALLOC
                          and len(owners) == 1 and owners[0].bind == STB_LOCAL
                          and owners[0].st_value == 0 and literal.data
@@ -1304,7 +1000,7 @@ def complete_code_consumer(elf, index, *, retail, rows, address_of_symbol, gp):
     return not pending
 
 
-def name_initialized_locals(elf, unit, placeholders, *, retail, pieces, addresses, rows):
+def name_initialized_locals(elf, unit, *, retail, pieces, addresses, rows):
     """Name nonpointer local tables from exact bytes and fully verified callers."""
     runs = pieces.unit(unit)
     cuts = {start: (kind, name, end) for kind, run in runs
@@ -1334,7 +1030,7 @@ def name_initialized_locals(elf, unit, placeholders, *, retail, pieces, addresse
     assignments = []
     for symbol in symbols:
         index = symbol.st_shndx
-        if (index in placeholders or symbol.type != STT_OBJECT or symbol.bind != STB_LOCAL
+        if (symbol.type != STT_OBJECT or symbol.bind != STB_LOCAL
                 or symbol.st_value or not 0 < index < len(elf.sections)
                 or family(symbol.name) in (None, 'at') or symbol.name in own_names):
             continue
@@ -1403,7 +1099,7 @@ def name_initialized_locals(elf, unit, placeholders, *, retail, pieces, addresse
         symbol.st_name = elf.strtab.add_symbol(name)
 
 
-def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addresses=None, rows=None,
+def name_literal_data(elf, unit, *, retail=None, pieces=None, addresses=None, rows=None,
                       padding_pieces=None):
     retail = layout.Retail() if retail is None else retail
     pieces = disassemble.Pieces(references=[]) if pieces is None else pieces
@@ -1420,9 +1116,9 @@ def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addr
                 if section in ('.rodata', '.sdata', '.data', '.ctor') and run}
     declared_sizes = {name: size for _address, name, size, function in rows
                       if not function and size}
-    bss_names = bss_data_names(elf, unit, placeholders, retail=retail, pieces=pieces,
+    bss_names = bss_data_names(elf, unit, retail=retail, pieces=pieces,
                                addresses=addresses, rows=rows)
-    pointer_names = pointer_table_names(elf, unit, placeholders, retail=retail, pieces=pieces,
+    pointer_names = pointer_table_names(elf, unit, retail=retail, pieces=pieces,
                                         addresses=addresses, rows=rows)
     positions = sorted(retail.relocations)
     code_addresses = {name: start for section, run in pieces.unit(unit)
@@ -1435,7 +1131,6 @@ def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addr
         if symbol.type == STT_OBJECT and symbol.name in addresses
         and addresses[symbol.name] in cuts and symbol.st_value == 0
         and 0 < symbol.st_shndx < len(elf.sections)
-        and symbol.st_shndx not in placeholders
         and elf.sections[symbol.st_shndx].name in ('.rodata', '.sdata', '.data', '.ctor')
         and elf.sections[symbol.st_shndx].sh_type == SHT_PROGBITS
         and elf.sections[symbol.st_shndx].sh_flags & SHF_ALLOC
@@ -1451,7 +1146,7 @@ def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addr
             symbol.st_name = elf.strtab.add_symbol(name)
             continue
         index = symbol.st_shndx
-        if (index in placeholders or not re.fullmatch(r'(?:at_\d+|\.p__sinit_.+)', symbol.name)
+        if (not re.fullmatch(r'(?:at_\d+|\.p__sinit_.+)', symbol.name)
                 or symbol.type != STT_OBJECT or symbol.st_value != 0
                 or not 0 < index < len(elf.sections)):
             continue
@@ -1571,11 +1266,11 @@ def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addr
         symbol.name = name
         symbol.st_name = elf.strtab.add_symbol(name)
 
-    name_initialized_locals(elf, unit, placeholders, retail=retail, pieces=pieces,
+    name_initialized_locals(elf, unit, retail=retail, pieces=pieces,
                             addresses=addresses, rows=rows)
     # A local consumer needs every literal identity before its complete code
     # can prove an anonymous zero template. The second pass supplies no bytes.
-    bss_names = bss_data_names(elf, unit, placeholders, retail=retail, pieces=pieces,
+    bss_names = bss_data_names(elf, unit, retail=retail, pieces=pieces,
                                addresses=addresses, rows=rows)
     for symbol in elf.symtab.symbols:
         name = bss_names.get(id(symbol))
@@ -1584,7 +1279,7 @@ def name_literal_data(elf, unit, placeholders, *, retail=None, pieces=None, addr
             symbol.st_name = elf.strtab.add_symbol(name)
 
 
-def native_data_extents(elf, placeholders):
+def native_data_extents(elf):
     """Capture whole compiler objects before any naming or padding changes."""
     defined = {}
     for symbol in elf.symtab.symbols:
@@ -1593,7 +1288,7 @@ def native_data_extents(elf, placeholders):
     result = {}
     for index, symbols in defined.items():
         section = elf.sections[index]
-        if (index in placeholders or len(symbols) != 1
+        if (len(symbols) != 1
                 or section.name not in ('.data', '.sdata', '.rodata', '.bss', '.sbss')
                 or section.sh_flags != FLAGS[section.name]
                 or section.sh_type not in (SHT_PROGBITS, SHT_NOBITS)):
@@ -1605,8 +1300,8 @@ def native_data_extents(elf, placeholders):
     return result
 
 
-def materialize_alignment_fragments(elf, unit, placeholders, native_extents, *,
-                                   held=frozenset(), retail=None, pieces=None, rows=None):
+def materialize_alignment_fragments(elf, unit, native_extents, *,
+                                   retail=None, pieces=None, rows=None):
     """Split only zero storage required by two verified native object alignments."""
     retail = layout.Retail() if retail is None else retail
     pieces = disassemble.Pieces() if pieces is None else pieces
@@ -1620,12 +1315,12 @@ def materialize_alignment_fragments(elf, unit, placeholders, native_extents, *,
 
     def native(name, start, kind):
         entries = definitions.get(name, [])
-        if len(entries) != 1 or name in held:
+        if len(entries) != 1:
             return None
         symbol = entries[0]
         index = symbol.st_shndx
         original = native_extents.get(index)
-        if original is None or index in placeholders:
+        if original is None:
             return None
         owner, size, alignment, section_type, section_name = original
         section = elf.sections[index]
@@ -1680,7 +1375,7 @@ def materialize_alignment_fragments(elf, unit, placeholders, native_extents, *,
             valid = True
             for fragment, lo, hi in fragments:
                 existing = [entry for entry in elf.symtab.symbols if entry.name == fragment]
-                if (lo != cursor or not lo < hi <= next_start or fragment in held
+                if (lo != cursor or not lo < hi <= next_start
                         or len(existing) > 1 or any(entry.st_shndx or entry.st_value or entry.st_size
                                                   for entry in existing)):
                     valid = False
@@ -1717,8 +1412,8 @@ def materialize_alignment_fragments(elf, unit, placeholders, native_extents, *,
             symbol.type, symbol.bind = 0, 1
 
 
-def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
-             native_extents=None, held=frozenset()):
+def pad_data(elf, unit, *, retail=None, pieces=None, rows=None,
+             native_extents=None):
     """Retain proved alignment or an explicitly listed unresolved retail reservation."""
     retail = layout.Retail() if retail is None else retail
     pieces = disassemble.Pieces() if pieces is None else pieces
@@ -1733,7 +1428,7 @@ def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
     for address, name, size, function in rows:
         declarations.setdefault(name, []).append((address, size, function))
     if native_extents is None:
-        native_extents = native_data_extents(elf, placeholders)
+        native_extents = native_data_extents(elf)
     definitions = {}
     for symbol in elf.symtab.symbols:
         if symbol.type != STT_SECTION and 0 < symbol.st_shndx < len(elf.sections):
@@ -1746,7 +1441,7 @@ def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
         symbol = symbols[0]
         index = symbol.st_shndx
         original = native_extents.get(index)
-        if original is None or index in placeholders:
+        if original is None:
             return None
         owner, size, alignment, section_type, section_name = original
         section = elf.sections[index]
@@ -1782,7 +1477,7 @@ def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
                         index = label.st_shndx
                         section = elf.sections[index]
                         if (label.type != 0 or label.st_value or label.st_size != hi - lo
-                                or index in placeholders or section.name != kind
+                                or section.name != kind
                                 or section.sh_type != SHT_NOBITS or section.sh_flags != FLAGS[kind]
                                 or section.sh_addralign != 1
                                 or section_size(section) != hi - lo
@@ -1800,7 +1495,7 @@ def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
                 break
     for symbol in elf.symtab.symbols:
         index = symbol.st_shndx
-        if (symbol.type != STT_OBJECT or symbol.st_value or index in placeholders
+        if (symbol.type != STT_OBJECT or symbol.st_value
                 or not 0 < index < len(elf.sections) or symbol.name not in cuts):
             continue
         start, end = cuts[symbol.name]
@@ -1827,32 +1522,6 @@ def pad_data(elf, unit, placeholders, *, retail=None, pieces=None, rows=None,
             if reservation and reservation[:6] == (kind, start, size, next_name, limit, next_size):
                 if right:
                     listed = alignment in reservation[6]
-                elif None in reservation[6] and next_name in held:
-                    entries = definitions.get(next_name, [])
-                    if not entries:
-                        listed = True
-                    elif (len({entry.st_shndx for entry in entries}) == 1
-                          and entries[0].st_shndx in placeholders):
-                        marker = entries[0]
-                        marker_section = elf.sections[marker.st_shndx]
-                        marker_size = section_size(marker_section)
-                        aliases = [other for other in elf.symtab.symbols
-                                   if other.type != STT_SECTION and other.st_shndx == marker.st_shndx]
-                        # Declarations may reference the same retained payload at offset zero.
-                        listed = (marker.type == STT_OBJECT and not marker.st_value
-                                  and next_size <= marker_size <= max(next_size, next_end - limit)
-                                  and marker_section.name == kind
-                                  and marker_section.sh_type == SHT_NOBITS
-                                  and marker_section.sh_flags == FLAGS[kind]
-                                  and 0 < marker_section.sh_addralign <= MAX_DATA_ALIGNMENT
-                                  and not marker_section.sh_addralign & (marker_section.sh_addralign - 1)
-                                  and all(other.name == next_name and other.type == STT_OBJECT
-                                          and not other.st_value
-                                          and other.st_size in (next_size, marker_size)
-                                          for other in aliases)
-                                  and any(other.st_size == marker_size for other in aliases)
-                                  and not any(record.sh_info == marker.st_shndx and record.relocations
-                                              for record in getattr(elf, 'relocations', ())))
             if (next_kind == kind and end <= limit and (proved or listed)
                     and not any(start + size <= address < limit for address, _name, _size, _function in rows)
                     and not any(start + size <= address < limit for address in retail.relocations)
@@ -1896,59 +1565,6 @@ def order_sections(elf):
             section.sh_link = remap[section.sh_link]
     for record in elf.relocations:
         record.sh_info = remap[record.sh_info]
-
-
-def discard_shadow_vtables(elf, placeholder_sections, *, native_sizes=None):
-    symbols = elf.symtab.symbols
-    declared = {name: size for _start, name, size, function in layout.read_symbols(ROOT / layout.SYMBOLS)
-                if not function and size}
-    native_sizes = {} if native_sizes is None else native_sizes
-    held = {}
-    for index, symbol in enumerate(symbols):
-        if symbol.st_shndx in placeholder_sections and symbol.name.startswith('__vt__'):
-            held[project_name(symbol.name)] = index
-    for index, symbol in enumerate(symbols):
-        target_index = held.get(project_name(symbol.name))
-        if target_index is None or symbol.st_shndx in placeholder_sections:
-            continue
-        section_index = symbol.st_shndx
-        if not 0 < section_index < len(elf.sections):
-            continue
-        section = elf.sections[section_index]
-        target = symbols[target_index]
-        original = bytearray(section.data)
-        expected = bytearray(elf.sections[target.st_shndx].data)
-        original_size = native_sizes.get(id(symbol), symbol.st_size)
-        if (original_size != declared.get(project_name(target.name))
-                or not original_size <= len(original) <= len(expected)
-                or any(expected[len(original):])):
-            raise ValueError(f'{symbol.name}: vtable extent differs from retail')
-        actual_relocations = {}
-        expected_relocations = {}
-        for record in elf.relocations:
-            if record.sh_info not in (section_index, target.st_shndx):
-                continue
-            destination = actual_relocations if record.sh_info == section_index else expected_relocations
-            data = original if record.sh_info == section_index else expected
-            for relocation in record.relocations:
-                offset = relocation.r_offset
-                if (offset in destination or offset % 4
-                        or not 0 <= offset <= original_size - 4):
-                    raise ValueError(f'{symbol.name}: invalid or duplicate vtable relocation site')
-                name = project_name(symbols[relocation.symbol_index].name)
-                destination[offset] = (relocation.reloc_type, name, struct.unpack_from('<I', data, offset)[0])
-                struct.pack_into('<I', data, offset, 0)
-        if original != expected[:len(original)] or actual_relocations != expected_relocations:
-            raise ValueError(f'{symbol.name}: compiled vtable differs from retail')
-        for record in elf.relocations:
-            for relocation in record.relocations:
-                if relocation.symbol_index == index:
-                    relocation.symbol_index = target_index
-            if record.sh_info == section_index:
-                record.sh_name = elf.add_sh_symbol('.rel' + DEAD)
-                record.name = '.rel' + DEAD
-        section.sh_name = elf.add_sh_symbol(DEAD)
-        section.name = DEAD
 
 
 def bind_suffixed_references(elf, unit):
@@ -2135,10 +1751,7 @@ def main():
         order_sections(elf)
         args.object.write_bytes(elf.pack())
         return 0
-    placeholder_sections = drop_placeholder_aliases(elf)
     anonymous = project_native_names(elf)
-    vtable_sizes = {id(symbol): symbol.st_size for symbol in elf.symtab.symbols
-                    if symbol.name.startswith('__vt__') and symbol.st_shndx not in placeholder_sections}
     name = args.object.name
     unit = None
     if name.endswith(".cpp.o"):
@@ -2148,23 +1761,16 @@ def main():
             unit = '/'.join(parts[parts.index('obj') + 1:])[:-len('.cpp.o')]
         else:
             unit = name[:-len('.cpp.o')]
-        native_extents = native_data_extents(elf, placeholder_sections)
-        bind_named_static_bss(elf, unit, placeholder_sections)
+        native_extents = native_data_extents(elf)
         rename_dng_main_local_static(elf, unit)
-        bind_local_data(elf, unit, placeholder_sections)
-        name_literal_data(elf, unit, placeholder_sections,
-                          padding_pieces=disassemble.Pieces())
-        source = (ROOT / layout.Layout().source(unit)).read_text()
-        import objdiff_data
-        held = objdiff_data.fallback_data_names(source)
-        materialize_alignment_fragments(elf, unit, placeholder_sections, native_extents,
-                                        held=held)
-        pad_data(elf, unit, placeholder_sections, native_extents=native_extents, held=held)
+        bind_local_data(elf, unit)
+        name_literal_data(elf, unit, padding_pieces=disassemble.Pieces())
+        materialize_alignment_fragments(elf, unit, native_extents)
+        pad_data(elf, unit, native_extents=native_extents)
         bind_suffixed_references(elf, unit)
-        pad_data(elf, unit, placeholder_sections, native_extents=native_extents, held=held)
-        discard_external_vtables(elf, unit, placeholder_sections)
+        pad_data(elf, unit, native_extents=native_extents)
+        discard_external_vtables(elf, unit)
         discard_external_functions(elf, unit)
-    discard_shadow_vtables(elf, placeholder_sections, native_sizes=vtable_sizes)
     fold_duplicates(elf)
     discard_unused_literals(elf)
     discard_dead_code_records(elf)
@@ -2179,14 +1785,6 @@ def main():
     for index, name in renamed.items():
         section = elf.sections[index]
         nobits = name in layout.NOBITS
-        if nobits and section.sh_type == SHT_PROGBITS and index in placeholder_sections and not any(section.data):
-            section.sh_size = len(section.data)
-            section.sh_type = SHT_NOBITS
-            section = BssSection(section.sh_name, section.sh_type, section.sh_flags,
-                                 section.sh_addr, section.sh_offset, section.sh_size,
-                                 section.sh_link, section.sh_info, section.sh_addralign,
-                                 section.sh_entsize, b'')
-            elf.sections[index] = section
         if nobits != (section.sh_type == SHT_NOBITS):
             raise ValueError(f"section {index} ({section.name}) cannot become {name}")
         section.sh_name = elf.add_sh_symbol(name)

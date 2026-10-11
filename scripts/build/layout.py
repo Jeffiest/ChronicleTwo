@@ -8,8 +8,7 @@ units in link order, the sections each one owns, and the symbols in them.
                                for every object assembled from splat's output
 
 A unit is `asm` when its yaml entry is `asmtu` (linked from the one file splat
-writes for it) and `cpp` when it is compiled from ps2/src/<unit>.cpp, with
-tools/mwccgap putting retail's assembly wherever the source has a marker.
+writes for it) and `cpp` when it is compiled from ps2/src/<unit>.cpp.
 """
 
 import argparse
@@ -64,10 +63,6 @@ LINKER_SYMBOLS = {
     "__bss_end", "_end", "end", "_stack", "_stack_size", "_heap_size",
     "_align_segment", "__data_size", "__bss_size",
 }
-
-# What a datum's placeholder in a game unit's source is called, after the
-# datum's own name (see disassemble.placeholder).
-PLACEHOLDER_SUFFIX = "__DATA"
 
 SUBSEGMENT = re.compile(
     r"^\s*-\s*\{start:\s*(0x[0-9a-fA-F]+),\s*type:\s*([^,}\s]+),\s*name:\s*([^,}\s]+)(.*)\}\s*$")

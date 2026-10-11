@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Track source identities and fallback classification that affect the global split."""
+"""Track source identities and function classification that affect the global split."""
 
 import argparse
 import json
@@ -20,37 +20,10 @@ SOURCE_FUNCTIONS = re.compile(
 
 
 def source_split_signature(source):
-    """Mirror splat's per-source function and fallback classification inputs."""
+    """Mirror splat's per-source function classification input."""
     text = SOURCE_COMMENTS.sub(
         lambda match: ' ' if match.group(0).startswith('/') else match.group(0), source)
-
-    def include_symbols(macro):
-        names = set()
-        offset = 0
-        prefix = macro + '('
-        while True:
-            start = text.find(prefix, offset)
-            if start < 0:
-                return sorted(names)
-            end = start + len(prefix)
-            depth = 0
-            while end < len(text):
-                if text[end] == '(':
-                    depth += 1
-                elif text[end] == ')':
-                    if not depth:
-                        break
-                    depth -= 1
-                end += 1
-            if end == len(text):
-                raise ValueError(f'Unterminated {macro} source marker')
-            arguments = text[start:end + 1].split(',')
-            if len(arguments) >= 2:
-                names.add(arguments[1].strip(' )'))
-            offset = start + len(prefix)
-
-    return (sorted({match.group(1) for match in SOURCE_FUNCTIONS.finditer(text)}),
-            include_symbols('INCLUDE_ASM'), include_symbols('INCLUDE_RODATA'))
+    return sorted({match.group(1) for match in SOURCE_FUNCTIONS.finditer(text)})
 
 
 def write_source_cuts(output, sources):
@@ -62,7 +35,7 @@ def write_source_cuts(output, sources):
         addresses.update(source_addresses(contents))
         signatures[str(source)] = source_split_signature(contents)
     text = ''.join(f'D_{address:08X}\n' for address in sorted(addresses))
-    text += ''.join('SOURCE ' + json.dumps([source, *signature]) + '\n'
+    text += ''.join('SOURCE ' + json.dumps([source, signature]) + '\n'
                     for source, signature in sorted(signatures.items()))
     if output.is_file() and output.read_text(encoding='utf-8') == text:
         return False

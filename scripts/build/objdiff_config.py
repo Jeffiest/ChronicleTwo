@@ -4,7 +4,7 @@
     objdiff_config.py [--build-dir build/pal] [-o objdiff.json]
 
 A unit's target is its retail reference assembled whole and its base is its
-source compiled through Satan's Fiddle without tools/mwccgap;
+source compiled through Satan's Fiddle;
 ps2/cmake/Objdiff.cmake builds both.
 """
 
