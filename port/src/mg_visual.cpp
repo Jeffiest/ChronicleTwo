@@ -120,11 +120,19 @@ void MulMatrix(float out[4][4], const float a[4][4], const float b[4][4]) {
 void PortMgScreenToClip(float clip[4][4]) {
     float kx = mgScreenWidth > 0 ? 640.0f / static_cast<float>(mgScreenWidth) : 1.0f;
     float ky = mgScreenHeight > 0 ? 480.0f / static_cast<float>(mgScreenHeight) : 1.0f;
+    const gfx::TextureHandle target = gfx::CurrentRenderTarget();
+    const std::optional<gfx::TextureInfo> target_info = gfx::GetTextureInfo(target);
+    const gfx::LogicalRect visible = gfx::VisibleLogicalRect(target);
+    const float frame_width = target_info ? static_cast<float>(target_info->width) : gfx::LogicalWidth();
+    const float frame_height = target_info ? static_cast<float>(target_info->height) : gfx::LogicalHeight();
+    // Keep the native frame centered inside the expanded Fill target instead of clipping its sides.
+    const float fill_x = visible.w > frame_width ? frame_width / visible.w : 1.0f;
+    const float fill_y = visible.h > frame_height ? frame_height / visible.h : 1.0f;
     std::memset(clip, 0, sizeof(float) * 16);
-    clip[0][0] = kx / 320.0f;
-    clip[3][0] = -static_cast<float>(mgScreenOffx) * kx / 320.0f - 1.0f;
-    clip[1][1] = ky / 240.0f;
-    clip[3][1] = -static_cast<float>(mgScreenOffy) * ky / 240.0f - 1.0f;
+    clip[0][0] = (kx / 320.0f) * fill_x;
+    clip[3][0] = -(static_cast<float>(mgScreenOffx) + mgScreenWidth * 0.5f) * clip[0][0];
+    clip[1][1] = (ky / 240.0f) * fill_y;
+    clip[3][1] = -(static_cast<float>(mgScreenOffy) + mgScreenHeight * 0.5f) * clip[1][1];
     clip[2][2] = 1.0f / kGsDepthRange;
     clip[3][2] = -1.0f / kGsDepthRange;
     clip[3][3] = 1.0f;

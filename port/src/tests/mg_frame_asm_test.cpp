@@ -4,11 +4,15 @@
 #include <cmath>
 #include <cstring>
 
+#include "gfx/gfx.hpp"
+#include "gfx_fixture.hpp"
 #include "mg_frame.hpp"
 #include "mg_math.hpp"
 #include "mglib.hpp"
 #include "stubs/mg_frame.hpp"
 #include "../viewport_extent.hpp"
+
+void PortMgScreenToClip(float clip[4][4]);
 
 namespace {
 
@@ -625,4 +629,56 @@ TEST(MgFrameAsm, GetDrawRectKeepsModelsInsideExpandedFillViewport) {
 
     const float empty[4] = {};
     SetScreenBoxes(empty, empty);
+}
+
+TEST(MgFrameAsm, ScreenToClipUsesFillViewportForMainAndFrameTargets) {
+    auto expect_frame_edges = [](float width, float height, float expected_x, float expected_y) {
+        mgScreenWidth = static_cast<int>(width);
+        mgScreenHeight = static_cast<int>(height);
+        mgScreenOffx = 0x800 - mgScreenWidth / 2;
+        mgScreenOffy = 0x800 - mgScreenHeight / 2;
+
+        float clip[4][4];
+        PortMgScreenToClip(clip);
+
+        float left = static_cast<float>(mgScreenOffx) * clip[0][0] + clip[3][0];
+        float right = static_cast<float>(mgScreenOffx + mgScreenWidth) * clip[0][0] + clip[3][0];
+        float top = static_cast<float>(mgScreenOffy) * clip[1][1] + clip[3][1];
+        float bottom = static_cast<float>(mgScreenOffy + mgScreenHeight) * clip[1][1] + clip[3][1];
+        EXPECT_NEAR(left, -expected_x, 1e-6f);
+        EXPECT_NEAR(right, expected_x, 1e-6f);
+        EXPECT_NEAR(top, -expected_y, 1e-6f);
+        EXPECT_NEAR(bottom, expected_y, 1e-6f);
+    };
+
+    {
+        dc::test::GfxFixture fixture(1280, 720);
+        gfx::SetFrameLayout({gfx::AspectMode::Fill, 1.0f});
+
+        const auto info = gfx::GetTextureInfo(gfx::kMainTarget);
+        ASSERT_TRUE(info.has_value());
+        const gfx::LogicalRect visible = gfx::VisibleLogicalRect(gfx::kMainTarget);
+        const float expected_x = static_cast<float>(info->width) / visible.w;
+        const float expected_y = static_cast<float>(info->height) / visible.h;
+        EXPECT_NEAR(expected_x, 0.75f, 1e-6f);
+        EXPECT_FLOAT_EQ(expected_y, 1.0f);
+        expect_frame_edges(512.0f, 448.0f, expected_x, expected_y);
+
+        gfx::TextureHandle frame = gfx::CreateRenderTarget(512, 480, true, false, true);
+        ASSERT_NE(frame, gfx::kNullTexture);
+        gfx::SetRenderTarget(frame);
+        const auto frame_info = gfx::GetTextureInfo(frame);
+        ASSERT_TRUE(frame_info.has_value());
+        const gfx::LogicalRect frame_visible = gfx::VisibleLogicalRect(frame);
+        EXPECT_NEAR(static_cast<float>(frame_info->width) / frame_visible.w, expected_x, 1e-6f);
+        expect_frame_edges(512.0f, 480.0f, expected_x, 1.0f);
+        gfx::SetRenderTarget(gfx::kMainTarget);
+        gfx::DestroyTexture(frame);
+    }
+
+    {
+        dc::test::GfxFixture fixture(640, 480);
+        gfx::SetFrameLayout({gfx::AspectMode::Fill, 1.0f});
+        expect_frame_edges(512.0f, 448.0f, 1.0f, 1.0f);
+    }
 }

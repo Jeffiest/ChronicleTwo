@@ -277,13 +277,13 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 48a9e6aa676de341 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:544 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
 | c16b219397765422 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:626 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_tanime.cpp |
 | f4610704f6f3a8b8 | raw-member-offset | host-source/src/mg_texture.cpp:373 | if | clut + position | host-source/src/mg_texture.cpp |
-| 5db9af6c0845ea4c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:455 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| f25c02e36b1055cf | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:458 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 153d4ab8c14b0657 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:464 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 99f0a55835d2e8a9 | hardware:scratchpad | host-source/src/mg_visual.cpp:500 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| b87b607d1ee723b9 | hardware:scratchpad | host-source/src/mg_visual.cpp:501 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| 66c0c6a6185994c9 | hardware:scratchpad | host-source/src/mg_visual.cpp:503 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| 9ed003793a441ca9 | hardware:scratchpad | host-source/src/mg_visual.cpp:505 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| a099445dc7ca5cb4 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:462 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| 5fe676c4e29946e8 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:465 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| eade4f5ed93e1c98 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:471 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| c3c8df5f6449b6b5 | hardware:scratchpad | host-source/src/mg_visual.cpp:507 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 90cdf4c285495eb1 | hardware:scratchpad | host-source/src/mg_visual.cpp:508 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 6aedbd9322cc043d | hardware:scratchpad | host-source/src/mg_visual.cpp:510 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 0f2b69b88a2e123b | hardware:scratchpad | host-source/src/mg_visual.cpp:512 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
 | 94abb38214ff113a | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:35 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
 | 81dd8ee666ef52bd | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:190 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
 | a6d70048854c06f1 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:288 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |

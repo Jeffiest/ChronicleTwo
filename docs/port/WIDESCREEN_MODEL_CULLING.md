@@ -10,6 +10,8 @@ The renderer uses `AspectMode::Fill` for `video.aspect = "auto"`. `gfx::VisibleL
 
 `mgCFrame::GetDrawRect` previously rejected projected bounds against `mgScreenWidth` and `mgScreenHeight` even though the renderer could show beyond those limits. It now tests against the matching `mgRENDER_INFO::screen_box_min/max`; it still offsets surviving rectangles by the original PS2 screen dimensions so downstream GS-to-logical scaling is unchanged.
 
+The host mesh path then converts `world_screen` coordinates to Vulkan clip space through `PortMgScreenToClip`. That transform still mapped the original PS2 frame edges to the full clip range, so the wider camera and culling bounds could accept a model that Vulkan clipped at the old 4:3 edges. It now scales around the active target's center by its logical frame divided by `gfx::VisibleLogicalRect(target)`. The native frame occupies the center of a Fill target while the expanded camera view reaches its sides; a 4:3 target keeps a scale of one. The shared transform also keeps model shadows aligned.
+
 The shared extent helper rounds expanded spans up to an even number of GS pixels and rejects invalid inputs. It does not change `aspect_y`, native screen dimensions or scene data.
 
 ## Off-screen framebuffer targets
@@ -24,9 +26,10 @@ The wider camera and culling bounds can still be clipped when a scene pass is re
 - A 16:9 fill span expands that frame to 684x448.
 - A tall fill span expands height to 512x624.
 - A projected actor at x=300, outside the original ±256 horizontal cull, remains visible inside the expanded ±342 bound.
+- The 4:3 screen edges map to ±0.75 clip space in a 16:9 Fill window, for both the main target and a frame target; they remain at ±1.0 in a 4:3 window.
 
-Windows `darkchronicle` and `darkchronicle_tests` build successfully. The focused framebuffer-promotion test passes. CTest reports 356 passed, 17 skips and zero failures out of 373 registered cases.
+Windows `darkchronicle` and `darkchronicle_tests` build successfully. The focused projection, culling and framebuffer tests pass. CTest reports 358 passed, 16 skips and zero failures out of 374 registered cases.
 
 ## Runtime status
 
-The game executable was rebuilt, but the user then directed that no more computer-use control be attempted. This source-level regression verifies target shape and name reuse; it does not establish that characters now render correctly in the circus scene. Visual acceptance remains pending. The earlier framebuffer-name experiment was reverted after the user reported that it did not fix model visibility.
+The game executable was rebuilt, but the user directed that no more computer-use control be attempted. The source-level regressions verify clip-space expansion, culling bounds and target shape; they do not establish that characters now render correctly in the circus scene. Visual acceptance remains pending. The earlier framebuffer-name experiment was reverted after the user reported that it did not fix model visibility.
