@@ -4,6 +4,13 @@
 
 The port has Phases 4-6 in rendering, audio and movies, and Phase 7's game sweep is in progress. The executable loads its configuration, opens a window, indexes the game data, places the game's memory in arenas above 4 GiB, and runs the retail main loop on the shared renderer and mixer: language select, the Level-5 logo movie (`L5LOGO.PSS`) and copyright screens, the title over its 3D map with music, and the attract loop. New Game reaches the costume confirmation and opening event; the repaired frame traversal now reaches the first battle tutorial, where character models are visible in the scripted run. The built-in retail debug menu is unlocked by default and configurable with `game.debug_mode`. Its direct route reaches Dungeon 2 Floor 1 loading, but event-point placement stalls before gameplay; the first-town route, full model visibility/deformation and movie playback remain open. Every game frame is a recorded display list rendered once canonically, with interpolated display frames between ticks. This document describes what is built; see `docs/port/HANDOFF.md` for current gates and the next sweep steps.
 
+## Code ownership
+
+- **Shared host runtime:** `tools/kazarov/port/` owns the renderer, mixer, platform layer and game-agnostic SDK replacements used by Chronicle and ChronicleTwo. ChronicleTwo does not ship a second renderer or audio engine; `port/src/` contains game-facing adapters and retail functions that need host implementations.
+- **Game source:** `ps2/` is byte-for-byte identical to the integrated upstream source at `110f13c2`. Host replacements and compatibility edits live in `port/src/` or in generated build-tree mirrors.
+- **Disc data:** `tools/dc2data` reads the ISO directly and unpacks ChronicleTwo's `DATA.DAT`/`DATA.HD4` and `SOUND.DAT` formats. Kazarov's `kz-extract` stages generic ISO inputs for its build setup; game launch calls only `dc2data`. Both currently have a small ISO 9660 reader, while only `dc2data` understands the DC2 archives. A shared ISO reader belongs in Kazarov if we decide to remove that narrow overlap.
+- **Pointers:** the host uses native-width pointers and `uptr`/`sptr`; the arenas are deliberately mapped above 4 GiB. The remaining 32-bit values that represent file offsets or PS2 packet words are kept distinct from host pointers. The pointer-round-trip and record-layout checks are described under [Pointers and 32-bit integers](#pointers-and-32-bit-integers).
+
 ## Building and running
 
 ### Linux

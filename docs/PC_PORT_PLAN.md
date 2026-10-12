@@ -1,9 +1,9 @@
 # PC port plan
 
-Current native integration status (2026-10-12): upstream master through `79e5d841`
-is integrated on the Windows gameplay branch. Upstream baseline boot/stub statements
-below describe upstream, not a rollback of the native port. The Windows build, full
-CTest suite, native-VU gate, headless costume gate and fresh-config windowed launch pass.
+Current native integration status (2026-10-12): upstream master through `110f13c2`
+is integrated by merge `e96d5e18` on the Windows gameplay branch. Upstream baseline
+boot/stub statements below describe upstream, not a rollback of the native port. The
+Windows build, full CTest suite, native-VU gate, headless costume gate and fresh-config windowed launch pass.
 The opening reaches its first battle tutorial; first town and dungeon coverage remains
 open. See `docs/port/HANDOFF.md` for current runtime evidence and remaining work.
 
@@ -14,12 +14,10 @@ two games agree. Keep it current: when a work package lands, record its
 status here and move the architectural facts into `docs/PC.md` (created by
 WP1.11).
 
-The plan is executed by orchestrators that delegate reading and writing to
-smaller agents. Every work package (WP) therefore names its files, its inputs,
-its acceptance commands and whether it may run beside other packages. A WP
-tagged **[mechanical]** is meant to be completed from its brief alone; one
-tagged **[decision]** needs architectural judgement and is written by the
-orchestrator or reviewed by it before and after.
+Each work package (WP) names its files, inputs, acceptance commands and whether
+it may run beside other packages. A WP tagged **[mechanical]** is meant to be
+completed from its brief alone; one tagged **[decision]** needs architectural
+judgement and review before and after implementation.
 
 ## 1. Goals and hard rules
 

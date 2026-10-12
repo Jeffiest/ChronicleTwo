@@ -54,6 +54,7 @@ import json
 import multiprocessing
 import os
 import re
+import shutil
 import shlex
 import subprocess
 import sys
@@ -940,7 +941,7 @@ def unit_entries(build):
     for entry in entries:
         path = canon(os.path.join(entry["directory"], entry["file"]))
         if "command" in entry:
-            entry["arguments"] = shlex.split(entry.pop("command"))
+            entry["arguments"] = split_compile_command(entry.pop("command"))
         if path.startswith(copies):
             entry["arguments"] = [a for a in entry["arguments"] if canon(os.path.join(entry["directory"], a)) != path]
             path = os.path.join(ROOT, "ps2", "src", path[len(copies):])
@@ -949,14 +950,52 @@ def unit_entries(build):
             "/tests/" not in e["file"]]
 
 
+def split_compile_command(command):
+    """Split a compile_commands command without treating Windows path separators as escapes."""
+    if os.name != "nt":
+        return shlex.split(command)
+    lexer = shlex.shlex(command, posix=True)
+    lexer.whitespace_split = True
+    lexer.escape = ""
+    return list(lexer)
+
+
 @functools.lru_cache(maxsize=None)
 def resource_dir(compiler):
     # One compiler serves every unit; asking it once per unit cost a process spawn each.
     return subprocess.run([compiler, "-print-resource-dir"], capture_output=True, text=True).stdout.strip()
 
 
+def linked_binary(build):
+    """Return the linked game executable on Unix or Windows."""
+    for name in ("darkchronicle", "darkchronicle.exe"):
+        path = os.path.join(build, name)
+        if os.path.isfile(path):
+            return path
+    return os.path.join(build, "darkchronicle")
+
+
+def symbol_tool(build):
+    """Find nm, including llvm-nm beside the compiler in Windows toolchain installs."""
+    tool = shutil.which("llvm-nm") or shutil.which("nm")
+    if tool:
+        return tool
+    if os.name == "nt":
+        try:
+            with open(os.path.join(build, "compile_commands.json"), encoding="utf-8") as f:
+                entries = json.load(f)
+            for entry in entries:
+                args = split_compile_command(entry["command"]) if "command" in entry else entry["arguments"]
+                candidate = os.path.join(os.path.dirname(args[0]), "llvm-nm.exe")
+                if os.path.isfile(candidate):
+                    return candidate
+        except (OSError, KeyError, ValueError, IndexError):
+            pass
+    return "nm"
+
+
 def command_args(entry):
-    args = shlex.split(entry["command"]) if "command" in entry else list(entry["arguments"])
+    args = split_compile_command(entry["command"]) if "command" in entry else list(entry["arguments"])
     out = []
     skip = False
     for arg in args[1:]:
@@ -1082,10 +1121,10 @@ def state(site_signature, overrides):
     return "replaced" if site_signature and site_signature in overrides else "open"
 
 
-def linked_functions(binary):
+def linked_functions(binary, nm=None):
     """The qualified names of the functions the binary defines."""
     try:
-        listing = subprocess.run(["nm", "-C", "--defined-only", binary], capture_output=True, text=True,
+        listing = subprocess.run([nm or "nm", "-C", "--defined-only", binary], capture_output=True, text=True,
                                  check=True).stdout
     except (OSError, subprocess.CalledProcessError) as error:
         sys.exit("truncations.py: cannot list the symbols of %s: %s" % (binary, error))
@@ -1387,7 +1426,7 @@ def main():
             site["state"] = state(site["signature"], overrides)
             returns.append(site)
     resolve_at_readers(sites, edges, returns, totals)
-    assign_phases(sites, linked_functions(os.path.join(options.build, "darkchronicle")))
+    assign_phases(sites, linked_functions(linked_binary(options.build), symbol_tool(options.build)))
     if diagnostic_count and not options.verbose:
         print("truncations.py: %d parse diagnostics in %d units (use --verbose)" % (diagnostic_count, diagnostic_units),
               file=sys.stderr)

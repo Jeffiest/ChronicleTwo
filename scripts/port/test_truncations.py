@@ -152,6 +152,22 @@ class NarrowingTests(unittest.TestCase):
         ])
 
 
+class CompileCommandTests(unittest.TestCase):
+
+    @unittest.skipUnless(os.name == "nt", "Windows compile command quoting")
+    def test_windows_paths_keep_backslashes_and_quoted_spaces(self):
+        command = r'"E:\toolchain\bin\clang++.exe" -I"E:\include files\headers" -DPORT'
+        self.assertEqual(truncations.split_compile_command(command), [
+            r"E:\toolchain\bin\clang++.exe", r"-IE:\include files\headers", "-DPORT",
+        ])
+
+    def test_linked_binary_finds_windows_executable(self):
+        with tempfile.TemporaryDirectory() as build:
+            executable = os.path.join(build, "darkchronicle.exe")
+            Path(executable).touch()
+            self.assertEqual(truncations.linked_binary(build), executable)
+
+
 def site(file, function, state, class_):
     return {"file": file, "line": 1, "column": 1, "function": function, "state": state, "class": class_,
             "destination": "local x", "expression": "p", "kind": "pointer cast"}

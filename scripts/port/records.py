@@ -208,13 +208,14 @@ def unqualified(name):
 
 def check_ps2_only_functions(build):
     """Failures for the PS2-only readers' functions, or None when the build has nothing to check them against."""
-    darkchronicle = os.path.join(build, "darkchronicle")
+    darkchronicle = truncations.linked_binary(build)
     overrides_path = os.path.join(build, "port_overrides.txt")
     if not (os.path.isfile(darkchronicle) and os.path.isfile(overrides_path)):
         return None
     replaced = {unqualified(signature) for signature in truncations.load_overrides(build)}
     try:
-        linked = {unqualified(name) for name in truncations.linked_functions(darkchronicle)}
+        linked = {unqualified(name) for name in truncations.linked_functions(darkchronicle,
+                                                                             truncations.symbol_tool(build))}
     except SystemExit as error:
         return [str(error)]
     failures = []
