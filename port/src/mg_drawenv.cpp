@@ -7,6 +7,7 @@
 #include "gfx/gfx.hpp"
 #include "mg_math.hpp"
 #include "mglib.hpp"
+#include "viewport_extent.hpp"
 
 /**
  * The draw environment and render state on the host.
@@ -253,6 +254,12 @@ PORT_OVERRIDE void mgRENDER_INFO::Initialize() {
 
 PORT_OVERRIDE void mgRENDER_INFO::SetRenderInfo(float projection, int width, int height, float near_dist,
                                   float far_dist, int zdepth, float aspect_y) {
+    const gfx::LogicalRect visible = gfx::VisibleLogicalRect(gfx::kMainTarget);
+    const mgport::ScreenExtent screen_extent = mgport::ScreenExtentForVisibleRect(
+        width, height, gfx::LogicalWidth(), gfx::LogicalHeight(), visible.w, visible.h);
+    width = screen_extent.width;
+    height = screen_extent.height;
+
     float z_range = 1.67e7f;
 
     switch (zdepth) {

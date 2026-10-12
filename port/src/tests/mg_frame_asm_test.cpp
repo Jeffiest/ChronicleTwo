@@ -8,6 +8,7 @@
 #include "mg_math.hpp"
 #include "mglib.hpp"
 #include "stubs/mg_frame.hpp"
+#include "../viewport_extent.hpp"
 
 namespace {
 
@@ -574,4 +575,54 @@ TEST(MgFrameAsm, GetDrawRectRejectsBoxOffScreen) {
 
     mgVu0FBOX rect;
     EXPECT_EQ(frame.GetDrawRect(&rect, NULL), 0);
+}
+
+TEST(MgFrameAsm, FillViewportExpandsOnlyTheVisibleScreenExtents) {
+    mgport::ScreenExtent extent = mgport::ScreenExtentForVisibleRect(512, 448, 640.0f, 480.0f,
+                                                                     853.3333f, 480.0f);
+    EXPECT_EQ(extent.width, 684);
+    EXPECT_EQ(extent.height, 448);
+
+    extent = mgport::ScreenExtentForVisibleRect(512, 448, 640.0f, 480.0f, 640.0f, 480.0f);
+    EXPECT_EQ(extent.width, 512);
+    EXPECT_EQ(extent.height, 448);
+
+    extent = mgport::ScreenExtentForVisibleRect(512, 448, 640.0f, 480.0f, 640.0f, 666.6667f);
+    EXPECT_EQ(extent.width, 512);
+    EXPECT_EQ(extent.height, 624);
+}
+
+TEST(MgFrameAsm, GetDrawRectKeepsModelsInsideExpandedFillViewport) {
+    mgCFrame::BoundInfo bound;
+    SetCube(bound.corner);
+    mgCVisual visual;
+    mgCFrameAttr attr;
+    attr.draw = MG_FRAME_DRAW_VISIBLE;
+    attr.billboard = MG_FRAME_BILLBOARD_NONE;
+
+    mgCFrame frame;
+    frame.use_srt = 0;
+    SetIdentity(frame.trans_matrix);
+    frame.trans_matrix[3][0] = 300.0f;
+    frame.changed = 1;
+    frame.bound = &bound;
+    frame.visual = &visual;
+    frame.attr = &attr;
+
+    const float screen_max[4] = {342.0f, 224.0f, 0.0f, 4095.9f};
+    const float screen_min[4] = {-342.0f, -224.0f, 0.0f, 0.0f};
+    SetScreenBoxes(screen_max, screen_min);
+    SetIdentity(mgRenderInfo.world_screen_rel);
+    mgRenderInfo.clip_min[2] = 0.0f;
+    mgDrawManager.render_info = &mgRenderInfo;
+    mgScreenWidth = 512;
+    mgScreenHeight = 448;
+
+    mgVu0FBOX rect;
+    EXPECT_EQ(frame.GetDrawRect(&rect, NULL), 1);
+    EXPECT_FLOAT_EQ(rect.min[0], 555.0f);
+    EXPECT_FLOAT_EQ(rect.max[0], 557.0f);
+
+    const float empty[4] = {};
+    SetScreenBoxes(empty, empty);
 }
