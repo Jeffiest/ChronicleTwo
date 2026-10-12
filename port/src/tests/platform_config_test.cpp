@@ -178,3 +178,53 @@ TEST(PlatformConfig, SettingsChangeWithTheViewUnchangedChangesNothing) {
     ASSERT_TRUE(ConfigGet().key_bindings.empty());
     std::filesystem::remove_all(directory);
 }
+
+TEST(PlatformConfig, ExistingUnreadablePathIsNeverOverwritten) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                       ("dc_config_unreadable_" + std::to_string(getpid()));
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root / "config.json");
+    PathsSetSaveRoot(root);
+    ASSERT_FALSE(ConfigLoad());
+    Config changed = ConfigGet();
+    changed.tick_rate = 120.0;
+    ASSERT_FALSE(ConfigChange(changed));
+    ASSERT_FALSE(ConfigSave());
+    ASSERT_TRUE(std::filesystem::is_directory(root / "config.json"));
+    std::error_code error;
+    std::filesystem::remove_all(root, error);
+}
+
+namespace {
+
+int g_runtime_config_hook_calls = 0;
+Config g_runtime_config_before;
+Config g_runtime_config_after;
+
+void CaptureRuntimeConfigChange(const Config &before, const Config &after) {
+    ++g_runtime_config_hook_calls;
+    g_runtime_config_before = before;
+    g_runtime_config_after = after;
+}
+
+} // namespace
+
+TEST(PlatformConfig, ChangeHookReceivesBeforeAndAfter) {
+    const std::filesystem::path root = std::filesystem::temp_directory_path() /
+                                       ("dc_config_hook_" + std::to_string(getpid()));
+    std::filesystem::remove_all(root);
+    std::filesystem::create_directories(root);
+    PathsSetSaveRoot(root);
+    ASSERT_FALSE(ConfigLoad());
+    Config config = ConfigGet();
+    g_runtime_config_hook_calls = 0;
+    ConfigAddChangeHook(CaptureRuntimeConfigChange);
+    config.tick_rate = 120.0;
+    ConfigChange(config);
+    ConfigRemoveChangeHook(CaptureRuntimeConfigChange);
+    ASSERT_EQ(g_runtime_config_hook_calls, 1);
+    ASSERT_DOUBLE_EQ(g_runtime_config_before.tick_rate, 50.0);
+    ASSERT_DOUBLE_EQ(g_runtime_config_after.tick_rate, 120.0);
+    std::error_code error;
+    std::filesystem::remove_all(root, error);
+}

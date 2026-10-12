@@ -1,19 +1,28 @@
 #include "common.h"
 
+#include <cstring>
+
 #include "mg_drawprim.hpp"
+#include "vu0_lanes.hpp"
 
 void mgCDrawPrim::Data0(float *data) {
-    PS2_UNIMPLEMENTED();
+    u_long128 *destination = write;
+    write++;
+    const int lanes[4] = {vu0::Ftoi(data[0]), vu0::Ftoi(data[1]), vu0::Ftoi(data[2]), vu0::Ftoi(data[3])};
+    memcpy(destination, lanes, sizeof(lanes));
 }
 
 void mgCDrawPrim::Data4(float *data) {
-    PS2_UNIMPLEMENTED();
+    u_long128 *destination = write;
+    write++;
+    const int lanes[4] = {vu0::Ftoi4(data[0]), vu0::Ftoi4(data[1]), vu0::Ftoi4(data[2]), vu0::Ftoi4(data[3])};
+    memcpy(destination, lanes, sizeof(lanes));
 }
 
 void mgCDrawPrim::Vertex(float *pos) {
-    PS2_UNIMPLEMENTED();
+    Vertex4(vu0::Ftoi4(pos[0]), vu0::Ftoi4(pos[1]), vu0::Ftoi(pos[2]));
 }
 
 void mgCDrawPrim::Color(float *color) {
-    PS2_UNIMPLEMENTED();
+    Color(vu0::Ftoi(color[0]), vu0::Ftoi(color[1]), vu0::Ftoi(color[2]), vu0::Ftoi(color[3]));
 }

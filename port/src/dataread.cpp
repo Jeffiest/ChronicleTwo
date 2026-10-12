@@ -16,14 +16,15 @@
 #include <vector>
 
 #include "cdvd_file.hpp"
+#include "dataread_port.hpp"
 #include "platform/paths.hpp"
 
 // The disc is the extracted tree on the host. DATA.DAT holds the files DATA.HD4 indexes, and the
 // names beside it (MOVIE/*.PSS above all) are plain files. This unit serves that tree through the
 // same calls the drive had, so the rest of the game sees no change.
 //
-// Host reads are synchronous: a background read is finished before LoadFileBG returns, so the
-// queue only ever holds completed entries and ReadBG has nothing left to do per vertical sync.
+// Host reads finish before LoadFileBG returns; queue metadata preserves the game's
+// pending/completed polling transitions.
 
 namespace fs = std::filesystem;
 
@@ -44,7 +45,46 @@ int        FileCacheType;
 // wins, as the game's linear search finds it.
 std::unordered_map<std::string, cdvd::File> packed_files;
 std::unordered_map<std::string, cdvd::File> plain_files;
+std::unordered_map<std::string, cdvd::File> media_files;
 bool                                       index_loaded;
+
+char FoldChar(char c) {
+    return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
+}
+
+bool ExcludedRootEntry(std::string_view name) {
+    if (name.starts_with('.') || name.ends_with(".dc2tmp")) {
+        return true;
+    }
+    for (std::string_view excluded : {"manifest.txt", "sound"}) {
+        if (name.size() == excluded.size() &&
+            std::equal(name.begin(), name.end(), excluded.begin(), [](char a, char b) {
+                return FoldChar(a) == FoldChar(b);
+            })) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IsMoviePath(std::string_view relative) {
+    std::size_t slash = relative.find('/');
+    std::string_view first = relative.substr(0, slash);
+    constexpr std::string_view movie = "movie";
+    return first.size() == movie.size() &&
+           std::equal(first.begin(), first.end(), movie.begin(), [](char a, char b) {
+               return FoldChar(a) == FoldChar(b);
+           });
+}
+
+std::string FileKey(std::string_view path) {
+    std::string key;
+    key.reserve(path.size());
+    for (char c : path) {
+        key.push_back(FoldChar(c == '\\' ? '/' : c));
+    }
+    return key;
+}
 
 u_int Le32(const unsigned char *bytes) {
     return (u_int) bytes[0] | (u_int) bytes[1] << 8 | (u_int) bytes[2] << 16 | (u_int) bytes[3] << 24;
@@ -87,7 +127,7 @@ bool SafeRelative(std::string_view path) {
     std::fprintf(stderr,
                  "no game data: %s %s; point --data (or DC2_DATA) at the extracted disc, the "
                  "directory holding DATA.HD4 and DATA.DAT\n",
-                 root.c_str(), why);
+                 PathsDisplay(root).c_str(), why);
     std::abort();
 }
 
@@ -99,7 +139,7 @@ bool ReadWhole(const cdvd::File &file, void *buffer) {
         return false;
     }
 
-    if (file.packed) {
+    {
         std::uint64_t padded = cdvd::kSector * ((file.size + cdvd::kSector - 1) / cdvd::kSector);
 
         if (padded > file.size) {
@@ -228,15 +268,26 @@ std::string Fold(std::string_view path) {
         body = body.substr(colon + 1);
     }
 
-    if (std::size_t version = body.find(';'); version != std::string_view::npos) {
-        body = body.substr(0, version);
+    if (std::size_t version = body.rfind(';'); version != std::string_view::npos) {
+        std::string_view suffix = body.substr(version + 1);
+        if (!suffix.empty() && std::all_of(suffix.begin(), suffix.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+            body = body.substr(0, version);
+        }
     }
 
     std::string folded;
     folded.reserve(body.size());
 
-    for (char c : body) {
-        folded.push_back(c == '\\' ? '/' : (c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c));
+    for (unsigned char c : body) {
+        if (c == '\\') {
+            folded.push_back('/');
+        } else if (c >= 0x80 || c == '%') {
+            char escaped[4];
+            std::snprintf(escaped, sizeof escaped, "%%%02x", static_cast<unsigned>(c));
+            folded += escaped;
+        } else {
+            folded.push_back(FoldChar(static_cast<char>(c)));
+        }
     }
 
     folded.erase(0, folded.find_first_not_of('/'));
@@ -253,7 +304,8 @@ void LoadIndex() {
     std::error_code error;
 
     if (!fs::is_directory(root, error)) {
-        NoData(root, "is not a directory");
+        std::fprintf(stderr, "dataread: indexed 0 files under %s (not a directory)\n", PathsDisplay(root).c_str());
+        return;
     }
 
     auto options = fs::directory_options::follow_directory_symlink |
@@ -263,12 +315,18 @@ void LoadIndex() {
          it.increment(error)) {
         std::error_code entry_error;
 
+        if (it.depth() == 0 && ExcludedRootEntry(PathsDisplay(it->path().filename()))) {
+            it.disable_recursion_pending();
+            continue;
+        }
+
         if (it->is_regular_file(entry_error)) {
             std::uintmax_t size = it->file_size(entry_error);
 
             if (!entry_error) {
                 std::string relative = it->path().lexically_relative(root).generic_string();
-                plain_files.emplace(Fold(relative), File{it->path(), 0, size, false});
+                auto &index = IsMoviePath(relative) ? media_files : plain_files;
+                index.emplace(FileKey(relative), File{it->path(), 0, size, false});
             }
         }
     }
@@ -277,8 +335,9 @@ void LoadIndex() {
         std::fprintf(stderr, "%s: %s\n", root.string().c_str(), error.message().c_str());
     }
 
+    std::fprintf(stderr, "dataread: indexed %zu files under %s\n", plain_files.size(), PathsDisplay(root).c_str());
     if (plain_files.empty()) {
-        NoData(root, "is empty");
+        return;
     }
 
     // The index is read when both files are there; a tree whose files were already unpacked only
@@ -313,6 +372,12 @@ bool Find(std::string_view path, File &out) {
         return true;
     }
 
+    auto media = media_files.find(key);
+    if (media != media_files.end()) {
+        out = media->second;
+        return true;
+    }
+
     return false;
 }
 
@@ -333,6 +398,29 @@ bool ReadAt(const File &file, std::uint64_t offset, void *buffer, std::uint64_t 
 }
 
 } // namespace cdvd
+
+void DataReadIndex(const fs::path &root) {
+    PathsSetDataRoot(root);
+    index_loaded = false;
+    packed_files.clear();
+    plain_files.clear();
+    media_files.clear();
+    cdvd::LoadIndex();
+}
+
+std::optional<fs::path> DataReadFind(const char *game_name) {
+    if (!game_name) {
+        return std::nullopt;
+    }
+    cdvd::LoadIndex();
+    std::string key = cdvd::Fold(game_name);
+    auto packed = packed_files.find(key);
+    if (packed != packed_files.end()) {
+        return packed->second.path;
+    }
+    auto plain = plain_files.find(key);
+    return plain == plain_files.end() ? std::nullopt : std::optional<fs::path>(plain->second.path);
+}
 
 /**
  *
@@ -419,9 +507,16 @@ static void ConvStr(char *text) {
  *
  */
 static int GetFullPath(char *path, char *out_path) {
+    const bool host0 = std::strncmp(path, "host0:", 6) == 0;
+    const std::string_view input(path);
+    const std::size_t colon = input.find(':');
+    const std::size_t separator = input.find_first_of("/\\");
+    const bool explicit_prefix = colon != std::string_view::npos &&
+                                 (separator == std::string_view::npos || colon < separator);
+    const bool anchored = path[0] == '/' || path[0] == '\\' || explicit_prefix;
     char rest[256];
     int  device = GetDevType(path, rest);
-    int  has_device = false;
+    int  has_device = explicit_prefix;
 
     if (device == FILE_DEV_DEFAULT) {
         device = DefaultFileDev;
@@ -432,7 +527,7 @@ static int GetFullPath(char *path, char *out_path) {
     char prefix[16] = "";
 
     if (device == FILE_DEV_HOST) {
-        strcpy(prefix, "host:");
+        strcpy(prefix, host0 ? "host0:" : "host:");
     }
 
     if (device == FILE_DEV_HDD) {
@@ -441,7 +536,7 @@ static int GetFullPath(char *path, char *out_path) {
 
     strcpy(out_path, prefix);
 
-    if (!has_device) {
+    if (!has_device && !anchored) {
         strcat(out_path, CurrentDir);
     }
 
@@ -522,15 +617,7 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     }
 
     char full_path[256] = "";
-    char rest[256];
-
-    strcpy(full_path, CurrentDir);
-    strcat(full_path, name);
-    int device = GetDevType(name, rest);
-
-    if (device == FILE_DEV_DEFAULT) {
-        device = DefaultFileDev;
-    }
+    int device = GetFullPath(name, full_path);
 
     info = bg_read_info;
 
@@ -551,6 +638,10 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
             return false;
         }
 
+        if (!ReadWhole(file, buffer)) {
+            return false;
+        }
+
         std::snprintf(info->name, sizeof info->name, "%s", full_path);
         info->busy = true;
         info->dev = FILE_DEV_CDROM;
@@ -564,11 +655,6 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
 
         if (out_size != NULL) {
             *out_size = static_cast<int>(file.size);
-        }
-
-        if (!ReadWhole(file, buffer)) {
-            info->busy = false;
-            return false;
         }
 
         return true;
@@ -673,7 +759,7 @@ PORT_OVERRIDE void InitCDFile() {
 
 PORT_OVERRIDE int LoadFile(char *path, void *buffer, int *out_size) {
     if (!LoadFile2(path, buffer, out_size, LOAD_FILE_READ)) {
-        printf("File open error \"%s\"\n \n \n", path);
+        std::fprintf(stderr, "File open error \"%s\"\n", path);
         Exit__2(0);
     }
 
@@ -748,6 +834,18 @@ PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
     int fd = sceOpen(full_path, SCE_RDONLY);
 
     if (fd < 0) {
+        if (std::strncmp(full_path, "host0:", 6) == 0) {
+            cdvd::File file;
+            if (cdvd::Find(full_path, file)) {
+                if (out_size) {
+                    *out_size = static_cast<int>(file.size);
+                }
+                if (mode == LOAD_FILE_SIZE) {
+                    return 1;
+                }
+                return ReadWhole(file, buffer) ? 1 : 0;
+            }
+        }
         return mode == LOAD_FILE_OPEN ? -1 : 0;
     }
 

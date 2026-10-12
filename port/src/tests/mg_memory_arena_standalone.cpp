@@ -6,20 +6,7 @@
 #include "mg_memory.hpp"
 #include "arena_diagnostics.hpp"
 
-// Keep this focused executable independent of the full game link. These two methods are the
-// retail implementations needed by the host allocator under test.
-void mgCMemory::Init() {
-    heap_size = 0;
-    heap = nullptr;
-    heap_top = nullptr;
-    name[0] = '\0';
-    stack = nullptr;
-    stack_used = 0;
-    stack_size = 0;
-    stack_block = nullptr;
-    lock = 0;
-}
-
+// This retained retail wrapper calls the production host allocator.
 u_long128 *mgCMemory::stAlloc64(int size) {
     stAlign64();
     return stAlloc(size);

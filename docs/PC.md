@@ -2,7 +2,7 @@
 
 `PLATFORM=PC` builds the PAL game's code (`SCES_511.90`) as a native x64 program, compiled by clang as C++26, on SDL3 and Vulkan 1.4. ChronicleTwo ships only the PAL release, so PAL is the only region the port builds for. `docs/PC_PORT_PLAN.md` is the plan the port follows and records its phases.
 
-The port is at Phase 1. The executable opens a window, builds every renderer pipeline and aborts at its first PS2 hardware call. The game does not run past that call. This document describes what is built.
+The port is at Phase 2. The executable loads its configuration, opens a window, indexes the game data and runs the game's main loop until its first PS2 hardware call, which aborts. The game does not run past that call. This document describes what is built.
 
 ## Building and running
 
@@ -19,7 +19,7 @@ Without the container, `cmake --preset linux-x64`, `cmake --build --preset linux
 
 The renderer's cases need a Vulkan device with the features `tools/kazarov/port/gfx/README.md` lists under "Device". The container's Mesa lavapipe provides them, so no GPU is needed there.
 
-`./run.sh linux-x64` builds, then runs `port/build/pc/darkchronicle` on a Linux host.
+`./run.sh linux-x64` builds, then runs `port/build/pc/darkchronicle` on a Linux host. It first extracts `data/` from `rom/pal/Dark Chronicle (PAL).iso` (or `rom/pal/extracted/iso`) with `dc2data`, under `.kazarov/locks/port-data.lock`, and skips the extraction when `data/.kazarov-data` matches the source and `dc2data`. The game holds the lock shared while it runs.
 
 ### Windows
 
@@ -29,6 +29,8 @@ The renderer's cases need a Vulkan device with the features `tools/kazarov/port/
 ```
 
 `build.bat` and `run.bat` pass the configuration through Kazarov's host launcher to `tools/windows/kazarov.ps1`. That script builds into `port/build/<configuration>`. The first run fetches the toolchain into `.kazarov/windows`, through `tools/windows/acquire.ps1`: llvm-mingw 20260922 (clang and lld), Ninja 1.13.2, SDL3 3.4.18 (MinGW), glslang 16.6.0 and the Vulkan 1.4.363.0 headers. Each archive is checked against its SHA-256 before it is extracted. `windows-x64` is a Debug build; `windows-x64-release` (and `windows`) is RelWithDebInfo.
+
+`run.bat` extracts `data\` from `rom/pal/Dark Chronicle (PAL).iso` (or `rom/pal/extracted/iso`) with `dc2data.exe` before launching, under the `port-data.lock` lock, and skips it when `data\.kazarov-data` matches the source and `dc2data.exe`, as the Linux launcher does. The game holds the lock shared while it runs.
 
 The scripts need PowerShell 7, 7-Zip, CMake and Python 3, found on `PATH` or at their default install locations.
 
@@ -102,7 +104,57 @@ Exit statuses (`port/src/exitcodes.hpp`): 0 for a normal exit, 2 for a usage err
 port/src/mglib.cpp:13: mgInit: PlayStation 2 code is not implemented on PC
 ```
 
-The test `Smoke.LaunchAbortsAtFirstHardwareCall` (`port/src/tests/CMakeLists.txt`) runs `darkchronicle --headless --offscreen` and passes when that line appears. It runs the executable under a generated CMake script, because ctest counts a process killed by `abort()` as failed even when `PASS_REGULAR_EXPRESSION` matches its output.
+The test `Smoke.LaunchAbortsAtFirstHardwareCall` (`port/src/tests/CMakeLists.txt`) runs `darkchronicle --headless --offscreen` and passes when a `dataread: indexed` line appears before that line. It runs the executable under a generated CMake script, because ctest counts a process killed by `abort()` as failed even when `PASS_REGULAR_EXPRESSION` matches its output.
+
+## What Phase 2 does
+
+`darkchronicle --headless [--offscreen] --data data` loads `config.json`, creates the window and renderer (504 pipelines precompiled), sets the clock to `game.tick_rate` (default 50), and indexes `data/`, printing `dataread: indexed N files under <dir>`. The disc's `DATA.DAT` holds 8751 files. It then runs the retail `MainLoop` until its first unported call, `mgInit`, which aborts with:
+
+```
+mgInit: PlayStation 2 code is not implemented on PC
+```
+
+### Config
+
+The configuration is `<save root>/config.json`, with the sections `game`, `video`, `audio` and `input`. They fill Kazarov's `HostSettings`. An invalid value keeps its default and is reported on stderr. A missing file is written with the defaults. A file that exists but cannot be read is left untouched and is never written in that session.
+
+`SettingsChange` stores the new settings, saves them, calls `DisplayChanged`, and calls a change hook. Through that hook `main` applies `ClockSetTickRate` and `InputApplyConfig`.
+
+### Memory
+
+`mgCMemory` is replaced whole (`port/src/mg_memory.cpp`). Its pointers are host pointers, and the `mgMEMORY_BLOCK` header is two quadwords on the host. Blocks are 64-byte aligned through `uintptr_t`. Stack and heap modes are tested on arenas mapped above 4 GiB.
+
+`main_buffer` keeps its retail size of 0x1A0000 quadwords. Each arena's high-water mark is tracked, and `MainLoop` logs `mg_memory: <name> peak P of C quadwords (F free)` after every loop exit. The loops cannot run yet, because `mgInit` aborts first. Once they run, this line is how the headroom for 8-byte pointers is measured.
+
+### MainLoop
+
+`port/src/mainloop.cpp` is the retail sequence. It differs in three ways: pointer alignment goes through `uintptr_t`; the static `InitPadTable` and `VSyncCallBack` are reached through renamed stubs; and file paths are passed as writable arrays. `InitCDFile` runs from `main` before `MainLoop`, after the main-thread priority is set, as retail does.
+
+### Decision 1: long64 is kept
+
+The PS2's `long` is 64-bit, and on Windows (LLP64) it is not. `scripts/port/long64.py` rewrites the build-tree copies of `ps2/src` and the `ps2/include` mirror, on every host, so the port keeps the PS2's width:
+
+- `long` becomes `long long`, `L` and `UL` integer suffixes become `LL` and `ULL`, and `%l` integer conversions become `%ll`.
+- It tokenizes, so comments, string and character literals (other than printf conversions), `long double`, `long long`, identifiers containing `long`, and the MIPS `%lo(` relocation operator are untouched. Line numbers are preserved.
+- Over the real sources it changes 87 tokens in 21 files: 80 keywords, 6 hex `UL` suffixes, and 1 format (`password.cpp`'s `"err %lu\n"`). It changes no line count and no string otherwise.
+
+Proof is by test. `scripts/port/test_long64.py` has 91 cases. The `Long64` GoogleTest suite (`port/src/tests/long64_test.cpp`) runs retail `mgSetPkTEX0`, where both forms write full 64-bit TEX1, TEX0 and TEXA words, and retail `password.cpp`, where `ConvertBinToTxt` and `ConvertTxtToBin` round-trip 64-bit groups up to `0xFFFFFFFFFFFFFFFF`, and `EncodePassword` and `DecodePassword` round-trip and reject tampering. Both run on Linux and Windows.
+
+This closes the Phase 1 open items on `u_long`, `mgSetPkTEX0` and `password.cpp`. No per-function `u64` overrides are needed.
+
+### Decision 2: threads
+
+Kernel threads are cooperative fibers. See "Threads and timing".
+
+## Threads and timing
+
+PS2 kernel threads run as cooperative fibers on the one OS thread: ucontext on Linux, Win32 fibers on Windows. `CreateThread`, `StartThread`, `RotateThreadReadyQueue` and the semaphores are real.
+
+Switches happen only in `StartThread`, `RotateThreadReadyQueue`, a blocking `WaitSema`, `SignalSema` preemption, and thread exit. A switch attempted inside `ClockPump` (its callback or hooks) aborts; death tests on both OSes cover this. An uncontended semaphore pair never yields. A `WaitSema` with nothing else ready aborts as a deadlock.
+
+`WaitVSync` waits, then pumps every tick with the rotate. `sceGsSyncV` goes through `ClockSyncV`. `mgNowFrameRate` comes from the wall clock via `mgTimeFrameFields()`, as seconds times `ClockTickRate`, the same unit as retail's `T0/262`.
+
+The reason for this design: the retail thread loops (`GamePadStep`, `NowLoadingLoop`, fishing's `StepDataLoading`, the movie threads) run unchanged, and host state stays on the main thread.
 
 ## Layout
 
@@ -119,7 +171,7 @@ The root `CMakeLists.txt` selects the platform: `PS2` builds `ps2/`, and `PC` en
 
 ### The shared-code pin
 
-The submodule is pinned at `0d72aa1`, the commit in the index. Changes to the shared code go to Kazarov's `main` first. ChronicleTwo, like Chronicle, must build and test green on that commit before either game pins it. A game never edits a submodule checkout in place.
+The submodule is pinned at Kazarov `main` `a7674f4`, which adds the fiber thread family as the only `eekernel_threads` family, `ClockPumping()`, `PathsReset`, `sceMcSeek`/`sceMcEnd`, and the `Vu_prog0` mesh pipelines behind `RendererConfig::prog0_meshes`. Chronicle pins the same commit. Changes to the shared code go to Kazarov's `main` first. ChronicleTwo, like Chronicle, must build and test green on that commit before either game pins it. A game never edits a submodule checkout in place.
 
 ## How `port/src` takes precedence
 
@@ -150,14 +202,30 @@ The stub headers present are `collision`, `dataread`, `dng_main`, `editmap2`, `e
 
 ## Header fixups
 
-`scripts/port/header_fixups.py` mirrors `ps2/include` into `port/build/pc/ps2_include` before the units compile, with two textual fixups. The game's headers include each other with quotes, so the port compiles against the mirror.
+`scripts/port/header_fixups.py` mirrors `ps2/include` into `port/build/pc/ps2_include` before the units compile, with these textual fixups. The game's headers include each other with quotes, so the port compiles against the mirror.
 
 - `dng_event.hpp`: `CRedMarkModel::Draw` is declared `int`, not `void`.
 - `dng_hud.hpp`: `CLockOnModel::Draw` is declared `int`, not `void`.
 
 MWCC accepts a `void Draw()` that hides the base's `int Draw()` and gives it a new vtable slot. clang rejects that, and no standard spelling keeps the PS2 vtables. The `int` declarations make the two draws overrides instead. This is an accepted difference: their port definitions are `PS2_UNIMPLEMENTED` overrides (`port/src/dng_event.cpp`, `port/src/dng_hud.cpp`).
 
+- `nd_meswin.hpp`: `#ifndef MES_WINDOW_OUT_OF_LINE_INIT` becomes `#if 1`, so `ClsMes::Init` is inline in every unit. `dngmenu.cpp`'s out-of-line copy was a strong definition and collided with the COMDAT copies on COFF.
+- `collision.hpp`: `memset` takes `static_cast<void *>`, because `mgVu0FBOX` is not trivially copyable and `-Wnontrivial-memcall` rejects it.
+- `sce/eekernel.h`: `CreateThread`, `TerminateThread` and `GetThreadId` get the asm link names `Ps2CreateThread`, `Ps2TerminateThread` and `Ps2GetThreadId`, because kernel32 exports the unprefixed names.
+- MWCC-only `#pragma cpp_extensions ...`, `#pragma push` and `#pragma pop` lines are blanked, keeping the line count. `port/src` builds with `-Wall` and without `-Wno-unknown-pragmas`, so they cannot stay.
+
+Headers then go through the long64 rewrite (see "Decision 1" under "What Phase 2 does").
+
 Each fixup's text must occur exactly once in its file, or the script stops before it writes anything.
+
+### Unit fixups
+
+`header_fixups.py --unit <copy>` runs on each `ps2_src` copy after the override strip and before long64:
+
+- `map.cpp`: `CMapParts::CMapParts()` becomes `inline`.
+- `dng_debug.cpp`: `CTreasureBox::Initialize()` becomes `inline`.
+
+Both match their other identical copies, so the COFF link has no strong-versus-COMDAT duplicates. `CTreasureBox`'s vtable becomes COMDAT with it. Each unit fixup's text must also occur exactly once.
 
 ## Names the PS2 build renames
 
@@ -172,11 +240,11 @@ The PS2 link binds some names through the object fixups and the linker script, n
 
 ## Windows link
 
-- `-Wl,--allow-multiple-definition`: COFF has no weak and strong symbols, so an inline header function and its out-of-line copy collide. The flag also lets the game's PS2 `CreateThread` stub shadow KERNEL32's import thunk. Calls through `__imp_` are unaffected.
+- `-Wl,--allow-multiple-definition` stays only as a guard. The eekernel.h fixup gives the PS2 kernel's three thread calls their own link names, so they no longer shadow KERNEL32's import thunk. The Windows link now reports no duplicate symbols.
 - `-Xclang -mno-constructor-aliases`: a constructor alias points C1 into a COMDAT section that lld discards under `--allow-multiple-definition`.
 - `-municode` and a `wmain` forwarder: the arguments arrive as UTF-16 and are converted to UTF-8.
 - `port.h` supplies `index()` for mingw, whose `<strings.h>` has none; the PS2 libc's `index()` is `strchr()`.
-- `u_long` is 64-bit on the host (`port.h` defines it as `u64`). `mgSetPkTEX0`'s bodies still store through `unsigned long *`, which is 32 bits on Windows, so they truncate. This is open.
+- `u_long` is 64-bit on the host (`port.h` defines it as `u64`). The long64 rewrite makes the retail `unsigned long` 64-bit on Windows too (see "Decision 1" under "What Phase 2 does").
 
 ## The stub list
 
@@ -215,51 +283,75 @@ Every entry below is a `PORT_OVERRIDE` definition whose body calls `PS2_UNIMPLEM
 | `mg_visual.cpp` | `mgCVisualMDT::CreatePacket` | packet (uncached mirror) |
 | `mg_visual.cpp` | `mgCVisualFixMDT::CreatePacket` | packet (uncached mirror) |
 | `mg_visual.cpp` | `mgCVisualMDT::CreateFacePacket` | packet |
-| `mg_visual.cpp` | `mgCVisualMDT::SetMaterialRef` | packet |
-| `mglib.cpp` | `VSyncCallBack` | register (GS CSR) |
 | `mglib.cpp` | `mgInit` | register (DMAC, GS) |
 | `mglib.cpp` | `mgBeginFrame` | register (VIF1 packet, GS frame) |
 | `mglib.cpp` | `mgEndFrame` | register (GS store image, DMAC sync) |
-| `mglib.cpp` | `mgSendPacket` | register (DMAC channel 1) |
 | `mglib.cpp` | `StoreImage` | register (GS store image) |
 | `movie.cpp` | `CMovie::Load` | register (DMAC control and status) and SDK (MPEG) |
 | `movie.cpp` | `CMovie::Play` | not yet ported (movie thread) |
 | `movie.cpp` | `CMovie::videoDecFlush` | not yet ported (movie) |
-| `movie.cpp` | `videoCallback` | SDK (MPEG callback) |
-| `movie.cpp` | `setD3_CHCR` | register (DMAC channel 3) |
-| `movie.cpp` | `setD4_CHCR` | register (DMAC channel 4) |
-| `movie.cpp` | `viBufCreate` | uncached (tag address) |
-| `movie.cpp` | `viBufReset` | register (DMAC channel 4) |
-| `movie.cpp` | `viBufAddDMA` | register (DMAC channel 4) |
-| `movie.cpp` | `viBufStopDMA` | register (DMAC channel 4, IPU) |
-| `movie.cpp` | `viBufRestartDMA` | register (DMAC channel 4, IPU) |
 | `movie.cpp` | `viBufDelete` | register (DMAC channel 4) |
-| `movie.cpp` | `viBufGetTs` | register (DMAC channel 4) |
-| `movie.cpp` | `setImageTag` | SDK (GIF packer) |
 | `sceneevent.cpp` | `CScene::DrawSky` | not yet ported |
 | `sceneload.cpp` | `CScene::LoadMapFromMemory` | register (T0, through `timer0_count`) |
 | `visualmotion.cpp` | `mgCVisualMotionMDT::CreateFaceMotionPacket` | packet |
 | `water.cpp` | `CWater::CreatePacket` | packet (GS `TEXA`) |
 
-That is 46 stubs and `main`. The `movie.cpp` entries are the movie path, which the port does not play yet.
+The table lists 33 stubs and `main`. The `movie.cpp` entries are the movie path, which the port does not play yet.
+
+The executable has 74 `Ps2Unimplemented` call sites: 34 game-side and 40 Kazarov SDK. The game-side sites are the 33 stubs in the table and `SendDMA` in the asm table below. The 40 SDK stubs live in `tools/kazarov/port/sce/stubs` and are listed by family there.
+
+Twelve functions are not linked at all (no caller survives `--gc-sections`). They need a replacement only if a later phase calls them: `mgCVisualMDT::SetMaterialRef`, `mgSendPacket`, `videoCallback`, `setD3_CHCR`, `setD4_CHCR`, `viBufCreate`, `viBufReset`, `viBufAddDMA`, `viBufStopDMA`, `viBufRestartDMA`, `viBufGetTs` and `setImageTag`.
+
+To regenerate the count, run:
+
+```sh
+tools/kazarov/bin/kazarov shell bash -c "objdump -d --no-show-raw-insn port/build/pc/darkchronicle | awk '/^[0-9a-f]+ <.*>:\$/{fn=\$2} /Ps2Unimplemented/{print fn}' | sort -u | c++filt"
+```
 
 The asm-replacement files, with their `PS2_UNIMPLEMENTED` counts:
 
 | File | Stub bodies | Notes |
 |---|---|---|
-| `collision_asm.cpp` | 3 | `CCollisionMDT::PickUpNearPoly`, `pre_trance_normal`, `trance_normal` |
-| `editcoll.cpp` | 1 | `ClipBoxXZ` |
-| `editmap2.cpp` | 1 | `PlaneNormalXZ` |
-| `gameutil_asm.cpp` | 4 | `testVUnew`, `MotionProc2`, `CheckHit`, `CheckHits` |
-| `mg_drawprim_asm.cpp` | 4 | `mgCDrawPrim::Data0`, `Data4`, `Vertex`, `Color` |
-| `mg_frame_asm.cpp` | 8 | `test1`, `test2`, `mgInsideScreen`, `GetLocalMatrix`, `GetBBoardMatrix`, `GetLWMatrix`, `GetLWMatrixTopBottom`, `GetDrawRect` |
-| `mg_math.cpp` | 30 | `mgZeroVectorW`, `mgUnitMatrix` and `mgZeroMatrix` are real C++ |
-| `mg_visual_asm.cpp` | 1 | `SendDMA` |
+| `collision_asm.cpp` | 0 | all bodies real |
+| `editcoll.cpp` | 0 | all bodies real |
+| `editmap2.cpp` | 0 | all bodies real |
+| `gameutil_asm.cpp` | 0 | all bodies real |
+| `mg_drawprim_asm.cpp` | 0 | all bodies real |
+| `mg_frame_asm.cpp` | 0 | all bodies real |
+| `mg_math.cpp` | 0 | `mgZeroVectorW`, `mgUnitMatrix` and `mgZeroMatrix` are real C++ |
+| `mg_visual_asm.cpp` | 1 | `SendDMA`, the replacement for `mg_visual.cpp`'s `SendDMA`, whose body is under `#ifndef PORT` |
 
 The SDK families under `tools/kazarov/port/sce` are real where the PS2's behaviour can be reproduced on the host, and stubs where it cannot:
 
-- Real: `libvu0` (the VU0 maths), `eekernel`, `libgraph` (`sceGsSyncV` reports the field from the clock), `libpad`, `libmc` (3 stub bodies in 545 lines), `sifdev`, `sifrpc` (8 stub bodies in 66 lines) and `libcdvd` (12 in 60, the disc reads). `unimplemented.cpp` holds the shared `Ps2Unimplemented`, which prints the line shown above and aborts.
-- Stubs: `eekernel_threads`, `libdev`, `libdma`, `libgraph` (in `sce/stubs`, beside the real `sce/libgraph.cpp`), `libmpeg`, `libpkt`, `libsdr`, `modmsin` and `sifdma`. Every function in them calls `PS2_UNIMPLEMENTED()`.
+- Real: `libvu0` (the VU0 maths), `eekernel`, `eekernel_threads` (the fibers, see "Threads and timing"), `libgraph` (`sceGsSyncV` reports the field from the clock), `libpad`, `libmc` (3 stub bodies in 545 lines), `sifdev`, `sifrpc` (8 stub bodies in 66 lines) and `libcdvd` (12 in 60, the disc reads). `unimplemented.cpp` holds the shared `Ps2Unimplemented`, which prints the line shown above and aborts.
+- Stubs: `libdev`, `libdma`, `libgraph` (in `sce/stubs`, beside the real `sce/libgraph.cpp`), `libmpeg`, `libpkt`, `libsdr`, `modmsin` and `sifdma`. Every function in them calls `PS2_UNIMPLEMENTED()`.
+
+## Hardware audit
+
+Grep for hardware addresses and registers in the unit copies:
+
+```sh
+grep -nE "0x1[0-2][0-9A-F]{6}\b|0x7000[0-9A-F]{4}|0x20000000|0x0FFFFFFF|DmaCH[0-9]|D_STAT|D_CTRL|IPU_|T0_(COUNT|MODE)" port/build/pc/ps2_src/*.cpp
+```
+
+It gives 137 hits:
+
+- 105 are constants or names that only look like hardware.
+- 1 is a comment.
+- 21 are packet-tag writes.
+- 10 are real hardware accesses, none of them linked. `mg_visual.cpp`'s `SendDMA` body is under `#ifndef PORT`, and its replacement is the stub. In `movie.cpp`, `vblankHandler`, `viBufRestartD3` and `UncAddr` have no surviving caller.
+
+Scratchpad access goes through `GetScrPad`, a stub. The five `CreateRenderInfoPacket` functions (`mgC3DSprite`, `mgCShadowMDT`, `mgCVisualMDT`, `mgCVisualPrim`, `CWater`) reach it first.
+
+`nm` of the executable shows no unresolved hardware symbol. The hardware-named definitions are Kazarov `sce` replacements or game code that is not `PS2_UNIMPLEMENTED`.
+
+## Pointer truncations
+
+`docs/port/truncations.md` lists every cast of a pointer to a narrower integer in `ps2/src`, `port/src` and their headers. `scripts/port/truncations.py` generates it, and its command is at the top of that file. It has 123 rows.
+
+Eight round trips are open in linked code. Each has a phase in `PHASE_OF`: Phase 4 for `mgC3DSprite::Draw`, `mgCSprite::Draw`, `mgCVisualFixMDT::DataAssignMDT` and `CWater::Draw`; Phase 5 for `ezTransToIOP2`; Phase 7 for `_SET_INDEXOBJ_SIZE`, `_GET_INDEXOBJ_SIZE` and `niNPC_INFO_NUM`. `--check` fails on an unassigned one.
+
+Caveat: libclang fails to parse 13 units fully (for example `mg_visual.cpp`'s over-wide integer literals), so their rows may be incomplete.
 
 ## Keeping the PS2 build matching
 

@@ -1,5 +1,10 @@
 # Port compatibility source audit
 
+The completion batch adds a normal-build source-ownership gate and seven CI component executables.
+See `ACTIVE_CONTRACT_COVERAGE.md` and `EXECUTION_BATCH_2026-10-11.md` for the current receipt.
+The lexical inventory currently has 5,376 findings and seventeen retained reviewed repairs; this
+does not establish complete compiler-assisted pointer or linker enforcement.
+
 `COMPATIBILITY_INVENTORY.md` records lexical findings from the retail `ps2/` tree and the native `port/` tree. `compatibility_decisions.tsv` is a separate human ledger. Every newly detected row starts `open`; updating generated files never marks a site repaired or safe.
 
 Run from the `win/ChronicleTwo` repository root:

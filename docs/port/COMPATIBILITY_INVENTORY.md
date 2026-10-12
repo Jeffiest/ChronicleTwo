@@ -8,45 +8,72 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 |---|---|---|---|---|---|
 | 9f0ee557a7d57ae9 | hardware:ps2_sdk_or_thread | host-source/src/character.cpp:70 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | host-source/src/character.cpp |
 | ebab5b62cf508e7c | hardware:ps2_sdk_or_thread | host-source/src/character.cpp:71 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | host-source/src/character.cpp |
-| cfb3f3ad3bc61047 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:662 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
-| fb03c785cb2682fe | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:748 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| d1152164d146515f | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:754 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| 01a2b4f617cf5e3a | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:761 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| 72c29a9f27eb1a7c | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:764 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
-| 6c5148508ed1facf | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:765 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| ed89307d878a183d | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:768 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
-| 6cfef66e91c40bf1 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:771 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 5133884da2f8ff0d | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:14 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| f4b18da13feacf8c | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:15 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 77b1e9434cfc707e | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:16 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 99ad0a539750522a | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:17 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 9b7466d97a06656d | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:66 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| b8f9681badb9fed0 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:67 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| af677a37cf1d2045 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:68 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 50c1839dd31ecd2a | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:76 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 70eb8bb3fa384f16 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:748 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
+| 48e47fc5351874c2 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:834 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| 6ee138de7f83bca4 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:852 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| 2f6d3088185c98f3 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:859 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| f06f296a90e545bb | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:862 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 1a09e26964296192 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:863 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| 4c8337906106f2a8 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:866 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
+| 25dfbb4202afb072 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:869 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
 | 7377eaa86cca2ec1 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:57 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | f7774abc8c9a9625 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:61 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | 0cc4aecb9ddc3937 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:150 | SkinMotionVisual | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | 7b228a9f1d3ef399 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:155 | SkinMotionVisual | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | a4a6f5946c157652 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:177 | SkinMotionVisual | sceVu0UnitMatrix | host-source/src/dynamicanime.cpp |
-| 829d77804241ef47 | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:15 | <file-scope> | TerminateThread | host-source/src/eekernel.cpp |
-| 86261794a882497f | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:188 | ThreadEntry | TerminateThread | host-source/src/eekernel.cpp |
-| a0a6eecc9c42eefe | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:200 | CreateThread | CreateThread | host-source/src/eekernel.cpp |
-| ee740dc1cd05c12c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:216 | StartThread | StartThread | host-source/src/eekernel.cpp |
-| f72ef91abd6d7dec | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:280 | TerminateThread | TerminateThread | host-source/src/eekernel.cpp |
-| 0de084363ec3152c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:335 | DeleteThread | TerminateThread | host-source/src/eekernel.cpp |
-| d19877330352fdc4 | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:408 | WaitSema | WaitSema | host-source/src/eekernel.cpp |
-| a1a8e3684b59422c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:444 | SignalSema | SignalSema | host-source/src/eekernel.cpp |
-| 1889c918865f6226 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:29 | pad_button_read | scePadRead | host-source/src/gamepad.cpp |
-| 146b8ed9eb4e4b6f | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:56 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 796084a19c6a7aa8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:58 | read_pad | scePadStateDiscon | host-source/src/gamepad.cpp |
-| feebd648e9d9a921 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:66 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
-| 04d5ea9d6768f2b5 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:67 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| f1a16fdf48be0660 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:70 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| ba6f41aaa13b57d5 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:110 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| f8508fefb12a8ff8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:118 | read_pad | scePadSetMainMode | host-source/src/gamepad.cpp |
-| 7bae6a635cda5380 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:124 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 8842cc33bb77afad | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:130 | read_pad | scePadInfoAct | host-source/src/gamepad.cpp |
-| d1b5e508e232efab | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:141 | read_pad | scePadSetActAlign | host-source/src/gamepad.cpp |
-| 823bb41f6180f8f3 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:147 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 22e17196f0621758 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:153 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
-| 1b58c3da52db4433 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:188 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| be226c974488b7a2 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:191 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| 5f4ee7d3d61d12ec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:193 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
-| 172c204a39e4663b | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:199 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| 012822a5b2baba9f | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:201 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| 0eb0f61ca546292c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:51 | pad_button_read | scePadRead | host-source/src/gamepad.cpp |
+| 65698757961ad4a3 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:78 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| 067ed7dfcc076f47 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:80 | read_pad | scePadStateDiscon | host-source/src/gamepad.cpp |
+| 10f106c2b0506cec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:88 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
+| cd2d152297fc19e9 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:89 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| 8d3edc2e1f2b7d9d | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:92 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| cda1e59b93f196ec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:132 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| 11701932a71185b0 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:140 | read_pad | scePadSetMainMode | host-source/src/gamepad.cpp |
+| 89cca857abc756fc | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:146 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| d21902689c55a4e1 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:152 | read_pad | scePadInfoAct | host-source/src/gamepad.cpp |
+| 2fdb4736190bc8e2 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:163 | read_pad | scePadSetActAlign | host-source/src/gamepad.cpp |
+| 55042f1300a7866c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:169 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| 5641a99fe988a810 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:175 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
+| f24328ec83bec4f6 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:210 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 6cb3304c0124b58c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:213 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 698ad66d6053fbb8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:215 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| 9e548c7a764a0e09 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:221 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 8e65220dc305f317 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:223 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| f79b11878c888d47 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:378 | CreateGamePadThread | CreateThread | host-source/src/gamepad.cpp |
+| 039d245cf6403a81 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:379 | CreateGamePadThread | StartThread | host-source/src/gamepad.cpp |
+| 43f3ddd5a311c7b9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:33 | testVUnew | sceVu0FVECTOR | host-source/src/gameutil_asm.cpp |
+| 4815e38c7de74f42 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:34 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 4a91d18acbfb30c5 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:35 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| c151fe789c6309d9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:36 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 0b881fc9f2527948 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:37 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| a2525bbfb60f6d91 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:38 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 8ae7443f58e0712f | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:87 | testVUnew | sceVu0UnitMatrix | host-source/src/gameutil_asm.cpp |
+| 9b7c1d2b083c7632 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:88 | testVUnew | sceVu0UnitMatrix | host-source/src/gameutil_asm.cpp |
+| e1caea2bd1396668 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:103 | testVUnew | sceVu0ApplyMatrix | host-source/src/gameutil_asm.cpp |
+| 63801864fc3f4ca1 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:111 | testVUnew | sceVu0CopyVectorXYZ | host-source/src/gameutil_asm.cpp |
+| e576961c63c8706e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:168 | CheckHit | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| f9d640a6b7ba4bc6 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:169 | CheckHit | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| f3ae1953d1f4cfcf | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:170 | CheckHit | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| c89968fb3440ccc8 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:171 | CheckHit | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 7085b95c003e109e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:188 | CheckHit | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 7283618299ddcb43 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:200 | CheckHit | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 994cebedc23a9d87 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:204 | if | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| b310c5656916ddb9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:252 | CheckHits | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| 94bfae0d983bf8c3 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:253 | CheckHits | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 762f5256008282e6 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:254 | CheckHits | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| 1e6f3c171e57d51e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:255 | CheckHits | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 8cbe09b5e8c94b98 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:275 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| a2256478a24fcc50 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:291 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 80a6ffd56b88485a | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:292 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| fe95ddf1eb30ce11 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:293 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
 | 39b617340743d991 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:52 | testVUnew | sceVu0FVECTOR | host-source/src/gameutil_motion.cpp |
 | 99188f348cbef32e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:53 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_motion.cpp |
 | 4aa043c62d576c31 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:54 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_motion.cpp |
@@ -169,6 +196,42 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4dc463e5d917a5f7 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:874 | mgCDrawManager::ReloadTexture | sceVif1Packet | host-source/src/mg_drawprim.cpp |
 | 0feb579dbaed58d1 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:886 | mgCDrawManager::Draw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
 | cf4d8122133baafa | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:896 | mgCDrawManager::EndDraw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
+| 11e94f7a8c673649 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:118 | mgCFrame::GetLocalMatrix | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| 4f5a6f0622bdc3ee | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:120 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 724b96df9fa5eab5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:126 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixX | host-source/src/mg_frame_asm.cpp |
+| f350d2bbddf8b9a4 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:130 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixY | host-source/src/mg_frame_asm.cpp |
+| d4f96a894014488e | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:134 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixZ | host-source/src/mg_frame_asm.cpp |
+| 0cfe10106e031ab4 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:139 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_asm.cpp |
+| 279fb5fa7c665495 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:142 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_asm.cpp |
+| 257daa2e7c70f8a3 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:146 | mgCFrame::GetLocalMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 673771b53186787d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:162 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_asm.cpp |
+| a7a635c0133dee61 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:165 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| d9ef71a6dc76dc5d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:168 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| 4b28399660740ca0 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:174 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_asm.cpp |
+| 7922caa79d7b6686 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:175 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| 7547ce7d2ff40c91 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:176 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| bd25667fb4019cee | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:185 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| 279dd4cf5e350838 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:188 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| 8125a0ad1e5cb3b9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:198 | mgCFrame::GetBBoardMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| d7333cddde1fb59c | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:215 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 50813b44a22309fe | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:229 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 5671c909f2b1d54d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:241 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 0a63bb29c08bd6ed | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:242 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 0eb1186b4bc12043 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:272 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| fb0a1d15b1864efe | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:277 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| a2b4ba9371abd682 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:287 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| bb680a43adb4e890 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:288 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 07cc92e0832d070b | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:290 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 16b3cb8bdc227261 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:305 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/mg_frame_asm.cpp |
+| d093f5b2de929a70 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:306 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| a27b8d64d4defbd9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:307 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| e25f891adebe55bb | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:308 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/mg_frame_asm.cpp |
+| dcc5bbeaeb5fe04b | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:383 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| d849c0a36c9b5485 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:384 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 6db84226983f21cd | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:400 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 949c4e057d2eaeea | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:401 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| aac56734d9970f2f | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:410 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 5bc989ac98d1a527 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:411 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
 | cb9cfe5f5e691d86 | hardware:inline_asm_or_intrinsic | host-source/src/mg_frame_math.cpp:13 | <file-scope> | asm | host-source/src/mg_frame_math.cpp |
 | aa3dce91ded5601c | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:24 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
 | 01a06acf104d44f9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:26 | mgCFrame::GetLocalMatrix | sceVu0FVECTOR | host-source/src/mg_frame_math.cpp |
@@ -200,31 +263,30 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 04f3b0d62dcc1fc5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:182 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
 | 67ff0600930ae208 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:185 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
 | 7bf5cf2ebd8fddb9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:202 | mgCFrame::GetBBoardMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| fc1c5d6b73364d2f | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:325 | mgRotMatrixXYZ | sceVu0FMATRIX | host-source/src/mg_math.cpp |
-| 5e4f16e2e4905379 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:326 | mgRotMatrixXYZ | sceVu0FMATRIX | host-source/src/mg_math.cpp |
-| e3b4f000edaa0b02 | hardware:inline_asm_or_intrinsic | host-source/src/mg_memory.cpp:15 | <file-scope> | __builtin_return_address | host-source/src/mg_memory.cpp |
+| e5f5a3bcd08ab1c5 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:139 | mgNormalizeVector | sceVu0FVECTOR | host-source/src/mg_math.cpp |
+| 71077dd41fc0eda0 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:141 | mgNormalizeVector | sceVu0Normalize | host-source/src/mg_math.cpp |
+| a5104d1ebac72479 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:142 | mgNormalizeVector | sceVu0ScaleVector | host-source/src/mg_math.cpp |
+| d467ea57d320d863 | hardware:inline_asm_or_intrinsic | host-source/src/mg_memory.cpp:20 | <file-scope> | __builtin_return_address | host-source/src/mg_memory.cpp |
 | 62a96f757fb4e861 | raw-member-offset | host-source/src/mg_tanime.cpp:157 | MoveClut | clut + position | host-source/src/mg_tanime.cpp |
 | 48a9e6aa676de341 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:544 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
 | c16b219397765422 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:626 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_tanime.cpp |
-| c0c8171eb282b774 | raw-member-offset | host-source/src/mg_texture.cpp:304 | if | clut + position | host-source/src/mg_texture.cpp |
-| 5fd58dc05de88c2c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:395 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| a5b3d7119964b4aa | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:397 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 3ae5e3028ee7f0b3 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:403 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 3fab51f7ff770cb6 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:407 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 13ac4db031bcbb8c | raw-allocation | host-source/src/mg_visual.cpp:432 | mgCVisualMDT::CopyMDTDataPointer | (mgMaterial *) memory->Alloc((material_num * sizeof(mgMaterial) | host-source/src/mg_visual.cpp |
-| e8db79aa64b3fd8c | hardware:scratchpad | host-source/src/mg_visual.cpp:441 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| 63efa235fbe844c1 | hardware:scratchpad | host-source/src/mg_visual.cpp:442 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| d9f75a5a4fce2f57 | hardware:scratchpad | host-source/src/mg_visual.cpp:444 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| ecfa9b59a6f96348 | hardware:scratchpad | host-source/src/mg_visual.cpp:446 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| b24b3cdafc50914d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:33 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
-| e2da105d56e0a9bd | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:206 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
-| f0a481072dfd4f5c | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:305 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 10a7d2e3677e8b6d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:347 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 0745d9703703df2f | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:469 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| ffb977b6fc3f6e98 | pointer-narrowing | host-source/src/mglib.cpp:523 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
-| b6b188b703dc2b2d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:565 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
-| 1726cd65317c930b | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:598 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
-| 564b0b36e7757a82 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:632 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
+| b614b91887c336ef | raw-member-offset | host-source/src/mg_texture.cpp:307 | if | clut + position | host-source/src/mg_texture.cpp |
+| 5db9af6c0845ea4c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:455 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| f25c02e36b1055cf | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:458 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| 153d4ab8c14b0657 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:464 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| 99f0a55835d2e8a9 | hardware:scratchpad | host-source/src/mg_visual.cpp:500 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| b87b607d1ee723b9 | hardware:scratchpad | host-source/src/mg_visual.cpp:501 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 66c0c6a6185994c9 | hardware:scratchpad | host-source/src/mg_visual.cpp:503 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 9ed003793a441ca9 | hardware:scratchpad | host-source/src/mg_visual.cpp:505 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
+| 1d087c91436025b5 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:34 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
+| 14e7291afd2eef6e | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:189 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
+| 6872c876693b0cc5 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:287 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| b203411b21e613eb | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:329 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 1ed72a5f3dbd9947 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:451 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 437a9c54827e9612 | pointer-narrowing | host-source/src/mglib.cpp:505 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
+| d5543ea93a6b68ae | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:547 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
+| 9eb1cf69af022d12 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:580 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
+| 5a039616f6e46052 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:615 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
 | 0c7e3178fcede0b3 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:22 | <file-scope> | sceMpeg | host-source/src/movie.cpp |
 | 74ec2576cd6f458b | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:81 | ReadTiming | sceMpegAddStrCallback | host-source/src/movie.cpp |
 | a9acbc24c46a7571 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:84 | ReadTiming | sceMpegCallback | host-source/src/movie.cpp |
@@ -428,28 +490,126 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 38f77787c504b1f8 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1652 | sndGetVolPan | sceVu0InnerProduct | host-source/src/snd_mngr.cpp |
 | fe90de06ab741abd | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1677 | sndGetVolPan | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
 | 80d53b14320965a2 | pointer-narrowing | host-source/src/snd_seseq.cpp:219 | sndCSeSeq::Count | (int) (((float) seq_data->tick_rate * | host-source/src/snd_seseq.cpp |
-| 50794c948a088b2e | pointer-narrowing | host-source/src/sound.cpp:420 | CSound::SetVol | static_cast<int>(volume * | host-source/src/sound.cpp |
+| ece135fdc4264e3e | pointer-narrowing | host-source/src/sound.cpp:469 | CSound::SetVol | static_cast<int>(volume * | host-source/src/sound.cpp |
 | bc2963ca429a49d1 | raw-allocation | host-source/src/tests/bits64_fixture.hpp:29 | Arena | reinterpret_cast<u_long128 *>(arena.alloc.Alloc(quads) | host-source/src/tests/bits64_fixture.hpp |
 | 4d2ebc42b895d6d6 | raw-member-offset | host-source/src/tests/bits64_placement_test.cpp:146 | <file-scope> | reinterpret_cast<u_char *>(frames), reinterpret_cast<u_char *>(drawn + 1 | host-source/src/tests/bits64_placement_test.cpp |
+| b50ce72c4fb6737f | pointer-narrowing | host-source/src/tests/dataread_test.cpp:56 | BuildPack | static_cast<int>(starts[i] - i * | host-source/src/tests/dataread_test.cpp |
+| 7ce338c07788edc9 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:37 | Sync | sceMcSync | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 55adf684c752a6ad | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:42 | Succeed | sceMcResSucceed | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fea830b1b96f350f | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:53 | MakeDirectory | sceMcMkdir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 612b720ffa15f554 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:54 | MakeDirectory | sceMcFuncNoMkdir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6b73d4ab4dbf6cf4 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:63 | main | sceMcInit | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| e3b2c8145d5f1e95 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:76 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 5b3431f44c6493b3 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:77 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| a7bacd618d1e357c | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:79 | main | sceMcWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| ac82aa3af795a406 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:80 | main | sceMcFuncNoWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b76f490dbb50f337 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:81 | main | sceMcFlush | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 46db80cb38b8fffa | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:82 | main | sceMcFuncNoFlush | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fe11eaa5a0f44071 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:83 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b82d2cbdaaf2b38a | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:84 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 86d448212f3a3773 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:87 | main | sceMcTblGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 4047245fd9c8686a | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:88 | main | sceMcGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 24acde39c0f36478 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:89 | main | sceMcFuncNoGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| adb6da5a33942449 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:99 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 83f3e155c342c925 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:100 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b0925fa2dad39905 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:102 | main | sceMcSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 3f4760d928d12d97 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:103 | main | sceMcFuncNoSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 51ea139383dee227 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:105 | main | sceMcRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6781de4d0f973e69 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:106 | main | sceMcFuncNoRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| c2891b0614d62315 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:108 | main | sceMcSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| be7b3c63586e6a81 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:109 | main | sceMcFuncNoSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 5a0c3d85170fa920 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:111 | main | sceMcRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| eaee1600afeb9db7 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:112 | main | sceMcFuncNoRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6ea45a6f4b542a98 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:114 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| d31a36ac8c8b99e6 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:115 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 640bb67cfe0bbea8 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:119 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 2f2815d2ccc380ce | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:120 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fad858d75cc7cee5 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:123 | main | sceMcWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 84fbf403aa8e9596 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:124 | main | sceMcFuncNoWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| da9820db5bc30a44 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:125 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 09bddf19a38b2b84 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:126 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| f9dcc02bb9f62d64 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:130 | main | sceMcDelete | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 25db2ce908582743 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:131 | main | sceMcFuncNoDelete | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 4d347c3b5ffe064d | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:135 | main | sceMcEnd | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 8f45fabeec544da4 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:44 | OnceAfterWait | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| a3f082a4800ef6f5 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:74 | PumpWithSwitchingPumpHook | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| c3b61902f3efc469 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:75 | PumpWithSwitchingPumpHook | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5bdda7278d77aa86 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:87 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| a3aa9d48c79aa676 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:88 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 705b5ab4345f65de | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:102 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| af01508b6957f9bc | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:103 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| b794e2a1df1f34ee | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:104 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5c5e2dcf577b34a7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:105 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| e5bab30453cb94ef | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:113 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| e88855b50ee03c38 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:114 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 3da4cd55e2bdd7b8 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:124 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| da311528ef591784 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:125 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 8d9862c57c8b5090 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:137 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5c7c3eb3f28867cd | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:138 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 0fc143ca0da91ceb | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:139 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 9e0c8a52ec15823a | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:141 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| ea7658eb1351c8d7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:144 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 9371f7b9bd1a1067 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:146 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 67e2d392b0cec5db | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:165 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| ef5c809deac41b76 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:166 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| bf8110a2bc00049c | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:171 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 4499c163a04013d6 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:215 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 7bfaa5f465a1b42e | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:216 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| a7890f16ecb27cfe | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:220 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 7e32b3c710b91b03 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:223 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 7c508e7aad954ba1 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:245 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 981fc35c43e2fbb4 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:246 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 1724fc2c0e54f6b7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:247 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| bea0e78218a7e3f1 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:249 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| dec853e3242a3c88 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:250 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| cd715042f1f03909 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:251 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
 | ab99f143e1e3245f | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:23 | OpenPads | scePadInit | host-source/src/tests/input_lifecycle_test.cpp |
 | a3b58e300ef205f5 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:24 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_test.cpp |
 | 3594daa62ceba5e3 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:25 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_test.cpp |
-| 9be1773c062cb6e8 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:7 | <file-scope> | sceGsSyncV | host-source/src/tests/platform_pad_test.cpp |
-| d2e399887e83c856 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:8 | <file-scope> | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| 112963bf5aea9ff5 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:9 | <file-scope> | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 99de66f851dc10d4 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:17 | OpenPads | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| df9e60f96177bac2 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:18 | OpenPads | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 79105cf169687a53 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:19 | OpenPads | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 1faed2cc7f5faf0c | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:68 | Unplug | scePadRead | host-source/src/tests/platform_pad_test.cpp |
-| edd4eb406bd67ce5 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:100 | Unplug | scePadStateDiscon | host-source/src/tests/platform_pad_test.cpp |
-| 10ed95655395c8af | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:106 | Unplug | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| 9d2d5a115adcfbd6 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:109 | Unplug | scePadGetState | host-source/src/tests/platform_pad_test.cpp |
-| 4ca8df3f9af1e3c4 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:110 | Unplug | scePadRead | host-source/src/tests/platform_pad_test.cpp |
-| 3aec7b621034bc65 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:111 | Unplug | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| b76625fa87340431 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:112 | Unplug | scePadGetState | host-source/src/tests/platform_pad_test.cpp |
-| c219286d961c5942 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:113 | Unplug | scePadInfoMode | host-source/src/tests/platform_pad_test.cpp |
-| 415ef6e58fc9f53e | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:114 | Unplug | scePadInfoMode | host-source/src/tests/platform_pad_test.cpp |
-| 5bb99977e0230277 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:115 | Unplug | scePadInfoAct | host-source/src/tests/platform_pad_test.cpp |
+| a77a6ae15b99bbc9 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:40 | Image | sceMcSync | host-source/src/tests/memcard_test.cpp |
+| 9dc44791db21e1c1 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:44 | Done | sceMcSync | host-source/src/tests/memcard_test.cpp |
+| dbb585926c1245b1 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:50 | Open | sceMcOpen | host-source/src/tests/memcard_test.cpp |
+| b69d01b832907c82 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:51 | Open | sceMcFuncNoOpen | host-source/src/tests/memcard_test.cpp |
+| 90294d2a1deeca66 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:57 | WriteAll | sceMcWrite | host-source/src/tests/memcard_test.cpp |
+| 60d07c5af7959311 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:58 | WriteAll | sceMcFuncNoWrite | host-source/src/tests/memcard_test.cpp |
+| c94764c829bbc5d5 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:66 | ReadAll | sceMcRead | host-source/src/tests/memcard_test.cpp |
+| a190d1ea2118ce30 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:67 | ReadAll | sceMcFuncNoRead | host-source/src/tests/memcard_test.cpp |
+| 8e9db86e281f3f91 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:77 | Close | sceMcClose | host-source/src/tests/memcard_test.cpp |
+| 6faf5b162cf6c35e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:78 | Close | sceMcFuncNoClose | host-source/src/tests/memcard_test.cpp |
+| 9801cbd3856dd3bd | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:82 | MakeCardDirectory | sceMcMkdir | host-source/src/tests/memcard_test.cpp |
+| 8fb9dcfcb93c2c2e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:83 | MakeCardDirectory | sceMcFuncNoMkdir | host-source/src/tests/memcard_test.cpp |
+| da1e60baa7191959 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:101 | RunUntilIdle | sceMcInit | host-source/src/tests/memcard_test.cpp |
+| 22500ddbeca49d8f | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:134 | RunUntilIdle | sceMcGetInfo | host-source/src/tests/memcard_test.cpp |
+| 7fb101fbeb541237 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:135 | RunUntilIdle | sceMcFuncNoCardInfo | host-source/src/tests/memcard_test.cpp |
+| 2ea985b70875e965 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:136 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| 0d5372c0d663572e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:145 | RunUntilIdle | sceMcFlush | host-source/src/tests/memcard_test.cpp |
+| 80c1cb44f11465e2 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:146 | RunUntilIdle | sceMcFuncNoFlush | host-source/src/tests/memcard_test.cpp |
+| b27e9995ed6a1689 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:149 | RunUntilIdle | sceMcTblGetDir | host-source/src/tests/memcard_test.cpp |
+| 28df4c0045186a1d | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:150 | RunUntilIdle | sceMcGetDir | host-source/src/tests/memcard_test.cpp |
+| 595f4d6ad3443e81 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:151 | RunUntilIdle | sceMcFuncNoGetDir | host-source/src/tests/memcard_test.cpp |
+| 3cf2c6205718e012 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:153 | RunUntilIdle | sceMcTblGetDir | host-source/src/tests/memcard_test.cpp |
+| 79d00e2ded85cf3d | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:181 | RunUntilIdle | sceMcSeek | host-source/src/tests/memcard_test.cpp |
+| d58bc822ecbf5454 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:182 | RunUntilIdle | sceMcFuncNoSeek | host-source/src/tests/memcard_test.cpp |
+| 738caa355b52333b | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:184 | RunUntilIdle | sceMcWrite | host-source/src/tests/memcard_test.cpp |
+| 692219acc59402ed | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:185 | RunUntilIdle | sceMcFuncNoWrite | host-source/src/tests/memcard_test.cpp |
+| 05cd70f65ed825a8 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:206 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| b4cd2acbdcce4360 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:219 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| 78d84c4f5242c987 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:229 | RunUntilIdle | sceMcResNoFormat | host-source/src/tests/memcard_test.cpp |
+| a48174698530c262 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:68 | UnboundedVSyncClock | sceGsSyncV | host-source/src/tests/mglib_time_test.cpp |
+| f69240fe44ebe639 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:82 | UnboundedVSyncClock | CreateThread | host-source/src/tests/mglib_time_test.cpp |
+| 71bebe4258abbd9e | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:83 | UnboundedVSyncClock | StartThread | host-source/src/tests/mglib_time_test.cpp |
+| 362983608a4f1e8a | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:90 | UnboundedVSyncClock | TerminateThread | host-source/src/tests/mglib_time_test.cpp |
+| 370073b7267b02f2 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:103 | UnboundedVSyncClock | CreateThread | host-source/src/tests/mglib_time_test.cpp |
+| 81b0abb620de7b2c | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:104 | UnboundedVSyncClock | StartThread | host-source/src/tests/mglib_time_test.cpp |
+| fee1449375813f0a | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:112 | UnboundedVSyncClock | TerminateThread | host-source/src/tests/mglib_time_test.cpp |
+| 1348ad9a1f7eeb00 | hardware:ps2_sdk_or_thread | host-source/src/tests/model_storage_standalone.cpp:16 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/model_storage_standalone.cpp |
+| e9ab8e6617cf759d | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:20 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| d69879ea56594272 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:21 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| f5a06dedeafdfeb5 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:23 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
+| 0e98e484f5234baa | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:32 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| 53ad55c8afbefe53 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:33 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| 770a525681bb9d56 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:35 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
+| a1a7ea4f0d7bee68 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:33 | InitGamePad | sceGsSyncV | host-source/src/tests/platform_pad_test.cpp |
 | 3c84609039e7d8c6 | hardware:ps2_sdk_or_thread | host-source/src/tests/tex_decode_test.cpp:153 | OnParavirtualGpu | sceGsTex0 | host-source/src/tests/tex_decode_test.cpp |
 | 75349a821e05cdb3 | hardware:ps2_sdk_or_thread | host-source/src/tests/tex_decode_test.cpp:196 | OnParavirtualGpu | sceGsTex0 | host-source/src/tests/tex_decode_test.cpp |
 | e78d8678345a0e32 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:58 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
@@ -460,36 +620,33 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4316e044b53e1f35 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:84 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | 071e0a3054c024d6 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:85 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | c7e75d852d65da66 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:93 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| ecd5215bcc563066 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:121 | mgNormalizeVector | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| d6a814df344c3e1c | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:123 | mgNormalizeVector | sceVu0Normalize | host-source/src/vu0_gaps.cpp |
-| 120e1f8856b32d22 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:124 | mgNormalizeVector | sceVu0ScaleVector | host-source/src/vu0_gaps.cpp |
-| 95443be34b92ed9d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:166 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| 08bbd853961cb0ac | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:167 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| ca4e041b6e71793b | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:168 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| 64454ba4898be8b7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:169 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| 0c8dc745d9795607 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:186 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 738efbbd4f93549a | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:198 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 8b37e9dcf8960bbb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:237 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| b2fdfe7379801117 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:238 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| c0ccb6808a4fba13 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:239 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| ad32c194d2976ff8 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:240 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| 5c1d4c9176435d61 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:261 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7c6ca8e342ae5399 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:275 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| f82a7450a3e1cb64 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:276 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| f27d227a2a04891c | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:277 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7925209cd0d225bd | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:317 | LogDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| 23bbaefb64b8dfb2 | pointer-narrowing | host-source/src/vu0_gaps.cpp:334 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
-| c2fd69a3f7f769b1 | pointer-narrowing | host-source/src/vu0_gaps.cpp:337 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
-| acb2312eba6ae195 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:368 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| c39cb4630c395738 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:369 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| 54f23afc3e9fc7f8 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:370 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| 86f44b3f6d55c0ab | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:371 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| 52891462904b07d7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:425 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 21496f9be2ee9a41 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:426 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 1ffde73981825f74 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:440 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| cf7aa7f05301db21 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:441 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7df192e877425157 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:450 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| c6e8dce76a725fe6 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:451 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| bf6160991de6a0be | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:159 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 7ec94c4d017a9425 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:160 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 402e2bbf46ea3dfb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:161 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 28a32ef204632565 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:162 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 0a228976780f7864 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:179 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 515bca1fe7990e09 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:191 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| c62edbfd8db00efe | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:230 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 0199b165d6196c41 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:231 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 2d094cb1a92ccabb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:232 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| ed39cbc5474ed5bf | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:233 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 3cfa611964a4125f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:254 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| e933e37969797d69 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:268 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 15296efb880a827e | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:269 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 7b8635b14e42952d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:270 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| cbdd83b25df374c7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:310 | LogDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| e48886ec6761998a | pointer-narrowing | host-source/src/vu0_gaps.cpp:327 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
+| 7054a550088ea337 | pointer-narrowing | host-source/src/vu0_gaps.cpp:330 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
+| d61b23fd48731d6d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:361 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| 9dba1d8435ff7428 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:362 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
+| 3b601925c7fa317b | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:363 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
+| 6d0cd004ea04306f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:364 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| b31fa43cc1909051 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:418 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 92d09dbc63760559 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:419 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| dd7f7b42a225c596 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:433 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 723176610bcbc0d0 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:434 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 730f4a33b0eb516f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:443 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 98afaac4e7c8756f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:444 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | bb9d9704bb53910d | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:275 | <file-scope> | sceVu0FVECTOR | none detected |
 | f60b1500805c95d1 | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:316 | <file-scope> | sceVu0FVECTOR | none detected |
 | bb6c3dd5627f6c9b | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:357 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -2929,16 +3086,16 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 2f24720434dd4bc0 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1274 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
 | e27cec04b91d6c66 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1275 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
 | fd98d3fbd84ba79a | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1280 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
-| 0078ed955046b645 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:65 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 8fbc43cd2b1f57fb | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:68 | CGamePad::Init | scePadInit | src/sound.cpp |
-| 533b7a8e794f85c9 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:98 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 5dbac8c6cb7596de | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:99 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 7f9b43012e558aa2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:103 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 04fcf080b735e2b2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:104 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| c772b887d01a4a90 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:106 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 0e9649663169dc35 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:107 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 0ef40e87c1450a15 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:111 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 5fb0092f8a4972f0 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:112 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
+| 0078ed955046b645 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:65 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 8fbc43cd2b1f57fb | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:68 | CGamePad::Init | scePadInit | src/mg_memory.cpp, src/sound.cpp |
+| 533b7a8e794f85c9 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:98 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 5dbac8c6cb7596de | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:99 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 7f9b43012e558aa2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:103 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 04fcf080b735e2b2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:104 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| c772b887d01a4a90 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:106 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 0e9649663169dc35 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:107 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 0ef40e87c1450a15 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:111 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 5fb0092f8a4972f0 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:112 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
 | 51940f66581d49c2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:116 | CGamePad::Close | scePadPortClose | none detected |
 | 60d0e8ccfcd5fe1b | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:117 | CGamePad::Close | scePadPortClose | none detected |
 | ac1d54377d50f592 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:118 | CGamePad::Close | scePadEnd | none detected |
@@ -4127,8 +4284,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | ed157c78bc449033 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:655 | MulMatrix3 | asm | none detected |
 | 9751fd7e1c11fc23 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:707 | mgMulMatrix | asm | none detected |
 | ddbb930dd7372223 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:739 | mgInversMatrix | asm | none detected |
-| f8a6820786a00324 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:829 | mgRotMatrixXYZ | sceVu0FMATRIX | src/mg_math.cpp |
-| 85b1345c7f26c55f | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:830 | mgRotMatrixXYZ | sceVu0FMATRIX | src/mg_math.cpp |
+| f8a6820786a00324 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:829 | mgRotMatrixXYZ | sceVu0FMATRIX | none detected |
+| 85b1345c7f26c55f | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:830 | mgRotMatrixXYZ | sceVu0FMATRIX | none detected |
 | efc44cda6eee3357 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:840 | mgCreateMatrixPY | sceVu0RotMatrixY | none detected |
 | 6a11d577521ab9c4 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:846 | mgLookAtMatrixZ | sceVu0FMATRIX | none detected |
 | 3d5f96e9378cdf15 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:847 | mgLookAtMatrixZ | sceVu0FMATRIX | none detected |
@@ -5175,10 +5332,10 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | cd2ab8f343c5738a | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:198 | TransHdBd | sceSdRemote | src/sound.cpp |
 | 2b260f4bd5cc48b1 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:199 | TransHdBd | sceSdRemote | src/sound.cpp |
 | f8ce06e55836f0f5 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:202 | TransHdBd | sceSdRemote | src/sound.cpp |
-| b3a8292d5ced079b | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:219 | CSound::Init | sceSifInitIopHeap | src/sound.cpp |
-| 2130d95722f55575 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:223 | CSound::Init | sceSifAllocSysMemory | src/sound.cpp |
-| 2ea4821ac9d0b183 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:248 | CSound::Init | sceMSIn_Init | src/sound.cpp |
-| 94776776b9430ef6 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:249 | CSound::Init | sceMSIn_Init | src/sound.cpp |
+| b3a8292d5ced079b | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:219 | CSound::Init | sceSifInitIopHeap | src/mg_memory.cpp, src/sound.cpp |
+| 2130d95722f55575 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:223 | CSound::Init | sceSifAllocSysMemory | src/mg_memory.cpp, src/sound.cpp |
+| 2ea4821ac9d0b183 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:248 | CSound::Init | sceMSIn_Init | src/mg_memory.cpp, src/sound.cpp |
+| 94776776b9430ef6 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:249 | CSound::Init | sceMSIn_Init | src/mg_memory.cpp, src/sound.cpp |
 | 87e986a85b25ab95 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:379 | CSound::Exit | sceSifInitIopHeap | src/sound.cpp |
 | f040181d4e0e08b7 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:380 | CSound::Exit | sceSifFreeSysMemory | src/sound.cpp |
 | f3d99977a0c27f53 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:387 | CSound::Exit | sceSifInitIopHeap | src/sound.cpp |
@@ -5292,8 +5449,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | bcee8d9a7cd56223 | hardware:ps2_sdk_or_thread | retail/src/villagermngr.cpp:345 | if | sceVu0ScaleVector | none detected |
 | 45edf4be291b9530 | byte-stride-pointer-array | retail/src/villagermngr.cpp:437 | if | (CVillagerPlaceInfo **) ((u8 *) places + output_position) | none detected |
 | 741bb1043d45dd6e | byte-stride-pointer-array | retail/src/villagermngr.cpp:473 | if | (CVillagerPlaceInfo **) ((u8 *) places + fallback_output_position) | none detected |
-| 6e425de74dabb16e | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:536 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | none detected |
-| a2f425bfa9a067f9 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:538 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | none detected |
+| 6e425de74dabb16e | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:536 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | src/visualmotion.cpp |
+| a2f425bfa9a067f9 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:538 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | src/visualmotion.cpp |
 | 5c6a5380180201fc | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:798 | mgCVisualMotionMDT::CreateBBox | sceVu0AddVector | none detected |
 | 25ad3afdd192bc14 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:799 | mgCVisualMotionMDT::CreateBBox | sceVu0ScaleVector | none detected |
 | f8f10396a7547b80 | raw-allocation | retail/src/vlgr_info.cpp:464 | niNPC_INFO_NUM | (CVillagerInfo *) (int) new (niStack->Alloc(blocks + 2) | none detected |

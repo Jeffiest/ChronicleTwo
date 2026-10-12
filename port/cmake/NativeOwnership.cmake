@@ -27,4 +27,4 @@ set(CT_NATIVE_SUPERSEDED_SOURCES
 # mglib.cpp and sce/*.cpp. libvu0 and the shared unimplemented reporter stay shared.
 set(CT_NATIVE_SDK_FAMILIES
     libpad libmc sifdev sifrpc eekernel libcdvd libgraph libdma libpkt
-    eekernel_threads libdev libmpeg libsdr modmsin sifdma)
+    libdev libmpeg libsdr modmsin sifdma)

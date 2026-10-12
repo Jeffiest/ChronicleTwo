@@ -16,11 +16,13 @@
 #include "platform/audio.hpp"
 #include "platform/clock.hpp"
 #include "platform/config.hpp"
+#include "platform/display.hpp"
 #include "platform/input.hpp"
 #include "platform/input_script.hpp"
 #include "platform/paths.hpp"
 #include "platform/settings.hpp"
 #include "platform/window.hpp"
+#include "sce/threads.hpp"
 
 // The game headers keep MWCC's pragmas, which clang names but ignores.
 #pragma clang diagnostic push
@@ -32,6 +34,7 @@
 // DC2_CRASH_TRACE=1 installs a handler (crash_trace.cpp) that writes a backtrace on a fault. It lives
 // in its own unit because Windows' headers clash with the game's (macros B/R, struct RECT).
 void InstallCrashTrace();
+int VSyncCallBack(int field);
 
 /**
  *
@@ -61,6 +64,13 @@ struct Options {
     const char  *jump = nullptr;
     bool         fast_load = false;
 };
+
+void ApplyConfigChange(const Config &before, const Config &after) {
+    if (before.tick_rate != after.tick_rate) ClockSetTickRate(after.tick_rate);
+    InputApplyConfig(after);
+    if (before.master_volume != after.master_volume) audio::DefaultMixer().SetMasterGain(after.master_volume);
+    DisplayChanged(before, after);
+}
 
 [[noreturn]] void Usage(const char *program) {
     std::fprintf(stderr,
@@ -338,6 +348,7 @@ PORT_OVERRIDE int main(int argc, char **argv) {
     renderer.pipeline_cache = PathsSaveRoot() / "pipeline_cache.bin";
     renderer.progress = ReportShaderProgress;
     renderer.offscreen = offscreen;
+    renderer.prog0_meshes = true;
     renderer.layout.aspect =
         config.aspect == ConfigAspect::Auto ? gfx::AspectMode::Fill : gfx::AspectMode::Letterbox;
     renderer.layout.ui_scale = config.ui_scale;
@@ -346,12 +357,17 @@ PORT_OVERRIDE int main(int argc, char **argv) {
     audio::DefaultMixer().SetMasterGain(config.master_volume);
 
     ClockSetTickRate(config.tick_rate);
+    MainThreadPriority = 10;
+    KzThreadsSetMainPriority(MainThreadPriority);
+    ClockSetTickCallback(VSyncCallBack);
+    ConfigAddChangeHook(ApplyConfigChange);
     ClockSetUnbounded(options.headless);
     ClockAddPumpHook(PumpHost);
     GameSetFrameBudget(options.frames);
 
     InitCDFile();
     MainLoop();
+    ConfigRemoveChangeHook(ApplyConfigChange);
 
     int status = kExitOk;
     if (options.screenshot != nullptr) {

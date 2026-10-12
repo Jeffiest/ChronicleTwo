@@ -8,6 +8,7 @@
 #include <libvu0.h>
 
 #include <cmath>
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <span>
@@ -35,6 +36,65 @@ int  PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
                         std::vector<gfx::Vertex3D> &vertices, std::vector<uint32_t> &indices, bool *has_colour);
 bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 bool PortMgShadowVisualDraw(const mgCVisualMDT *visual, float (*matrix)[4], const mgRENDER_INFO *info);
+
+namespace {
+[[noreturn]] void ModelStorageFailure(const char *what) {
+    std::fprintf(stderr, "model storage: %s\n", what);
+    std::abort();
+}
+
+void *RequiredModelStorage(mgCMemory *memory, uint64_t bytes) {
+    const uint64_t blocks = (bytes + 15) / 16;
+    if (memory == nullptr || bytes == 0 || bytes > static_cast<uint64_t>(INT_MAX) * 16 ||
+        blocks > INT_MAX) ModelStorageFailure("invalid allocation size or owner");
+    void *result = memory->Alloc(static_cast<int>(blocks));
+    if (result == nullptr) ModelStorageFailure("required allocation failed");
+    return result;
+}
+} // namespace
+
+PORT_OVERRIDE FACES_ID *mgCVisualMDT::CreateFace(FACES_ID *faces, mgCMemory *memory,
+                                               mgCMemory *index_memory, mgCFace **out_face) {
+    if (faces == nullptr) ModelStorageFailure("missing face record");
+    int stride = 3 + ((faces->type & MG_FACE_COLOUR) != 0) -
+                 ((faces->type & MG_FACE_NO_NORMAL) != 0) -
+                 ((faces->type & MG_FACE_NO_TEXTURE) != 0);
+    const uint64_t indices = static_cast<uint64_t>(faces->vertex_num) * stride;
+    if (faces->vertex_num > SHRT_MAX || indices > SHRT_MAX || faces->material > SHRT_MAX)
+        ModelStorageFailure("face counts exceed runtime fields");
+
+    auto *face = static_cast<mgCFace *>(RequiredModelStorage(memory, sizeof(mgCFace)));
+    std::memset(face, 0, sizeof(*face));
+    face->vertex_num = static_cast<short>(faces->vertex_num);
+    face->type = static_cast<u_short>(faces->type);
+    face->index_stride = static_cast<short>(stride);
+    face->index_num = static_cast<short>(indices);
+    face->material = static_cast<short>(faces->material);
+    // Retain the retail spare index block, including for an empty primitive.
+    face->index = static_cast<int *>(RequiredModelStorage(index_memory, (indices / 4 + 1) * 16));
+    std::memcpy(face->index, faces->index, indices * sizeof(int));
+
+    mgFACE_GROUP *previous = face_group;
+    if (previous != nullptr) {
+        while (previous->next != nullptr) {
+            if (previous->material == face->material && previous->vu_program == 0) break;
+            previous = previous->next;
+        }
+    }
+    mgFACE_GROUP *group;
+    if (previous == nullptr || previous->next == nullptr) {
+        group = static_cast<mgFACE_GROUP *>(RequiredModelStorage(memory, sizeof(mgFACE_GROUP)));
+        std::memset(group, 0, sizeof(*group));
+        group->material = face->material;
+        if (previous == nullptr) face_group = group;
+        else previous->next = group;
+    } else group = previous;
+    mgCFace **tail = &group->face;
+    while (*tail != nullptr) tail = &(*tail)->next;
+    *tail = face;
+    if (out_face != nullptr) *out_face = face;
+    return reinterpret_cast<FACES_ID *>(faces->index + indices);
+}
 
 namespace {
 
@@ -391,17 +451,14 @@ namespace {
 
 // Retail's fixed models keep their streams in the packets built at load time, so the file image
 // can be reused once the model is assigned; the host draws from the streams themselves and has to
-// own them. Falls back to the file's copy when the arena is full, which Alloc has already reported.
+// own them. A required stream cannot fall back to a file image that the loader will reuse.
 sceVu0FVECTOR *OwnStream(u_char *source, int count, mgCMemory *memory) {
+    if (count < 0) ModelStorageFailure("negative stream count");
     if (count <= 0) {
         return (sceVu0FVECTOR *) source;
     }
 
-    u_long128 *copy = memory->Alloc(count);
-
-    if (copy == NULL) {
-        return (sceVu0FVECTOR *) source;
-    }
+    auto *copy = static_cast<u_long128 *>(RequiredModelStorage(memory, static_cast<uint64_t>(count) * 16));
 
     std::memcpy(copy, source, (size_t) count * 16);
     return (sceVu0FVECTOR *) copy;
@@ -429,7 +486,9 @@ PORT_OVERRIDE void mgCVisualMDT::CopyMDTDataPointer(MDT_HEADER *header, mgCMemor
     normal = OwnStream(normal_address, normal_num, memory);
     colour = OwnStream(colour_address, colour_num, memory);
     uv = OwnStream(uv_address, uv_num, memory);
-    material = (mgMaterial *) memory->Alloc((material_num * sizeof(mgMaterial) + 15) / 16);
+    if (material_num < 0) ModelStorageFailure("negative material count");
+    material = material_num == 0 ? nullptr : static_cast<mgMaterial *>(
+        RequiredModelStorage(memory, static_cast<uint64_t>(material_num) * sizeof(mgMaterial)));
 
     if (material != NULL) {
         for (int i = 0; i < material_num; i++) {

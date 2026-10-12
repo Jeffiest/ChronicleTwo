@@ -8,7 +8,7 @@ function(ct_apply_host_overrides target port_dir kz_root)
     set_property(TARGET ${target} PROPERTY SOURCES ${CT_HOST_SOURCES} ${CT_HOST_OVERRIDE_SOURCES})
     target_include_directories(${target} BEFORE PRIVATE ${port_dir}/host_overrides)
     set(CT_HOST_OVERRIDE_BASES
-        gfx/pipelines.cpp b2187d17501cb9d2f056c0792ffbaaa751e6fb067cfcb0d30a49eb25e5d4d5de
+        gfx/pipelines.cpp 14ceb2729f819ddf2356c06a9f17d51fe9518c0be2b84ad87973df1ebb662a46
         gfx/resources.cpp 32db6591dea7a9d4713846082b5e958d7fe22d90b2963359429dc64a225a0050
         audio/mixer.cpp 72413488cb79f69fad65ce0731afa338fa254fe588a13d990605a381f0bf89a1
         audio/mixer.hpp 3a5c1a8a2d1f2265b394d85ec494b7b9d0145390e0a0b8b1fc93eb27931de1aa)

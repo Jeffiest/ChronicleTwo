@@ -14,9 +14,8 @@ void PortMgForgetMotionBase(const void *vertex);
 
 namespace {
 
-// A motion model's face indices, kept per model. They cannot go back into the model's arena: that is
-// sized for retail's layout, the copy overran it, and CreateFace does not check Alloc for failure.
-// Loading a model again at the same address replaces its set, so the store stays bounded.
+// Native draws retain indices after retail scratch is reused. Reloading the same model
+// replaces its set; the model arena retains its retail capacity.
 std::unordered_map<const void *, std::vector<std::unique_ptr<int[]>>> kept_indices;
 
 // The same for the skin weights: retail builds them in the scratch arena only to fill its VU1 packets, but
@@ -25,9 +24,7 @@ std::unordered_map<const void *, std::unique_ptr<mgVertexWeight[]>> kept_weights
 
 } // namespace
 
-// Retail keeps the packet buffer's address in an int and hands the truncated value straight back
-// in as the packet pointer; on the host that address lands low. The address stays a pointer here;
-// only the DMA tag word, which the GS reads as a 32-bit address, keeps its low half.
+// Native draws use CPU geometry and retained skin weights, without VIF packet allocation.
 PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data, mgCMemory *memory,
                                             mgCMemory *work, mgCTextureManager *textures) {
     mgCFace   *packet;
@@ -35,7 +32,6 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
     int        part_count;
     FACES_ID  *source;
     int        i;
-    u_long128 *address;
     int        size;
     MDT_FACES *section;
 
@@ -91,13 +87,9 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
         scratch.stack_used = 0;
         scratch.lock = 0;
         source = CreateFace(source, memory, &scratch, &packet);
-        address = memory->stGetTop();
-        size = CreateFaceMotionPacket((u_int *) address, packet, data);
-        packet->packet_tag_word[0] = size | MG_DMA_REF;
-        packet->packet_tag_word[1] = (u_int) (uintptr_t) address;
-        packet->packet_tag_word[2] = 0;
-        packet->packet_tag_word[3] = 0;
-        memory->Alloc(size);
+        // Native draws use retained indices and CPU skin weights, as the fixed-model path does.
+        // No host consumer reads the VIF packet; emitting it wasted arena space and wrote before Alloc.
+        packet->packet_tag = 0;
 
         // Retail rebuilds each part's indices in scratch and drops them once the packet exists; the host
         // draws from them later, by which time the next part and the skin weights have overwritten scratch.
@@ -111,4 +103,12 @@ PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mg
     }
 
     return true;
+}
+
+PORT_OVERRIDE int mgCVisualMotionMDT::CreateFaceMotionPacket(u_int *packet, mgCFace *face,
+                                                           mgCVMotionData *motion) {
+    (void) packet;
+    (void) face;
+    (void) motion;
+    return 0;
 }

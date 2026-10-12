@@ -2,6 +2,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "combat_trace.hpp"
+
+void MemoryLogPeaks();
+float mgTimeFrameFields();
 
 // The game headers keep MWCC's pragmas, which clang names but ignores.
 #pragma clang diagnostic push
@@ -37,6 +41,7 @@
 #include "platform/clock.hpp"
 #include "savedata.hpp"
 #include "scene.hpp"
+#include "sce/threads.hpp"
 #include "scenesnd.hpp"
 #include "scriptinterpreter.hpp"
 #include "snd_mngr.hpp"
@@ -367,6 +372,8 @@ PORT_OVERRIDE void MainLoop() {
     GamePad__2.Init();
     InitFileCache(NULL, 0);
     mgInit(MG_SCREEN_MODE_512X480, 3);
+    MainThreadPriority = 10;
+    KzThreadsSetMainPriority(MainThreadPriority);
     PlayTimeCountFlag = false;
     mgInitVSyncCallBack(PlayTimeTick);
     LanguageCode = LANG_FRENCH;
@@ -587,10 +594,13 @@ PORT_OVERRIDE void MainLoop() {
 
             mgBeginFrame(NULL);
             mode_finished = LoopMain[LoopNo]();
+            mgNowFrameRate = mgTimeFrameFields();
             sndStep(mgGetNowFrameRate());
             MainScene.StepSnd();
             GamePad__2.UpDate();
             PadCtrl.Update(&GamePad__2);
+            port_combat_trace::Record(0, PadCtrl.Btn(PAD_BTN_ACTION_CONFIRM), PadCtrl.Btn(PAD_BTN_ACTION_HELD),
+                                      -1, -1, -1, -1, -1, -1, -1);
             mgCDrawPrim frame_border;
             frame_border.Initialize(NULL, NULL);
             frame_border.DepthTestEnable(false);
@@ -662,6 +672,7 @@ PORT_OVERRIDE void MainLoop() {
         }
 
         LoopExit[LoopNo]();
+        MemoryLogPeaks();
 
         // A stop skips the mode transition and falls to the shutdown below, as quitting does.
         if (FrameBoundaryStop()) {

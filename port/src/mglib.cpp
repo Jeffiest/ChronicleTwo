@@ -11,6 +11,7 @@
 #include "mg_math.hpp"
 #include "mglib.hpp"
 #pragma clang diagnostic pop
+#include "stubs/mglib.hpp"
 
 #include "gfx/gfx.hpp"
 #include "platform/clock.hpp"
@@ -150,24 +151,6 @@ PORT_OVERRIDE int mgGetPerformanceMeterFlag() {
     return g_display_performance_meter;
 }
 
-// The game's per-field callback, which retail's VSync interrupt ran. The clock runs it once for
-// every tick a pump elapses, with the count already advanced to that tick.
-PORT_OVERRIDE void mgInitVSyncCallBack(int (*callback)(int)) {
-    ClockSetTickCallback(callback);
-}
-
-// Retail's loop rotated the ready queue on the EE while it watched vcount; the port waits on the
-// clock, which pumps the platform as it sleeps and counts the tick itself.
-PORT_OVERRIDE void WaitVSync(int start, int frames) {
-    while (mgGetVSyncCount() - start < frames) {
-        ClockSyncV();
-    }
-}
-
-PORT_OVERRIDE int mgGetVSyncCount() {
-    return static_cast<int>(ClockTickCount());
-}
-
 PORT_OVERRIDE void mgInit(int screen_mode, int video_mode) {
     // Retail's mgInit resets DMA and the GS, clears video memory, builds the double buffer and
     // loads the microprograms over the VIF1 path, then installs its VSync handler. The host has
@@ -246,7 +229,6 @@ PORT_OVERRIDE void mgInit(int screen_mode, int video_mode) {
     mgFrameRate = 2;
     // The dither presets and the register shadows swept into VRAM were for the GS alone.
 
-    ClockSetTickCallback(nullptr);
     ClockReset();
     g_old_vcount = 0;
     g_display_performance_meter = 0;
@@ -600,6 +582,7 @@ PORT_OVERRIDE void mgEndPacket(mgCDrawManager *manager) {
 }
 
 PORT_OVERRIDE void mgBeginFrame(mgCDrawManager *manager) {
+    mgTimeFrameBegin();
     g_frame_serial++;
     if (manager == NULL) {
         mgDrawManager.texture_manager = &mgTexManager;
@@ -719,9 +702,8 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
         mgDBuff.disp[g_display_buffer].pmode = 0xFF23;
     }
 
-    // Retail measured the frame from TIMER0; the port runs the cadence the game asks for, which is
-    // what mgGetNowFrameRate reports.
-    mgNowFrameRate = (float) mgFrameRate;
+    // The main loop samples elapsed fields before sound stepping.
+    mgNowFrameRate = mgTimeFrameFields();
     free_ratio = 100.0f;
 
     count++;

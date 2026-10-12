@@ -35,6 +35,7 @@ set(PS2_INCLUDE_SRC ${CMAKE_SOURCE_DIR}/ps2/include)
 set(PS2_INCLUDE_DIR ${CMAKE_BINARY_DIR}/ps2_include)
 set(PS2_INCLUDE_STAMP ${CMAKE_BINARY_DIR}/ps2_include.stamp)
 set(HEADER_FIXUPS_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/header_fixups.py)
+set(LONG64_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/long64.py)
 file(GLOB_RECURSE PS2_INCLUDE_FILES CONFIGURE_DEPENDS LIST_DIRECTORIES false ${PS2_INCLUDE_SRC}/*)
 execute_process(COMMAND ${Python3_EXECUTABLE} ${HEADER_FIXUPS_SCRIPT} ${PS2_INCLUDE_SRC} ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_STAMP}
     RESULT_VARIABLE header_fixups_result
@@ -45,7 +46,7 @@ if(NOT header_fixups_result EQUAL 0)
 endif()
 add_custom_command(OUTPUT ${PS2_INCLUDE_STAMP}
     COMMAND ${Python3_EXECUTABLE} ${HEADER_FIXUPS_SCRIPT} ${PS2_INCLUDE_SRC} ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_STAMP}
-    DEPENDS ${PS2_INCLUDE_FILES} ${HEADER_FIXUPS_SCRIPT}
+    DEPENDS ${PS2_INCLUDE_FILES} ${HEADER_FIXUPS_SCRIPT} ${LONG64_SCRIPT}
     COMMENT "Mirroring ps2/include with the header fixups"
     VERBATIM)
 add_custom_target(ps2_include DEPENDS ${PS2_INCLUDE_STAMP})
@@ -117,6 +118,7 @@ set(WIN_REWRITE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/win_rewrite.py)
 set(HOST_SCRIPT_STORAGE ${CMAKE_SOURCE_DIR}/scripts/port/host_script_storage.py)
 set(HOST_MENU_POINTERS ${CMAKE_SOURCE_DIR}/scripts/port/host_menu_pointers.py)
 set(HOST_PHOTO_NAMES ${CMAKE_SOURCE_DIR}/scripts/port/host_photo_names.py)
+set(HOST_COMBAT_TRACE ${CMAKE_SOURCE_DIR}/scripts/port/host_combat_trace.py)
 set(HOST_SCRIPT_STORAGE_UNITS event.cpp actscript.cpp effscript.cpp runscript_opcodes.cpp)
 set(WIN_REWRITE_UNITS "")
 if(WIN32)
@@ -170,11 +172,16 @@ foreach(unit IN LISTS PS2_SOURCES)
         list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_PHOTO_NAMES} ${copy})
         list(APPEND ct_transform_deps ${HOST_PHOTO_NAMES} ${CMAKE_SOURCE_DIR}/port/include/photo_name_storage.hpp)
     endif()
+    if(unit STREQUAL "dng_main.cpp" OR unit STREQUAL "actionchara.cpp")
+        list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_COMBAT_TRACE} src/${unit} ${copy})
+        list(APPEND ct_transform_deps ${HOST_COMBAT_TRACE} ${CMAKE_SOURCE_DIR}/port/include/combat_trace.hpp)
+    endif()
     add_custom_command(OUTPUT ${copy}
         COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
             ${port_override_defines} ${original} ${copy}
         ${ct_transform_commands}
-        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${header} ${ct_transform_deps}
+        COMMAND ${Python3_EXECUTABLE} ${LONG64_SCRIPT} ${copy}
+        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${header} ${ct_transform_deps} ${LONG64_SCRIPT}
         COMMENT "Removing overridden definitions from ps2/src/${unit}"
         VERBATIM)
     list(APPEND PS2_UNITS ${copy})
@@ -299,9 +306,11 @@ include(GNUInstallDirs)
 install(TARGETS darkchronicle RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 option(CT_BUILD_TESTS "Build darkchronicle_tests" ON)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/data.cmake)
 if(CT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(src/tests)
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/CompatibilityTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/CompletionTargets.cmake)

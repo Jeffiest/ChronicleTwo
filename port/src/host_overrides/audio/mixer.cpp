@@ -52,6 +52,7 @@ void Mixer::Reset() {
         port.effect_pan = 64;
         port.effect_pitch = 8192;
     }
+    for (GameStream &stream : game_streams_) stream = GameStream{};
     for (Reverb &reverb : reverbs_) {
         reverb.SetMode(0);
         reverb.SetDepth(0.0f);
@@ -110,6 +111,58 @@ void Mixer::SetStream(int port, std::shared_ptr<const PcmTrack> track) {
     ports_[port].stream = std::move(track);
     ports_[port].stream_position = ports_[port].stream != nullptr ? static_cast<double>(ports_[port].stream->start) : 0.0;
     ports_[port].stream_playing = false;
+}
+
+void Mixer::SetGameStream(int channel, std::shared_ptr<const PcmTrack> track) {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return;
+    std::lock_guard lock(mutex_);
+    auto &s = game_streams_[channel];
+    s.track = std::move(track);
+    s.position = s.track ? static_cast<double>(s.track->start) : 0.0;
+    s.playing = false;
+    s.level = 0;
+}
+
+void Mixer::PlayGameStream(int channel) {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return;
+    std::lock_guard lock(mutex_);
+    auto &s = game_streams_[channel];
+    if (s.track && s.position < s.track->Frames()) s.playing = true;
+}
+
+void Mixer::PauseGameStream(int channel) {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return;
+    std::lock_guard lock(mutex_);
+    game_streams_[channel].playing = false;
+}
+
+void Mixer::StopGameStream(int channel, bool clear) {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return;
+    std::lock_guard lock(mutex_);
+    auto &s = game_streams_[channel];
+    s.playing = false;
+    s.position = s.track ? static_cast<double>(s.track->start) : 0.0;
+    s.level = 0;
+    if (clear) s.track.reset();
+}
+
+bool Mixer::IsGameStreamPlaying(int channel) const {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return false;
+    std::lock_guard lock(mutex_);
+    return game_streams_[channel].playing;
+}
+
+void Mixer::SetGameStreamVolume(int channel, int left, int right) {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return;
+    std::lock_guard lock(mutex_);
+    game_streams_[channel].left = std::clamp(left, 0, 32767);
+    game_streams_[channel].right = std::clamp(right, 0, 32767);
+}
+
+int Mixer::GameStreamLevel(int channel) const {
+    if (channel < 0 || channel >= static_cast<int>(game_streams_.size())) return 0;
+    std::lock_guard lock(mutex_);
+    return game_streams_[channel].level;
 }
 
 void Mixer::Rewind(int port, int song) {
@@ -593,6 +646,36 @@ void Mixer::RenderStreams(float *out, int frames) {
             out[i * 2 + 1] += (a[1] + (b[1] - a[1]) * fraction) * gain;
             port.stream_position += step;
         }
+    }
+    for (GameStream &stream : game_streams_) {
+        stream.level = 0;
+        if (!stream.playing || !stream.track) continue;
+        const PcmTrack &track = *stream.track;
+        const std::int64_t length = track.Frames();
+        if (length <= 0) { stream.playing = false; continue; }
+        const double step = static_cast<double>(track.rate) / rate_;
+        const float gl = stream.left / 32767.0f * master_;
+        const float gr = stream.right / 32767.0f * master_;
+        int peak = 0;
+        for (int i = 0; i < frames; i++) {
+            if (stream.position >= length) {
+                if (track.loop) stream.position = track.loop_start;
+                else { stream.playing = false; break; }
+            }
+            const auto at = static_cast<std::int64_t>(stream.position);
+            const auto next = std::min(at + 1, length - 1);
+            const float fraction = static_cast<float>(stream.position - at);
+            const auto *a = &track.samples[static_cast<std::size_t>(at) * 2];
+            const auto *b = &track.samples[static_cast<std::size_t>(next) * 2];
+            const float l = (a[0] + (b[0] - a[0]) * fraction) / 32768.0f * gl;
+            const float r = (a[1] + (b[1] - a[1]) * fraction) / 32768.0f * gr;
+            out[i * 2] += l;
+            out[i * 2 + 1] += r;
+            peak = std::max(peak, static_cast<int>(std::max(std::abs(l), std::abs(r)) * 32767.0f));
+            stream.position += step;
+        }
+        stream.level = peak;
+        if (!track.loop && stream.position >= length) stream.playing = false;
     }
 }
 

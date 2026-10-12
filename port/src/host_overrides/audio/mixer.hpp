@@ -43,6 +43,15 @@ public:
     // IsPlaying and SetVolume treat it as the sequence. SetSequence takes it away; null does too.
     void SetStream(int port, std::shared_ptr<const PcmTrack> track);
 
+    // Independent PCM buses for the game's two CD stream channels. These do not occupy MIDI ports.
+    void SetGameStream(int channel, std::shared_ptr<const PcmTrack> track);
+    void PlayGameStream(int channel);
+    void PauseGameStream(int channel);
+    void StopGameStream(int channel, bool clear = false);
+    bool IsGameStreamPlaying(int channel) const;
+    void SetGameStreamVolume(int channel, int left, int right);
+    int GameStreamLevel(int channel) const;
+
     void Rewind(int port, int song);
 
     void Play(int port);
@@ -120,6 +129,15 @@ private:
         void ChannelMessage(std::uint8_t status, std::uint8_t data1, std::uint8_t data2) override;
     };
 
+    struct GameStream {
+        std::shared_ptr<const PcmTrack> track;
+        double position = 0.0;
+        int left = 32767;
+        int right = 32767;
+        int level = 0;
+        bool playing = false;
+    };
+
     static constexpr int kMaxLayers = 8;
     static constexpr int kBlock = 256;
 
@@ -163,6 +181,7 @@ private:
     mutable std::mutex         mutex_;
     Synth                      synth_;
     std::array<Port, kPorts>   ports_;
+    std::array<GameStream, 2> game_streams_;
     std::array<VoiceExtra, kVoices> voice_extra_;
     std::array<Reverb, kCores> reverbs_;
     bool                       stereo_ = true;

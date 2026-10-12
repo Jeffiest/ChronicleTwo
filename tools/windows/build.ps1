@@ -4,8 +4,7 @@ $ErrorActionPreference = 'Stop'
 $root = Resolve-WindowsRoot $Root
 $build = Resolve-WindowsBuild $root $BuildDirectory
 $cmake = Find-WindowsTool cmake 'C:/Program Files/CMake/bin/cmake.exe'
-if (-not (Test-Path "$build/CMakeCache.txt")) { throw "no configured build in $build; run tools/windows/configure.ps1 first" }
-$targets = @('darkchronicle')
+$targets = @('darkchronicle', 'dc2data')
 if ($Tests) { $targets += 'darkchronicle_tests' }
 & $cmake --build $build --target $targets -j $Jobs *> "$build/build.log"
 $code = $LASTEXITCODE

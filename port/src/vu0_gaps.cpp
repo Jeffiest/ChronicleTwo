@@ -117,13 +117,6 @@ int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
     return (status & vu0::kStickySign) == 0;
 }
 
-void mgNormalizeVector(float *out, float *in, float length) {
-    sceVu0FVECTOR unit;
-
-    sceVu0Normalize(unit, in);
-    sceVu0ScaleVector(out, unit, length);
-}
-
 int CheckHit(CollisionInfo *collision, float *from, float *to, float *hit, int closest, int mask) {
     float   point[4];
     float   poly_min[4];

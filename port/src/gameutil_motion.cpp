@@ -25,6 +25,8 @@ mgCFrame *g_old_skin_frame;
 float     g_deformed_vertex[kMaxDeformVertices][4];
 float     g_deformed_normal[kMaxDeformVertices][4];
 
+} // namespace
+
 /**
  *
  * Accumulates a weighted transformed vertex and writes the resulting vertex. Retail is VU0 code:
@@ -45,8 +47,6 @@ void testVUnew(float (*matrix)[4], float *vertex, float *weight, float *accum, f
     vu0::Copy(accum, result);
     vu0::Copy(out, result);
 }
-
-} // namespace
 
 Mot_List *MotionProc2(mgCFrame *root, tagMOTION_TYPE *motion, tagFRAME_INF *frame_info, Mot_List *list) {
     static sceVu0FVECTOR *vert;

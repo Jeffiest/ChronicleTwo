@@ -1,15 +1,19 @@
 #include "sound.hpp"
 
 #include <array>
-#include <chrono>
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "audio/mixer.hpp"
 #include "audio/trace.hpp"
 #include "platform/audio.hpp"
+#include "platform/paths.hpp"
+#include "sound_stream_data.hpp"
 
 // The IOP side of the sound driver - EZMIDI's sequencer, libhsyn's bank handling, the SPU2
 // behind them and the EZBGM stream server - is the port's audio::Mixer: sixteen driver ports,
@@ -26,10 +30,6 @@ constexpr int kDriverPorts = MIDI_PORT_COUNT;
 constexpr int kStreamChannels = 2;
 constexpr int kStreamPlaying = 0x1000;
 constexpr int kStreamEnd = 0x8000;
-
-// A streamed request plays for this long rather than for its file: the port has no stream
-// decoder, and the game polls StreamGetState only to know that its voice has finished.
-constexpr auto kStreamDuration = std::chrono::milliseconds(1500);
 
 audio::Mixer &Player() {
     return audio::DefaultMixer();
@@ -63,8 +63,9 @@ int g_linked_port[kDriverPorts] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -
 struct StreamChannel {
     bool                                   opened = false;
     bool                                   ended = false;
-    bool                                   playing = false;
-    std::chrono::steady_clock::time_point started;
+    bool                                   started = false;
+    bool                                   paused = false;
+    std::string                            filename;
 };
 
 StreamChannel g_streams[kStreamChannels];
@@ -125,10 +126,58 @@ void OpenStream(int channel, const char *name, const char *pack_name) {
         return;
     }
     StreamChannel &state = g_streams[channel];
+    Player().StopGameStream(channel, true);
     state = StreamChannel{};
+    if (name == nullptr) return;
+    auto base = [](std::string value) {
+        const auto slash = value.find_last_of("\\/");
+        if (slash != std::string::npos) value.erase(0, slash + 1);
+        const auto version = value.find(';');
+        if (version != std::string::npos) value.erase(version);
+        return value;
+    };
+    std::string requested = base(pack_name != nullptr ? pack_name : name);
+    static sound_stream_data::Index index;
+    static std::filesystem::path indexed_root;
+    static bool index_ready = false;
+    const auto &root = PathsDataRoot();
+    if (!index_ready || indexed_root != root) {
+        std::string error;
+        index_ready = index.LoadIndex(root, error);
+        indexed_root = root;
+        if (!index_ready) audio::Trace("stream index unavailable at %s: %s", PathsDisplay(root).c_str(), error.c_str());
+    }
+    if (!index_ready) return;
+
+    std::vector<std::string> candidates{requested};
+    const auto dot = requested.find_last_of('.');
+    if (dot != std::string::npos && dot > 0) candidates.push_back(requested.substr(0, dot));
+    std::vector<std::int16_t> samples;
+    std::uint32_t rate = 0;
+    std::uint16_t channels = 0;
+    std::string error;
+    bool loaded = false;
+    for (const auto &candidate : candidates) {
+        if (index.ReadPcm(candidate, samples, rate, channels, error)) { requested = candidate; loaded = true; break; }
+    }
+    if (!loaded) {
+        audio::Trace("stream %d: cannot open %s: %s", channel, requested.c_str(), error.c_str());
+        return;
+    }
+    auto track = std::make_shared<audio::PcmTrack>();
+    track->rate = static_cast<int>(rate);
+    track->loop = false;
+    if (channels == 1) {
+        track->samples.reserve(samples.size() * 2);
+        for (const auto sample : samples) { track->samples.push_back(sample); track->samples.push_back(sample); }
+    } else {
+        track->samples = std::move(samples);
+    }
+    Player().SetGameStream(channel, std::move(track));
+    Player().SetGameStreamVolume(channel, 32767, 32767);
     state.opened = true;
-    audio::Trace("stream %d: open %s%s%s (no host stream decoder: silent)", channel, name != nullptr ? name : "",
-                 pack_name != nullptr ? " in pack " : "", pack_name != nullptr ? pack_name : "");
+    state.filename = std::move(requested);
+    audio::Trace("stream %d: opened %s (%u Hz, %u channel PCM)", channel, state.filename.c_str(), rate, channels);
 }
 
 } // namespace
@@ -490,26 +539,29 @@ PORT_OVERRIDE void CSound::StreamPlay(int channel) {
         return;
     }
     StreamChannel &state = g_streams[channel];
-    if (!state.opened) {
-        return;
-    }
-    state.playing = true;
+    if (!state.opened) return;
+    if (state.ended) Player().StopGameStream(channel);
     state.ended = false;
-    state.started = std::chrono::steady_clock::now();
-    audio::Trace("stream %d: play (silent)", channel);
+    state.started = true;
+    state.paused = false;
+    Player().PlayGameStream(channel);
 }
 
 PORT_OVERRIDE void CSound::StreamStop(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
-    g_streams[channel].playing = false;
+    Player().StopGameStream(channel);
+    g_streams[channel].started = false;
+    g_streams[channel].paused = false;
+    g_streams[channel].ended = false;
 }
 
 PORT_OVERRIDE void CSound::StreamClose(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
+    Player().StopGameStream(channel, true);
     g_streams[channel] = StreamChannel{};
 }
 
@@ -517,6 +569,7 @@ PORT_OVERRIDE void CSound::StreamEND(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
+    Player().StopGameStream(channel, true);
     g_streams[channel] = StreamChannel{};
 }
 
@@ -524,7 +577,8 @@ PORT_OVERRIDE void CSound::StreamPause(int channel) {
     if (channel < 0 || channel >= kStreamChannels) {
         return;
     }
-    g_streams[channel].playing = false;
+    Player().PauseGameStream(channel);
+    g_streams[channel].paused = true;
 }
 
 PORT_OVERRIDE void CSound::StreamRePlay(int channel) {
@@ -533,13 +587,15 @@ PORT_OVERRIDE void CSound::StreamRePlay(int channel) {
     }
     StreamChannel &state = g_streams[channel];
     if (state.opened && !state.ended) {
-        state.playing = true;
-        state.started = std::chrono::steady_clock::now();
+        state.started = true;
+        state.paused = false;
+        Player().PlayGameStream(channel);
     }
 }
 
 PORT_OVERRIDE void CSound::StreamSetVol(int channel, int left, int right) {
-    audio::Trace("stream %d: set volume %d %d", channel, left, right);
+    if (channel < 0 || channel >= kStreamChannels) return;
+    Player().SetGameStreamVolume(channel, left, right);
 }
 
 PORT_OVERRIDE int CSound::StreamGetState(int channel) {
@@ -547,14 +603,14 @@ PORT_OVERRIDE int CSound::StreamGetState(int channel) {
         return 0;
     }
     StreamChannel &state = g_streams[channel];
-    if (!state.opened || (!state.playing && !state.ended)) {
+    if (!state.opened || !state.started) {
         return 0;
     }
     if (state.ended) {
         return kStreamEnd;
     }
-    if (std::chrono::steady_clock::now() - state.started >= kStreamDuration) {
-        state.playing = false;
+    if (state.paused) return 0;
+    if (!Player().IsGameStreamPlaying(channel)) {
         state.ended = true;
         return kStreamEnd;
     }
@@ -562,8 +618,7 @@ PORT_OVERRIDE int CSound::StreamGetState(int channel) {
 }
 
 PORT_OVERRIDE int CSound::StreamGetLevel(int channel) {
-    (void) channel;
-    return 0;
+    return Player().GameStreamLevel(channel);
 }
 
 PORT_OVERRIDE void CSound::StreamStandBy(int channel) {
@@ -572,7 +627,8 @@ PORT_OVERRIDE void CSound::StreamStandBy(int channel) {
     }
     StreamChannel &state = g_streams[channel];
     if (state.opened) {
-        state.playing = false;
+        Player().PauseGameStream(channel);
+        state.paused = true;
         state.ended = false;
     }
 }

@@ -25,6 +25,7 @@ std::vector<ConfigChangeHook> g_change_hooks;
 // Whether config.json holds g_config, so a failed save is retried with the same settings.
 bool g_saved = false;
 bool g_changing = false;
+bool g_keep_file = false;
 
 std::string_view Trim(std::string_view text) {
     constexpr std::string_view kSpace = " \t\r\n";
@@ -435,6 +436,7 @@ std::string ConfigSerialize(const Config &config) {
 }
 
 bool ConfigSave() {
+    if (g_keep_file) return false;
     std::filesystem::path path = PathsSaveRoot() / "config.json";
     std::error_code       error;
     std::filesystem::create_directories(path.parent_path(), error);
@@ -445,9 +447,10 @@ bool ConfigSave() {
 
 bool ConfigLoad() {
     std::filesystem::path path = PathsSaveRoot() / "config.json";
-    std::ifstream         file(path, std::ios::binary);
     std::error_code       error;
-    if (!file || !std::filesystem::is_regular_file(path, error)) {
+    const bool exists = std::filesystem::exists(path, error);
+    if (!exists && !error) {
+        g_keep_file = false;
         g_config = Config{};
         RefreshHost();
         if (std::filesystem::exists(PathsSaveRoot() / "config.ini")) {
@@ -456,6 +459,17 @@ bool ConfigLoad() {
         ConfigSave();
         return false;
     }
+    std::ifstream file(path, std::ios::binary);
+    if (error || !exists || !std::filesystem::is_regular_file(path, error) || !file) {
+        std::fprintf(stderr, "config: could not read %s; using defaults and leaving it untouched\n",
+                     PathsDisplay(path).c_str());
+        g_config = Config{};
+        RefreshHost();
+        g_saved = false;
+        g_keep_file = true;
+        return false;
+    }
+    g_keep_file = false;
     std::ostringstream text;
     text << file.rdbuf();
     g_config = ConfigParse(text.str());

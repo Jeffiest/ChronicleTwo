@@ -18,8 +18,7 @@ switch ($config.ToLower()) {
 
 $checkout = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $state = Join-Path $checkout '.kazarov'
-# KZ_WINDOWS_ROOT points the dependencies at an existing acquire.ps1 layout (deps\, archives\) instead of downloading one.
-$root = Resolve-WindowsRoot $(if ($env:KZ_WINDOWS_ROOT) { $env:KZ_WINDOWS_ROOT } else { Join-Path $state 'windows' })
+$root = Resolve-WindowsRoot (Join-Path $state 'windows')
 $build = Resolve-WindowsBuild $root (Join-Path $checkout "port/build/$name")
 
 # One run per configuration at a time. The lock is released when the process exits, or before the game starts.
@@ -68,8 +67,7 @@ if (@($markers | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_
 }
 $deps.Dispose()
 
-# configure.ps1 runs when the directory has no build.ninja, or its cache was made for another path.
-# A stale cache is deleted first, so CMake does not reuse paths that no longer exist.
+# A stale cache is deleted before configuring: CMake would otherwise reuse paths that no longer exist.
 function Read-CacheValue([string]$File, [string]$Key) {
     if (-not (Test-Path -LiteralPath $File)) { return $null }
     $match = Select-String -LiteralPath $File -Pattern "^$([regex]::Escape($Key)):INTERNAL=(.*)$" | Select-Object -First 1
@@ -88,15 +86,13 @@ if ($stale) {
     }
 }
 if ($stale -or -not (Test-Path -LiteralPath (Join-Path $build 'build.ninja'))) {
-    # KZ_WINDOWS_CMAKE_ARGS (semicolon separated) adds -D options, such as FETCHCONTENT_SOURCE_DIR_* to avoid CMake's downloads.
-    $extra = @(([string]$env:KZ_WINDOWS_CMAKE_ARGS) -split ';' | Where-Object { $_ })
-    & "$PSScriptRoot/configure.ps1" -Root $root -BuildDirectory $build -BuildType $buildType -CMakeArgs $extra
+    & "$PSScriptRoot/configure.ps1" -Root $root -BuildDirectory $build -BuildType $buildType
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
 }
 
 # build.ps1 runs ninja, which builds only what changed.
-$jobs = @()
-if ($env:JOBS) { $jobs = @('-Jobs', $env:JOBS) }
+$jobs = @{}
+if ($env:JOBS) { $jobs = @{ Jobs = [int]$env:JOBS } }
 & "$PSScriptRoot/build.ps1" -Root $root -BuildDirectory $build @jobs
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
@@ -106,20 +102,24 @@ if ($command -eq 'build') {
     exit 0
 }
 
-# The game reads the extracted disc, rom\pal\extracted\iso, the tree the ps2-pal configuration also uses.
-# kz-extract writes it from the PAL disc and records the disc's checksum, so an unchanged disc is not extracted again.
-$iso = Join-Path $checkout 'rom/pal/Dark Chronicle (PAL).iso'
-$extractDir = Join-Path $checkout 'rom/pal/extracted'
-$data = Join-Path $extractDir 'iso'
-$idFile = Join-Path $extractDir '.kazarov-extract.id'
-# Every configuration extracts into the same tree, so they take one lock for it. The game holds it shared while it runs.
-$dataLockFile = Join-Path $locks 'port-data.lock'
-$haveIso = Test-Path -LiteralPath $iso -PathType Leaf
-if (-not $haveIso -and -not (Test-Path -LiteralPath (Join-Path $data 'DATA.HD4') -PathType Leaf)) {
-    [Console]::Error.WriteLine('kazarov: put the PAL disc image at rom/pal/Dark Chronicle (PAL).iso, or extract it to rom/pal/extracted/iso.')
-    exit 1
+# The game data is extracted from the PAL disc into data\, once per source and dc2data.exe. data\.kazarov-data
+# records the source's and dc2data's sizes and write times; a run with the same ones skips the extraction.
+# A directory source only reports its own write time, so edits to files inside it do not trigger re-extraction.
+$source = Join-Path $checkout 'rom/pal/Dark Chronicle (PAL).iso'
+if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+    $source = Join-Path $checkout 'rom/pal/extracted/iso'
+    if (-not (Test-Path -LiteralPath $source -PathType Container)) { $source = $null }
 }
-if ($haveIso) {
+
+$data = Join-Path $checkout 'data'
+# Every port configuration extracts into the same data\, so they take one lock for it. The game holds it shared while it runs.
+$dataLockFile = Join-Path $locks 'port-data.lock'
+if (-not $source) {
+    # Without a disc an existing data\ is used; otherwise the game starts without its data.
+    if (-not (Test-Path -LiteralPath $data -PathType Container)) {
+        [Console]::Error.WriteLine('kazarov: no PAL disc found; the game starts without data and its file loads fail')
+    }
+} else {
     $dataLock = $null
     $dataAnnounced = $false
     while ($null -eq $dataLock) {
@@ -130,16 +130,25 @@ if ($haveIso) {
             Start-Sleep -Milliseconds 500
         }
     }
-    $python = Find-WindowsPython
-    & $python (Join-Path $checkout 'tools/kazarov/bin/kz-extract') --iso $iso --checksum (Join-Path $checkout 'rom/pal/checksum.sha256') --out $extractDir --id-file $idFile
-    if ($LASTEXITCODE) { $dataLock.Dispose(); exit $LASTEXITCODE }
+    $dc2data = Join-Path $build 'dc2data.exe'
+    $sourceInfo = Get-Item -LiteralPath $source
+    $sourceLength = if ($sourceInfo.PSIsContainer) { 0 } else { $sourceInfo.Length }
+    $dc2dataInfo = Get-Item -LiteralPath $dc2data
+    $want = "iso $sourceLength $($sourceInfo.LastWriteTimeUtc.Ticks)`ndc2data $($dc2dataInfo.Length) $($dc2dataInfo.LastWriteTimeUtc.Ticks)"
+    $stamp = Join-Path $data '.kazarov-data'
+    $have = if (Test-Path -LiteralPath $stamp) { (Get-Content -LiteralPath $stamp -Raw) -replace "`r", '' } else { '' }
+    if ($have.Trim() -ne $want) {
+        New-Item -ItemType Directory -Force $data | Out-Null
+        & $dc2data extract $source $data
+        if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        Set-Content -LiteralPath $stamp -Value $want
+    }
     $dataLock.Dispose()
 }
-$want = if (Test-Path -LiteralPath $idFile) { (Get-Content -LiteralPath $idFile -Raw).Trim() } else { '' }
 
 $lock.Dispose()
 
-# The game reads the tree while it runs, so it holds the data lock shared; another configuration's extraction waits for it.
+# The game reads data\ while it runs, so it holds the data lock shared; another configuration's extraction waits for it.
 $dataShared = $null
 $dataSharedAnnounced = $false
 while ($null -eq $dataShared) {
@@ -152,20 +161,17 @@ while ($null -eq $dataShared) {
 }
 
 # Another configuration can re-extract between the two locks; the game then refuses to start.
-$have = if (Test-Path -LiteralPath $idFile) { (Get-Content -LiteralPath $idFile -Raw).Trim() } else { '' }
-if ($have -ne $want) {
-    $dataShared.Dispose()
-    [Console]::Error.WriteLine("kazarov: $idFile changed while starting; run again")
-    exit 1
+if ($source) {
+    $have = if (Test-Path -LiteralPath $stamp) { (Get-Content -LiteralPath $stamp -Raw) -replace "`r", '' } else { '' }
+    if ($have.Trim() -ne $want) {
+        $dataShared.Dispose()
+        [Console]::Error.WriteLine("kazarov: $stamp no longer matches this build's dc2data; run again")
+        exit 1
+    }
 }
 
-# Keep launch data and saves in the checkout unless explicit paths are provided.
-$gameArgs = @($rest)
-if (-not $env:DC2_DATA -and -not @($rest | Where-Object { $_ -like '--data*' })) { $gameArgs += @('--data', $data) }
-if (-not $env:DC2_SAVE -and -not @($rest | Where-Object { $_ -like '--save*' })) { $gameArgs += @('--save', (Join-Path $state 'save')) }
-
 Push-Location $checkout
-& (Join-Path $build 'darkchronicle.exe') @gameArgs
+& (Join-Path $build 'darkchronicle.exe') @rest
 $code = $LASTEXITCODE
 Pop-Location
 $dataShared.Dispose()

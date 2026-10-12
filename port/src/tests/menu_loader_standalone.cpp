@@ -37,18 +37,6 @@ bool Check(bool condition, const char *message) {
 
 } // namespace
 
-void mgCMemory::Init() {
-    heap_size = 0;
-    heap = nullptr;
-    heap_top = nullptr;
-    name[0] = '\0';
-    lock = 0;
-    stack = nullptr;
-    stack_used = 0;
-    stack_size = 0;
-    stack_block = nullptr;
-}
-
 void StartReadBG() { ++start_read_count; }
 
 int LoadFile2(char *path, void *buffer, int *out_size, int mode) {

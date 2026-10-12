@@ -1,10 +1,32 @@
 #include "gamepad.hpp"
 
+#include <eekernel.h>
 #include <libgraph.h>
 #include <libpad.h>
 
 #include "dataread.hpp"
+#include "mglib.hpp"
 #include "platform/input.hpp"
+
+namespace {
+
+int old_vsync;
+int thread_id;
+u8  thread_stack[0x400] __attribute__((aligned(16)));
+CGamePad *thread_game_pad;
+
+void GamePadStep(void *) {
+    for (;;) {
+        const int now = mgGetVSyncCount();
+        int elapsed = now - old_vsync;
+        if (elapsed < 0) elapsed = 1;
+        if (elapsed > 0 && thread_game_pad != nullptr) thread_game_pad->Step(elapsed);
+        SwitchGamePadThread();
+        old_vsync = now;
+    }
+}
+
+} // namespace
 
 // The host's keyboard and mouse drive pad 0 next to the first gamepad (platform/input.hpp): every
 // read latches the mouse motion since the previous read as this read's right stick, and GetLX and
@@ -13,8 +35,8 @@
 //
 // UpDate and WaitEnable keep retail's bodies because ps2/src/gamepad.cpp's read path is static to
 // that unit, so the port holds its own copy to latch where the game actually reads. The two
-// controller-thread functions become host ones: the host runs the game on a single thread, and
-// UpDate steps vibration where the PS2's controller thread stepped it every vertical blank. The
+// controller-thread functions use the host's cooperative fiber scheduler, and vibration advances
+// by the vertical blanks elapsed between controller-thread turns. The
 // input recording lives in host memory instead of the development-kit address gamepad.hpp names.
 
 int pad_button_read(PAD_STATUS *status, int port, int slot) {
@@ -300,9 +322,6 @@ PORT_OVERRIDE void CGamePad::UpDate() {
 
     cnt = !cnt;
 
-    // The PS2's controller thread stepped the actuators every vertical blank; the host has no
-    // second thread, so each update steps them by one frame.
-    Step(1);
     SwitchGamePadThread();
 }
 
@@ -343,14 +362,21 @@ PORT_OVERRIDE void CGamePad::MenuModeOff() {
     InputSetMenuNavigation(false);
 }
 
-// The PS2 yielded to its controller thread here. The host runs the game on one thread, and UpDate
-// has already stepped vibration in the thread's place.
 PORT_OVERRIDE void SwitchGamePadThread() {
+    RotateThreadReadyQueue(GAMEPAD_THREAD_PRIORITY);
 }
 
-// The PS2's controller thread ran on a second thread; the host has nothing to create, and UpDate
-// steps vibration in the thread's place.
 PORT_OVERRIDE void CreateGamePadThread(CGamePad *game_pad) {
+    ThreadParam param;
+    param.entry = GamePadStep;
+    param.option = 0;
+    param.stack = thread_stack;
+    param.stackSize = sizeof(thread_stack);
+    param.initPriority = GAMEPAD_THREAD_PRIORITY;
+    param.gpReg = &_gp;
+    thread_game_pad = game_pad;
+    thread_id = CreateThread(&param);
+    StartThread(thread_id, nullptr);
 }
 
 // The PS2 kept the input recording at a fixed development-kit address (PAD_CAPTURE_BUFFER,

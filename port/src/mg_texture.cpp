@@ -281,6 +281,9 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         Release(texture, "reshape", entry);
         entry.texture = gfx::CreateTexture(desc);
         if (entry.texture == gfx::kNullTexture) {
+            // Texture slots can be temporarily exhausted while the renderer retires deferred
+            // work. Keep the entry eligible for another attempt on the next bind.
+            entry.dirty = true;
             return;
         }
         entry.width = desc.width;
