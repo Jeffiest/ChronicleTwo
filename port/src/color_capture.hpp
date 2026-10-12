@@ -15,7 +15,8 @@ bool HalfColor(const uint8_t *rgba, size_t rgba_bytes, int width, int height,
 
 // Reads a logical rectangle through a plain, unscaled staging texture. This excludes window
 // bars and display interpolation, and follows renderer mappings after a resize. Synchronous
-// readback is deliberately rejected while a frame or display list is open.
+// completed-frame readback preserves an open display list. Current targets and explicit
+// textures require recording to be closed; active GPU frames reject every readback.
 bool ReadColor(gfx::TextureHandle source, gfx::Rect rect, int width, int height, int bpp,
                void *destination, size_t capacity);
 }

@@ -4,6 +4,9 @@
 #include <vector>
 #include <SDL3/SDL.h>
 #include "color_capture.hpp"
+#include "effectlist.hpp"
+#include "gfx/context.hpp"
+#include "gfx/displaylist.hpp"
 #include "mglib.hpp"
 #include "menudraw.hpp"
 #include "platform/clock.hpp"
@@ -110,12 +113,55 @@ void RendererCapture() {
     assert(mgStoreImage(&texture, reinterpret_cast<u_long128 *>(copied)) == 128);
     assert(std::memcmp(source, copied, sizeof(source)) == 0); // explicit texture, not the main image
 
-    // The bounded backend refuses deferred reads and leaves the destination untouched.
+    // The actual cutscene fade reads the completed tick while the next tick is unfinished.
+    mgInit(MG_SCREEN_MODE_512X448, 0);
+    mgSetPkFrameBuffer(-1, 8, 8, SCE_GS_PSMCT32);
+    const std::vector<uint8_t> completed(bytes + 16, bytes + 16 + 256);
+    auto target = gfx::CreateRenderTarget(8, 8, true, false);
+    assert(target != gfx::kNullTexture);
     gfx::BeginRecording();
+    gfx::SetInterpKey(123, true, 17, true);
+    const uint8_t white[] = {248, 248, 248, 128};
+    gfx::Clear(true, white, true, 0);
+    gfx::SetRenderTarget(target);
+    gfx::Clear(true, white, true, 0);
+    auto *recording = gfx::detail::g.list.get();
+    const size_t entries = recording->entries.size();
+    const uint64_t serial = gfx::detail::g.list_serial;
+    CFadeInOut fade;
+    mgCTexture cross_texture;
+    cross_texture.Initialize();
+    fade.SetCrossTexture(&cross_texture, storage.data() + 1);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        std::memset(bytes, 0xA5, storage.size() * 16);
+        fade.CaptureScreen();
+        assert(std::memcmp(bytes + 16, completed.data(), completed.size()) == 0);
+        for (int i = 0; i < 16; ++i) assert(bytes[i] == 0xA5 && bytes[272 + i] == 0xA5);
+        assert(gfx::Recording() && gfx::detail::g.list.get() == recording);
+        assert(recording->entries.size() == entries && gfx::detail::g.list_serial == serial);
+        assert(gfx::CurrentRenderTarget() == target && gfx::CurrentInterpKey() == 123);
+        assert(gfx::CurrentNoInterpolation() && gfx::detail::g.interp_blend_vertices);
+        assert(gfx::detail::g.interp_teleport_distance == 17);
+    }
+    std::memset(copied, 0xA5, sizeof(copied));
+    assert(!port_capture::ReadColor(gfx::kPreviousFrame, {7, 0, 2, 2}, 2, 2, 32, copied, sizeof(copied)));
+    assert(!port_capture::ReadColor(gfx::kMainTarget, {0, 0, 8, 8}, 2, 2, 32, copied, sizeof(copied)));
+    assert(!port_capture::ReadColor(target, {0, 0, 8, 8}, 2, 2, 32, copied, sizeof(copied)));
+    for (uint8_t value : copied) assert(value == 0xA5);
+    assert(gfx::detail::g.list.get() == recording && recording->entries.size() == entries);
+    auto unfinished = gfx::EndRecording();
+    gfx::RenderOptions canonical;
+    canonical.canonical = true;
+    assert(gfx::RenderList(*unfinished, 1, canonical));
+    assert(port_capture::ReadColor(gfx::kPreviousFrame, {0, 0, 8, 8}, 2, 2, 32, copied, sizeof(copied)));
+    for (int i = 0; i < 4; ++i) assert(copied[i * 4] == 248 && copied[i * 4 + 1] == 248 && copied[i * 4 + 2] == 248);
+    unfinished.reset();
+    gfx::DestroyTexture(target);
+    assert(gfx::BeginFrame());
     std::memset(copied, 0xA5, sizeof(copied));
     assert(!port_capture::ReadColor(gfx::kPreviousFrame, {0, 0, 8, 8}, 2, 2, 32, copied, sizeof(copied)));
     for (uint8_t value : copied) assert(value == 0xA5);
-    gfx::EndRecording();
+    gfx::EndFrame();
 
     // Execute the actual menu transition with real game objects and a tiny manager pool. The
     // capture must observe this completed tick, reserve padded pixels, then leave a new list open.

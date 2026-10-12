@@ -289,10 +289,10 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 6872c876693b0cc5 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:287 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
 | b203411b21e613eb | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:329 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
 | 1ed72a5f3dbd9947 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:451 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 437a9c54827e9612 | pointer-narrowing | host-source/src/mglib.cpp:505 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
-| d5543ea93a6b68ae | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:547 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
-| 9eb1cf69af022d12 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:580 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
-| 5a039616f6e46052 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:615 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
+| 4918dfd7cf8fe606 | pointer-narrowing | host-source/src/mglib.cpp:504 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
+| 052341452de93ac0 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:546 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
+| 89d50409d6b9906a | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:579 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
+| bb1012fc889fde89 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:614 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
 | 0c7e3178fcede0b3 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:22 | <file-scope> | sceMpeg | host-source/src/movie.cpp |
 | 74ec2576cd6f458b | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:81 | ReadTiming | sceMpegAddStrCallback | host-source/src/movie.cpp |
 | a9acbc24c46a7571 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:84 | ReadTiming | sceMpegCallback | host-source/src/movie.cpp |

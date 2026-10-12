@@ -25,6 +25,7 @@ add_custom_target(ct_active_contract_check
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_active_contracts.py
         --build-dir ${CMAKE_BINARY_DIR} --check
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/tests/test_active_contracts_batch05.py
+    DEPENDS ${PORT_OVERRIDES}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
 add_dependencies(ct_ps2 ct_active_contract_check)
 function(ct_add_completion_suite target compatibility)

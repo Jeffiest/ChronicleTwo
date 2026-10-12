@@ -1,4 +1,8 @@
 #include <cassert>
+#include <cmath>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include <filesystem>
 #include <cstdio>
 #include <cstring>
@@ -12,7 +16,38 @@
 #include "platform/paths.hpp"
 #include "visualmotion.hpp"
 
+void PortMgSkinMotionTree(mgCFrame *frame);
+
+void CheckBindPose(mgCFrame *root, const char *name) {
+    struct Vertices { mgCVisualMotionMDT *visual; std::vector<float> base; };
+    std::vector<Vertices> models;
+    for (int i = 0; i < root->frame_num; ++i) {
+        mgCVisual *visual = root->frame_list[i]->visual;
+        if (visual && visual->Iam() == MG_VISUAL_KIND_MOTION_MDT) {
+            auto *motion = static_cast<mgCVisualMotionMDT *>(visual);
+            models.push_back({motion, std::vector<float>(&motion->vertex[0][0],
+                                                       &motion->vertex[0][0] + motion->vertex_num * 4)});
+        }
+    }
+    for (int tick = 0; tick < 3; ++tick) {
+        PortMgSkinMotionTree(root);
+        for (const auto &model : models) {
+            for (int i = 0; i < model.visual->vertex_num; ++i) for (int lane = 0; lane < 3; ++lane) {
+                float expected = model.base[i * 4 + lane], actual = model.visual->vertex[i][lane];
+                if (!std::isfinite(actual) || std::fabs(expected - actual) > 0.002f * (1 + std::fabs(expected))) {
+                    std::fprintf(stderr, "bind pose mismatch: %s frame %d vertex %d lane %d expected %g actual %g\n",
+                                 name, model.visual->frame_id, i, lane, expected, actual);
+                    std::exit(1);
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv) {
+#ifdef _WIN32
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+#endif
     assert(argc == 2);
     if (!std::filesystem::exists(std::filesystem::path(argv[1]) / "mainchr/c02fuku4.chr")) {
         std::puts("SKIP: private extracted PAL assets are unavailable");
@@ -21,7 +56,8 @@ int main(int argc, char **argv) {
     PathsSetDataRoot(PathsFromUtf8(argv[1]));
     InitCDFile();
     int weighted_models = 0;
-    for (const char *path : {"mainchr/c02fuku4.chr", "mainchr/c01fuku1.chr", "mainchr/ws050.chr"}) {
+    for (const char *path : {"mainchr/c02fuku4.chr", "mainchr/c01fuku1.chr", "mainchr/ws050.chr",
+                             "event/opening/p1/p1_starbre.chr"}) {
         cdvd::File file;
         assert(cdvd::Find(path, file));
         std::vector<u_long128> bytes((file.size + 15) / 16);
@@ -44,8 +80,22 @@ int main(int argc, char **argv) {
                     std::memset(storage.data() + 39617, 0xCC, 16);
                     mgLoadData load{};
                     load.mds = mds; load.weight = weights; load.memory = &skeleton; load.work_memory = &work;
+                    char all[] = "";
+                    mgCreateVisualType visual_types[] = {{MG_VISUAL_CREATE_MOTION_MDT, all}, {MG_VISUAL_CREATE_END, nullptr}};
+                    load.visual_type = visual_types;
                     mgCFrame *frames = mgLoadMDSFile(&load);
                     assert(frames && frames->frame_num == static_cast<int>(mds->object_num));
+                    CheckBindPose(frames, name.c_str());
+                    std::vector<u_long128> clone_storage(39616);
+                    mgCMemory clones;
+                    clones.stSetBuffer(clone_storage.data(), static_cast<int>(clone_storage.size()));
+                    mgCFrame *copy = mgCopyFrame(frames, &clones, 1);
+                    assert(copy && copy->frame_num == frames->frame_num);
+                    float translated[4][4];
+                    std::memcpy(translated, copy->trans_matrix, sizeof(translated));
+                    translated[3][0] += 7; translated[3][1] += 9; translated[3][2] -= 3;
+                    copy->SetTransMatrix(translated);
+                    CheckBindPose(copy, name.c_str());
                     auto *object = reinterpret_cast<MDTOBJ_HEADER *>(reinterpret_cast<char *>(mds) + mds->object_ofs);
                     for (unsigned frame_id = 0; frame_id < mds->object_num; ++frame_id) {
                         if (object->mdt_ofs != 0) {

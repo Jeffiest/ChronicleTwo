@@ -473,19 +473,18 @@ PORT_OVERRIDE int mgStoreImage(mgCTexture *texture, u_long128 *buffer) {
                      texture->name, texture->width, texture->height, texture->bpp, psm);
         std::abort();
     }
-    // A synchronous CPU consumer cannot run ahead of a deferred display list. Returning a fake
-    // success, or letting ignored failures expose uninitialised photo pixels, is unsafe.
-    if (gfx::Recording() || gfx::InFrame()) {
-        std::fprintf(stderr, "mgStoreImage: synchronous color capture '%s' during recording/frame is unsupported\n",
-                     texture->name);
-        std::abort();
-    }
     gfx::TextureHandle source = gfx::kNullTexture;
     gfx::Rect rect{0, 0, texture->width, texture->height};
     int fbp = texture->tex0.TBP0 >> 5;
     bool screen = texture->image[0] == NULL &&
                   (texture->tex0.TBP0 == (mgDBuff.draw0.frame1.FBP << 5) ||
                    texture->tex0.TBP0 == (mgDBuff.draw1.frame1.FBP << 5));
+    // Backbuffer captures read the completed tick. Other sources may depend on pending draws.
+    if ((gfx::InFrame() && !gfx::Recording()) || (gfx::Recording() && !screen)) {
+        std::fprintf(stderr, "mgStoreImage: synchronous color capture '%s' during recording/frame is unsupported\n",
+                     texture->name);
+        std::abort();
+    }
     if (screen) {
         // Read the completed canonical tick, never the interpolated/window-sized display image.
         source = gfx::kPreviousFrame;

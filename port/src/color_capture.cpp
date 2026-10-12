@@ -4,8 +4,17 @@
 #include <cstring>
 #include <limits>
 #include <vector>
+#include "gfx/context.hpp"
 
 namespace port_capture {
+namespace {
+// Completed-frame reads must not append their staging copy to the unfinished tick.
+struct RecordingPause {
+    std::shared_ptr<gfx::DisplayList> list = std::move(gfx::detail::g.list);
+    ~RecordingPause() { gfx::detail::g.list = std::move(list); }
+};
+}
+
 size_t ImageBytes(int width, int height, int bpp) {
     if (width <= 0 || height <= 0 || (bpp != 16 && bpp != 24 && bpp != 32)) return 0;
     if (static_cast<size_t>(width) > std::numeric_limits<size_t>::max() / (bpp / 8)) return 0;
@@ -62,11 +71,12 @@ bool ReadColor(gfx::TextureHandle source, gfx::Rect rect, int width, int height,
                void *destination, size_t capacity) {
     size_t bytes = ImageBytes(width, height, bpp);
     if (!bytes || !destination || capacity < bytes || rect.w <= 0 || rect.h <= 0 ||
-        gfx::InFrame() || gfx::Recording()) return false;
+        gfx::detail::g.in_frame || (gfx::Recording() && source != gfx::kPreviousFrame)) return false;
     auto info = gfx::GetTextureInfo(source);
     if (!info || info->format != gfx::TextureFormat::Rgba8 || rect.x < 0 || rect.y < 0 ||
         static_cast<uint64_t>(rect.x) + rect.w > info->width ||
         static_cast<uint64_t>(rect.y) + rect.h > info->height) return false;
+    RecordingPause pause;
     gfx::TextureDesc desc;
     desc.width = static_cast<uint32_t>(width);
     desc.height = static_cast<uint32_t>(height);
