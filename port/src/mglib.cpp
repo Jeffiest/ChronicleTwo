@@ -233,7 +233,7 @@ gfx::TextureBinding BindingFor(mgPortTexture found, uint64_t tex0, uint64_t tex1
 // tick, so a frame sampled into another target is grabbed at the binding: the snapshot is recorded
 // here and holds the frame as it stands at this draw.
 mgPortTexture GrabFrameIfSampled(mgPortTexture found) {
-    if (found.texture != gfx::kMainTarget || current_target == gfx::kMainTarget || !gfx_open) {
+    if (found.texture != gfx::kMainTarget || !gfx_open) {
         return found;
     }
 
@@ -799,7 +799,7 @@ void mgPortCopyPalette(uint64_t src_tex0, uint64_t dst_tex0) {
 // Render targets
 
 gfx::TextureHandle mgPortCurrentTarget() {
-    return current_target;
+    return gfx_open ? gfx::CurrentRenderTarget() : current_target;
 }
 
 gfx::TextureHandle mgPortRenderTarget(uint32_t tbp0, int width, int height, int psm, bool frame_target) {

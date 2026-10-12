@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -326,6 +327,60 @@ TEST(MglibPresent, TickIsRecordedAndRenderedCanonically) {
     mgBeginFrame(nullptr);
     mgEndFrame(nullptr);
     EXPECT_NE(mgPortPreviousList(), nullptr);
+}
+
+TEST(MglibPresent, CurrentTargetTracksDirectRendererChanges) {
+    PresentRenderer renderer(640, 480);
+    const gfx::TextureHandle target = mgPortRenderTarget(0x3000u, 512, 480, SCE_GS_PSMCT32, false);
+    ASSERT_NE(target, gfx::kNullTexture);
+
+    mgBeginFrame(nullptr);
+    EXPECT_EQ(mgPortCurrentTarget(), gfx::kMainTarget);
+    gfx::SetRenderTarget(target);
+    EXPECT_EQ(mgPortCurrentTarget(), target);
+    gfx::SetRenderTarget(gfx::kMainTarget);
+    EXPECT_EQ(mgPortCurrentTarget(), gfx::kMainTarget);
+    mgEndFrame(nullptr);
+}
+
+TEST(MglibPresent, SamplingMainTargetUsesAnOrderedSnapshot) {
+    PresentRenderer renderer(640, 480);
+
+    mgSetBackGround(64.0f, 128.0f, 192.0f, 128.0f);
+    mgBeginFrame(nullptr);
+    mgCTexture frame;
+    mgGetFrameBuffer(&frame);
+
+    EXPECT_EQ(mgPortCurrentTarget(), gfx::kMainTarget);
+    const gfx::TextureBinding snapshot = mgPortBinding(&frame);
+    EXPECT_NE(snapshot.texture, gfx::kMainTarget);
+    EXPECT_NE(snapshot.texture, mgPortCurrentTarget());
+    const std::optional<gfx::TextureInfo> snapshot_info = gfx::GetTextureInfo(snapshot.texture);
+    ASSERT_TRUE(snapshot_info.has_value());
+    EXPECT_TRUE(snapshot_info->render_target);
+    EXPECT_TRUE(snapshot_info->frame_target);
+
+    std::array<gfx::Vertex2D, 4> quad = {
+        QuadCorner(100.0f, 100.0f),
+        QuadCorner(200.0f, 100.0f),
+        QuadCorner(200.0f, 200.0f),
+        QuadCorner(100.0f, 200.0f),
+    };
+    for (gfx::Vertex2D &vertex : quad) {
+        std::fill_n(vertex.color, 4, 0x80);
+    }
+    mgPortDraw2D(gfx::Primitive::Quads, quad, snapshot, mgPortDrawState());
+    mgEndFrame(nullptr);
+
+    std::vector<uint8_t> rgba;
+    uint32_t             width = 0;
+    uint32_t             height = 0;
+    ASSERT_TRUE(mgPortCanonicalReadColor(gfx::kMainTarget, rgba, width, height));
+    const gfx::LogicalMapping mapping = gfx::GetLogicalMapping(gfx::kMainTarget);
+    const size_t inside = PixelOffset(mapping, width, 150.0f, 150.0f);
+    EXPECT_NEAR(rgba[inside + 0], 64, 1);
+    EXPECT_NEAR(rgba[inside + 1], 128, 1);
+    EXPECT_NEAR(rgba[inside + 2], 192, 1);
 }
 
 TEST(MglibPresent, FrameTargetFlag) {
