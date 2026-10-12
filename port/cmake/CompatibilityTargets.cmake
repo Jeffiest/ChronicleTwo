@@ -10,6 +10,7 @@ add_executable(ct_villager_outputs_test EXCLUDE_FROM_ALL ${CT_TESTS}/villager_ou
 target_link_libraries(ct_villager_outputs_test PRIVATE ct_options)
 if(WIN32)
     foreach(target IN ITEMS ct_arena_memory_test ct_menu_loader_test ct_villager_outputs_test)
+        ct_copy_windows_runtime(${target})
         add_dependencies(${target} ct_win_headers)
     endforeach()
 endif()
@@ -49,6 +50,7 @@ endif()
 
 add_custom_target(ct_compatibility_audit
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/compatibility_audit.py --check
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_upstream_host_fixups.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_script_storage.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_menu_pointers.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_photo_names.py

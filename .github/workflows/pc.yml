@@ -112,16 +112,16 @@ jobs:
       - name: Configure
         run: |
           ./tools/windows/configure.ps1 -Root $env:RUNNER_TEMP -BuildDirectory $env:GITHUB_WORKSPACE/port/build/windows-x64-tests -Tests `
-            -VulkanLibrary $env:VULKAN_RUNTIME/vulkan-1.dll
+            -VulkanLibrary $env:VULKAN_RUNTIME/vulkan-1.dll -CMakeArgs '-DCT_TEST_TIMEOUT=60'
 
       # Beside the executables, the downloaded loader is found before any in System32.
       - name: Build
         run: |
           ./tools/windows/build.ps1 -Root $env:RUNNER_TEMP -BuildDirectory $env:GITHUB_WORKSPACE/port/build/windows-x64-tests -Tests
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Copy-Item $env:VULKAN_RUNTIME/vulkan-1.dll port/build/windows-x64-tests
           cmake --build port/build/windows-x64-tests --target ct_completion_tests_headless
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          Copy-Item $env:VULKAN_RUNTIME/vulkan-1.dll port/build/windows-x64-tests
 
       # The renderer's cases need a Vulkan device, which this runner does not have.
       - name: Test
