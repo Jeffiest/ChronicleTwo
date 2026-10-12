@@ -14,8 +14,11 @@ right once, then press X (Cross) through the confirmation prompts. The input-scr
 without playing the opening cutscene.
 
 The current real-data run confirms the floor transition (`FLOOR 0 -> 1`) and loads
-`d02m01a.img`, but then stalls in repeated `flat put err` messages from dungeon event-point placement
-before a gameplay screenshot is produced. This is the next dungeon-loading blocker to investigate.
+`d02m01a.img`, but then stalls before a gameplay screenshot is produced. A temporary host trace found
+that the active map reports a 400-slot placement table whose first slot is empty; both the map and
+that placed part return zero collision polygons across the flat-position search. The `CheckHit`
+geometry test is never reached. This points to dungeon map placement/loading order or data, followed
+by the retail treasure-placement retry that does not exit when no point is found.
 
 In a running dungeon, R3 opens the retail dungeon debug panel. Start+Select exits the floor. In Palm
 Brinks, R3 opens the edit debug panel. The top-level menu also includes direct map, title, character,
