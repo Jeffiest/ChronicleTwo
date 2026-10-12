@@ -2,11 +2,13 @@
 #include "common.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <functional>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -16,6 +18,37 @@
 #include "mg_drawprim_port.hpp"
 #include "mglib.hpp"
 #include "mglib_port.hpp"
+
+// The GS evaluates UV at integer pixel positions and nearest-samples floor(u), so the texel one past the last
+// covered pixel is never read. Sampling at pixel centres would read it and bleed the neighbouring glyph into the cell.
+std::pair<float, float> mgPortSpriteTexelSpan(float p0, float p1, float u0, float u1) {
+    const bool flipped = p1 < p0;
+    const float lo = flipped ? p1 : p0;
+    const float hi = flipped ? p0 : p1;
+    const float ulo = flipped ? u1 : u0;
+    const float uhi = flipped ? u0 : u1;
+    const float width = hi - lo;
+
+    if (width <= 0.0f) {
+        return {u0, u1};
+    }
+
+    const float first = std::ceil(lo);
+    const float last = std::ceil(hi) - 1.0f;
+
+    if (last < first) {
+        return {u0, u1};
+    }
+
+    const float s = (uhi - ulo) / width;
+    const float ua = ulo + (first - lo) * s;
+    const float ub = ulo + (last - lo) * s;
+
+    const float new_lo = s >= 0.0f ? std::floor(ua) : std::floor(ua) + 1.0f;
+    const float new_hi = s >= 0.0f ? std::floor(ub) + 1.0f : std::floor(ub);
+
+    return flipped ? std::pair<float, float>{new_hi, new_lo} : std::pair<float, float>{new_lo, new_hi};
+}
 
 namespace {
 
@@ -106,11 +139,21 @@ void AssembleSprite(const mgCDrawPrim &self, PrimRun &run, const gfx::Vertex2D &
         return out;
     };
 
+    float au = a.u;
+    float bu = b.u;
+    float av = a.v;
+    float bv = b.v;
+
+    if (self.prim.TME != 0 && self.prim.FST != 0 && mgPortFilter(self.texture.tex1_bits) == gfx::Filter::Nearest) {
+        std::tie(au, bu) = mgPortSpriteTexelSpan(a.x, b.x, a.u, b.u);
+        std::tie(av, bv) = mgPortSpriteTexelSpan(a.y, b.y, a.v, b.v);
+    }
+
     const gfx::Vertex2D quad[4] = {
-        corner(a.x, a.y, a.u, a.v),
-        corner(b.x, a.y, b.u, a.v),
-        corner(b.x, b.y, b.u, b.v),
-        corner(a.x, b.y, a.u, b.v),
+        corner(a.x, a.y, au, av),
+        corner(b.x, a.y, bu, av),
+        corner(b.x, b.y, bu, bv),
+        corner(a.x, b.y, au, bv),
     };
     Submit(self, run, gfx::Primitive::Quads, quad, 4);
 }

@@ -138,8 +138,7 @@ $build = Join-Path $root 'build-tests'
 ctest --test-dir $build -j 1 --output-on-failure
 ```
 
-`build.ps1 -Tests` builds `darkchronicle_tests` when the test executable has that
-name, and `darkcloud_tests` otherwise (`port/src/tests/CMakeLists.txt` still uses the second).
+`build.ps1 -Tests` builds the port's `darkchronicle_tests` executable.
 
 ## How the port differs from ps2/ on Windows
 

@@ -136,7 +136,7 @@ TEST(DataReadPort, InitcdfileAllowsMissingDataRoot) {
     fs::remove_all(dir);
 }
 
-TEST(DataReadPort, LoadfilebgCompletesSynchronously) {
+TEST(DataReadPort, LoadfilebgPublishesPendingReadsThenCompletes) {
     fs::path dir = InstallStandardData("read_bg");
     Disc     disc = StandardDisc();
     int      size = -1;
@@ -153,16 +153,22 @@ TEST(DataReadPort, LoadfilebgCompletesSynchronously) {
     ASSERT_TRUE(size == 0);
     ASSERT_TRUE(LoadFileBG(Mutable("meswin/systeme.bin"), Quads(second), &size) == 1);
     ASSERT_TRUE(size == 2047);
-    ReadBG();
+    ASSERT_TRUE(ReadBGSync() == 1);
+    BG_READ_INFO *first = GetReadBGFile(0);
+    ASSERT_TRUE(first && first->issued && !first->done);
+    ASSERT_TRUE(ReadBGSync() == 1);
+    ASSERT_TRUE(first->done);
+    ASSERT_TRUE(ReadBGSync() == 1);
+    BG_READ_INFO *next = GetReadBGFile(1);
+    ASSERT_TRUE(next && next->issued && !next->done);
     ASSERT_TRUE(ReadBGSync() == 0);
 
-    BG_READ_INFO *first = GetReadBGFile(0);
     ASSERT_TRUE(first && first->busy && first->done);
     ASSERT_TRUE(first->buffer == Quads(buffer) && first->size == 5000 && first->sectors == 3);
     ASSERT_TRUE(std::strcmp(first->name, "DUN/PACK/MAINDAT.PAC") == 0);
     ASSERT_TRUE(Equals(buffer, disc.files[0].data) && AllAre(buffer + 5000, buffer + 6144, 0));
-    BG_READ_INFO *next = GetReadBGFile(1);
     ASSERT_TRUE(next && next->buffer == Quads(second) && next->size == 2047);
+    ASSERT_TRUE(next->done);
     ASSERT_TRUE(Equals(second, disc.files[4].data) && second[2047] == 0);
     ASSERT_TRUE(GetReadBGFile(2) == nullptr && GetReadBGFile(-1) == nullptr && GetReadBGFile(32) == nullptr);
 
@@ -174,11 +180,10 @@ TEST(DataReadPort, LoadfilebgCompletesSynchronously) {
     ASSERT_TRUE(size == 0);
 
     // A slot handed out but not yet complete is what keeps retail's spin loops waiting.
-    GetReadBGFile(5)->done = 0;
     ASSERT_TRUE(ReadBGSync() == 1);
     BreakReadBG();
-    ASSERT_TRUE(GetReadBGFile(0) != nullptr && GetReadBGFile(0)->done);
-    ASSERT_TRUE(GetReadBGFile(5) != nullptr && GetReadBGFile(5)->done);
+    ASSERT_TRUE(GetReadBGFile(0) == nullptr);
+    ASSERT_TRUE(GetReadBGFile(5) == nullptr);
     ASSERT_TRUE(ReadBGSync() == 0);
     StartReadBG();
     ASSERT_TRUE(LoadFileBG(Mutable("img/title.img"), Quads(buffer), &size) == 1);

@@ -112,6 +112,41 @@ std::array<uint8_t, 4> Rgba(const gfx::Vertex2D &v) {
     return {v.color[0], v.color[1], v.color[2], v.color[3]};
 }
 
+std::vector<gfx::Vertex2D> DrawTexturedSprite(PrimRig &rig, int bilinear, std::array<float, 4> dest,
+                                              std::array<int, 4> uv) {
+    rig.prim.Coord(1);
+    rig.prim.TextureMapEnable(1);
+    rig.prim.Bilinear(bilinear);
+    mgCTexture source;
+    rig.prim.Texture(&source);
+    rig.prim.Begin(MG_PRIM_SPRITE);
+    rig.prim.TextureCrd(uv[0], uv[1]);
+    rig.prim.Vertex(dest[0], dest[1], 0.0f);
+    rig.prim.TextureCrd(uv[2], uv[3]);
+    rig.prim.Vertex(dest[2], dest[3], 0.0f);
+    rig.prim.End2();
+
+    EXPECT_EQ(rig.batches.size(), 1u);
+    if (rig.batches.size() != 1u) {
+        return {};
+    }
+    EXPECT_EQ(rig.batches[0].texture.filter, bilinear != 0 ? gfx::Filter::Linear : gfx::Filter::Nearest);
+    return rig.batches[0].vertices;
+}
+
+// Corners are in quad order: (x0,y0), (x1,y0), (x1,y1), (x0,y1).
+void ExpectQuadUv(const std::vector<gfx::Vertex2D> &q, float u0, float u1, float v0, float v1) {
+    ASSERT_EQ(q.size(), 4u);
+    EXPECT_FLOAT_EQ(q[0].u, u0);
+    EXPECT_FLOAT_EQ(q[1].u, u1);
+    EXPECT_FLOAT_EQ(q[2].u, u1);
+    EXPECT_FLOAT_EQ(q[3].u, u0);
+    EXPECT_FLOAT_EQ(q[0].v, v0);
+    EXPECT_FLOAT_EQ(q[1].v, v0);
+    EXPECT_FLOAT_EQ(q[2].v, v1);
+    EXPECT_FLOAT_EQ(q[3].v, v1);
+}
+
 } // namespace
 
 TEST(MgDrawPrim, SpriteBecomesQuadWithSecondVertexColour) {
@@ -467,4 +502,55 @@ TEST(MgDrawPrim, StripTrianglesFollowAssemblyOrder) {
     for (std::size_t i = 0; i < out.size(); ++i) {
         EXPECT_FLOAT_EQ(out[i].x, expected[i]);
     }
+}
+
+TEST(MgDrawPrim, FontCellUvOneTexelWiderMapsToCell) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {136.0f, 248.0f, 144.0f, 268.0f}, {0, 0, 9, 21});
+
+    ExpectQuadUv(q, 0.0f, 8.0f, 0.0f, 20.0f);
+}
+
+TEST(MgDrawPrim, FullWidthFontCellUvOneTexelWiderMapsToCell) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {136.0f, 248.0f, 152.0f, 268.0f}, {0, 0, 17, 21});
+
+    ExpectQuadUv(q, 0.0f, 16.0f, 0.0f, 20.0f);
+}
+
+TEST(MgDrawPrim, OneToOneSpriteUvIsUnchanged) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {100.0f, 50.0f, 123.0f, 75.0f}, {0, 0, 23, 25});
+
+    ExpectQuadUv(q, 0.0f, 23.0f, 0.0f, 25.0f);
+}
+
+TEST(MgDrawPrim, StretchedTwoTexelStripUvIsUnchanged) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 175.0f, 8.0f}, {231, 0, 233, 8});
+
+    ExpectQuadUv(q, 231.0f, 233.0f, 0.0f, 8.0f);
+}
+
+TEST(MgDrawPrim, FlippedSpriteUvMapsToTexelEdges) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 16.0f, 10.0f}, {16, 0, 0, 10});
+
+    ExpectQuadUv(q, 17.0f, 1.0f, 0.0f, 10.0f);
+}
+
+TEST(MgDrawPrim, EqualUvSpriteCoversOneTexel) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 10.0f, 10.0f}, {5, 5, 5, 5});
+
+    ExpectQuadUv(q, 5.0f, 6.0f, 5.0f, 6.0f);
+    EXPECT_FLOAT_EQ(mgPortSpriteTexelSpan(0.0f, 10.0f, 5.5f, 5.5f).first, 5.0f);
+    EXPECT_FLOAT_EQ(mgPortSpriteTexelSpan(0.0f, 10.0f, 5.5f, 5.5f).second, 6.0f);
+}
+
+TEST(MgDrawPrim, LinearFontSpriteKeepsUvExtent) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 1, {136.0f, 248.0f, 144.0f, 268.0f}, {0, 0, 9, 21});
+
+    ExpectQuadUv(q, 0.0f, 9.0f, 0.0f, 21.0f);
 }

@@ -16,14 +16,14 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | b8f9681badb9fed0 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:67 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
 | af677a37cf1d2045 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:68 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
 | 50c1839dd31ecd2a | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:76 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
-| 9c266275af336423 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:886 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
-| cd2fcf056b00427f | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:972 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| d8875cb9611079a6 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:991 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| 98d30ce24fea94fa | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:998 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| afe348bb665a43e6 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1001 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
-| c5ee40490890e4c5 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1002 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| bc727ddd50d0d6c9 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1005 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
-| 7fa55d10d0f58ee1 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1008 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 780ee3382696ae75 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:880 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
+| d97ce02371d292df | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:966 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| a9b660e63ab22de8 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:985 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| e3d6630c2cedb75b | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:992 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| 24dedcb9331788fb | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:995 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 9205f64bfbbac465 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:996 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| 0d38c35f493a0c8a | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:999 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
+| 1d0ab0cf33dda367 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1002 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
 | 7377eaa86cca2ec1 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:57 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | f7774abc8c9a9625 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:61 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | 0cc4aecb9ddc3937 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:150 | SkinMotionVisual | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
@@ -199,11 +199,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 50f123eefd3f2e74 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:514 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
 | 70549caea4cf8655 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:515 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
 | 4a1daabcc627055d | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:1 | <file-scope> | sceGsTex0 | host-source/src/mg_drawprim.cpp |
-| c3b963518856cd0c | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:233 | mgCDrawPrim::Begin2 | sceGsZbuf | host-source/src/mg_drawprim.cpp |
-| fb561c7ad91c441b | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:409 | mgCDrawManager::ReloadTexture | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| a939a092a4224b88 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:426 | mgCDrawManager::Draw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| 818ccc54dfa1c0b1 | pointer-narrowing | host-source/src/mg_drawprim.cpp:575 | mgPortPrimColor | static_cast<int>((count * | host-source/src/mg_drawprim.cpp |
-| fcbd6c0ce23936b6 | raw-allocation | host-source/src/mg_drawprim.cpp:575 | mgPortPrimColor | reinterpret_cast<T *>(memory->Alloc(static_cast<int>((count * sizeof(T) | host-source/src/mg_drawprim.cpp |
+| 5042d8a0ca70ab5a | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:276 | mgCDrawPrim::Begin2 | sceGsZbuf | host-source/src/mg_drawprim.cpp |
+| 94a46119264f3b54 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:452 | mgCDrawManager::ReloadTexture | sceVif1Packet | host-source/src/mg_drawprim.cpp |
+| a72c21faf884849f | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:469 | mgCDrawManager::Draw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
+| b04b67237e384da5 | pointer-narrowing | host-source/src/mg_drawprim.cpp:618 | mgPortPrimColor | static_cast<int>((count * | host-source/src/mg_drawprim.cpp |
+| b5cabc900f307f8d | raw-allocation | host-source/src/mg_drawprim.cpp:618 | mgPortPrimColor | reinterpret_cast<T *>(memory->Alloc(static_cast<int>((count * sizeof(T) | host-source/src/mg_drawprim.cpp |
 | 185c877229246270 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:17 | mgCFrame::Draw | sceVu0FMATRIX | host-source/src/mg_frame.cpp |
 | 0e20008740439f95 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:34 | mgCFrame::Draw | sceVu0FVECTOR | host-source/src/mg_frame.cpp |
 | 4456846e0ac0b505 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:35 | mgCFrame::Draw | sceVu0FVECTOR | host-source/src/mg_frame.cpp |
@@ -647,6 +647,9 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 0e98e484f5234baa | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:32 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
 | 53ad55c8afbefe53 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:33 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
 | 770a525681bb9d56 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:35 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
+| f85b5c014727d2cd | hardware:ps2_sdk_or_thread | host-source/src/tests/nd_meswin_test.cpp:49 | <file-scope> | sceVif1Packet | host-source/src/tests/nd_meswin_test.cpp |
+| 6f4fcc05442063ce | hardware:ps2_sdk_or_thread | host-source/src/tests/nd_meswin_test.cpp:51 | <file-scope> | sceVif1Packet | host-source/src/tests/nd_meswin_test.cpp |
+| 0841dcda031d3f0f | pointer-narrowing | host-source/src/tests/nd_meswin_test.cpp:55 | Gs | static_cast<int>(pixels * | host-source/src/tests/nd_meswin_test.cpp |
 | a1a7ea4f0d7bee68 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:33 | InitGamePad | sceGsSyncV | host-source/src/tests/platform_pad_test.cpp |
 | 048b46163832854a | pointer-narrowing | host-source/src/tests/video_yuv_test.cpp:77 | Pixels | static_cast<uint8_t>(16 + i * | host-source/src/tests/video_yuv_test.cpp |
 | 756a18d17f9f5487 | pointer-narrowing | host-source/src/tests/video_yuv_test.cpp:81 | Pixels | static_cast<uint8_t>(100 + i * | host-source/src/tests/video_yuv_test.cpp |

@@ -257,13 +257,17 @@ TEST_F(DataRead, BackgroundReadPublishesBytesThenCompletesOnSecondPoll) {
     int  size = 0;
     ASSERT_EQ(LoadFileBG(name, Buffer(), &size), 1);
     EXPECT_EQ(size, static_cast<int>(kFileSize));
-    // Native menu initialization relies on a pending poll before completion.
-    EXPECT_EQ(ReadBGSync(), 1);
-    EXPECT_EQ(ReadBGSync(), 0);
-
     BG_READ_INFO *info = GetReadBGFile(0);
     ASSERT_NE(info, nullptr);
     EXPECT_NE(GetReadBGFile(name), nullptr);
+    EXPECT_EQ(info->issued, 0);
+    EXPECT_EQ(info->done, 0);
+
+    EXPECT_EQ(ReadBGSync(), 1);
+    EXPECT_EQ(info->issued, 1);
+    EXPECT_EQ(info->done, 0);
+
+    EXPECT_EQ(ReadBGSync(), 0);
     EXPECT_EQ(info->done, 1);
     const std::vector<unsigned char> expected = MakeBytes(kFileSize, 7);
     EXPECT_EQ(std::memcmp(info->buffer, expected.data(), kFileSize), 0);
@@ -272,6 +276,33 @@ TEST_F(DataRead, BackgroundReadPublishesBytesThenCompletesOnSecondPoll) {
     EXPECT_NE(GetReadBGFile(0), nullptr);
     StartReadBG();
     EXPECT_EQ(GetReadBGFile(0), nullptr);
+}
+
+TEST_F(DataRead, CostumeLoaderWaitSeesPendingRead) {
+    DataReadIndex(root_);
+    StartReadBG();
+
+    char name[] = "DIR/Sub/File.BIN";
+    int  size = 0;
+    ASSERT_EQ(LoadFileBG(name, Buffer(), &size), 1);
+
+    int spins = 0;
+    do {
+        ++spins;
+    } while (ReadBGSync() == 0 && spins < 100);
+    EXPECT_EQ(spins, 1);
+
+    StartReadBG();
+    ASSERT_EQ(LoadFileBG(name, Buffer(), &size), 1);
+
+    int calls = 0;
+    int pending = 0;
+    do {
+        pending = ReadBGSync();
+        ++calls;
+    } while (pending != 0 && calls < 4);
+    EXPECT_EQ(pending, 0);
+    EXPECT_LE(calls, 4);
 }
 
 TEST_F(DataRead, FileCacheHoldsAFileLoadedInTheBackground) {
