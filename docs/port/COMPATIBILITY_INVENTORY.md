@@ -118,12 +118,12 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d0e4e740afcb6362 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:105 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
 | 544328e9bb1629e6 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:107 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
 | 5c316d0c4f63abe8 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:109 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
-| 155a0504de68e96f | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:319 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 2453eb2068560373 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:362 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| a93e6ce38199eb31 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:364 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 43289a83cc7a2ac7 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:367 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 0345d6b58a83683f | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:326 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 404796b6a1718042 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:369 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 1c51839496e8a1ec | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:371 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
 | 3531a042dd8d89b4 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:374 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| b902d9f9df8cb611 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:376 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| d885fd79776a7669 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:381 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 351231a1f0282fa3 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:383 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
 | e324637ed55c382e | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:11 | <file-scope> | sceMc | host-source/src/memcard.cpp |
 | af540331426d47a2 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:16 | <file-scope> | sceMcEnd | host-source/src/memcard.cpp |
 | 0d3232127f098551 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:18 | <file-scope> | sceMcSeek | host-source/src/memcard.cpp |

@@ -279,21 +279,28 @@ PORT_OVERRIDE void MainLoop() {
             MainScene.StepSnd();
             GamePad__2.UpDate();
             PadCtrl.Update(&GamePad__2);
-            mgCDrawPrim frame_border;
-            frame_border.Initialize(NULL, NULL);
-            frame_border.DepthTestEnable(false);
-            frame_border.AlphaTestEnable(false);
-            frame_border.AlphaBlendEnable(false);
-            frame_border.TextureMapEnable(false);
-            frame_border.ZMask(MG_Z_MASK_MASKED);
-            frame_border.Begin(MG_PRIM_LINE_STRIP);
-            frame_border.Color(0, 0, 0, 0x80);
-            frame_border.Vertex(0, 0, 0);
-            frame_border.Vertex(mgScreenWidth - 1, 0, 0);
-            frame_border.Vertex(mgScreenWidth - 1, mgScreenHeight - 1, 0);
-            frame_border.Vertex(0, mgScreenHeight - 1, 0);
-            frame_border.Vertex(0, 0, 0);
-            frame_border.End();
+            // Retail's screen-edge outline sat on the native 4:3 boundary. In Fill mode that
+            // boundary is inside the window, so omit the obsolete outline when the viewport expands.
+            const mgPortExtent visible_extent = mgPortVisibleExtent();
+            if (visible_extent.left >= 0.0f && visible_extent.top >= 0.0f &&
+                visible_extent.right <= static_cast<float>(mgScreenWidth) &&
+                visible_extent.bottom <= static_cast<float>(mgScreenHeight)) {
+                mgCDrawPrim frame_border;
+                frame_border.Initialize(NULL, NULL);
+                frame_border.DepthTestEnable(false);
+                frame_border.AlphaTestEnable(false);
+                frame_border.AlphaBlendEnable(false);
+                frame_border.TextureMapEnable(false);
+                frame_border.ZMask(MG_Z_MASK_MASKED);
+                frame_border.Begin(MG_PRIM_LINE_STRIP);
+                frame_border.Color(0, 0, 0, 0x80);
+                frame_border.Vertex(0, 0, 0);
+                frame_border.Vertex(mgScreenWidth - 1, 0, 0);
+                frame_border.Vertex(mgScreenWidth - 1, mgScreenHeight - 1, 0);
+                frame_border.Vertex(0, mgScreenHeight - 1, 0);
+                frame_border.Vertex(0, 0, 0);
+                frame_border.End();
+            }
             mgEndFrame(NULL);
 
             if (mode_finished != 0) {
