@@ -47,6 +47,8 @@ struct Options {
     int                   display_per_tick = 0;
     bool                  show_fps = false;
     bool                  log_fps = false;
+    int                   screenshot_display = 0;
+    bool                  screenshot_fps = false;
     std::filesystem::path screenshot;
     std::filesystem::path input;
 };
@@ -57,7 +59,7 @@ Options g_options;
     std::fprintf(stderr,
                  "usage: %s [--data DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n"
                  "          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n"
-                 "          [--show-fps] [--log-fps]\n"
+                 "          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps]\n"
                  "  --data DIR         the extracted game data (default: DC2_DATA, then ./data, then data/ beside\n"
                  "                     the executable)\n"
                  "  --save DIR         saves and the pipeline cache (default: DC2_SAVE, then ./save, then save/\n"
@@ -66,6 +68,9 @@ Options g_options;
                  "  --offscreen        --headless without a Vulkan surface: render to an image only\n"
                  "  --frames N         exit after frame N of the game's main loop (N a positive integer)\n"
                  "  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n"
+                 "  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n"
+                 "                     beside PATH, as PATH-display-K.png for K = 0..N-1\n"
+                 "  --screenshot-fps   with --screenshot: draw the FPS counter into the written image\n"
                  "  --input SCRIPT     drive the pads named in SCRIPT from an input script\n"
                  "  --window WxH       window size in pixels (default: config.json, then the monitor's)\n"
                  "  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n"
@@ -128,6 +133,10 @@ Options ParseOptions(int argc, const char **argv) {
             if (options.screenshot.empty()) {
                 Usage(argv[0]);
             }
+        } else if (arg == "--screenshot-display") {
+            options.screenshot_display = ParsePositive(OptionValue(argc, argv, i), argv[0]);
+        } else if (arg == "--screenshot-fps") {
+            options.screenshot_fps = true;
         } else if (arg == "--input") {
             options.input = PathsFromUtf8(OptionValue(argc, argv, i));
             if (options.input.empty()) {
@@ -138,6 +147,9 @@ Options ParseOptions(int argc, const char **argv) {
         }
     }
     if (!options.screenshot.empty() && options.frames == 0) {
+        Usage(argv[0]);
+    }
+    if ((options.screenshot_display > 0 || options.screenshot_fps) && options.screenshot.empty()) {
         Usage(argv[0]);
     }
     return options;
@@ -269,6 +281,7 @@ int Run(int argc, const char **argv) {
     KzThreadsSetMainPriority(MainThreadPriority);
     InitCDFile();
     if (options.frames > 0) {
+        mgPortSetScreenshotOptions({.display_frames = options.screenshot_display, .fps = options.screenshot_fps});
         mgPortExitAfterFrames(options.frames, options.screenshot);
     }
     MainLoop();

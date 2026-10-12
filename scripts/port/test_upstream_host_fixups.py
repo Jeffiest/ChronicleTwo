@@ -11,6 +11,7 @@ import tempfile
 import unittest
 
 import upstream_host_fixups
+import port_override
 import win_rewrite
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,6 +65,15 @@ class HostMirrorTests(unittest.TestCase):
                 frame = (mirror / "mg_frame.cpp").read_text(encoding="latin-1")
                 self.assertIn("std::memcpy(out_position, lw[3], sizeof(lw[3]));", frame)
                 self.assertNotIn("*(u_long128 *) out_position = *(u_long128 *) lw[3];", frame)
+                for filename, signature in (
+                    ("dng_event.cpp", "CRedMarkModel::Draw()"),
+                    ("dng_hud.cpp", "CLockOnModel::Draw()"),
+                ):
+                    unit = (mirror / filename).read_text(encoding="latin-1")
+                    self.assertEqual(unit.count("int " + signature + " {"), 1, filename)
+                    self.assertNotIn("#ifdef PORT\nint " + signature, unit, filename)
+                    stripped = port_override.strip(unit, {signature}, defined={"PORT"})
+                    self.assertNotIn("int " + signature, stripped, filename)
                 for filename in patched:
                     self.assertNotEqual(actual[filename], original[filename], filename)
                 if expected is not None:

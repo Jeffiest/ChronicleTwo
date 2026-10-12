@@ -72,6 +72,7 @@ gfx::DisplayListRef previous_list;
 int frame_count = 0;
 int exit_frames = 0;
 std::filesystem::path screenshot_path;
+mgPortScreenshotOptions screenshot_options;
 int store_count = 0;
 
 mgPortGsState gs_state;
@@ -307,6 +308,37 @@ bool ReadNow(gfx::TextureHandle target, std::vector<uint8_t> &rgba, uint32_t &wi
     return gfx::ReadbackTexture(target, rgba, width, height);
 }
 
+bool WriteScreenshotDisplayFrames() {
+    if (mgPortPreviousList() == nullptr) {
+        std::fprintf(stderr, "mglib: frame %d has no previous list, display frames skipped\n", frame_count);
+        return true;
+    }
+
+    const int count = screenshot_options.display_frames;
+    bool      written = true;
+
+    for (int k = 0; k < count && written; ++k) {
+        std::vector<uint8_t> rgba;
+        uint32_t             width = 0;
+        uint32_t             height = 0;
+        std::filesystem::path name = screenshot_path.stem();
+        name += "-display-" + std::to_string(k) + ".png";
+        const std::filesystem::path path = screenshot_path.parent_path() / name;
+        const float alpha = static_cast<float>(k) / static_cast<float>(count);
+        written = PresentScreenshotDisplay(alpha, rgba, width, height) && gfx::WritePng(path, rgba.data(), width, height);
+
+        if (written) {
+            std::fprintf(stderr, "mglib: display frame %d of frame %d written to %s\n", k, frame_count,
+                         PathsDisplay(path).c_str());
+        } else {
+            std::fprintf(stderr, "mglib: display frame %d of frame %d could not be written to %s\n", k, frame_count,
+                         PathsDisplay(path).c_str());
+        }
+    }
+
+    return written;
+}
+
 // Runs after the tick's canonical render, outside a recording, so the readbacks see the finished image.
 void CacheMarkedColors() {
     for (const gfx::TextureHandle target : color_marks) {
@@ -337,19 +369,62 @@ void AnswerDepthQueries() {
 }
 
 // Rect edges are 12.4 and inclusive, as mgRect defines them.
+bool InclusiveLogicalRect(const mgRect<int> &rect, gfx::Rect &out) {
+    if (rect.right - rect.left + 1 <= 0 || rect.bottom - rect.top + 1 <= 0) {
+        return false;
+    }
+
+    const int left = rect.left / 16;
+    const int top = rect.top / 16;
+    out = gfx::Rect{left, top, rect.right / 16 - left + 1, rect.bottom / 16 - top + 1};
+    return true;
+}
+
 void CopyRectangle(gfx::TextureHandle src, const mgRect<int> &rect, gfx::TextureHandle dst, int dst_x, int dst_y) {
     if (src == gfx::kNullTexture || dst == gfx::kNullTexture) {
         return;
     }
 
-    if (rect.right - rect.left + 1 <= 0 || rect.bottom - rect.top + 1 <= 0) {
+    gfx::Rect source;
+    if (InclusiveLogicalRect(rect, source)) {
+        gfx::CopyTexture(src, source, dst, dst_x >> 4, dst_y >> 4);
+    }
+}
+
+// A draw into a texture whose frame grab is registered goes to the grab: replacing it would drop the
+// window's width and the grab's contents, which the same frame still samples.
+gfx::TextureHandle FrameGrabAt(uint32_t tbp0) {
+    const auto it = render_targets.find(tbp0);
+    return it != render_targets.end() && it->second.frame_target ? it->second.handle : gfx::kNullTexture;
+}
+
+// The copy is retail's 1:1 texel copy in logical units; the frame target's mapping brings the window's sides.
+void GrabFrame(const gfx::Rect &source, int32_t dst_x, int32_t dst_y, gfx::TextureHandle target) {
+    if (target == gfx::kNullTexture) {
         return;
     }
 
-    const int left = rect.left / 16;
-    const int top = rect.top / 16;
-    const gfx::Rect source{left, top, rect.right / 16 - left + 1, rect.bottom / 16 - top + 1};
-    gfx::CopyTexture(src, source, dst, dst_x >> 4, dst_y >> 4);
+    gfx::BlitTexture(gfx::kMainTarget, source, target, gfx::Rect{dst_x, dst_y, source.w, source.h}, gfx::Filter::Nearest);
+}
+
+void CopyFrameInto(const mgRect<int> &rect, int dst_x, int dst_y, gfx::TextureHandle target) {
+    gfx::Rect source;
+
+    if (target != gfx::kNullTexture && InclusiveLogicalRect(rect, source)) {
+        GrabFrame(source, dst_x >> 4, dst_y >> 4, target);
+    }
+}
+
+// Registers carry no size; the texture they resolve to is the only source of one.
+gfx::TextureHandle FrameTargetFor(const sceGsTex0 &dst) {
+    const std::optional<gfx::TextureInfo> info = gfx::GetTextureInfo(mgPortFindTexture(ToRaw(dst)).texture);
+
+    if (!info) {
+        return gfx::kNullTexture;
+    }
+
+    return mgPortRenderTarget(static_cast<uint32_t>(dst.TBP0), static_cast<int>(info->width),
+                              static_cast<int>(info->height), static_cast<int>(dst.PSM), true);
 }
 
 // Frame-buffer globals are set as retail does; the copy is a plain blit, so the caller's draw
@@ -433,6 +508,10 @@ int mgPortFrameCount() {
 void mgPortExitAfterFrames(int frames, const std::filesystem::path &screenshot) {
     exit_frames = frames;
     screenshot_path = screenshot;
+}
+
+void mgPortSetScreenshotOptions(const mgPortScreenshotOptions &options) {
+    screenshot_options = options;
 }
 
 // Projection
@@ -1132,7 +1211,8 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
             std::vector<uint8_t> rgba;
             uint32_t             width = 0;
             uint32_t             height = 0;
-            bool written = ReadNow(gfx::kMainTarget, rgba, width, height);
+            bool written = screenshot_options.fps ? PresentScreenshotFps(rgba, width, height)
+                                                  : ReadNow(gfx::kMainTarget, rgba, width, height);
             written = written && gfx::WritePng(screenshot_path, rgba.data(), width, height);
 
             if (written) {
@@ -1141,6 +1221,10 @@ PORT_OVERRIDE void mgEndFrame(mgCDrawManager *manager) {
             } else {
                 std::fprintf(stderr, "mglib: frame %d could not be written to %s\n", frame_count,
                              PathsDisplay(screenshot_path).c_str());
+                status = kExitScreenshotFailed;
+            }
+
+            if (written && screenshot_options.display_frames > 0 && !WriteScreenshotDisplayFrames()) {
                 status = kExitScreenshotFailed;
             }
         }
@@ -1260,6 +1344,11 @@ gfx::TextureHandle RegisteredFrameTarget(const mgCTexture *texture) {
         return gfx::kNullTexture;
     }
 
+    if (const gfx::TextureHandle grab = FrameGrabAt(static_cast<uint32_t>(texture->tex0.TBP0));
+        grab != gfx::kNullTexture) {
+        return grab;
+    }
+
     const gfx::TextureHandle target = mgPortRenderTarget(texture);
     const auto record = registered_targets.find(texture);
 
@@ -1347,6 +1436,8 @@ void SetFrameBuffer(uint32_t tbp0, int width, int height, int psm, gfx::TextureH
         current_target = target_override;
     } else if (tbp0 == static_cast<uint32_t>(DrawFbp()) << 5) {
         current_target = gfx::kMainTarget;
+    } else if (const gfx::TextureHandle grab = FrameGrabAt(tbp0); grab != gfx::kNullTexture) {
+        current_target = grab;
     } else {
         current_target = mgPortRenderTarget(tbp0, width, height, psm);
     }
@@ -1450,12 +1541,22 @@ PORT_OVERRIDE void mgSetPkMoveImage(mgCTexture *source, mgRect<int> rect, mgCTex
         return;
     }
 
+    if (mgPortFindTexture(source).texture == gfx::kMainTarget) {
+        CopyFrameInto(rect, dst_x, dst_y, mgPortRenderTarget(destination, true));
+        return;
+    }
+
     CopyRectangle(mgPortFindTexture(source).texture, rect, mgPortFindTexture(destination).texture, dst_x, dst_y);
 }
 
 PORT_OVERRIDE void mgSetPkMoveImage(sceGsTex0 *src, mgRect<int> src_rect, sceGsTex0 *dst, int dst_x, int dst_y,
                                     int direction) {
     if (src == NULL || dst == NULL) {
+        return;
+    }
+
+    if (mgPortFindTexture(ToRaw(*src)).texture == gfx::kMainTarget) {
+        CopyFrameInto(src_rect, dst_x, dst_y, FrameTargetFor(*dst));
         return;
     }
 

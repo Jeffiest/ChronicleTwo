@@ -62,7 +62,12 @@ add_custom_target(ct_pointer_array_check
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_host_pointer_arrays.py
         --generated ${CMAKE_BINARY_DIR}/ps2_src --host ${PORT_DIR}
     DEPENDS ${PS2_UNITS} WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
-add_dependencies(ct_ps2 ct_compatibility_audit ct_pointer_array_check)
+add_dependencies(ct_ps2 ct_compatibility_audit)
+if(CT_BUILD_TESTS)
+    add_test(NAME Port.PointerArrayCheck
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_host_pointer_arrays.py
+            --generated ${CMAKE_BINARY_DIR}/ps2_src --host ${PORT_DIR})
+endif()
 
 function(ct_add_compatibility_suite target headless)
     if(headless)

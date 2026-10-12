@@ -27,6 +27,7 @@ void mgPortPrimSubmit(mgCDrawPrim &prim, gfx::Primitive primitive, std::span<con
 // Returns the UVs at p0 and p1 that cover the texels a nearest-filtered GS sprite samples across the pixel span.
 // The corners may come in either order; each keeps its own UV.
 std::pair<float, float> mgPortSpriteTexelSpan(float p0, float p1, float u0, float u1);
+inline constexpr float kMgPortNearestTexelBias = 1.0f / 64.0f;
 void mgPortStripTriangles(std::span<const gfx::Vertex2D> strip, std::vector<gfx::Vertex2D> &out);
 void mgPortPrimColor(const mgCDrawPrim &prim, uint8_t rgba[4]);
 // `gs_x`/`gs_y` are given before GetOffset, which adds the screen offset that mgPortLogicalX takes back out.

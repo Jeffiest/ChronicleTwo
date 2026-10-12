@@ -28,6 +28,13 @@ int mgPortFrameCount();
 // mgEndFrame of frame `frames` writes `screenshot` (if not empty) and exits the process with kExitOk.
 void mgPortExitAfterFrames(int frames, const std::filesystem::path &screenshot);
 
+struct mgPortScreenshotOptions {
+    int  display_frames = 0;
+    bool fps = false;
+};
+// Applies to the screenshot of mgPortExitAfterFrames; set it before that call.
+void mgPortSetScreenshotOptions(const mgPortScreenshotOptions &options);
+
 // Projection
 
 struct mgPortProjection {

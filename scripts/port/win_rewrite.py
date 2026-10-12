@@ -36,7 +36,7 @@ RULES = {
     # COFF reports a duplicate. Left inline, the definitions agree.
     "src/dng_debug.cpp": [
         (r"^#define DNG_DEBUG_SOURCE$", "", 1),
-        (r"^void CTreasureBox::Initialize\(\) \{\n(?:    .*\n)*?\}\n", blank, 1),
+        (r"^(?:inline )?void CTreasureBox::Initialize\(\) \{\n(?:    .*\n)*?\}\n", blank, 1),
     ],
     "src/dngmenu.cpp": [
         (r"^#define MES_WINDOW_OUT_OF_LINE_INIT$", "", 1),

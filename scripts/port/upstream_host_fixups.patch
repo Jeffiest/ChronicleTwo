@@ -33,15 +33,12 @@ diff --git a/ps2/src/dng_event.cpp b/ps2/src/dng_event.cpp
 index 45d42c88..8f1995b2 100644
 --- a/ps2/src/dng_event.cpp
 +++ b/ps2/src/dng_event.cpp
-@@ -407,7 +407,11 @@ void MessageTaskManager::Initialize() {
+@@ -407,7 +407,7 @@ void MessageTaskManager::Initialize() {
      task[5].next = NULL;
  }
  
-+#ifdef PORT
+-void CRedMarkModel::Draw() {
 +int CRedMarkModel::Draw() {
-+#else
- void CRedMarkModel::Draw() {
-+#endif
      float position[4];
      float saved_position[4];
  
@@ -49,15 +46,12 @@ diff --git a/ps2/src/dng_hud.cpp b/ps2/src/dng_hud.cpp
 index fdf58527..840a159a 100644
 --- a/ps2/src/dng_hud.cpp
 +++ b/ps2/src/dng_hud.cpp
-@@ -817,7 +817,11 @@ void CDamageScore2::Step() {
+@@ -817,7 +817,7 @@ void CDamageScore2::Step() {
      }
  }
  
-+#ifdef PORT
+-void CLockOnModel::Draw() {
 +int CLockOnModel::Draw() {
-+#else
- void CLockOnModel::Draw() {
-+#endif
      float target_pos[4];
      int   top_left[4];
      int   bottom_right[4];

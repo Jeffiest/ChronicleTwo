@@ -75,24 +75,29 @@ orchestrator or reviewed by it before and after.
 
 ## 2. Where the port stands
 
-Phases 0-6 are done. `darkchronicle` builds with clang/lld, C++26, SDL3 and
+Phases 0-6 are done and Phase 7 (the sweep through the game) has started.
+`darkchronicle` builds with clang/lld, C++26, SDL3 and
 Vulkan 1.4 on Linux (container) and Windows (llvm-mingw), indexes `data/`
 (8751 files), places the game's memory above 4 GiB, and runs the retail
 `MainLoop` on the shared renderer, mixer and movie decoder through the
-language select, the logo movie, the title over its 3D map with its music,
-and the attract demo. Every game frame is a recorded display list rendered
-canonically, with interpolated display frames between ticks. Phase 7 starts
-where START at the title stops advancing frames. The PS2 build still
-matches, and `docs/PC.md` describes the port; `docs/port/HANDOFF.md` is the
-working state and `docs/port/process/` the schedule and wave records.
+language select, the logo movie, the title over its 3D map with its music
+and its attract loop (title and opening movie), New Game, and the costume
+screen up to "Confirm Max's costume?". Every game frame is a recorded display
+list rendered canonically, with interpolated display frames (bone palettes
+included) between ticks; HUD pieces anchor to the window's corners.
+Confirming the costume loads the opening event, which stops on a loop in
+the frame tree (`mgCFrame::SearchFrame`): that is where Phase 7 resumes.
+The PS2 build still matches, and `docs/PC.md` describes the port;
+`docs/port/HANDOFF.md` is the working state and `docs/port/process/` the
+schedule and wave records.
 
-The Kazarov submodule (pinned at `f1b8e80`) has `port_override.py`,
+The Kazarov submodule (pinned at `main`) has `port_override.py`,
 `include/kazarov/port.h` (`PORT_INIT/RETURN/FIX`, the empty `PORT_OVERRIDE`
 marker) and a container image with clang/lld 23, SDL3, Vulkan, Mesa
 lavapipe, glslang and GoogleTest. Since Phase 0, Kazarov holds the shared host code in
 `tools/kazarov/port/{gfx,audio,platform,sce,tests}` and
 `cmake/KazarovPort.cmake`, and Chronicle consumes it from there. ChronicleTwo and Chronicle pin Kazarov
-`f1b8e80`.
+`main` (see `docs/port/HANDOFF.md` for the sha).
 
 Facts from the four surveys that shape the plan:
 
@@ -1259,7 +1264,8 @@ CI green; Chronicle green on the final Kazarov pin. Size: ~100.
   `outline`, `screeneffect`, font or `menudraw`. Real data, headless, Linux
   and Windows: 300 frames show the language select; with an input script the
   title over its 3D map, byte-identical with `--display-per-tick 4`; the
-  attract demo's opening event with skinned characters. Chronicle on
+  attract loop (title and the opening movie; the W3 record called it "the
+  opening event with skinned characters", which was wrong). Chronicle on
   `f1b8e80` (rebased on upstream `109c6eff`): ctest 352/352, `ps2-pal` 100%,
   screenshot byte-identical, Windows builds. Kazarov pytest 93 passed,
   14 skipped.
@@ -1388,6 +1394,17 @@ frames with a screenshot. Depends: 6.3, 4.3, 5.1. Size: ~800.
   `movie_test` plays 30 frames to a PNG.
 
 ### Phase 7: integration, decoupling, options
+
+Status (W4, partial; details and resume steps in `docs/port/HANDOFF.md`):
+WP7.1/7.2 largely done in W3-W4 (display lists, interpolated display frames
+including bone palettes, window aspect, letterbox clip, HUD anchors, frame
+grabs in frame targets; measured 215-404 FPS at 2560x1440 with ticks at
+50/s). WP7.4 started: New Game's background read, the opening's character
+arena (`BaseCharacter[7]`, script budgets) and the red-mark/lock-on draws are
+fixed; the run reaches "Confirm Max's costume?" and stops in the opening
+event on a frame-tree loop. Sprite sampling matches the GS at texel
+boundaries (font bleed, tile seams). WP7.3, 7.5, 7.6 and the debug mode are
+open.
 
 **WP7.1 Presentation decoupling [decision]** Game frames as display lists;
 `mgEndFrame` presents at the display rate with interpolation where the mesh

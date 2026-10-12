@@ -147,6 +147,11 @@ void AssembleSprite(const mgCDrawPrim &self, PrimRun &run, const gfx::Vertex2D &
     if (self.prim.TME != 0 && self.prim.FST != 0 && mgPortFilter(self.texture.tex1_bits) == gfx::Filter::Nearest) {
         std::tie(au, bu) = mgPortSpriteTexelSpan(a.x, b.x, a.u, b.u);
         std::tie(av, bv) = mgPortSpriteTexelSpan(a.y, b.y, a.v, b.v);
+        // The GPU can interpolate a hair under an exact texel boundary, where the GS takes the texel after it.
+        au += kMgPortNearestTexelBias;
+        bu += kMgPortNearestTexelBias;
+        av += kMgPortNearestTexelBias;
+        bv += kMgPortNearestTexelBias;
     }
 
     const gfx::Vertex2D quad[4] = {

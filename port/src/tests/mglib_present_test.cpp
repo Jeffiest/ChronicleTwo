@@ -610,3 +610,46 @@ TEST(MglibSeam, StretchRectIsExclusive) {
     EXPECT_NEAR(rgba[first_outside + 0], 0x10, 1);
     EXPECT_NEAR(rgba[first_outside + 2], 0x10, 1);
 }
+
+TEST(MglibPresent, MoveImageOfTheFrameUsesAFrameTarget) {
+    PresentRenderer renderer(1280, 720);
+    Textures        textures;
+
+    Quads       frame_dst_px = Pack(Fill(64 * 64, 0x10, 0x10, 0x10, 0x80));
+    Quads       plain_dst_px = Pack(Fill(64 * 64, 0x10, 0x10, 0x10, 0x80));
+    Quads       plain_src_px = Pack(Fill(64 * 64, 0x20, 0x40, 0x80, 0x80));
+    mgCTexture *frame_dst = textures.Enter("move_frame_dst", 64, 64, 32, frame_dst_px.data(), nullptr);
+    mgCTexture *plain_dst = textures.Enter("move_plain_dst", 64, 64, 32, plain_dst_px.data(), nullptr);
+    mgCTexture *plain_src = textures.Enter("move_plain_src", 64, 64, 32, plain_src_px.data(), nullptr);
+    ASSERT_NE(frame_dst, nullptr);
+    ASSERT_NE(plain_dst, nullptr);
+    ASSERT_NE(plain_src, nullptr);
+
+    mgSetPkFrameBuffer(-1, -1, -1, -1);
+    mgCTexture frame;
+    mgGetFrameBuffer(&frame);
+    const mgRect<int> whole(0, 0, (mgScreenWidth - 1) * 16, (mgScreenHeight - 1) * 16);
+
+    mgBeginFrame(nullptr);
+    mgSetPkMoveImage(&frame, whole, frame_dst, 0, 0, 0);
+    mgSetPkMoveImage(plain_src, whole, plain_dst, 0, 0, 0);
+    mgEndFrame(nullptr);
+
+    const gfx::TextureHandle target = mgPortFindTexture(frame_dst).texture;
+    ASSERT_NE(target, gfx::kNullTexture);
+    ASSERT_NE(target, gfx::kMainTarget);
+    EXPECT_EQ(mgPortFindTexture(Tex0Bits(frame_dst)).texture, target);
+
+    const std::optional<gfx::TextureInfo> frame_info = gfx::GetTextureInfo(target);
+    ASSERT_TRUE(frame_info.has_value());
+    EXPECT_TRUE(frame_info->render_target);
+    EXPECT_TRUE(frame_info->frame_target);
+
+    const gfx::TextureHandle registered = mgPortRenderTarget(static_cast<uint32_t>(frame_dst->tex0.TBP0), 64, 64,
+                                                             static_cast<int>(frame_dst->tex0.PSM), true);
+    EXPECT_EQ(registered, target);
+
+    const std::optional<gfx::TextureInfo> plain_info = gfx::GetTextureInfo(mgPortFindTexture(plain_dst).texture);
+    ASSERT_TRUE(plain_info.has_value());
+    EXPECT_FALSE(plain_info->frame_target);
+}

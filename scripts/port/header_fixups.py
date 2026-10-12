@@ -133,22 +133,23 @@ def write_mirror(dst: Path, files: dict[str, bytes]) -> None:
             path.rmdir()
 
 
+def fixup_unit_text(name: str, text: str) -> str:
+    for unit, old, new in UNIT_FIXUPS:
+        if unit != name:
+            continue
+        count = text.count(old)
+        if count != 1:
+            sys.exit(f"header_fixups: {name} has {count} occurrences of {old!r}, expected exactly 1")
+        text = text.replace(old, new)
+    return text
+
+
 def fixup_unit(copy: Path) -> None:
     if not copy.is_file():
         sys.exit(f"header_fixups: {copy} is not a file")
-    fixups = [(old, new) for name, old, new in UNIT_FIXUPS if name == copy.name]
-    if not fixups:
-        return
 
     data = copy.read_bytes()
-    text = data.decode("latin-1")
-    for old, new in fixups:
-        count = text.count(old)
-        if count != 1:
-            sys.exit(f"header_fixups: {copy.name} has {count} occurrences of {old!r}, expected exactly 1")
-        text = text.replace(old, new)
-
-    fixed = text.encode("latin-1")
+    fixed = fixup_unit_text(copy.name, data.decode("latin-1")).encode("latin-1")
     if fixed != data:
         copy.write_bytes(fixed)
 

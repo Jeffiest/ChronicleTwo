@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "platform/settings.hpp"
 
@@ -32,3 +33,6 @@ void PresentTickRendered();
 void PresentWaitFrame(int start, int frames);
 void PresentTickEnd();
 std::string PresentFpsText();
+// Frame-exit screenshot renders, outside a frame. They present, which is what ReadbackFrame reads.
+bool PresentScreenshotDisplay(float alpha, std::vector<uint8_t> &rgba, uint32_t &width, uint32_t &height);
+bool PresentScreenshotFps(std::vector<uint8_t> &rgba, uint32_t &width, uint32_t &height);

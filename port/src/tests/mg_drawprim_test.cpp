@@ -508,42 +508,56 @@ TEST(MgDrawPrim, FontCellUvOneTexelWiderMapsToCell) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {136.0f, 248.0f, 144.0f, 268.0f}, {0, 0, 9, 21});
 
-    ExpectQuadUv(q, 0.0f, 8.0f, 0.0f, 20.0f);
+    ExpectQuadUv(q, kMgPortNearestTexelBias, 8.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 20.0f + kMgPortNearestTexelBias);
 }
 
 TEST(MgDrawPrim, FullWidthFontCellUvOneTexelWiderMapsToCell) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {136.0f, 248.0f, 152.0f, 268.0f}, {0, 0, 17, 21});
 
-    ExpectQuadUv(q, 0.0f, 16.0f, 0.0f, 20.0f);
+    ExpectQuadUv(q, kMgPortNearestTexelBias, 16.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 20.0f + kMgPortNearestTexelBias);
+}
+
+TEST(MgDrawPrim, NearestTileSeamSamplesTheTileTexel) {
+    PrimRig rig;
+    const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {47.0f, 0.0f, 303.0f, 8.0f}, {256, 0, 512, 8});
+
+    ExpectQuadUv(q, 256.0f + kMgPortNearestTexelBias, 512.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 8.0f + kMgPortNearestTexelBias);
 }
 
 TEST(MgDrawPrim, OneToOneSpriteUvIsUnchanged) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {100.0f, 50.0f, 123.0f, 75.0f}, {0, 0, 23, 25});
 
-    ExpectQuadUv(q, 0.0f, 23.0f, 0.0f, 25.0f);
+    ExpectQuadUv(q, kMgPortNearestTexelBias, 23.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 25.0f + kMgPortNearestTexelBias);
 }
 
 TEST(MgDrawPrim, StretchedTwoTexelStripUvIsUnchanged) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 175.0f, 8.0f}, {231, 0, 233, 8});
 
-    ExpectQuadUv(q, 231.0f, 233.0f, 0.0f, 8.0f);
+    ExpectQuadUv(q, 231.0f + kMgPortNearestTexelBias, 233.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 8.0f + kMgPortNearestTexelBias);
 }
 
 TEST(MgDrawPrim, FlippedSpriteUvMapsToTexelEdges) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 16.0f, 10.0f}, {16, 0, 0, 10});
 
-    ExpectQuadUv(q, 17.0f, 1.0f, 0.0f, 10.0f);
+    ExpectQuadUv(q, 17.0f + kMgPortNearestTexelBias, 1.0f + kMgPortNearestTexelBias, kMgPortNearestTexelBias,
+                 10.0f + kMgPortNearestTexelBias);
 }
 
 TEST(MgDrawPrim, EqualUvSpriteCoversOneTexel) {
     PrimRig rig;
     const std::vector<gfx::Vertex2D> q = DrawTexturedSprite(rig, 0, {0.0f, 0.0f, 10.0f, 10.0f}, {5, 5, 5, 5});
 
-    ExpectQuadUv(q, 5.0f, 6.0f, 5.0f, 6.0f);
+    ExpectQuadUv(q, 5.0f + kMgPortNearestTexelBias, 6.0f + kMgPortNearestTexelBias, 5.0f + kMgPortNearestTexelBias,
+                 6.0f + kMgPortNearestTexelBias);
     EXPECT_FLOAT_EQ(mgPortSpriteTexelSpan(0.0f, 10.0f, 5.5f, 5.5f).first, 5.0f);
     EXPECT_FLOAT_EQ(mgPortSpriteTexelSpan(0.0f, 10.0f, 5.5f, 5.5f).second, 6.0f);
 }

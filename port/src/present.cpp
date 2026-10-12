@@ -251,3 +251,35 @@ std::string PresentFpsText() {
 
     return text;
 }
+
+bool PresentScreenshotDisplay(float alpha, std::vector<uint8_t> &rgba, uint32_t &width, uint32_t &height) {
+    const gfx::DisplayList *list = mgPortLastList();
+    const gfx::DisplayList *previous = mgPortPreviousList();
+
+    if (list == nullptr || previous == nullptr) {
+        return false;
+    }
+
+    gfx::RenderOptions options;
+    options.previous = previous;
+    options.present = true;
+
+    return gfx::RenderList(*list, alpha, options) && gfx::ReadbackFrame(rgba, width, height);
+}
+
+bool PresentScreenshotFps(std::vector<uint8_t> &rgba, uint32_t &width, uint32_t &height) {
+    const gfx::DisplayList *list = mgPortLastList();
+
+    if (list == nullptr) {
+        return false;
+    }
+
+    // The overlay exists only in a presented image, and the canonical target never takes it, so the
+    // composite is presented at alpha 1 and read back from the window-sized display image.
+    const gfx::DisplayListRef fps = OverlayRecord(PresentFpsText());
+    gfx::RenderOptions options;
+    options.present = true;
+    options.overlay = fps.get();
+
+    return gfx::RenderList(*list, 1.0f, options) && gfx::ReadbackFrame(rgba, width, height);
+}
