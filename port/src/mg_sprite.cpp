@@ -29,14 +29,19 @@ float PortMgLogicalY(float gs_y);
 float PortMgDepthFromGs(float gs_z);
 gfx::DrawState PortMgDrawStateFromEnv(const mgCDrawEnv &env);
 
+namespace mgport {
+float ScreenXScale();
+float ScreenYScale();
+}
+
 namespace {
 
 float ScreenScaleX() {
-    return mgScreenWidth > 0 ? 640.0f / static_cast<float>(mgScreenWidth) : 1.0f;
+    return mgport::ScreenXScale();
 }
 
 float ScreenScaleY() {
-    return mgScreenHeight > 0 ? 480.0f / static_cast<float>(mgScreenHeight) : 1.0f;
+    return mgport::ScreenYScale();
 }
 
 uint8_t ColourByte(float value) {

@@ -319,6 +319,10 @@ PORT_OVERRIDE int CSound::Exit() {
         Player().Stop(port);
         g_ports[port] = DriverPort{};
     }
+    for (int channel = 0; channel < kStreamChannels; channel++) {
+        Player().StopGameStream(channel, true);
+        g_streams[channel] = StreamChannel{};
+    }
     return 0;
 }
 

@@ -1,3 +1,5 @@
+#include <cstring>
+#include "mg_frame.hpp"
 #include <bit>
 #include <cfloat>
 #include <cmath>
@@ -124,4 +126,11 @@ void test2(float *out_max, float *out_min) {
         out_max[i] = hi[i];
         out_min[i] = lo[i];
     }
+}
+
+// float* callers need four components, but need not have 16-byte alignment.
+PORT_OVERRIDE void mgCFrame::GetWorldPosition0(float *out_position) {
+    sceVu0FMATRIX world;
+    GetLWMatrix(world);
+    std::memcpy(out_position, world[3], sizeof(sceVu0FVECTOR));
 }

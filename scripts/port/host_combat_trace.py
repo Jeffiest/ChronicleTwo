@@ -19,6 +19,15 @@ def transform(unit: str, text: str) -> str:
         once("    history = action_info.chara->pad_history;", hook.format(stage=2) + "    history = action_info.chara->pad_history;")
         old = "        if (script.end != 0) {\n            prog_no = ACTION_PROG_MAIN;\n        }\n    }\n\n    GetPosition(position);"
         once(old, old.replace("    GetPosition(position);", hook.format(stage=3) + "    GetPosition(position);"))
+    elif unit == "src/actscript.cpp":
+        # Run after wp01_action_callbacks.py: stage 4 is the delivered _GET_BTN result, stage 5 the first
+        # motion request a script makes through _SET_MOS, the transitions after input arrival.
+        common = ("action_info.chara->prog_no, action_info.chara->script.end, "
+                  "action_info.chara->pad_history, action_info.chara->acumu_pad);\n")
+        anchor = "    SetStack(stack, PadCtrl.Btn(button));\n"
+        once(anchor, anchor + "    port_combat_trace::Record(4, button, PadCtrl.Btn(button), -1, -1, -1, " + common)
+        anchor = "    target->SetMotion(motion, flag, 1);\n"
+        once(anchor, "    port_combat_trace::Record(5, flag, argc, -1, -1, -1, " + common + anchor)
     else:
         raise RuntimeError(f"unsupported combat trace unit: {unit}")
     return '#include "combat_trace.hpp"\n' + text

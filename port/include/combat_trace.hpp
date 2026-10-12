@@ -11,10 +11,10 @@ inline void Record(int stage, int pressed, int held, int eye, int pause, int deb
         const char *value = std::getenv("DC2_TRACE_COMBAT");
         return value != nullptr && value[0] != 0 && std::strcmp(value, "0") != 0;
     }();
-    if (!enabled || stage < 0 || stage > 3) return;
+    if (!enabled || stage < 0 || stage > 5) return;
     static unsigned records = 0;
-    static std::array<std::array<int, 9>, 4> previous{};
-    static std::array<bool, 4> seen{};
+    static std::array<std::array<int, 9>, 6> previous{};
+    static std::array<bool, 6> seen{};
     const std::array<int, 9> state{pressed, held, eye, pause, debug, program, ended, history, accumulated};
     if (records == 256 || (seen[stage] && state == previous[stage])) return;
     seen[stage] = true;

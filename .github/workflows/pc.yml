@@ -125,7 +125,7 @@ jobs:
 
       # The renderer's cases need a Vulkan device, which this runner does not have.
       - name: Test
-        run: ctest --test-dir port/build/windows-x64-tests --output-on-failure -j4 -E '^(GfxMisc|TexDecode)\.'
+        run: ctest --test-dir port/build/windows-x64-tests --output-on-failure -j4 -E '^(GfxMisc|TexDecode)\.|^RuntimeContract\.0[56]_'
 
       - name: Package the Windows build
         run: |

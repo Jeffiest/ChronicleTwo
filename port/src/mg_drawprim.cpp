@@ -41,6 +41,7 @@ gfx::DrawState DrawStateOf(const sceGsTest &test, const sceGsZbuf &zbuf, const s
 } // namespace mgport
 
 bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
+mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp, int req_w = 0, int req_h = 0);
 
 namespace {
 
@@ -258,30 +259,89 @@ void FlushRawStream(PrimState &state) {
     state.raw_roles.clear();
 }
 
+} // namespace
+
 // The manager's texture placed at a TBP0, or NULL when none is. The engine's other units still
 // speak in these GS placements, which is what a transfer register carries.
-mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp) {
+mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp, int req_w, int req_h) {
     if (manager == NULL || manager->blocks == NULL) {
         return NULL;
     }
 
-    for (int block = 0; block < manager->block_max; block++) {
-        for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
+    auto matches = [tbp, req_w, req_h](mgCTexture *tex, bool strict_bounds) {
+        if ((tex->tex0.value & 0x3FFF) != tbp) {
+            return false;
+        }
+        if (strict_bounds && (req_w > 0 || req_h > 0)) {
+            if (tex->width < req_w || tex->height < req_h) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // 1. Search the currently active/loaded block first (manager->last_block)
+    if (manager->last_block >= 0 && manager->last_block < manager->block_max) {
+        for (mgCTexture *texture = manager->blocks[manager->last_block].texture; texture != NULL;
              texture = texture->next) {
-            if ((texture->tex0.value & 0x3FFF) == tbp) {
+            if (matches(texture, true)) {
                 return texture;
             }
         }
     }
 
+    // 2. Search fix_block
     for (mgCTexture *texture = manager->fix_block.texture; texture != NULL; texture = texture->next) {
-        if ((texture->tex0.value & 0x3FFF) == tbp) {
+        if (matches(texture, true)) {
             return texture;
+        }
+    }
+
+    // 3. Search other blocks
+    for (int block = 0; block < manager->block_max; block++) {
+        if (block == manager->last_block) {
+            continue;
+        }
+        for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
+             texture = texture->next) {
+            if (matches(texture, true)) {
+                return texture;
+            }
+        }
+    }
+
+    // Relaxed search if strict bounds didn't match
+    if (req_w > 0 || req_h > 0) {
+        if (manager->last_block >= 0 && manager->last_block < manager->block_max) {
+            for (mgCTexture *texture = manager->blocks[manager->last_block].texture; texture != NULL;
+                 texture = texture->next) {
+                if (matches(texture, false)) {
+                    return texture;
+                }
+            }
+        }
+        for (mgCTexture *texture = manager->fix_block.texture; texture != NULL; texture = texture->next) {
+            if (matches(texture, false)) {
+                return texture;
+            }
+        }
+        for (int block = 0; block < manager->block_max; block++) {
+            if (block == manager->last_block) {
+                continue;
+            }
+            for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
+                 texture = texture->next) {
+                if (matches(texture, false)) {
+                    return texture;
+                }
+            }
         }
     }
 
     return NULL;
 }
+
+namespace {
 
 // The GS's VRAM-to-VRAM image copy, the only transfer direction the game asks for (the item icon
 // moved between rectangles of one texture in menudraw.cpp): the registers decode to one
@@ -303,11 +363,54 @@ void StartImageTransfer(u_int direction) {
         mgDrawManager.texture_manager != NULL ? mgDrawManager.texture_manager : &mgTexManager;
     const u_int source_base = static_cast<u_int>(g_regs.transfer_bitbltbuf & 0x3FFF);
     const u_int dest_base = static_cast<u_int>((g_regs.transfer_bitbltbuf >> 32) & 0x3FFF);
-    mgCTexture *source = FindVramTexture(manager, source_base);
-    mgCTexture *dest = FindVramTexture(manager, dest_base);
+
+    const int source_x = static_cast<int>(g_regs.transfer_trxpos & 0x7FF);
+    const int source_y = static_cast<int>((g_regs.transfer_trxpos >> 16) & 0x7FF);
+    const int dest_x = static_cast<int>((g_regs.transfer_trxpos >> 32) & 0x7FF);
+    const int dest_y = static_cast<int>((g_regs.transfer_trxpos >> 48) & 0x7FF);
+    const int width = static_cast<int>(g_regs.transfer_trxreg & 0xFFF);
+    const int height = static_cast<int>((g_regs.transfer_trxreg >> 32) & 0xFFF);
+
+    mgCTexture *source = FindVramTexture(manager, source_base, source_x + width, source_y + height);
+    mgCTexture *dest = FindVramTexture(manager, dest_base, dest_x + width, dest_y + height);
 
     if (source == NULL || dest == NULL) {
+        std::fprintf(stderr, "StartImageTransfer: lookup failed (src %p, dst %p, sbase %#x, dbase %#x)\n",
+                     source, dest, source_base, dest_base);
         PS2_UNIMPLEMENTED();
+    }
+
+    // Reject out-of-bounds invalid transfers
+    if (width <= 0 || height <= 0 || source_x < 0 || source_y < 0 || dest_x < 0 || dest_y < 0 ||
+        source_x + width > source->width || source_y + height > source->height ||
+        dest_x + width > dest->width || dest_y + height > dest->height) {
+        std::fprintf(stderr, "StartImageTransfer: out of bounds (%dx%d at %d,%d -> %d,%d on %dx%d -> %dx%d)\n",
+                     width, height, source_x, source_y, dest_x, dest_y, source->width, source->height,
+                     dest->width, dest->height);
+        PS2_UNIMPLEMENTED();
+    }
+
+    // Sync backing CPU image memory if present (using memmove for overlapping regions)
+    if (source->image[0] != NULL && dest->image[0] != NULL && source->bpp == dest->bpp) {
+        if (source->bpp == 8) {
+            uint8_t *src_p = reinterpret_cast<uint8_t *>(source->image[0]);
+            uint8_t *dst_p = reinterpret_cast<uint8_t *>(dest->image[0]);
+            for (int n = 0; n < height; ++n) {
+                int row = src_p == dst_p && dest_y > source_y ? height - 1 - n : n;
+                std::memmove(dst_p + static_cast<size_t>(dest_y + row) * dest->width + dest_x,
+                             src_p + static_cast<size_t>(source_y + row) * source->width + source_x,
+                             width);
+            }
+        } else if (source->bpp == 32) {
+            uint32_t *src_p = reinterpret_cast<uint32_t *>(source->image[0]);
+            uint32_t *dst_p = reinterpret_cast<uint32_t *>(dest->image[0]);
+            for (int n = 0; n < height; ++n) {
+                int row = src_p == dst_p && dest_y > source_y ? height - 1 - n : n;
+                std::memmove(dst_p + static_cast<size_t>(dest_y + row) * dest->width + dest_x,
+                             src_p + static_cast<size_t>(source_y + row) * source->width + source_x,
+                             width * sizeof(uint32_t));
+            }
+        }
     }
 
     gfx::TextureBinding source_binding;
@@ -317,15 +420,10 @@ void StartImageTransfer(u_int direction) {
         PS2_UNIMPLEMENTED();
     }
 
-    const int source_x = static_cast<int>(g_regs.transfer_trxpos & 0x7FF);
-    const int source_y = static_cast<int>((g_regs.transfer_trxpos >> 16) & 0x7FF);
-    const int dest_x = static_cast<int>((g_regs.transfer_trxpos >> 32) & 0x7FF);
-    const int dest_y = static_cast<int>((g_regs.transfer_trxpos >> 48) & 0x7FF);
-    const int width = static_cast<int>(g_regs.transfer_trxreg & 0xFFF);
-    const int height = static_cast<int>((g_regs.transfer_trxreg >> 32) & 0xFFF);
-
     if (!gfx::CopyTexture(source_binding.texture, {source_x, source_y, width, height},
                           dest_binding.texture, dest_x, dest_y)) {
+        std::fprintf(stderr, "StartImageTransfer: CopyTexture failed (%dx%d from %#x to %#x)\n",
+                     width, height, source_binding.texture, dest_binding.texture);
         PS2_UNIMPLEMENTED();
     }
 }
@@ -491,6 +589,7 @@ PORT_OVERRIDE void mgCDrawPrim::Flush() {
 PORT_OVERRIDE void mgCDrawPrim::End() {
     EndDma();
     End2();
+    g_regs.scissor_seen = false;
 }
 
 PORT_OVERRIDE void mgCDrawPrim::Begin2() {
@@ -502,6 +601,7 @@ PORT_OVERRIDE void mgCDrawPrim::Begin2() {
     g_regs.zbuf = draw_env.zbuf;
     g_regs.alpha = draw_env.alpha;
     g_regs.env_seen = true;
+    g_regs.scissor_seen = false;
 }
 
 PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int type) {
@@ -649,24 +749,48 @@ PORT_OVERRIDE void mgCDrawPrim::Direct(u_long reg, u_long data) {
             break;
         }
         case SCE_GS_TEST_1:
-        case SCE_GS_TEST_2:
+        case SCE_GS_TEST_2: {
+            PrimState &state = State(this);
+            if (state.open && !state.vertices.empty()) {
+                SubmitRun(state, *this);
+                state.open = true;
+            }
             g_regs.test.value = data;
             g_regs.env_seen = true;
             break;
+        }
         case SCE_GS_ZBUF_1:
-        case SCE_GS_ZBUF_2:
+        case SCE_GS_ZBUF_2: {
+            PrimState &state = State(this);
+            if (state.open && !state.vertices.empty()) {
+                SubmitRun(state, *this);
+                state.open = true;
+            }
             g_regs.zbuf.value = data;
             g_regs.env_seen = true;
             break;
+        }
         case SCE_GS_ALPHA_1:
-        case SCE_GS_ALPHA_2:
+        case SCE_GS_ALPHA_2: {
+            PrimState &state = State(this);
+            if (state.open && !state.vertices.empty()) {
+                SubmitRun(state, *this);
+                state.open = true;
+            }
             g_regs.alpha.value = data;
             g_regs.env_seen = true;
             break;
-        case SCE_GS_SCISSOR_1:
+        }
+        case SCE_GS_SCISSOR_1: {
+            PrimState &state = State(this);
+            if (state.open && !state.vertices.empty()) {
+                SubmitRun(state, *this);
+                state.open = true;
+            }
             g_regs.scissor = mgport::ScissorRect(data);
             g_regs.scissor_seen = true;
             break;
+        }
         case SCE_GS_BITBLTBUF:
             g_regs.transfer_bitbltbuf = data;
             break;
@@ -686,6 +810,11 @@ PORT_OVERRIDE void mgCDrawPrim::Direct(u_long reg, u_long data) {
 
 PORT_OVERRIDE void mgCDrawPrim::Texture(mgCTexture *source) {
     if (source != 0) {
+        PrimState &state = State(this);
+        if (state.open && !state.vertices.empty()) {
+            SubmitRun(state, *this);
+            state.open = true;
+        }
         // A plain data copy, as retail made of the texture fields: sceGsTex0's assignment is a
         // link-time function in the texture unit, the copy in the packet never called it.
         memcpy(&this->texture, source, sizeof(mgCTexture));

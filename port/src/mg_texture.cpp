@@ -35,6 +35,7 @@ namespace {
 struct Entry {
     gfx::TextureHandle texture = gfx::kNullTexture;
     gfx::TextureHandle palette = gfx::kNullTexture;
+    const void        *shared_storage = nullptr;
     bool               dirty = true;
     bool               target = false; // a named render target: the renderer keeps it alive
     uint32_t           width = 0;
@@ -43,6 +44,16 @@ struct Entry {
     gfx::TextureFormat format = static_cast<gfx::TextureFormat>(0);
 };
 
+struct SharedImage {
+    gfx::TextureHandle texture = gfx::kNullTexture;
+    uint32_t           width = 0;
+    uint32_t           height = 0;
+    uint32_t           mips = 0;
+    gfx::TextureFormat format = static_cast<gfx::TextureFormat>(0);
+    int                ref_count = 0;
+};
+
+std::unordered_map<const void *, SharedImage> g_shared_images;
 std::unordered_map<const mgCTexture *, Entry> g_entries;
 
 bool RendererUp() {
@@ -55,7 +66,18 @@ void Release(const mgCTexture *owner, const char *why, Entry &entry) {
                           static_cast<const void *>(owner), entry.texture, entry.palette, entry.target ? 1 : 0);
     }
     if (!entry.target) {
-        if (entry.texture != gfx::kNullTexture) {
+        if (entry.shared_storage != nullptr) {
+            auto it = g_shared_images.find(entry.shared_storage);
+            if (it != g_shared_images.end()) {
+                it->second.ref_count--;
+                if (it->second.ref_count <= 0) {
+                    if (it->second.texture != gfx::kNullTexture) {
+                        gfx::DestroyTexture(it->second.texture);
+                    }
+                    g_shared_images.erase(it);
+                }
+            }
+        } else if (entry.texture != gfx::kNullTexture) {
             gfx::DestroyTexture(entry.texture);
         }
         if (entry.palette != gfx::kNullTexture) {
@@ -271,21 +293,37 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         return;
     }
 
-    // The loaded textures are re-synced every time the game rewrites them, which the title
-    // and loading screens do every frame. Releasing and recreating the renderer's image each
-    // time churns through slots faster than the deferred releases return them, so an entry
-    // whose shape has not changed keeps its image and only the pixels are re-uploaded.
-    bool reuse = entry.texture != gfx::kNullTexture && entry.width == desc.width &&
-                 entry.height == desc.height && entry.mips == desc.mip_levels && entry.format == desc.format;
+    bool is_shared = texture->image[0] != NULL && texture->bpp <= 8;
+    const void *storage_key = is_shared ? static_cast<const void *>(texture->image[0]) : nullptr;
+    auto shared = g_shared_images.find(storage_key);
+    if (shared != g_shared_images.end() &&
+        (shared->second.width != desc.width || shared->second.height != desc.height ||
+         shared->second.mips != desc.mip_levels || shared->second.format != desc.format)) {
+        // A different view of the same address retains its own image.
+        is_shared = false;
+        storage_key = nullptr;
+    }
+    bool reuse = entry.texture != gfx::kNullTexture && entry.shared_storage == storage_key &&
+                 entry.width == desc.width && entry.height == desc.height &&
+                 entry.mips == desc.mip_levels && entry.format == desc.format;
     if (!reuse) {
         Release(texture, "reshape", entry);
-        entry.texture = gfx::CreateTexture(desc);
-        if (entry.texture == gfx::kNullTexture) {
-            // Texture slots can be temporarily exhausted while the renderer retires deferred
-            // work. Keep the entry eligible for another attempt on the next bind.
-            entry.dirty = true;
-            return;
+        shared = g_shared_images.find(storage_key);
+        if (is_shared && shared != g_shared_images.end()) {
+            entry.texture = shared->second.texture;
+            ++shared->second.ref_count;
+        } else {
+            entry.texture = gfx::CreateTexture(desc);
+            if (entry.texture == gfx::kNullTexture) {
+                entry.dirty = true;
+                return;
+            }
+            if (is_shared) {
+                g_shared_images.emplace(storage_key, SharedImage{entry.texture, desc.width, desc.height,
+                    desc.mip_levels, desc.format, 1});
+            }
         }
+        entry.shared_storage = storage_key;
         entry.width = desc.width;
         entry.height = desc.height;
         entry.mips = desc.mip_levels;
@@ -495,6 +533,7 @@ PORT_OVERRIDE void mgCTextureManager::Initialize(int start, int end) {
         Release(pair.first, "manager-init", pair.second);
     }
     g_entries.clear();
+    g_shared_images.clear();
 
     vram_top = start;
     vram_fix = end;

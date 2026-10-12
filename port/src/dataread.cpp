@@ -4,6 +4,7 @@
 #include <sifdev.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -131,11 +132,124 @@ bool SafeRelative(std::string_view path) {
     std::abort();
 }
 
+// Why a read of a game file came up short, with the numbers that show it. The first
+// kMaxReportedFailures are printed in full; later ones are only counted so a failing loop cannot
+// flood stderr.
+enum class ReadFault { None, OutOfRange, NullBuffer, OpenFailed, SeekFailed, ShortRead, BackingTruncated };
+
+struct ReadReport {
+    ReadFault     fault = ReadFault::None;
+    std::uint64_t offset = 0;   // start within the logical file
+    std::uint64_t size = 0;     // bytes asked for
+    std::uint64_t extent = 0;   // the logical file's size (a DATA.HD4 record, or the file on disk)
+    std::uint64_t physical = 0; // bytes the host handed back
+    std::uint64_t backing = 0;  // size of the host file holding the extent, when it could be measured
+    int           os_error = 0;
+};
+
+constexpr unsigned kMaxReportedFailures = 16;
+unsigned           reported_failures;
+unsigned           suppressed_failures;
+std::string        last_failure;
+
+const char *FaultName(ReadFault fault) {
+    switch (fault) {
+        case ReadFault::OutOfRange: return "range outside the file's extent";
+        case ReadFault::NullBuffer: return "no destination buffer";
+        case ReadFault::OpenFailed: return "host file would not open";
+        case ReadFault::SeekFailed: return "seek to the extent failed";
+        case ReadFault::ShortRead: return "short read";
+        case ReadFault::BackingTruncated: return "backing file ends inside the extent";
+        case ReadFault::None: break;
+    }
+    return "no fault";
+}
+
+ReadReport ReadExtent(const cdvd::File &file, std::uint64_t offset, void *buffer, std::uint64_t size) {
+    ReadReport report;
+    report.offset = offset;
+    report.size = size;
+    report.extent = file.size;
+
+    if (offset > file.size || size > file.size - offset) {
+        report.fault = ReadFault::OutOfRange;
+        return report;
+    }
+
+    // A caller whose buffer pointer was never set (a struct copied at PS2 width loses its pointers) must not
+    // be told the disc failed.
+    if (size != 0 && buffer == nullptr) {
+        report.fault = ReadFault::NullBuffer;
+        return report;
+    }
+
+    std::ifstream stream(file.path, std::ios::binary);
+
+    if (!stream) {
+        report.fault = ReadFault::OpenFailed;
+        report.os_error = errno;
+        return report;
+    }
+
+    stream.seekg(static_cast<std::streamoff>(file.offset + offset));
+
+    if (!stream) {
+        report.fault = ReadFault::SeekFailed;
+        return report;
+    }
+
+    stream.read(static_cast<char *>(buffer), static_cast<std::streamsize>(size));
+    report.physical = static_cast<std::uint64_t>(stream.gcount());
+
+    if (report.physical != size) {
+        std::error_code error;
+        std::uintmax_t  backing = fs::file_size(file.path, error);
+
+        if (!error) {
+            report.backing = backing;
+        }
+
+        report.fault = !error && backing < file.offset + offset + size ? ReadFault::BackingTruncated
+                                                                      : ReadFault::ShortRead;
+    }
+
+    return report;
+}
+
+// Keeps the newest failure line for the tests and prints the first kMaxReportedFailures.
+void NoteFailure(const char *line) {
+    last_failure = line;
+
+    if (reported_failures < kMaxReportedFailures) {
+        reported_failures++;
+        std::fprintf(stderr, "%s\n", line);
+    } else if (suppressed_failures++ == 0) {
+        std::fprintf(stderr, "dataread: further read failures are counted, not printed\n");
+    }
+}
+
+// Names the request, the host file, the extent asked for and the bytes that came back.
+void ReportReadFailure(const char *name, const cdvd::File &file, const ReadReport &report) {
+    char line[1024];
+    std::snprintf(line, sizeof line,
+                  "cannot read \"%s\" (%s): %s; offset %llu size %llu of extent %llu at host offset %llu, "
+                  "physical %llu bytes, backing file %llu bytes, os error %d",
+                  name != nullptr ? name : "?", file.path.string().c_str(), FaultName(report.fault),
+                  static_cast<unsigned long long>(report.offset), static_cast<unsigned long long>(report.size),
+                  static_cast<unsigned long long>(report.extent), static_cast<unsigned long long>(file.offset),
+                  static_cast<unsigned long long>(report.physical), static_cast<unsigned long long>(report.backing),
+                  report.os_error);
+    NoteFailure(line);
+}
+
 // The drive read whole sectors into the caller's buffer, so the bytes between a file's end and
 // the sector boundary were overwritten too; they are zeroed rather than left as the caller's.
-bool ReadWhole(const cdvd::File &file, void *buffer) {
-    if (!cdvd::ReadAt(file, 0, buffer, file.size)) {
-        std::fprintf(stderr, "cannot read %s\n", file.path.string().c_str());
+// The buffer's padding is touched only after the file itself came back whole.
+bool ReadWhole(const char *name, const cdvd::File &file, void *buffer) {
+    ReadReport report = ReadExtent(file, 0, buffer, file.size);
+
+    if (report.fault != ReadFault::None) {
+        ReportReadFailure(name, file, report);
         return false;
     }
 
@@ -224,7 +338,7 @@ void ReadIndex(const fs::path &hd4_path, const fs::path &dat_path, const fs::pat
         u_int                file_size = Le32(record + 4);
         u_int                sector = Le32(record + 8);
 
-        // The index ends with an all-zero record; an empty name ends it too.
+        // PAL's index ends with a record that names nothing (offset into the names, size and sector 0); an all-zero record ends it too.
         if (name_offset == 0 && file_size == 0 && sector == 0) {
             break;
         }
@@ -240,17 +354,33 @@ void ReadIndex(const fs::path &hd4_path, const fs::path &dat_path, const fs::pat
             break;
         }
 
-        if (static_cast<std::uint64_t>(sector) * cdvd::kSector + file_size > dat_size) {
+        // An extent that ends past DATA.DAT cannot be read whole, so it is named and left out of the
+        // index rather than published with a size that no read can honour. Only the logical bytes
+        // must exist: the zero padding up to the sector boundary is the loader's to supply.
+        std::uint64_t    extent_end = static_cast<std::uint64_t>(sector) * cdvd::kSector + file_size;
+        std::string_view logical(name, static_cast<const char *>(end) - name);
+
+        if (extent_end > dat_size) {
             past_end++;
+
+            char line[1024];
+            std::snprintf(line, sizeof line,
+                          "dataread: DATA.HD4 record %zu \"%.*s\" sector %u size %u ends at %llu, past "
+                          "DATA.DAT's %llu bytes; not indexed",
+                          i, static_cast<int>(logical.size()), logical.data(), sector, file_size,
+                          static_cast<unsigned long long>(extent_end), static_cast<unsigned long long>(dat_size));
+            NoteFailure(line);
+
+            continue;
         }
 
         cdvd::File file{dat_path, static_cast<std::uint64_t>(sector) * cdvd::kSector, file_size, true};
-        packed_files.emplace(cdvd::Fold(std::string_view(name, static_cast<const char *>(end) - name)), file);
+        packed_files.emplace(cdvd::Fold(logical), file);
     }
 
     if (past_end != 0) {
-        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT\n", root.string().c_str(),
-                     past_end);
+        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT; none of them indexed\n",
+                     root.string().c_str(), past_end);
     }
 }
 
@@ -382,25 +512,33 @@ bool Find(std::string_view path, File &out) {
 }
 
 bool ReadAt(const File &file, std::uint64_t offset, void *buffer, std::uint64_t size) {
-    if (offset > file.size || size > file.size - offset) {
+    ReadReport report = ReadExtent(file, offset, buffer, size);
+
+    if (report.fault != ReadFault::None) {
+        ReportReadFailure(file.path.string().c_str(), file, report);
         return false;
     }
 
-    std::ifstream stream(file.path, std::ios::binary);
-
-    if (!stream) {
-        return false;
-    }
-
-    stream.seekg(static_cast<std::streamoff>(file.offset + offset));
-    stream.read(static_cast<char *>(buffer), static_cast<std::streamsize>(size));
-    return static_cast<std::uint64_t>(stream.gcount()) == size;
+    return true;
 }
 
 } // namespace cdvd
 
+// The last full failure line and the number of failures since the index was last built; the unit
+// tests read these, the game reads stderr.
+std::string DataReadLastFailure() {
+    return last_failure;
+}
+
+unsigned DataReadFailureCount() {
+    return reported_failures + suppressed_failures;
+}
+
 void DataReadIndex(const fs::path &root) {
     PathsSetDataRoot(root);
+    reported_failures = 0;
+    suppressed_failures = 0;
+    last_failure.clear();
     index_loaded = false;
     packed_files.clear();
     plain_files.clear();
@@ -638,7 +776,7 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
             return false;
         }
 
-        if (!ReadWhole(file, buffer)) {
+        if (!ReadWhole(full_path, file, buffer)) {
             return false;
         }
 
@@ -814,7 +952,7 @@ PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
             return 1;
         }
 
-        if (!ReadWhole(file, buffer)) {
+        if (!ReadWhole(full_path, file, buffer)) {
             return 0;
         }
 
@@ -837,13 +975,14 @@ PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
         if (std::strncmp(full_path, "host0:", 6) == 0) {
             cdvd::File file;
             if (cdvd::Find(full_path, file)) {
+                // The size is published only for a size query or once the bytes are in the buffer.
+                if (mode != LOAD_FILE_SIZE && !ReadWhole(full_path, file, buffer)) {
+                    return 0;
+                }
                 if (out_size) {
                     *out_size = static_cast<int>(file.size);
                 }
-                if (mode == LOAD_FILE_SIZE) {
-                    return 1;
-                }
-                return ReadWhole(file, buffer) ? 1 : 0;
+                return 1;
             }
         }
         return mode == LOAD_FILE_OPEN ? -1 : 0;
