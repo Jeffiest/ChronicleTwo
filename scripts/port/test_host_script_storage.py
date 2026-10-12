@@ -46,21 +46,24 @@ def check_capacity_and_ranges():
 
 
 def check_generated_rewrites_and_load_builders():
-    units = {
-        "src/event.cpp": "event.cpp",
-        "src/actscript.cpp": "actscript.cpp",
-        "src/effscript.cpp": "effscript.cpp",
-        "src/runscript_opcodes.cpp": "runscript_opcodes.cpp",
+    filename = "effscript.cpp"
+    original = (PS2 / filename).read_text(encoding="latin-1")
+    updated = transform("src/effscript.cpp", original)
+    assert '#include "script_storage.hpp"' in updated
+    assert 'port_script_storage::allocate<RS_CALLDATA>(memory, 2, "SetEffectScript")' in updated
+    assert "port_script_storage::allocate<RS_STACKDATA>" not in updated
+    tables = [line for line in original.splitlines() if "ext_func[" in line]
+    assert tables and all(line in updated for line in tables)
+
+    expected_sites = {
+        "event.cpp": ["sizeof(RS_STACKDATA) * 0x80", "sizeof(RS_CALLDATA) * 0x200"],
+        "actscript.cpp": ["sizeof(RS_STACKDATA) * 0x80", "sizeof(RS_CALLDATA) * 0x200"],
+        "effscript.cpp": ["sizeof(RS_STACKDATA) * 0x40"],
+        "runscript_opcodes.cpp": ["sizeof(RS_STACKDATA) * 128", "sizeof(RS_CALLDATA) * 512"],
     }
-    for key, filename in units.items():
-        original = (PS2 / filename).read_text(encoding="latin-1")
-        updated = transform(key, original)
-        assert '#include "script_storage.hpp"' in updated
-        assert "port_script_storage::allocate<RS_STACKDATA>" in updated
-        assert "port_script_storage::allocate<RS_CALLDATA>" in updated
-        if filename in {"actscript.cpp", "effscript.cpp", "runscript_opcodes.cpp"}:
-            tables = [line for line in original.splitlines() if "ext_func[" in line]
-            assert tables and all(line in updated for line in tables)
+    for source_name, expressions in expected_sites.items():
+        source = (PS2 / source_name).read_text(encoding="latin-1")
+        assert all(expression in source for expression in expressions), (source_name, expressions)
 
     load_sites = []
     for path in PS2.rglob("*.cpp"):

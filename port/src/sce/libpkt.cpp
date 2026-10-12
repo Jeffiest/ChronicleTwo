@@ -1,6 +1,6 @@
 #include <libpkt.h>
 
-extern sceVif1Packet g_null_packet;
+sceVif1Packet g_null_packet{};
 
 // The host renderer builds its own draw commands. The packet a ps2/src path still writes to is the
 // null packet mgBeginPacket parks the builder on; those writes have no consumer, so they pass

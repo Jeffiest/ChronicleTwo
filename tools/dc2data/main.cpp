@@ -12,6 +12,7 @@ namespace fs = std::filesystem;
 int Usage() {
     std::fputs("usage: dc2data extract <iso-or-directory> <data-directory>\n"
                "       dc2data list <iso-or-directory>\n"
+               "       dc2data sound <iso-or-directory>\n"
                "       dc2data check <data-directory>\n",
                stderr);
     return 2;
@@ -38,6 +39,28 @@ int List(const fs::path &source) {
     }
     dc::Log(stderr, "{} entries, {} files, {} duplicates, {} bytes\n", records.size(), reachable.size(),
             duplicates, bytes);
+    return 0;
+}
+
+int Sound(const fs::path &source) {
+    dc::Archive    archive = dc::OpenArchive(source);
+    dc::SoundIndex index = dc::ReadSoundIndex(archive);
+    std::uint64_t  bytes = 0;
+    std::uint64_t  padded = 0;
+    auto           account = [&](const dc::SoundEntry &entry) {
+        bytes += entry.size;
+        padded += std::uint64_t{entry.sectors} * dc::kSector;
+    };
+    for (const dc::SoundEntry &entry : index.entries) {
+        dc::Log(stdout, "{}\t{}\t{}\t{}\n", entry.name, entry.size, entry.sector, entry.sectors);
+        account(entry);
+    }
+    for (const dc::SoundEntry &entry : index.shadowed) {
+        dc::Log(stdout, "shadowed\t{}\t{}\t{}\t{}\n", entry.name, entry.size, entry.sector, entry.sectors);
+        account(entry);
+    }
+    dc::Log(stdout, "sound: {} entries, {} shadowed, {} bytes, {} bytes in sectors, SOUND.DAT {} bytes\n",
+            index.entries.size(), index.shadowed.size(), bytes, padded, archive.sound_dat.size);
     return 0;
 }
 
@@ -79,6 +102,9 @@ int main(int argc, char **argv) {
         }
         if (argc == 3 && std::strcmp(argv[1], "list") == 0) {
             return List(argv[2]);
+        }
+        if (argc == 3 && std::strcmp(argv[1], "sound") == 0) {
+            return Sound(argv[2]);
         }
         if (argc == 3 && std::strcmp(argv[1], "check") == 0) {
             return Check(argv[2]);

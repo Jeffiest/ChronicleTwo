@@ -128,7 +128,7 @@ public:
 
     union {
         char *end;    /**< End of the model data written so far. */
-        int   cursor; /**< End offset viewed as an integer. */
+        uptr  cursor; /**< End offset viewed as an integer. */
     }; /**< End of the model written so far. */
 
     union {
@@ -141,7 +141,7 @@ public:
 
     union {
         MDT_FACES *faces;           /**< Face section header. */
-        int        face_block_addr; /**< Face section address viewed as an integer. */
+        uptr       face_block_addr; /**< Face section address viewed as an integer. */
     }; /**< Header of the face section. */
 
     FACES_ID *prim;           /**< Primitive being written. */
@@ -151,7 +151,7 @@ public:
     union {
         int *index;       /**< Next face index to write. */
         int *face_cursor; /**< Next face section word to write. */
-        int  face_end;    /**< End of face data viewed as an integer. */
+        uptr face_end;    /**< End of face data viewed as an integer. */
     }; /**< Write position for the next index of the face section. */
 
     int           data_type; /**< Section open for writing, from mgMDTDataType. */

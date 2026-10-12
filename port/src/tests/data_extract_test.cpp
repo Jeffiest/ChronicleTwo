@@ -79,6 +79,32 @@ std::string BuildDat(const std::vector<Row> &rows) {
     return dat;
 }
 
+std::string BuildSoundHd3() {
+    struct Entry {
+        std::string   name;
+        std::uint32_t size;
+        std::uint32_t sector;
+        std::uint32_t sectors;
+    };
+    const std::vector<Entry> entries = {{"BGM_A.STR", 2048, 0, 1}, {"SE_B.STR", 952, 1, 1}};
+    auto                     names_start = static_cast<std::uint32_t>((entries.size() + 1) * dc::kSoundRecordSize);
+    std::string              records;
+    std::string              names;
+    for (const Entry &entry : entries) {
+        PutLe32(records, names_start + static_cast<std::uint32_t>(names.size()));
+        PutLe32(records, entry.size);
+        PutLe32(records, entry.sector);
+        PutLe32(records, entry.sectors);
+        names += entry.name;
+        names.push_back('\0');
+    }
+    PutLe32(records, 0);
+    PutLe32(records, 0);
+    PutLe32(records, 0);
+    PutLe32(records, 0);
+    return records + names;
+}
+
 void WriteBytes(const fs::path &path, const std::string &bytes) {
     fs::create_directories(path.parent_path());
     std::ofstream file(path, std::ios::binary | std::ios::trunc);
@@ -113,17 +139,18 @@ private:
 };
 
 const std::string kSoundDat = Pattern(9, 3000);
-const std::string kSoundHd3 = Pattern(10, 700);
+const std::string kSoundHd3 = BuildSoundHd3();
 const std::string kEnding = Pattern(11, 300);
 const std::string kIntro = Pattern(12, 40);
 const std::string kMovie = Pattern(13, 500);
 
-fs::path WriteDisc(const fs::path &root, const std::string &index, const std::string &dat) {
+fs::path WriteDisc(const fs::path &root, const std::string &index, const std::string &dat,
+                   const std::string &sound_hd3 = kSoundHd3) {
     fs::path disc = root / "disc";
     WriteBytes(disc / "DATA.HD4", index);
     WriteBytes(disc / "DATA.DAT", dat);
     WriteBytes(disc / "SOUND.DAT", kSoundDat);
-    WriteBytes(disc / "SOUND.HD3", kSoundHd3);
+    WriteBytes(disc / "SOUND.HD3", sound_hd3);
     WriteBytes(disc / "MOVIE" / "intro.PSS", kIntro);
     WriteBytes(disc / "MOVIE" / "Ending.PSS", kEnding);
     WriteBytes(disc / "MOVIE" / "readme.txt", "not a movie");
@@ -240,9 +267,9 @@ TEST(Dc2Data, ExtractsEntriesMoviesAndSound) {
     EXPECT_EQ(summary.records, 4u);
     EXPECT_EQ(summary.files, 3u);
     EXPECT_EQ(summary.duplicates, 0u);
-    EXPECT_EQ(summary.written, 7u);
+    EXPECT_EQ(summary.written, 9u);
     EXPECT_EQ(summary.kept, 0u);
-    EXPECT_EQ(summary.verified, 7u);
+    EXPECT_EQ(summary.verified, 9u);
     EXPECT_TRUE(summary.manifest_changed);
 
     EXPECT_EQ(ReadBytes(out / "alpha" / "beta.bin"), Pattern(1, 100));
@@ -254,9 +281,12 @@ TEST(Dc2Data, ExtractsEntriesMoviesAndSound) {
     EXPECT_FALSE(fs::exists(out / "movie" / "readme.txt"));
     EXPECT_EQ(ReadBytes(out / "sound" / "sound.dat"), kSoundDat);
     EXPECT_EQ(ReadBytes(out / "sound" / "sound.hd3"), kSoundHd3);
+    EXPECT_EQ(ReadBytes(out / "sound" / "bgm_a.str"), kSoundDat.substr(0, 2048));
+    EXPECT_EQ(ReadBytes(out / "sound" / "se_b.str"), kSoundDat.substr(2048, 952));
 
     std::string manifest = std::format("100\talpha/beta.bin\n5000\tgamma/delta.dat\n0\tmixed/case/file.txt\n"
-                                       "{}\tmovie/ending.pss\n{}\tmovie/intro.pss\n{}\tsound/sound.dat\n{}\tsound/sound.hd3\n",
+                                       "{}\tmovie/ending.pss\n{}\tmovie/intro.pss\n{}\tsound/sound.dat\n{}\tsound/sound.hd3\n"
+                                       "2048\tsound/bgm_a.str\n952\tsound/se_b.str\n",
                                        kEnding.size(), kIntro.size(), kSoundDat.size(), kSoundHd3.size());
     EXPECT_EQ(ReadBytes(out / "manifest.txt"), manifest);
 
@@ -277,14 +307,14 @@ TEST(Dc2Data, RerunRewritesNothingAndRestoresWrongSizes) {
 
     dc::Summary again = dc::Extract(archive, out, nullptr);
     EXPECT_EQ(again.written, 0u);
-    EXPECT_EQ(again.kept, 7u);
+    EXPECT_EQ(again.kept, 9u);
     EXPECT_FALSE(again.manifest_changed);
     EXPECT_EQ(fs::last_write_time(out / "gamma" / "delta.dat"), stamp);
 
     WriteBytes(out / "alpha" / "beta.bin", "short");
     dc::Summary repaired = dc::Extract(archive, out, nullptr);
     EXPECT_EQ(repaired.written, 1u);
-    EXPECT_EQ(repaired.kept, 6u);
+    EXPECT_EQ(repaired.kept, 8u);
     EXPECT_EQ(ReadBytes(out / "alpha" / "beta.bin"), Pattern(1, 100));
 }
 
@@ -385,13 +415,13 @@ TEST(Dc2Data, CheckReportsMissingAndWrongSizeFiles) {
 
     dc::CheckReport clean = dc::CheckManifest(out);
     EXPECT_TRUE(clean.problems.empty());
-    EXPECT_EQ(clean.checked, 7u);
+    EXPECT_EQ(clean.checked, 9u);
 
     fs::remove(out / "gamma" / "delta.dat");
     WriteBytes(out / "alpha" / "beta.bin", "short");
 
     dc::CheckReport broken = dc::CheckManifest(out);
-    EXPECT_EQ(broken.checked, 7u);
+    EXPECT_EQ(broken.checked, 9u);
     EXPECT_EQ(broken.problems, (std::vector<std::string>{"size alpha/beta.bin: expected 100, found 5",
                                                          "missing gamma/delta.dat"}));
     EXPECT_THROW(dc::CheckManifest(scratch.path() / "absent"), dc::Error);
@@ -408,14 +438,24 @@ TEST(Dc2Data, ExtractsFromAnIso9660Image) {
 
     EXPECT_EQ(summary.records, 4u);
     EXPECT_EQ(summary.files, 3u);
-    EXPECT_EQ(summary.written, 6u);
-    EXPECT_EQ(summary.verified, 6u);
+    EXPECT_EQ(summary.written, 8u);
+    EXPECT_EQ(summary.verified, 8u);
     EXPECT_EQ(ReadBytes(out / "alpha" / "beta.bin"), Pattern(1, 100));
     EXPECT_EQ(ReadBytes(out / "gamma" / "delta.dat"), Pattern(2, 5000));
     EXPECT_EQ(fs::file_size(out / "mixed" / "case" / "file.txt"), 0u);
     EXPECT_EQ(ReadBytes(out / "movie" / "a.pss"), kMovie);
     EXPECT_EQ(ReadBytes(out / "sound" / "sound.dat"), kSoundDat);
     EXPECT_EQ(ReadBytes(out / "sound" / "sound.hd3"), kSoundHd3);
+}
+
+TEST(Dc2Data, MalformedSoundIndexFailsBeforeWriting) {
+    Scratch          scratch;
+    std::vector<Row> rows = SyntheticRows();
+    fs::path         disc = WriteDisc(scratch.path(), BuildIndex(rows), BuildDat(rows), Pattern(10, 700));
+    fs::path         out = scratch.path() / "data";
+
+    EXPECT_THROW(dc::Extract(dc::OpenArchive(disc), out, nullptr), dc::Error);
+    EXPECT_FALSE(fs::exists(out));
 }
 
 TEST(Dc2Data, IndexWithBadRecordTableFailsBeforeWriting) {

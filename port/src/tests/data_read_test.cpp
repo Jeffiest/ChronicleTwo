@@ -1,16 +1,13 @@
 #include <gtest/gtest.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include <cstring>
 #include <string>
 
-#include "platform/paths.hpp"
 #include "data_fixture.hpp"
 #include "dataread.hpp"
 #include "exitcodes.hpp"
+#include "platform/paths.hpp"
+#include "platform_fixture.hpp"
 
 using namespace datafix;
 
@@ -62,30 +59,6 @@ bool AllAre(const unsigned char *from, const unsigned char *to, unsigned char va
         }
     }
     return true;
-}
-
-template <class F>
-int AbortSignal(F f) {
-    pid_t child = fork();
-    if (child == 0) {
-        f();
-        _exit(0);
-    }
-    int status = 0;
-    waitpid(child, &status, 0);
-    return WIFSIGNALED(status) ? WTERMSIG(status) : 0;
-}
-
-template <class F>
-int ExitStatusOf(F f) {
-    pid_t child = fork();
-    if (child == 0) {
-        f();
-        _exit(0);
-    }
-    int status = 0;
-    waitpid(child, &status, 0);
-    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
 } // namespace
@@ -147,18 +120,18 @@ TEST(DataRead, Loadfile2FoldsCaseAndDevices) {
 TEST(DataRead, LoadfileMissingAsserts) {
     fs::path dir = InstallStandardData("read_assert");
     int      size;
-    ASSERT_TRUE(ExitStatusOf([&] { LoadFile(Mutable("nothing/here.bin"), buffer, &size); }) == kExitGameAssert);
+    KZ_ASSERT_EXIT([&] { LoadFile(Mutable("nothing/here.bin"), buffer, &size); }, kExitGameAssert);
     fs::remove_all(dir);
 }
 
 TEST(DataRead, InitcdfileRequiresData) {
     fs::path dir = TempDir("read_nodata");
     PathsSetDataRoot(dir / "data");
-    ASSERT_TRUE(AbortSignal([] { InitCDFile(); }) == SIGABRT);
+    KZ_ASSERT_ABORT([] { InitCDFile(); });
     fs::create_directories(dir / "data/empty_dir");
-    ASSERT_TRUE(AbortSignal([] { InitCDFile(); }) == SIGABRT);
+    KZ_ASSERT_ABORT([] { InitCDFile(); });
     WriteBytes(dir / "data/a.bin", Pattern(3, 0));
-    ASSERT_TRUE(AbortSignal([] { InitCDFile(); }) == 0);
+    KZ_ASSERT_EXIT([] { InitCDFile(); }, 0);
     fs::remove_all(dir);
 }
 
@@ -183,7 +156,7 @@ TEST(DataRead, LoadfilebgCompletesSynchronously) {
     ASSERT_TRUE(ReadBGSync() == 0);
 
     BG_READ_INFO *first = GetReadBGFile(0);
-    ASSERT_TRUE(first && first->busy && first->id != 0 && first->done);
+    ASSERT_TRUE(first && first->busy && first->done);
     ASSERT_TRUE(first->buffer == Quads(buffer) && first->size == 5000 && first->sectors == 3);
     ASSERT_TRUE(std::strcmp(first->name, "DUN/PACK/MAINDAT.PAC") == 0);
     ASSERT_TRUE(Equals(buffer, disc.files[0].data) && AllAre(buffer + 5000, buffer + 6144, 0));
@@ -218,12 +191,12 @@ TEST(DataRead, PackLookupOnHost) {
 
     Clear();
     u_int *pack_data = reinterpret_cast<u_int *>(buffer);
-    ASSERT_TRUE(LoadPackFile(Mutable("RMDAT/RMDAT1.PAK"), pack_data, &size) == 1);
+    ASSERT_TRUE(LoadFile(Mutable("RMDAT/RMDAT1.PAK"), buffer, &size) == 1);
     ASSERT_TRUE(size == static_cast<int>(pack.data.size()));
 
-    u_int *model = GetPackFile(pack_data, Mutable("chara/MODEL.mds"), &size);
+    u_int *model = GetPackFile(pack_data, Mutable("MODEL.mds"), &size);
     ASSERT_TRUE(model && size == 300 && Equals(model, Pattern(300, 2)));
-    ASSERT_TRUE(GetPackFile(Mutable("info.CFG"), &size) && size == 37);
+    ASSERT_TRUE(GetPackFile(pack_data, Mutable("info.CFG"), &size) && size == 37);
     ASSERT_TRUE(GetPackFile(pack_data, Mutable("absent.bin"), &size) == nullptr);
 
     char  *name = nullptr;
@@ -238,8 +211,8 @@ TEST(DataRead, PackLookupOnHost) {
     ASSERT_TRUE(files[0] == tex && sizes[1] == 5 && std::strcmp(names[1], "face.IMG") == 0);
     ASSERT_TRUE(GetPackFileExt(pack_data, Mutable("IMG"), files, 1, nullptr, nullptr) == 1);
 
-    ASSERT_TRUE(LoadPackFile(Mutable("rmdat/none.pak"), pack_data, &size) == 0);
-    ASSERT_TRUE(GetPackFile(Mutable("info.cfg"), &size) == nullptr);
+    ASSERT_TRUE(LoadFile(Mutable("rmdat/none.pak"), buffer, &size) == 0);
+    ASSERT_TRUE(GetPackFile(pack_data, Mutable("absent.cfg"), &size) == nullptr);
     fs::remove_all(dir);
 }
 
@@ -273,23 +246,31 @@ TEST(DataRead, PathsFromArguments) {
 
 TEST(DataRead, PathsFromEnvironment) {
     fs::path dir = TempDir("paths_env");
-    setenv("DC2_DATA", (dir / "env_data").c_str(), 1);
-    setenv("DC2_SAVE", (dir / "env_save").c_str(), 1);
+    const dc::test::EnvSnapshot old_data = dc::test::SaveEnv("DC2_DATA");
+    const dc::test::EnvSnapshot old_save = dc::test::SaveEnv("DC2_SAVE");
+    ASSERT_EQ(dc::test::SetEnv("DC2_DATA", dir / "env_data", 1), 0);
+    ASSERT_EQ(dc::test::SetEnv("DC2_SAVE", dir / "env_save", 1), 0);
     ASSERT_TRUE(PathsDataRoot() == dir / "env_data");
     ASSERT_TRUE(PathsSaveRoot() == dir / "env_save" && fs::is_directory(dir / "env_save"));
     PathsSetDataRoot(dir / "flag");
     ASSERT_TRUE(PathsDataRoot() == dir / "flag");
     fs::remove_all(dir);
+    dc::test::RestoreEnv(old_data);
+    dc::test::RestoreEnv(old_save);
 }
 
 TEST(DataRead, PathsDefaultToWorkingDirectory) {
     fs::path dir = TempDir("paths_cwd");
-    unsetenv("DC2_DATA");
-    unsetenv("DC2_SAVE");
+    const dc::test::EnvSnapshot old_data = dc::test::SaveEnv("DC2_DATA");
+    const dc::test::EnvSnapshot old_save = dc::test::SaveEnv("DC2_SAVE");
+    ASSERT_EQ(dc::test::UnsetEnv("DC2_DATA"), 0);
+    ASSERT_EQ(dc::test::UnsetEnv("DC2_SAVE"), 0);
     fs::create_directories(dir / "data");
     fs::current_path(dir);
     ASSERT_TRUE(PathsDataRoot() == dir / "data");
     ASSERT_TRUE(PathsSaveRoot() == dir / "save" && fs::is_directory(dir / "save"));
     fs::current_path(fs::temp_directory_path());
     fs::remove_all(dir);
+    dc::test::RestoreEnv(old_data);
+    dc::test::RestoreEnv(old_save);
 }

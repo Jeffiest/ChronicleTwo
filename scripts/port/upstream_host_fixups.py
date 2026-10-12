@@ -63,6 +63,29 @@ def prepare(src: Path, dst: Path) -> None:
     if apply.returncode:
         sys.exit(f"upstream_host_fixups: patch application failed:\n{apply.stdout}{apply.stderr}")
 
+    # The port's MainLoop replacement shares these retail translation-unit globals and callbacks.
+    # Make just those names externally linkable in the generated host copy; the original PS2 sources stay untouched.
+    mainloop = dst / "mainloop.cpp"
+    text = mainloop.read_bytes().decode("latin-1")
+    for declaration in (
+        "static int NextLoopNo;",
+        "static int LoopNo;",
+        "static int PrevLoopNo;",
+        "static int CaptureScreen;",
+        "static u_long128 SystemSeBuff[400];",
+        "static u_long128 InfoBuff[5000];",
+        "static CSaveData *ActiveSaveData;",
+        "static int CaptureMode;",
+        "static int PlayTimeCountFlag;",
+        "static CSubGameData *SubGameSaveData;",
+        "static void InitPadTable(int language) {",
+        "static void VSyncCallBack(int unused) {",
+    ):
+        if text.count(declaration) != 1:
+            sys.exit(f"upstream_host_fixups: mainloop.cpp must contain {declaration!r} exactly once")
+        text = text.replace(declaration, declaration.removeprefix("static "), 1)
+    mainloop.write_bytes(text.encode("latin-1"))
+
     # MWCC permits this non-trivial member in an anonymous union; clang deletes
     # its constructor. Preserve the same unconstructed storage in the host copy.
     menu = dst / "menucls1.cpp"

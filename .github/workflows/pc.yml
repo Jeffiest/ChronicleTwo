@@ -31,6 +31,10 @@ jobs:
       - name: Test
         run: tools/kazarov/bin/kazarov shell ctest --test-dir port/build/pc --output-on-failure -j4
 
+      # The VU1 programs are native: their packed CPU halves live only in the test oracles.
+      - name: Check that no PS2 packing or VU1 layout helper is in the runtime
+        run: tools/kazarov/bin/kazarov shell python3 scripts/port/native_gate.py --binary port/build/pc/darkchronicle
+
       # A non-PIE link places the game below 4 GiB, where a pointer truncated to 32 bits still works and hides the bug.
       - name: Check that darkchronicle is position-independent
         run: |
@@ -60,6 +64,9 @@ jobs:
           mkdir -p artifacts
           vulkaninfo --summary > artifacts/vulkaninfo.txt 2>&1 || true
           cat artifacts/vulkaninfo.txt
+
+      - name: Build the minimal LGPL FFmpeg
+        run: tools/kazarov/bin/kz-ffmpeg --out .kazarov/ffmpeg/darwin-arm64
 
       - name: Configure
         run: cmake --preset macos-arm64 -DCT_TEST_TIMEOUT=60
@@ -129,7 +136,7 @@ jobs:
 
       - name: Package the Windows build
         run: |
-          $files = @('darkchronicle.exe', 'libc++.dll', 'libunwind.dll', 'libwinpthread-1.dll', 'SDL3.dll', 'vulkan-1.dll')
+          $files = @('darkchronicle.exe', 'libc++.dll', 'libunwind.dll', 'libwinpthread-1.dll', 'SDL3.dll', 'vulkan-1.dll', 'avcodec-61.dll', 'avutil-59.dll', 'swresample-5.dll')
           $paths = $files | ForEach-Object { Join-Path 'port/build/windows-x64-tests' $_ }
           Compress-Archive -LiteralPath $paths -DestinationPath chronicletwo-windows-x64.zip
 

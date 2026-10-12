@@ -1,11 +1,13 @@
 # Fast, opt-in compatibility executables used by scripts/port/run_compatibility_tests.py.
 set(CT_TESTS ${PORT_DIR}/tests)
 add_executable(ct_arena_memory_test EXCLUDE_FROM_ALL
-    ${CT_TESTS}/mg_memory_arena_standalone.cpp ${PORT_DIR}/mg_memory.cpp)
-target_link_libraries(ct_arena_memory_test PRIVATE ct_options)
+    ${CT_TESTS}/mg_memory_arena_standalone.cpp ${PORT_DIR}/mg_memory.cpp ${PORT_DIR}/arena_root.cpp
+    ${CMAKE_SOURCE_DIR}/tools/kazarov/port/platform/arena.cpp ${CMAKE_SOURCE_DIR}/tools/kazarov/port/platform/memory.cpp)
+target_link_libraries(ct_arena_memory_test PRIVATE ct_options kz_port_headers)
 add_executable(ct_menu_loader_test EXCLUDE_FROM_ALL
-    ${CT_TESTS}/menu_loader_standalone.cpp ${PORT_DIR}/menucommon.cpp ${PORT_DIR}/mg_memory.cpp)
-target_link_libraries(ct_menu_loader_test PRIVATE ct_options)
+    ${CT_TESTS}/menu_loader_standalone.cpp ${PORT_DIR}/menucommon.cpp ${PORT_DIR}/mg_memory.cpp ${PORT_DIR}/arena_root.cpp
+    ${CMAKE_SOURCE_DIR}/tools/kazarov/port/platform/arena.cpp ${CMAKE_SOURCE_DIR}/tools/kazarov/port/platform/memory.cpp)
+target_link_libraries(ct_menu_loader_test PRIVATE ct_options kz_port_headers)
 add_executable(ct_villager_outputs_test EXCLUDE_FROM_ALL ${CT_TESTS}/villager_outputs_standalone.cpp)
 target_link_libraries(ct_villager_outputs_test PRIVATE ct_options)
 if(WIN32)
@@ -21,7 +23,7 @@ foreach(test_name IN ITEMS script_storage monster_memory input_lifecycle color_c
     elseif(test_name STREQUAL "monster_memory")
         set(test_source ${CT_TESTS}/monster_memory_standalone.cpp)
     elseif(test_name STREQUAL "input_lifecycle")
-        set(test_source ${CT_TESTS}/input_lifecycle_test.cpp)
+        set(test_source ${CT_TESTS}/input_lifecycle_standalone.cpp)
     elseif(test_name STREQUAL "color_capture")
         set(test_source ${CT_TESTS}/color_capture_standalone.cpp)
     else()
@@ -51,6 +53,7 @@ endif()
 add_custom_target(ct_compatibility_audit
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/compatibility_audit.py --check
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_upstream_host_fixups.py
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_port_override_long64.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_script_storage.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_menu_pointers.py
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_host_photo_names.py

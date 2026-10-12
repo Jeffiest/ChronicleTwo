@@ -53,6 +53,11 @@ class HostMirrorTests(unittest.TestCase):
                 mirror = Path(directory) / "src"
                 actual = contents(mirror)
                 self.assertEqual(actual.keys(), original.keys())
+                mainloop = (mirror / "mainloop.cpp").read_text(encoding="latin-1")
+                for declaration in ("static int NextLoopNo;", "static int LoopNo;", "static CSaveData *ActiveSaveData;",
+                                    "static void InitPadTable(int language)",
+                                    "static void VSyncCallBack(int unused)"):
+                    self.assertNotIn(declaration, mainloop)
                 for filename in patched:
                     self.assertNotEqual(actual[filename], original[filename], filename)
                 if expected is not None:
@@ -70,14 +75,13 @@ class HostMirrorTests(unittest.TestCase):
                    GIT_PREFIX="port/build/")
         result = self.prepare(SOURCE, self.inside, env)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        win_rewrite.check("src/water.cpp", win_rewrite.read(Path(self.inside) / "src/water.cpp"))
 
     def test_source_drift_fails_before_patch_or_stamp(self):
         source = Path(self.outside) / "source"
         shutil.copytree(SOURCE, source)
         water = source / "water.cpp"
         data = water.read_bytes()
-        changed, count = re.subn(rb"\bu_int\s+base;", b"u_int changed_base;", data)
+        changed, count = re.subn(rb"\buptr\s+base;", b"uptr changed_base;", data)
         self.assertEqual(count, 1)
         water.write_bytes(changed)
         result = self.prepare(source, self.inside)

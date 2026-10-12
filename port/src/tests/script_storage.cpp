@@ -44,6 +44,7 @@ int run(const char *case_name) {
         mgCMemory memory;
         std::array<u_long128, 1> backing{};
         memory.stSetBuffer(backing.data(), static_cast<int>(backing.size()));
+        memory.lock = 1;
         (void)port_script_storage::allocate<RS_STACKDATA>(&memory, 128, "small-arena");
         return 3;
     }

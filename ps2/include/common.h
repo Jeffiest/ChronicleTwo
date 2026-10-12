@@ -16,5 +16,9 @@
 
 /** Checks a compile-time condition by forming an array type. */
 #define STATIC_ASSERT(expr) typedef char _static_assert_##__COUNTER__[(expr) ? 1 : -1]
+/** Checks the size of a record read from disc; compiled out on the PS2, a static_assert on PC. */
+#ifndef PORT_RECORD_ASSERT
+#define PORT_RECORD_ASSERT(expr)
+#endif
 
 #endif

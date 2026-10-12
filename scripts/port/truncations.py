@@ -2,7 +2,7 @@
 """List every cast of a pointer to an integer narrower than a pointer in the port's build.
 
     truncations.py [--build port/build/pc] [--libclang PATH] [--out docs/port/truncations.md]
-                   [--json FILE] [--jobs N] [--only REGEX] [--check]
+                   [--json FILE] [--worklist FILE] [--jobs N] [--only REGEX] [--check]
 
 The game casts pointers to int (MWCC's 32-bit ABI). The port builds for a 64-bit host, where the
 heap and stack pointers do not fit those ints, so every cast whose value comes back as a pointer and
@@ -33,8 +33,14 @@ of a configured build (port/build/pc, or any other port build directory through 
 
 An open round trip in linked code (its function is defined in the build's darkchronicle, per nm) is
 assigned the phase whose work package replaces that function: PHASE_OF maps (unit, function) to it.
---check fails on an open round trip in linked code that PHASE_OF does not cover, and on a PHASE_OF entry
-that matches no open round trip.
+--check fails on any open round trip in linked code (PHASE_OF only labels it), on a PHASE_OF entry that
+matches no open round trip, and on an open counted narrowing site with no NARROWING_OWNER entry.
+
+Narrowing sites are separate from the round trips. In a unit under ps2/src, every explicit cast of a pointer
+to a narrow integer, and every uptr/sptr value that a conversion narrows, is recorded with its destination:
+where the value is stored, returned, passed, compared or combined. They go to the JSON's "narrowing" list,
+to --worklist, and to the last section of the markdown. A site whose narrowed expression cannot carry an
+address (benign_class) is class "benign:..." and never fails --check; every other site is "counted".
 
 Needs the clang Python bindings: `pip install libclang` (bundles the library) or the `clang`
 package with a system libclang, found through --libclang, LIBCLANG or the usual LLVM paths.
@@ -52,8 +58,12 @@ import shlex
 import subprocess
 import sys
 
+from header_fixups import UNIT_FIXUPS
+from long64 import rewrite as rewrite_long64
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SOURCE_DIRS = ("ps2/src/", "port/src/", "ps2/include/", "port/include/")
+MIRRORS = []
 
 ci = None
 
@@ -68,16 +78,46 @@ TRUNCATING_CAST_TEXT = re.compile(r"\(\s*(?:u_int|int|s32|u32|unsigned\s+int|sig
 
 # Open round trips in linked code, by (unit, function), each the phase whose work package replaces that function
 # (docs/PC_PORT_PLAN.md).
-PHASE_OF = {
-    ("ps2/src/ezmidi.cpp", "ezTransToIOP2"): "Phase 5",
-    ("ps2/src/mg_sprite.cpp", "mgC3DSprite::Draw"): "Phase 4",
-    ("ps2/src/mg_sprite.cpp", "mgCSprite::Draw"): "Phase 4",
-    ("ps2/src/mg_visual.cpp", "mgCVisualFixMDT::DataAssignMDT"): "Phase 4",
-    ("ps2/src/runscript_opcodes.cpp", "_SET_INDEXOBJ_SIZE"): "Phase 7",
-    ("ps2/src/runscript_opcodes.cpp", "_GET_INDEXOBJ_SIZE"): "Phase 7",
-    ("ps2/src/vlgr_info.cpp", "niNPC_INFO_NUM"): "Phase 7",
-    ("ps2/src/water.cpp", "CWater::Draw"): "Phase 4",
+PHASE_OF = {}
+
+# Owners of the narrowing sites by (unit, function), or by (unit, None) for the whole unit. Lookup tries the pair
+# first. An open counted site with no owner fails --check.
+NARROWING_OWNER = {
+    ("ps2/src/mg_sprite.cpp", None): "draw2d: packet words (mgC3DSprite/mgCSprite packet build, "
+                                     "replaced through the seam)",
+    ("ps2/src/mg_drawprim.cpp", None): "draw2d: DMA tag words in mgCDrawManager::Draw (packet path replaced)",
+    ("ps2/src/mg_tanime.cpp", None): "draw2d",
+    ("ps2/src/mg_visual.cpp", None): "prog0: DMA tag words / packet build (CreatePacket, Draw, "
+                                     "DataAssignMDT)",
+    ("ps2/src/visualmotion.cpp", None): "prog0: packet tag word in DataAssignMotionMDT",
+    ("ps2/src/water.cpp", None): "fx-shadow: packet tag words in CWater::Draw",
+    ("ps2/src/mg_shadow.cpp", None): "fx-shadow",
+    ("ps2/src/movie.cpp", None): "movies: DMA/IPU/IOP addresses (unit replaced whole)",
+    ("ps2/src/sound.cpp", None): "audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)",
+    ("ps2/src/snd_mngr.cpp", None): "audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq "
+                                    "int parameters (override pairs)",
+    ("ps2/src/menusys.cpp", "CMenuItemInfo::ExitEnd"): "records: stored into the save record CMenuSystemData::item_cursor",
+    ("ps2/src/dataread.cpp", "InitFileCache"): "data/integrator: address through align_size(u_int) (replaced function)",
+    ("ps2/src/mglib.cpp", None): "present-core: VIF packet words (replaced functions)",
+    ("ps2/src/mg_texture.cpp", None): "textures/draw2d: GS packet word in mgLoadImage (replaced function)",
+    ("ps2/src/mg_memory.cpp", None): "arena",
+    ("ps2/src/mainloop.cpp", None): "arena",
+    ("ps2/src/runscript_opcodes.cpp", None): "records: object address stored in a 32-bit script stack slot "
+                                             "(_SET/_GET_INDEXOBJ_SIZE side table)",
 }
+
+BINARY_OPERATOR_NAMES = {
+    "=": "Assign", "+": "Add", "-": "Sub", "*": "Mul", "/": "Div", "%": "Rem", "&": "And", "|": "Or", "^": "Xor",
+    "<<": "Shl", ">>": "Shr", "<": "LT", ">": "GT", "<=": "LE", ">=": "GE", "==": "EQ", "!=": "NE",
+    "&&": "LAnd", "||": "LOr", ",": "Comma",
+}
+POINTER_WIDE_NAMES = ("uptr", "sptr")
+NARROWING_DIRS = ("ps2/src/", "ps2/include/")
+COMPARE_OPS = ("LT", "GT", "LE", "GE", "EQ", "NE")
+ARITHMETIC_OPS = ("Add", "Sub", "Mul", "Div", "Rem", "And", "Or", "Xor", "Shl", "Shr")
+WORKLIST_HEADER = "file\tline\tcol\tfunction\tstate\tkind\tdestination\tclass\texpression"
+EXAMPLE_LIMIT = 20
+LOW_BITS_LIMIT = 0xFFFFFFFF
 
 
 def load_libclang(explicit):
@@ -110,9 +150,21 @@ def canon(path):
     return os.path.normpath(os.path.abspath(path))
 
 
+def set_mirrors(build):
+    # The build compiles against a rewritten mirror of ps2/include; its header locations are reported under
+    # their ps2/include paths.
+    global MIRRORS
+    MIRRORS = [(os.path.join(canon(build), "ps2_include") + os.sep, os.path.join(ROOT, "ps2", "include") + os.sep)]
+
+
 def rel(path):
     path = canon(path)
-    return os.path.relpath(path, ROOT) if path.startswith(ROOT + os.sep) else path
+    for copy, original in MIRRORS:
+        if path.startswith(copy):
+            path = original + path[len(copy):]
+            break
+    # Windows relpath uses backslashes, which would defeat every SOURCE_DIRS and NARROWING_DIRS prefix test.
+    return os.path.relpath(path, ROOT).replace(os.sep, "/") if path.startswith(ROOT + os.sep) else path
 
 
 def ours(path):
@@ -178,7 +230,8 @@ def binop(cursor):
     try:
         return cursor.binary_operator.name
     except Exception:
-        return "Unknown"
+        # Bindings older than libclang 19 lack Cursor.binary_operator; the operator token is the same fact.
+        return BINARY_OPERATOR_NAMES.get(operator_token(cursor), "Unknown")
 
 
 def address_mask(cursor):
@@ -516,14 +569,269 @@ def signature(function):
     return re.sub(r"\s+", "", qualified(function) + "(" + params + ")")
 
 
+def pointwide(type_):
+    current = type_
+    while True:
+        if re.sub(r"\b(?:const|volatile)\s+", "", current.spelling).strip() in POINTER_WIDE_NAMES:
+            return True
+        declaration = current.get_declaration()
+        if declaration.kind != ci.CursorKind.TYPEDEF_DECL:
+            return False
+        current = declaration.underlying_typedef_type
+
+
+def operator_token(binary):
+    """The operator between a binary operator's two operands."""
+    children = list(binary.get_children())
+    if len(children) != 2:
+        return ""
+    low = children[0].extent.end.offset
+    high = children[1].extent.start.offset
+    for token in binary.get_tokens():
+        if low <= token.extent.start.offset < high and token.spelling not in ("(", ")"):
+            return token.spelling
+    return ""
+
+
+def variable_destination(decl):
+    return ("global " if is_global_var(decl) else "local ") + decl.spelling
+
+
+def field_destination(field):
+    where = rel(field.location.file.name) if field.location.file is not None else "?"
+    return "field %s::%s (%s:%d)" % (qualified(field.semantic_parent), field.spelling, where, field.location.line)
+
+
+def lhs_destination(lhs):
+    K = ci.CursorKind
+    target = peel(lhs)
+    if target is not None and target.kind in (K.MEMBER_REF_EXPR, K.DECL_REF_EXPR):
+        decl = target.referenced
+        if decl is not None:
+            if decl.kind == K.FIELD_DECL:
+                return field_destination(decl)
+            if decl.kind == K.VAR_DECL:
+                return variable_destination(decl)
+            if decl.kind == K.PARM_DECL:
+                return "local " + decl.spelling
+    return "other (memory)"
+
+
+def argument_destination(call, node):
+    K = ci.CursorKind
+    callee = call.referenced
+    index = next((i for i, a in enumerate(call.get_arguments()) if a == node), None)
+    if callee is None or index is None:
+        return "other"
+    name = qualified(callee)
+    params = list(callee.get_arguments()) if callee.kind in (K.FUNCTION_DECL, K.CXX_METHOD, K.CONSTRUCTOR) else []
+    if index < len(params):
+        return "arg %s#%d (%s)" % (name, index, params[index].type.spelling)
+    return "arg %s#%d (...)" % (name, index)
+
+
+def destination(node, ancestors, function):
+    K = ci.CursorKind
+    for parent in reversed(ancestors):
+        kind = parent.kind
+        if kind in (K.PAREN_EXPR, K.UNEXPOSED_EXPR):
+            node = parent
+            continue
+        if is_cast(parent):
+            return "cast"
+        if kind == K.VAR_DECL:
+            return variable_destination(parent)
+        if kind == K.FIELD_DECL:
+            return field_destination(parent)
+        if kind == K.BINARY_OPERATOR:
+            children = list(parent.get_children())
+            op = binop(parent)
+            if op == "Assign" and children and children[0] != node:
+                return lhs_destination(children[0])
+            if op in COMPARE_OPS:
+                return "compare"
+            if op in ARITHMETIC_OPS:
+                return ("arith " + operator_token(parent)).rstrip()
+            return ("other " + operator_token(parent)).rstrip()
+        if kind == K.COMPOUND_ASSIGNMENT_OPERATOR:
+            children = list(parent.get_children())
+            if children and children[0] != node:
+                return lhs_destination(children[0])
+            return "other"
+        if kind == K.RETURN_STMT:
+            if function is None:
+                return "other"
+            return "return %s (%s)" % (qualified(function), function.result_type.spelling)
+        if kind == K.CALL_EXPR:
+            return argument_destination(parent, node)
+        if kind == K.CONDITIONAL_OPERATOR:
+            children = list(parent.get_children())
+            if not children or children[0] == node:
+                return "other"
+            node = parent
+            continue
+        if kind == K.UNARY_OPERATOR:
+            op = unary_op(parent)
+            return "arith " + op if op in ("-", "+", "~") else "other " + op
+        return "other"
+    return "other"
+
+
+def constant_value(cursor):
+    """The value of an integer literal or enum constant, or None; anything else is not read as constant."""
+    K = ci.CursorKind
+    cursor = peel(cursor)
+    if cursor is None:
+        return None
+    if cursor.kind == K.DECL_REF_EXPR and cursor.referenced is not None and \
+            cursor.referenced.kind == K.ENUM_CONSTANT_DECL:
+        return cursor.referenced.enum_value
+    if cursor.kind != K.INTEGER_LITERAL:
+        return None
+    tokens = [t.spelling for t in cursor.get_tokens()]
+    try:
+        return int(tokens[0].rstrip("uUlL"), 0) if tokens else None
+    except ValueError:
+        return None
+
+
+def pointer_wide_operand(cursor):
+    cursor = peel(cursor)
+    if cursor is None:
+        return False
+    if pointerish(cursor.type) or pointwide(cursor.type):
+        return True
+    if is_cast(cursor):
+        inner = operand(cursor)
+        return inner is not None and pointerish(inner.type)
+    return False
+
+
+def pointer_difference(cursor):
+    cursor = peel(cursor)
+    if cursor is None or cursor.kind != ci.CursorKind.BINARY_OPERATOR or binop(cursor) != "Sub":
+        return False
+    children = list(cursor.get_children())
+    return len(children) == 2 and all(pointer_wide_operand(c) for c in children)
+
+
+def benign_class(expression):
+    """The benign class of a narrowed integer expression, or None when it may carry an address."""
+    K = ci.CursorKind
+    expression = peel(expression)
+    if expression is None or expression.kind != K.BINARY_OPERATOR:
+        return None
+    children = list(expression.get_children())
+    if len(children) != 2:
+        return None
+    lhs, rhs = children
+    op = binop(expression)
+    if op == "And":
+        # A mask wider than 32 bits, or negative (sign-extended over the high bits), keeps address bits.
+        masks = [constant_value(c) for c in children]
+        return "benign:low-bits" if any(m is not None and 0 <= m <= LOW_BITS_LIMIT for m in masks) else None
+    if op == "Rem":
+        return "benign:residue" if constant_value(rhs) is not None else None
+    if op == "Sub":
+        return "benign:difference" if pointer_difference(expression) else None
+    if op in ("Div", "Shr") and constant_value(rhs) is not None and pointer_difference(lhs):
+        return "benign:difference"
+    return None
+
+
+def narrowing_record(cursor, ancestors, function, found):
+    K = ci.CursorKind
+    if is_cast(cursor):
+        inner = operand(cursor)
+        if inner is None or not narrow(cursor.type):
+            return
+        if pointerish(inner.type):
+            kind = "pointer cast"
+        elif pointwide(peel(inner).type):
+            kind = "uptr narrowed"
+        else:
+            return
+        narrowed = inner
+    elif cursor.kind == K.UNEXPOSED_EXPR and narrow(cursor.type):
+        source = peel(cursor)
+        if source == cursor or not pointwide(source.type):
+            return
+        kind = "uptr narrowed"
+        narrowed = source
+    else:
+        return
+    location = cursor.location
+    if location.file is None or not rel(location.file.name).startswith(NARROWING_DIRS):
+        return
+    found.append({
+        "file": rel(location.file.name),
+        "line": location.line,
+        "column": location.column,
+        "function": qualified(function) if function is not None else "(file scope)",
+        "signature": signature(function),
+        "kind": kind,
+        "destination": destination(cursor, ancestors, function),
+        "class": benign_class(narrowed) or "counted",
+        "expression": text(cursor),
+    })
+
+
+def owner_of(site):
+    key = (site["file"], site["function"])
+    if key in NARROWING_OWNER:
+        return NARROWING_OWNER[key]
+    return NARROWING_OWNER.get((site["file"], None))
+
+
+def narrowing_groups(narrowing):
+    """The narrowing sites as (open counted, replaced counted, benign)."""
+    benign = [s for s in narrowing if s["class"] != "counted"]
+    compiled = [s for s in narrowing if s["class"] == "counted" and s["state"] == "open"]
+    replaced = [s for s in narrowing if s["class"] == "counted" and s["state"] == "replaced"]
+    return compiled, replaced, benign
+
+
+def narrowing_summary(narrowing):
+    compiled, replaced, benign = narrowing_groups(narrowing)
+    owned = sum(owner_of(s) is not None for s in compiled)
+    return ("%d narrowing sites in compiled ps2/ code (%d owned, %d unowned), %d benign, %d in replaced functions"
+            % (len(compiled), owned, len(compiled) - owned, len(benign), len(replaced)))
+
+
+def write_worklist(narrowing, path):
+    def cell(value):
+        return str(value).replace("\t", " ").replace("\r", " ").replace("\n", " ")
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(WORKLIST_HEADER + "\n")
+        for s in sorted(narrowing, key=lambda s: (s["file"], s["line"], s["column"])):
+            f.write("\t".join(cell(s[key]) for key in ("file", "line", "column", "function", "state", "kind",
+                                                       "destination", "class", "expression")) + "\n")
+
+
+def unit_source(path):
+    # The build's copy of a unit blanks the bodies port/src overrides, so the unit is read from its original,
+    # with the copy's text transforms (per-unit fixups, then long64) applied so the declarations match the build.
+    with open(path, encoding="latin-1") as f:
+        text = f.read()
+    name = os.path.basename(path)
+    for unit, old, new in UNIT_FIXUPS:
+        if unit == name and text.count(old) == 1:
+            text = text.replace(old, new)
+    return rewrite_long64(text)
+
+
 def walk(path, args):
     global FUNCTION_KINDS
     K = ci.CursorKind
     FUNCTION_KINDS = (K.FUNCTION_DECL, K.CXX_METHOD, K.CONSTRUCTOR, K.DESTRUCTOR, K.CONVERSION_FUNCTION,
                       K.FUNCTION_TEMPLATE)
+    narrowing = []
+    game_unit = rel(path).startswith("ps2/src/")
     index = ci.Index.create()
     try:
-        tu = index.parse(path, args=args, options=0)
+        unsaved = [(path, unit_source(path))] if game_unit else None
+        tu = index.parse(path, args=args, unsaved_files=unsaved, options=0)
     except ci.TranslationUnitLoadError as error:
         return {"file": path, "error": str(error)}
     errors = [str(d) for d in tu.diagnostics if d.severity >= ci.Diagnostic.Error]
@@ -536,6 +844,8 @@ def walk(path, args):
         kind = cursor.kind
         if kind in FUNCTION_KINDS and cursor.is_definition():
             function = cursor
+        if game_unit:
+            narrowing_record(cursor, ancestors, function, narrowing)
         if is_cast(cursor):
             inner = operand(cursor)
             if inner is not None:
@@ -619,7 +929,7 @@ def walk(path, args):
         if location.file is not None and ours(location.file.name):
             visit(child, [], None)
     return {"file": rel(path), "casts": casts, "back": back, "sinks": sorted(sinks), "edges": edges,
-            "errors": errors[:5]}
+            "errors": errors[:5], "error_count": len(errors), "narrowing": narrowing}
 
 
 def unit_entries(build):
@@ -629,10 +939,12 @@ def unit_entries(build):
     copies = os.path.join(canon(build), "ps2_src") + os.sep
     for entry in entries:
         path = canon(os.path.join(entry["directory"], entry["file"]))
+        if "command" in entry:
+            entry["arguments"] = shlex.split(entry.pop("command"))
         if path.startswith(copies):
-            args = shlex.split(entry.pop("command")) if "command" in entry else entry["arguments"]
-            entry["arguments"] = [a for a in args if canon(os.path.join(entry["directory"], a)) != path]
-            entry["file"] = os.path.join(ROOT, "ps2", "src", path[len(copies):])
+            entry["arguments"] = [a for a in entry["arguments"] if canon(os.path.join(entry["directory"], a)) != path]
+            path = os.path.join(ROOT, "ps2", "src", path[len(copies):])
+        entry["file"] = canon(path)
     return [e for e in entries if rel(e["file"]).startswith(("ps2/src/", "port/src/")) and
             "/tests/" not in e["file"]]
 
@@ -664,8 +976,9 @@ def command_args(entry):
     return out
 
 
-def init_worker(libclang):
+def init_worker(libclang, build):
     load_libclang(libclang)
+    set_mirrors(build)
 
 
 def work(entry):
@@ -826,7 +1139,7 @@ def row_use(site):
     return use
 
 
-def markdown(sites, totals, returns, literals, build, out):
+def markdown(sites, totals, returns, literals, narrowing, build, out):
     lines = []
     w = lines.append
     classes = ["round-trip", "resolved", "escapes", "low-bits"]
@@ -926,15 +1239,56 @@ def markdown(sites, totals, returns, literals, build, out):
         w("| %s:%d | %s | %s | `%s` | %s |" % (s["file"], s["line"], esc(s["function"]), s["state"],
                                              esc(s["expression"]).replace("`", "'"), esc(s["carrier"])))
     w("")
+    compiled, overridden, benign = narrowing_groups(narrowing)
+    w("## Narrowing pointer casts: " + narrowing_summary(narrowing))
+    w("")
+    w("A pointer cast to a narrow integer, or a `uptr`/`sptr` value that a conversion narrows, in a unit under `ps2/src` "
+      "(headers under `ps2/src` and `ps2/include` included). The destination is where the value goes. Benign sites are "
+      "listed apart: their narrowed expression cannot carry an address.")
+    w("")
+    w("### In compiled functions: %d sites" % len(compiled))
+    w("")
+    w("| unit | sites |")
+    w("|---|---|")
+    for unit, count in sorted(collections.Counter(s["file"] for s in compiled).items()):
+        w("| %s | %d |" % (unit, count))
+    w("")
+    for s in compiled:
+        w("- `%s:%d %s %s`: %s" % (s["file"], s["line"], s["function"], s["destination"], owner_of(s) or "unassigned"))
+    w("")
+    w("### In replaced functions (widening-only override candidates): %d sites" % len(overridden))
+    w("")
+    for s in overridden:
+        w("- `%s:%d %s %s`: %s" % (s["file"], s["line"], s["function"], s["destination"],
+                                   owner_of(s) or "unassigned"))
+    w("")
+    w("### Benign (%d sites)" % len(benign))
+    w("")
+    w("Narrowed expression is an address-alias mask (`& K`, `K` a non-negative 32-bit constant), a residue (`% K`), "
+      "or a difference of two pointer-wide operands, bare or divided or shifted by a constant. Never fails `--check`.")
+    w("")
+    for s in benign:
+        w("- `%s:%d %s %s`: %s (%s)" % (s["file"], s["line"], s["function"], s["destination"], s["class"],
+                                        s["state"]))
+    w("")
     with open(out, "w") as f:
         f.write("\n".join(lines))
 
 
-def check(sites, totals, returns, literals, build, out):
+def report(label, failures):
+    if not failures:
+        return 0
+    more = " (+%d more)" % (len(failures) - EXAMPLE_LIMIT) if len(failures) > EXAMPLE_LIMIT else ""
+    print("truncations.py: %s: %d; e.g. %s%s" % (label, len(failures), "; ".join(failures[:EXAMPLE_LIMIT]), more),
+          file=sys.stderr)
+    return 1
+
+
+def check(sites, totals, returns, literals, narrowing, build, out):
     import tempfile
     with tempfile.TemporaryDirectory() as scratch:
         fresh = os.path.join(scratch, "truncations.md")
-        markdown(sites, totals, returns, literals, build, fresh)
+        markdown(sites, totals, returns, literals, narrowing, build, fresh)
         with open(fresh) as f:
             wanted = f.read()
     try:
@@ -947,17 +1301,16 @@ def check(sites, totals, returns, literals, build, out):
         print("truncations.py: %s is stale; run scripts/port/truncations.py and commit it" % rel(out),
               file=sys.stderr)
         status = 1
-    for site in sites:
-        if site["phase"] == "unassigned":
-            print("truncations.py: %s:%d: %s: open round trip in linked code has no phase; add it to PHASE_OF: %s"
-                  % (site["file"], site["line"], site["function"], site["expression"]), file=sys.stderr)
-            status = 1
+    open_linked = [s for s in sites if s["class"] == "round-trip" and s["state"] == "open" and
+                   s["phase"] != "not linked"]
+    status |= report("open round trips in linked code",
+                     ["%s:%d %s (%s)" % (s["file"], s["line"], s["function"], s["phase"]) for s in open_linked])
     open_keys = {(s["file"], s["function"]) for s in sites if s["class"] == "round-trip" and s["state"] == "open"}
-    for key in sorted(PHASE_OF):
-        if key not in open_keys:
-            print("truncations.py: PHASE_OF entry (%s, %s) matches no open round trip; remove it" % key,
-                  file=sys.stderr)
-            status = 1
+    status |= report("PHASE_OF entries matching no open round trip",
+                     ["%r (%s)" % (key, PHASE_OF[key]) for key in sorted(PHASE_OF) if key not in open_keys])
+    compiled, _, _ = narrowing_groups(narrowing)
+    status |= report("narrowing sites without a NARROWING_OWNER entry",
+                     ["%s:%d %s" % (s["file"], s["line"], s["function"]) for s in compiled if owner_of(s) is None])
     return status
 
 
@@ -966,12 +1319,15 @@ def main():
     parser.add_argument("--build", default=os.path.join(ROOT, "port/build/pc"))
     parser.add_argument("--libclang")
     parser.add_argument("--out", default=os.path.join(ROOT, "docs/port/truncations.md"))
-    parser.add_argument("--json")
+    parser.add_argument("--json", help="write the rows as {\"sites\": [...], \"narrowing\": [...]}")
+    parser.add_argument("--worklist", help="write the narrowing sites as a TSV, sorted by file and line")
     parser.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
     parser.add_argument("--only", help="regular expression over source paths, for a quick run")
+    parser.add_argument("--verbose", action="store_true", help="print each unit's parse diagnostics")
     parser.add_argument("--check", action="store_true",
-                        help="write nothing; fail if --out differs from what would be written or if a "
-                             "round trip is open")
+                        help="write nothing; fail if --out differs from what would be written, if an open round "
+                             "trip is in linked code, if a PHASE_OF entry matches no open round trip, or if an "
+                             "open counted narrowing site has no NARROWING_OWNER entry")
     options = parser.parse_args()
 
     try:
@@ -979,28 +1335,42 @@ def main():
     except ImportError:
         sys.exit("truncations.py: the clang Python bindings are missing (pip install libclang)")
     overrides = load_overrides(options.build)
+    set_mirrors(options.build)
     entries = unit_entries(options.build)
     if options.only:
-        entries = [e for e in entries if re.search(options.only, e["file"])]
-    with multiprocessing.Pool(options.jobs, initializer=init_worker, initargs=(options.libclang,)) as pool:
+        entries = [e for e in entries if re.search(options.only, rel(e["file"]))]
+    with multiprocessing.Pool(options.jobs, initializer=init_worker,
+                              initargs=(options.libclang, options.build)) as pool:
         results = pool.map(work, entries, chunksize=1)
 
     sinks = set()
     edges = []
     seen = {}
     backs = {}
+    narrowing_seen = {}
+    diagnostic_units = 0
+    diagnostic_count = 0
     for result in results:
         if "error" in result:
             print("truncations.py: %s: %s" % (result["file"], result["error"]), file=sys.stderr)
             continue
-        for error in result["errors"]:
-            print("truncations.py: %s: %s" % (result["file"], error), file=sys.stderr)
+        if result["error_count"]:
+            diagnostic_units += 1
+            diagnostic_count += result["error_count"]
+        if options.verbose:
+            for error in result["errors"]:
+                print("truncations.py: %s: %s" % (result["file"], error), file=sys.stderr)
         sinks.update(result["sinks"])
         edges.extend(result["edges"])
         for site in result["casts"]:
             seen.setdefault((site["file"], site["line"], site["column"]), site)
         for site in result["back"]:
             backs.setdefault((site["file"], site["line"], site["column"]), site)
+        for site in result["narrowing"]:
+            narrowing_seen.setdefault((site["file"], site["line"], site["column"]), site)
+    narrowing = sorted(narrowing_seen.values(), key=lambda s: (s["file"], s["line"], s["column"]))
+    for site in narrowing:
+        site["state"] = state(site["signature"], overrides)
     reach = reaching(sinks, edges)
     sites = sorted(seen.values(), key=lambda s: (s["file"], s["line"], s["column"]))
     totals = collections.Counter()
@@ -1018,17 +1388,22 @@ def main():
             returns.append(site)
     resolve_at_readers(sites, edges, returns, totals)
     assign_phases(sites, linked_functions(os.path.join(options.build, "darkchronicle")))
+    if diagnostic_count and not options.verbose:
+        print("truncations.py: %d parse diagnostics in %d units (use --verbose)" % (diagnostic_count, diagnostic_units),
+              file=sys.stderr)
     literals = scan_literals(("ps2/src", "port/src"))
     if options.check:
-        return check(sites, totals, returns, literals, options.build, options.out)
+        return check(sites, totals, returns, literals, narrowing, options.build, options.out)
     os.makedirs(os.path.dirname(os.path.abspath(options.out)), exist_ok=True)
-    markdown(sites, totals, returns, literals, options.build, options.out)
+    markdown(sites, totals, returns, literals, narrowing, options.build, options.out)
     if options.json:
         with open(options.json, "w") as f:
-            json.dump(sites, f, indent=1)
+            json.dump({"sites": sites, "narrowing": narrowing}, f, indent=1)
+    if options.worklist:
+        write_worklist(narrowing, options.worklist)
     for cls in ("round-trip", "resolved", "escapes", "low-bits"):
         print("%-10s replaced %4d  open %4d" % (cls, totals[(cls, "replaced")], totals[(cls, "open")]))
-    print("%d rows, %d address-alias literal lines" % (len(sites), len(literals)))
+    print("%d rows, %d address-alias literal lines, %s" % (len(sites), len(literals), narrowing_summary(narrowing)))
 
 
 if __name__ == "__main__":

@@ -14,14 +14,15 @@ int main() {
     } slots;
     mgCMemory source;
     source.stSetBuffer(backing, count * 4000 + 4);
+    u_long128 *const arena_base = source.stack;
     PortSetMonsterBuffers(slots.slot, count, source);
     for (int i = 0; i < count; ++i) {
-        assert(slots.slot[i].stack == backing + i * 4000);
+        assert(slots.slot[i].stack == arena_base + i * 4000);
         assert(slots.slot[i].stack_size == 4000);
         assert(slots.slot[i].stack_used == 0);
         assert(slots.slot[i].lock == 0);
         assert(reinterpret_cast<std::uintptr_t>(slots.slot[i].stack) % 64 == 0);
-        assert(slots.slot[i].Alloc(1) == backing + i * 4000);
+        assert(slots.slot[i].Alloc(1) == arena_base + i * 4000);
     }
     assert(source.stack_used == count * 4000);
     assert(slots.before == 0x123456789abcdef0ULL);

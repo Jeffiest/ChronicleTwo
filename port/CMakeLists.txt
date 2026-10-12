@@ -73,6 +73,8 @@ set(PS2_UNITS "")
 # C2 ships only the PAL release, so PAL is the one region the port is built for.
 set(PORT_DEFINITIONS PORT PAL)
 list(TRANSFORM PORT_DEFINITIONS PREPEND --define= OUTPUT_VARIABLE port_override_defines)
+# ps2/src spells the 64-bit long that long64.py turns into the long long port/src has to spell.
+list(APPEND port_override_defines --long-is-64)
 # The names port/src's PORT_OVERRIDE definitions link under. PORT_OVERRIDE_SOURCES is written only when
 # its content changes, and a unit or stub header appearing or vanishing changes no timestamp, so it is a
 # dependency of its own.
@@ -122,7 +124,7 @@ set(HOST_COMBAT_TRACE ${CMAKE_SOURCE_DIR}/scripts/port/host_combat_trace.py)
 set(HOST_ACTION_CALLBACKS ${CMAKE_SOURCE_DIR}/scripts/port/wp01_action_callbacks.py)
 set(HOST_LOADING_MEMORY ${CMAKE_SOURCE_DIR}/scripts/port/wp12_loading_memory.py)
 set(HOST_VECTOR_CONTRACTS ${CMAKE_SOURCE_DIR}/scripts/port/host_vector_contracts.py)
-set(HOST_SCRIPT_STORAGE_UNITS event.cpp actscript.cpp effscript.cpp runscript_opcodes.cpp)
+set(HOST_SCRIPT_STORAGE_UNITS effscript.cpp)
 set(WIN_REWRITE_UNITS "")
 if(WIN32)
     execute_process(COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} units
@@ -234,6 +236,7 @@ target_compile_options(ct_options INTERFACE
     "SHELL:-include \"${CMAKE_SOURCE_DIR}/port/include/port.h\""
     -fms-extensions -ffunction-sections -fdata-sections
     -Wno-register -Wno-c++11-narrowing -Wno-return-mismatch)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/movies.cmake)
 # arm64 clang fuses a*b+c into one rounding by default and x86-64 has no FMA in its baseline; off
 # everywhere so the game's arithmetic rounds the same on both.
 target_compile_options(ct_options INTERFACE -ffp-contract=off)

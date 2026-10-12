@@ -1,17 +1,79 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <limits>
+#include <span>
+#include <vector>
 
+#include "gfx/gfx.hpp"
 #include "mg_drawprim.hpp"
+#include "mg_drawprim_port.hpp"
 #include "mglib.hpp"
+#include "mglib_port.hpp"
 
 namespace {
 
 void ReadLanes(const u_long128 *quad, int *lanes) {
     memcpy(lanes, quad, sizeof(int) * 4);
 }
+
+struct Batch {
+    gfx::Primitive             primitive;
+    std::vector<gfx::Vertex2D> vertices;
+    gfx::TextureBinding        texture;
+    gfx::DrawState             state;
+};
+
+class PrimRig {
+public:
+    PrimRig() {
+        prim.draw_manager = &manager;
+        manager.render_info = &render_info;
+        prim.Initialize(&memory, &vif_packet);
+        // The PC builder never sets write, so Data must find it null and skip the retail copy.
+        prim.write = nullptr;
+        mgPortSetPrimSink([this](gfx::Primitive primitive, std::span<const gfx::Vertex2D> vertices,
+                                 const gfx::TextureBinding &texture, const gfx::DrawState &state) {
+            batches.push_back({primitive, {vertices.begin(), vertices.end()}, texture, state});
+        });
+    }
+
+    ~PrimRig() {
+        mgPortSetPrimSink({});
+    }
+
+    PrimRig(const PrimRig &) = delete;
+    PrimRig &operator=(const PrimRig &) = delete;
+
+    mgCMemory          memory;
+    sceVif1Packet      vif_packet{};
+    mgRENDER_INFO      render_info{};
+    mgCDrawManager     manager;
+    mgCDrawPrim        prim;
+    std::vector<Batch> batches;
+};
+
+class ScreenOffsetScope {
+public:
+    ScreenOffsetScope(int x, int y) : saved_x_(mgScreenOffx), saved_y_(mgScreenOffy) {
+        mgScreenOffx = x;
+        mgScreenOffy = y;
+    }
+
+    ~ScreenOffsetScope() {
+        mgScreenOffx = saved_x_;
+        mgScreenOffy = saved_y_;
+    }
+
+    ScreenOffsetScope(const ScreenOffsetScope &) = delete;
+    ScreenOffsetScope &operator=(const ScreenOffsetScope &) = delete;
+
+private:
+    int saved_x_;
+    int saved_y_;
+};
 
 } // namespace
 
@@ -122,111 +184,154 @@ TEST(MgDrawPrimAsm, Data4ZeroAndNegativeZeroGiveZero) {
     EXPECT_EQ(lanes[3], 0);
 }
 
-TEST(MgDrawPrimAsm, VertexPacksXYAndZIntoOneWord) {
-    mgCDrawPrim prim;
-    prim.coord = 1;
-    prim.offset_x = 0;
-    prim.offset_y = 0;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+TEST(MgDrawPrimAsm, VertexConvertsXYInSixteenthsAndZ) {
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 0;
+    rig.prim.offset_y = 0;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float pos[4] = {10.25f, 3.5f, 7.75f, 1.0f};
-    prim.Vertex(pos);
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0], 0x00000007003800A4ULL);
-    EXPECT_EQ(buffer[1], 5ULL);
-    EXPECT_EQ(prim.command_write, buffer + 2);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const gfx::Vertex2D &v = rig.batches[0].vertices[0];
+    EXPECT_FLOAT_EQ(v.x, mgPortLogicalX(164));
+    EXPECT_FLOAT_EQ(v.y, mgPortLogicalY(56));
+    EXPECT_FLOAT_EQ(v.z, mgPortDepth(7));
 }
 
 TEST(MgDrawPrimAsm, VertexAddsScreenOffsetInSixteenths) {
-    mgCDrawPrim prim;
-    prim.coord = 1;
-    prim.offset_x = 8;
-    prim.offset_y = 16;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 8;
+    rig.prim.offset_y = 16;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float pos[4] = {10.25f, 3.5f, 7.75f, 1.0f};
-    prim.Vertex(pos);
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0], 0x00000007004800ACULL);
-    EXPECT_EQ(buffer[1], 5ULL);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const gfx::Vertex2D &v = rig.batches[0].vertices[0];
+    EXPECT_FLOAT_EQ(v.x, mgPortLogicalX(172));
+    EXPECT_FLOAT_EQ(v.y, mgPortLogicalY(72));
+    EXPECT_FLOAT_EQ(v.z, mgPortDepth(7));
 }
 
-TEST(MgDrawPrimAsm, VertexZeroPositionPacksOnlyTheBuilderOffset) {
-    mgCDrawPrim prim;
-    prim.coord = 1;
-    prim.offset_x = 8;
-    prim.offset_y = 16;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+TEST(MgDrawPrimAsm, VertexZeroPositionKeepsOnlyTheBuilderOffset) {
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 8;
+    rig.prim.offset_y = 16;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float pos[4] = {-0.0f, -0.0f, -0.0f, 1.0f};
-    prim.Vertex(pos);
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0], 0x0000000000100008ULL);
-    EXPECT_EQ(buffer[1], 5ULL);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const gfx::Vertex2D &v = rig.batches[0].vertices[0];
+    EXPECT_FLOAT_EQ(v.x, mgPortLogicalX(8));
+    EXPECT_FLOAT_EQ(v.y, mgPortLogicalY(16));
+    EXPECT_FLOAT_EQ(v.z, mgPortDepth(0));
 }
 
-TEST(MgDrawPrimAsm, VertexNegativeZSignExtendsIntoHighWord) {
-    mgCDrawPrim prim;
-    prim.coord = 1;
-    prim.offset_x = 0;
-    prim.offset_y = 0;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+TEST(MgDrawPrimAsm, VertexNegativeZKeepsSign) {
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 0;
+    rig.prim.offset_y = 0;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float pos[4] = {10.25f, 3.5f, -3.5f, 1.0f};
-    prim.Vertex(pos);
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0], 0xFFFFFFFD003800A4ULL);
-    EXPECT_EQ(buffer[1], 5ULL);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const gfx::Vertex2D &v = rig.batches[0].vertices[0];
+    EXPECT_FLOAT_EQ(v.x, mgPortLogicalX(164));
+    EXPECT_FLOAT_EQ(v.y, mgPortLogicalY(56));
+    EXPECT_FLOAT_EQ(v.z, mgPortDepth(static_cast<uint32_t>(-3)));
 }
 
 TEST(MgDrawPrimAsm, VertexScreenOffsetPathAddsScreenThenBuilderOffset) {
-    const int saved_x = mgScreenOffx;
-    const int saved_y = mgScreenOffy;
-    mgScreenOffx = 3;
-    mgScreenOffy = 5;
+    ScreenOffsetScope screen_offset(3, 5);
 
-    mgCDrawPrim prim;
-    prim.coord = 0;
-    prim.offset_x = 8;
-    prim.offset_y = 16;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+    PrimRig rig;
+    rig.prim.coord = 0;
+    rig.prim.offset_x = 8;
+    rig.prim.offset_y = 16;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float pos[4] = {10.25f, 3.5f, 7.75f, 1.0f};
-    prim.Vertex(pos);
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    mgScreenOffx = saved_x;
-    mgScreenOffy = saved_y;
-
-    EXPECT_EQ(buffer[0], 0x00000007009800DCULL);
-    EXPECT_EQ(buffer[1], 5ULL);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const gfx::Vertex2D &v = rig.batches[0].vertices[0];
+    EXPECT_FLOAT_EQ(v.x, mgPortLogicalX(220));
+    EXPECT_FLOAT_EQ(v.y, mgPortLogicalY(152));
+    EXPECT_FLOAT_EQ(v.z, mgPortDepth(7));
 }
 
-TEST(MgDrawPrimAsm, ColorPacksBytesWithQBits) {
-    mgCDrawPrim prim;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+TEST(MgDrawPrimAsm, ColorConvertsComponentsToBytes) {
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 0;
+    rig.prim.offset_y = 0;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float color[4] = {128.0f, 64.5f, 255.0f, 0.0f};
-    prim.Color(color);
+    rig.prim.Color(color);
+    float pos[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0], 0x3F80000000FF4080ULL);
-    EXPECT_EQ(buffer[1], 1ULL);
-    EXPECT_EQ(prim.command_write, buffer + 2);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const uint8_t *bytes = rig.batches[0].vertices[0].color;
+    EXPECT_EQ(bytes[0], 128);
+    EXPECT_EQ(bytes[1], 64);
+    EXPECT_EQ(bytes[2], 255);
+    EXPECT_EQ(bytes[3], 0);
 }
 
 TEST(MgDrawPrimAsm, ColorZeroAndNegativeZeroGiveZeroComponents) {
-    mgCDrawPrim prim;
-    alignas(8) u_long buffer[2] = {};
-    prim.command_write = buffer;
+    PrimRig rig;
+    rig.prim.coord = 1;
+    rig.prim.offset_x = 0;
+    rig.prim.offset_y = 0;
+    rig.prim.Begin(MG_PRIM_POINT);
 
     float color[4] = {-0.0f, 0.0f, -0.0f, 0.0f};
-    prim.Color(color);
+    rig.prim.Color(color);
+    float pos[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    rig.prim.Vertex(pos);
+    rig.prim.End2();
 
-    EXPECT_EQ(buffer[0] & 0xFFFFFFFFULL, 0ULL);
-    EXPECT_EQ(buffer[1], 1ULL);
+    ASSERT_EQ(rig.batches.size(), 1u);
+    ASSERT_EQ(rig.batches[0].vertices.size(), 4u);
+    const uint8_t *bytes = rig.batches[0].vertices[0].color;
+    EXPECT_EQ(bytes[0], 0);
+    EXPECT_EQ(bytes[1], 0);
+    EXPECT_EQ(bytes[2], 0);
+    EXPECT_EQ(bytes[3], 0);
+}
+
+TEST(MgDrawPrimAsm, Data0AndData4WithNullWriteDoNotCrash) {
+    mgCDrawPrim prim;
+    prim.write = nullptr;
+
+    float data[4] = {1.5f, -2.75f, 0.0625f, 3.9f};
+    prim.Data0(data);
+    prim.Data4(data);
+
+    EXPECT_EQ(prim.write, nullptr);
 }

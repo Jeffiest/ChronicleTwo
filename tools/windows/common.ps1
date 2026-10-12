@@ -1,11 +1,17 @@
+# .NET's working directory is not PowerShell's location, so relative paths must anchor to the checkout explicitly.
+function Resolve-CheckoutPath([string]$Path) {
+    if (![IO.Path]::IsPathRooted($Path)) { $Path = Join-Path (Join-Path $PSScriptRoot '../..') $Path }
+    return [IO.Path]::GetFullPath($Path)
+}
+
 function Resolve-WindowsRoot([string]$Root) {
     if (!$Root) { $Root = Join-Path $PSScriptRoot '../../..' }
-    return [IO.Path]::GetFullPath($Root)
+    return Resolve-CheckoutPath $Root
 }
 
 function Resolve-WindowsBuild([string]$Root, [string]$BuildDirectory) {
     if (!$BuildDirectory) { $BuildDirectory = Join-Path $Root 'build' }
-    return [IO.Path]::GetFullPath($BuildDirectory)
+    return Resolve-CheckoutPath $BuildDirectory
 }
 
 function Find-WindowsTool([string]$Name, [string]$Fallback) {

@@ -62,10 +62,14 @@ void SetFogParam(float (&fog)[4], float near_dist, float far_dist, float far_val
     fog[3] = -far_dist * near_dist * range / (far_dist - near_dist);
 }
 
-gfx::MeshConstants Prog0(uint32_t flags) {
-    gfx::MeshConstants c{};
-    c.flags = gfx::kMeshProg0;
-    Identity(c.mvp);
+struct Prog0Draw {
+    gfx::MeshConstants mesh;
+    gfx::Prog0Constants prog0;
+};
+
+Prog0Draw Prog0(uint32_t flags) {
+    Prog0Draw c{};
+    Identity(c.mesh.mvp);
     Identity(c.prog0.model_world);
     Set(c.prog0.diffuse, {1, 1, 1, 1});
     c.prog0.flags = flags;
@@ -145,8 +149,8 @@ bool At(const GfxFixture &fixture, float ndc_x, float ndc_y, int r, int g, int b
 }
 
 void Render(GfxFixture &fixture, const std::vector<gfx::Vertex3D> &vertices, const std::vector<uint32_t> &indices,
-            const gfx::MeshConstants &constants, const gfx::DrawState &state = {}) {
-    fixture.Frame(kClear, [&] { gfx::DrawMeshImmediate(vertices, indices, constants, {}, state); });
+            const Prog0Draw &draw, const gfx::DrawState &state = {}) {
+    fixture.Frame(kClear, [&] { gfx::DrawMeshImmediateProg0(vertices, indices, draw.mesh, draw.prog0, {}, state); });
 }
 
 } // namespace
@@ -154,7 +158,7 @@ void Render(GfxFixture &fixture, const std::vector<gfx::Vertex3D> &vertices, con
 // prog0.md 10.1
 TEST(Vu1Prog0Shader, LightingOffVector) {
     GfxFixture fixture(kWidth, kHeight, 1.0f, Prog0Options());
-    gfx::MeshConstants c = Prog0(gfx::kProg0Unlit);
+    Prog0Draw c = Prog0(gfx::kProg0Unlit);
     Set(c.prog0.object_color, {128, 64, 32, 128});
     Set(c.prog0.diffuse, {0.5f, 0.5f, 0.5f, 1.0f});
     Render(fixture, ScreenVertices({0, 0, 1}), kTriangle, c);
@@ -171,7 +175,7 @@ TEST(Vu1Prog0Shader, LightingOffVector) {
 // prog0.md 10.2
 TEST(Vu1Prog0Shader, OneDirectionalLightVector) {
     GfxFixture fixture(kWidth, kHeight, 1.0f, Prog0Options());
-    gfx::MeshConstants c = Prog0(0);
+    Prog0Draw c = Prog0(0);
     SetDirectional(c.prog0, 0, {0, 0, 1}, {128, 64, 0, 0});
     Set(c.prog0.ambient, {32, 32, 32, 128});
     Render(fixture, ScreenVertices({0, 0, 1}), kTriangle, c);
@@ -181,13 +185,13 @@ TEST(Vu1Prog0Shader, OneDirectionalLightVector) {
 // prog0.md 10.3
 TEST(Vu1Prog0Shader, FogVector) {
     GfxFixture fixture(kWidth, kHeight, 1.0f, Prog0Options());
-    gfx::MeshConstants c = Prog0(gfx::kProg0Unlit);
+    Prog0Draw c = Prog0(gfx::kProg0Unlit);
     Set(c.prog0.object_color, {255, 255, 255, 128});
     SetFogParam(c.prog0.fog, 10, 1000, 0, 255);
     gfx::DrawState state;
     state.fog = true;
     auto render_at = [&](float w) {
-        SetWMvp(c.mvp, w);
+        SetWMvp(c.mesh.mvp, w);
         Render(fixture, ScreenVertices({0, 0, 1}), kTriangle, c, state);
     };
     render_at(10);
@@ -201,10 +205,10 @@ TEST(Vu1Prog0Shader, FogVector) {
 // prog0.md 10.3, editor fog
 TEST(Vu1Prog0Shader, EditorFogVector) {
     GfxFixture fixture(kWidth, kHeight, 1.0f, Prog0Options());
-    gfx::MeshConstants c = Prog0(gfx::kProg0Unlit);
+    Prog0Draw c = Prog0(gfx::kProg0Unlit);
     Set(c.prog0.object_color, {255, 255, 255, 128});
     SetFogParam(c.prog0.fog, 10, 1000, 255, 0);
-    SetWMvp(c.mvp, 100);
+    SetWMvp(c.mesh.mvp, 100);
     gfx::DrawState state;
     state.fog = true;
     Render(fixture, ScreenVertices({0, 0, 1}), kTriangle, c, state);
@@ -219,7 +223,7 @@ TEST(Vu1Prog0Shader, FacingVector) {
     const std::vector<gfx::Vertex3D> reversed =
         Triangle({Gs(2100), Gs(2100)}, {Gs(2100), Gs(2200)}, {Gs(2200), Gs(2100)}, 0.5f, {0, 0, 1});
 
-    gfx::MeshConstants c = Prog0(gfx::kProg0Unlit | gfx::kProg0Cull);
+    Prog0Draw c = Prog0(gfx::kProg0Unlit | gfx::kProg0Cull);
     Set(c.prog0.object_color, {200, 200, 200, 128});
     gfx::DrawState state;
     state.cull = gfx::Prog0CullMode(c.prog0);
@@ -228,7 +232,7 @@ TEST(Vu1Prog0Shader, FacingVector) {
     Render(fixture, reversed, kTriangle, c, state);
     EXPECT_TRUE(At(fixture, 0.3f, 0.3f, 200, 200, 200));
 
-    gfx::MeshConstants mirrored = c;
+    Prog0Draw mirrored = c;
     Set(mirrored.prog0.model_world, {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1});
     gfx::DrawState mirrored_state;
     mirrored_state.cull = gfx::Prog0CullMode(mirrored.prog0);
@@ -240,14 +244,14 @@ TEST(Vu1Prog0Shader, FacingVector) {
 
 // progmain.md 10, vectors 1-3
 TEST(Vu1Prog0Shader, MirrorWordVectors) {
-    gfx::MeshConstants identity = Prog0(gfx::kProg0Cull);
+    Prog0Draw identity = Prog0(gfx::kProg0Cull);
     EXPECT_EQ(gfx::Prog0CullMode(identity.prog0), gfx::CullMode::Back);
 
-    gfx::MeshConstants mirrored = identity;
+    Prog0Draw mirrored = identity;
     Set(mirrored.prog0.model_world, {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1});
     EXPECT_EQ(gfx::Prog0CullMode(mirrored.prog0), gfx::CullMode::Front);
 
-    gfx::MeshConstants scissor = Prog0(gfx::kProg0Cull | gfx::kProg0Scissor);
+    Prog0Draw scissor = Prog0(gfx::kProg0Cull | gfx::kProg0Scissor);
     EXPECT_EQ(gfx::Prog0CullMode(scissor.prog0), gfx::CullMode::Back);
 
     EXPECT_EQ(gfx::Prog0CullMode(Prog0(0).prog0), gfx::CullMode::None);
@@ -260,7 +264,7 @@ TEST(Vu1Prog0Shader, VertexBlendVector) {
     const std::vector<gfx::Vertex3D> skinned =
         Skinned(Square(0.25f, 0.5f, {0, 0, 1}), {0.5f, 0.5f, 0, 0}, {0, 1, 0, 0});
 
-    gfx::MeshConstants c = Prog0(gfx::kProg0Unlit | gfx::kProg0Skinned);
+    Prog0Draw c = Prog0(gfx::kProg0Unlit | gfx::kProg0Skinned);
     Set(c.prog0.object_color, {200, 200, 200, 128});
     SetBone(c.prog0, 0, kIdentityBone);
     SetBone(c.prog0, 1, kTranslateXBone);
@@ -268,7 +272,7 @@ TEST(Vu1Prog0Shader, VertexBlendVector) {
     EXPECT_TRUE(At(fixture, 0.5f, 0.0f, 200, 200, 200));
     EXPECT_TRUE(At(fixture, 0.0f, 0.0f, 0, 0, 0));
 
-    gfx::MeshConstants lit = Prog0(gfx::kProg0Skinned);
+    Prog0Draw lit = Prog0(gfx::kProg0Skinned);
     SetBone(lit.prog0, 0, kIdentityBone);
     SetBone(lit.prog0, 1, kTranslateXBone);
     SetDirectional(lit.prog0, 0, {0, 0, 1}, {100, 100, 100, 0});
@@ -280,7 +284,7 @@ TEST(Vu1Prog0Shader, VertexBlendVector) {
 TEST(Vu1Prog0Shader, VertexBlendFourthInfluenceVector) {
     GfxFixture fixture(kWidth, kHeight, 1.0f, Prog0Options());
     const std::vector<gfx::Vertex3D> vertices = Skinned(ScreenVertices({0, 0, 1}), {0, 0, 0, 1}, {0, 0, 0, 3});
-    gfx::MeshConstants c = Prog0(gfx::kProg0Skinned);
+    Prog0Draw c = Prog0(gfx::kProg0Skinned);
     SetBone(c.prog0, 3, kIdentityBone);
     // Retail normal is (0, 1, 0): bone 3's z term reads column 1 (prog0.md 5.2, O-8).
     SetDirectional(c.prog0, 0, {0, 1, 0}, {100, 100, 100, 0});

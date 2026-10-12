@@ -28,6 +28,7 @@ namespace fs = std::filesystem;
 
 inline constexpr std::uint64_t kSector = 2048;
 inline constexpr std::size_t   kIndexRecordSize = 12;
+inline constexpr std::size_t   kSoundRecordSize = 16;
 inline constexpr std::size_t   kChunkSize = std::size_t{4} << 20;
 
 struct Error : std::runtime_error {
@@ -428,6 +429,88 @@ inline std::vector<Record> ReadIndex(const Archive &archive) {
     return records;
 }
 
+struct SoundEntry {
+    std::string   name;
+    std::uint32_t size = 0;
+    std::uint32_t sector = 0;
+    std::uint32_t sectors = 0;
+};
+
+struct SoundIndex {
+    std::vector<SoundEntry> entries;
+    std::vector<SoundEntry> shadowed;
+};
+
+// SOUND.HD3: 16-byte records of name offset, size, sector and sector count, then the NUL-terminated names.
+// The game takes the record count from the first name offset. The last record within that count is the
+// terminator: zero size, sector and sector count, and a name offset of 0 or of an empty string in the pool.
+// A name is found by exact, case-sensitive strcmp, first match wins.
+inline SoundIndex ParseSoundIndex(std::span<const unsigned char> hd3, std::uint64_t dat_size) {
+    if (hd3.size() < kSoundRecordSize) {
+        Fail("SOUND.HD3 is {} bytes, too short for one record", hd3.size());
+    }
+    std::uint32_t names_start = Le32(hd3.data());
+    if (names_start == 0 || names_start % kSoundRecordSize != 0 || names_start > hd3.size()) {
+        Fail("SOUND.HD3 begins with name offset {}, not a whole number of 16-byte records inside the file",
+             names_start);
+    }
+    std::size_t          count = names_start / kSoundRecordSize;
+    const unsigned char *terminator = hd3.data() + (count - 1) * kSoundRecordSize;
+    std::uint32_t        terminator_name = Le32(terminator);
+    bool                 empty_name = terminator_name == 0 ||
+                      (terminator_name >= names_start && terminator_name < hd3.size() && hd3[terminator_name] == 0);
+    if (!empty_name || Le32(terminator + 4) != 0 || Le32(terminator + 8) != 0 || Le32(terminator + 12) != 0) {
+        Fail("SOUND.HD3 has no terminator as its last record");
+    }
+
+    SoundIndex                      index;
+    std::unordered_set<std::string> seen;
+    for (std::size_t i = 0; i + 1 < count; i++) {
+        const unsigned char *raw = hd3.data() + i * kSoundRecordSize;
+        std::uint32_t        name_offset = Le32(raw);
+        SoundEntry           entry;
+        entry.size = Le32(raw + 4);
+        entry.sector = Le32(raw + 8);
+        entry.sectors = Le32(raw + 12);
+        if (entry.size == 0) {
+            Fail("SOUND.HD3 record {} is empty", i);
+        }
+        if (name_offset < names_start || name_offset >= hd3.size()) {
+            Fail("SOUND.HD3 record {}: name offset {} lies outside the names", i, name_offset);
+        }
+        const void *nul = std::memchr(hd3.data() + name_offset, 0, hd3.size() - name_offset);
+        if (!nul) {
+            Fail("SOUND.HD3 record {}: name at {} is not terminated", i, name_offset);
+        }
+        entry.name.assign(reinterpret_cast<const char *>(hd3.data() + name_offset),
+                          static_cast<const char *>(nul));
+        std::replace(entry.name.begin(), entry.name.end(), '\\', '/');
+        if (entry.name.find('/') != std::string::npos || !IsSafeRelative(entry.name)) {
+            Fail("SOUND.HD3 record {}: unusable name \"{}\"", i, entry.name);
+        }
+        std::uint64_t needed = (std::uint64_t{entry.size} + kSector - 1) / kSector;
+        if (needed != entry.sectors) {
+            Fail("SOUND.HD3 record {} ({}): {} bytes take {} sectors, not {}", i, entry.name, entry.size, needed,
+                 entry.sectors);
+        }
+        if (std::uint64_t{entry.sector} * kSector + entry.size > dat_size) {
+            Fail("SOUND.HD3 record {} ({}): entry ends past SOUND.DAT's {} bytes", i, entry.name, dat_size);
+        }
+        // Mirrors the driver's first-match lookup: a later copy of a name can never be read.
+        if (seen.insert(entry.name).second) {
+            index.entries.push_back(std::move(entry));
+        } else {
+            index.shadowed.push_back(std::move(entry));
+        }
+    }
+    return index;
+}
+
+inline SoundIndex ReadSoundIndex(const Archive &archive) {
+    std::vector<unsigned char> hd3 = ReadExtent(archive.sound_hd3);
+    return ParseSoundIndex(hd3, archive.sound_dat.size);
+}
+
 inline const Record *FindRecord(const std::vector<Record> &records, std::string_view name) {
     std::string key = FoldPath(name);
     for (const Record &record : records) {
@@ -686,6 +769,12 @@ inline Summary Extract(const Archive &archive, const fs::path &out, std::FILE *l
     }
     add("sound/sound.dat", archive.sound_dat);
     add("sound/sound.hd3", archive.sound_hd3);
+    SoundIndex sound = ReadSoundIndex(archive);
+    for (const SoundEntry &entry : sound.entries) {
+        add("sound/" + FoldPath(entry.name),
+            {archive.sound_dat.file, archive.sound_dat.offset + entry.sector * kSector, entry.size});
+    }
+    Log(log, "sound: {} entries, {} shadowed\n", sound.entries.size(), sound.shadowed.size());
 
     std::vector<ManifestEntry> previous = ReadManifest(out);
     fs::create_directories(out);

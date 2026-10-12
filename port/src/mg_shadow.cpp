@@ -1,206 +1,187 @@
+#include "vu1/sdw_geom.hpp"
+
 #include "common.h"
 
-#include <libgraph.h>
-#include <libvu0.h>
-
+#include <cmath>
 #include <cstring>
 #include <vector>
 
-#include "gfx/gfx.hpp"
-#include "mg_dataset.hpp"
 #include "mg_drawenv.hpp"
-#include "mg_drawprim.hpp"
-#include "mg_memory.hpp"
+#include "mg_math.hpp"
 #include "mg_shadow.hpp"
-#include "mg_texture.hpp"
+#include "mg_shadow_port.hpp"
 #include "mg_visual.hpp"
-#include "mglib.hpp"
+#include "mglib_port.hpp"
 
-// The host side of the cast shadow. The ps2 file of this name hands each face list to the shadow
-// microprogram, which flattens it onto the ground through the render info's shadow matrix; the
-// port draws the same flattened triangles through the renderer instead. The face lists themselves
-// come from the ps2 CreateFace (plain CPU), so only the draw and the packet builders are replaced.
-
-int PortMgCollectGroup(const mgCVisualMDT *visual, const mgFACE_GROUP *group,
-                       std::vector<gfx::Vertex3D> &vertices, std::vector<uint32_t> &indices, bool *has_colour);
-gfx::DrawState PortMgDrawStateFromEnv(const mgCDrawEnv &env);
-bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
+namespace vu = dc::vu1;
 
 namespace {
 
-void MulMatrix(float out[4][4], const float a[4][4], const float b[4][4]) {
-    float result[4][4];
-    for (int column = 0; column < 4; column++) {
-        for (int row = 0; row < 4; row++) {
-            result[column][row] = a[0][row] * b[column][0] + a[1][row] * b[column][1] + a[2][row] * b[column][2] +
-                                  a[3][row] * b[column][3];
-        }
+constexpr float kIdentity[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+                                 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+// Flat colour 1 is retail's RGBAQ (1, 1, 1) against a material of 0x80.
+constexpr float kShadowDiffuse = 1.0f / 128.0f;
+constexpr float kShadowAlpha = 0.5f;
+
+// Z-fail counts the volume's far caps, which lie on the receiving plane. A cap on the plane passes
+// GEQUAL against the floor and is missed, so the drop is pushed past the plane by this fraction of
+// its eye depth.
+constexpr float kShadowDropBias = 1e-3f;
+
+// GS guard band half-range about the screen centre, in logical pixels.
+constexpr float kGuardHalfRange = 2048.0f;
+
+vu::Mat4 ToMat(const float (*m)[4]) {
+    vu::Mat4 out;
+    std::memcpy(&out, m, sizeof out);
+    return out;
+}
+
+gfx::StencilFace VolumeFace(gfx::StencilOp depth_fail) {
+    return {gfx::CompareOp::Always, gfx::StencilOp::Keep, gfx::StencilOp::Keep, depth_fail};
+}
+
+// Negated comparisons so a NaN corner is rejected.
+bool InClipVolume(const vu::Vec4 &p, const mgPortProjection &projection) {
+    if (!(p.z >= projection.near_z && p.z <= projection.far_z)) {
+        return false;
     }
-    std::memcpy(out, result, sizeof(result));
+
+    const float screen_x = std::fabs(p.x * projection.eye / p.z);
+    const float screen_y = std::fabs(p.y * projection.eye * projection.aspect_y / p.z);
+    return screen_x <= kGuardHalfRange && screen_y <= kGuardHalfRange;
 }
 
 } // namespace
 
-void                    PortMgScreenToClip(float clip[4][4]);
-
-// True and drawn when the visual is a shadow model; false leaves the visual to mg_visual.cpp.
-bool PortMgShadowVisualDraw(const mgCVisualMDT *visual, float (*matrix)[4], const mgRENDER_INFO *info) {
-    if (dynamic_cast<const mgCShadowMDT *>(visual) == nullptr) {
-        return false;
-    }
-
-    if (info == nullptr || info->attr == nullptr || visual->face_group == nullptr) {
-        return true;
-    }
-
-    // model -> world -> the ground plane (info.shadow) -> GS screen, then the renderer's clip.
-    float screen_to_clip[4][4];
-    float world_to_screen[4][4];
-    float shadow[4][4];
-    float model_to_screen[4][4];
-    float mvp[4][4];
-
-    std::memcpy(world_to_screen, info->world_screen, sizeof(world_to_screen));
-    std::memcpy(shadow, info->shadow, sizeof(shadow));
-    PortMgScreenToClip(screen_to_clip);
-    MulMatrix(model_to_screen, world_to_screen, shadow);
-    MulMatrix(model_to_screen, model_to_screen, matrix);
-    MulMatrix(mvp, screen_to_clip, model_to_screen);
-
-    // The draw environment the setup packet sends: the visual's own or the frame's, depth tested
-    // at or in front of the scene's, never written, no alpha test.
-    mgCDrawEnv environment = visual->draw_env != NULL ? *visual->draw_env : info->draw_env[0];
-    environment.SetZBuf(MG_ZBUF_NO_WRITE);
-    environment.test.bits.zte = 1;
-    environment.test.bits.ztst = SCE_GS_ZGEQUAL;
-    environment.test.bits.ate = 0;
-    environment.test.bits.afail = 0;
-    environment.test.bits.date = 0;
-
-    gfx::DrawState     state = PortMgDrawStateFromEnv(environment);
-    gfx::MeshConstants constants = {};
-
-    state.fog = false;
-    constants.flags = gfx::kMeshShadow;
-    // The setup packet's RGBAQ(1, 1, 1, 0x80) as a renderer modulation: near-black at half alpha.
-    constants.diffuse[0] = constants.diffuse[1] = constants.diffuse[2] = 1.0f / 128.0f;
-    constants.diffuse[3] = 1.0f;
-    std::memcpy(constants.mvp, mvp, sizeof(mvp));
-
-    for (mgFACE_GROUP *node = visual->face_group; node != NULL; node = node->next) {
-        bool                       has_colour = false;
-        std::vector<gfx::Vertex3D> vertices;
-        std::vector<uint32_t>      indices;
-
-        if (PortMgCollectGroup(visual, node, vertices, indices, &has_colour) == 0 || indices.empty()) {
-            continue;
+void AppendShadowPrism(const vu::Vec4 top[3], const vu::Vec4 drop[3], const vu::Vec4 &bias_dir,
+                       const mgPortProjection &projection, std::vector<vu::SdwPrismTriangle> &out) {
+    for (int j = 0; j < 3; ++j) {
+        if (!InClipVolume(top[j], projection) || !InClipVolume(drop[j], projection)) {
+            return;
         }
-
-        gfx::DrawMeshImmediate(vertices, indices, constants, gfx::TextureBinding{}, state, nullptr);
     }
 
-    return true;
+    const float bias = kShadowDropBias * std::fabs(drop[0].z);
+    vu::Vec4 biased[3];
+    for (int j = 0; j < 3; ++j) {
+        biased[j] = drop[j] + bias_dir * bias;
+    }
+
+    // Grazing triangles are rejected by SdwPrism's |thickness| <= 1e-4 |n||h| test, retail's |Q| <= 1e-4 up to scale.
+    vu::SdwPrism(top, biased, out);
 }
 
 PORT_OVERRIDE int mgCShadowMDT::CreateFacePacket(u_int *packet, mgCFace *face) {
-    (void) packet;
-    (void) face;
     return 0;
 }
 
-PORT_OVERRIDE u_int mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
-    (void) draw_manager;
+PORT_OVERRIDE uptr mgCShadowMDT::CreatePacket(mgCDrawManager *draw_manager) {
+    for (mgFACE_GROUP *node = face_group; node != NULL; node = node->next) {
+        node->packet = NULL;
+        node->packet_size = 0;
+    }
+
     return 0;
 }
 
 PORT_OVERRIDE int mgCShadowMDT::CreateRenderInfoPacket(u_int *packet, float (*matrix)[4], mgRENDER_INFO *info) {
-    (void) packet;
-    (void) matrix;
-    (void) info;
+    if (!mgPortRendererReady() || !mgPortFrameOpen() || !mgPortInShadow()) {
+        return 0;
+    }
+
+    sceVu0FMATRIX model_to_eye;
+    sceVu0FMATRIX drop_to_eye;
+    sceVu0FMATRIX shadow;
+    mgMulMatrix(model_to_eye, info->view, matrix);
+    mgMulMatrix(shadow, info->shadow, matrix);
+    mgMulMatrix(drop_to_eye, info->view, shadow);
+
+    const vu::Mat4 to_eye = ToMat(model_to_eye);
+    const vu::Mat4 drop_eye = ToMat(drop_to_eye);
+    const vu::Vec4 light_world = {info->shadow_light_dir[0], info->shadow_light_dir[1],
+                                  info->shadow_light_dir[2], 0.0f};
+    const vu::Vec4 light_eye = vu::Mul(ToMat(info->view), light_world);
+    const vu::Vec4 bias_dir = light_eye * (1.0f / std::sqrt(vu::Dot3(light_eye, light_eye)));
+    const mgPortProjection projection = mgPortCurrentProjection();
+    std::vector<vu::SdwPrismTriangle> prisms;
+
+    for (mgFACE_GROUP *group = face_group; group != NULL; group = group->next) {
+        for (mgCFace *face = group->face; face != NULL; face = face->next) {
+            for (int t = 0; t < face->vertex_num; ++t) {
+                vu::Vec4 corner[3];
+                for (int j = 0; j < 3; ++j) {
+                    const float *p = vertex[face->index[3 * t + j]];
+                    corner[j] = {p[0], p[1], p[2], 1.0f};
+                }
+
+                vu::Vec4 top[3];
+                vu::Vec4 drop[3];
+                for (int j = 0; j < 3; ++j) {
+                    top[j] = vu::Mul(to_eye, corner[j]);
+                    drop[j] = vu::Mul(drop_eye, corner[j]);
+                }
+                AppendShadowPrism(top, drop, bias_dir, projection, prisms);
+            }
+        }
+    }
+
+    if (prisms.empty()) {
+        return 0;
+    }
+
+    std::vector<gfx::Vertex3D> vertices;
+    std::vector<uint32_t> indices;
+    vertices.reserve(prisms.size() * 3);
+    indices.reserve(prisms.size() * 3);
+    for (const vu::SdwPrismTriangle &tri : prisms) {
+        for (const vu::Vec4 &v : tri.v) {
+            gfx::Vertex3D vertex{};
+            vertex.position[0] = v.x;
+            vertex.position[1] = v.y;
+            vertex.position[2] = v.z;
+            indices.push_back(static_cast<uint32_t>(vertices.size()));
+            vertices.push_back(vertex);
+        }
+    }
+
+    // Vertices are in eye space; the local transform carries them back to world so the display list's
+    // interpolated camera can be applied on top.
+    gfx::MeshTransform transform = mgPortMeshTransform(kIdentity);
+    if (!gfx::InvertAffineTransform(transform.view, transform.local)) {
+        return 0;
+    }
+
+    gfx::MeshConstants constants{};
+    mgPortEyeToClip(projection, mgPortCurrentTarget(), constants.mvp);
+    constants.flags = gfx::kMeshShadow;
+    constants.diffuse[0] = kShadowDiffuse;
+    constants.diffuse[1] = kShadowDiffuse;
+    constants.diffuse[2] = kShadowDiffuse;
+    constants.diffuse[3] = kShadowAlpha;
+
+    const mgCDrawEnv &env = draw_env != NULL ? *draw_env : info->draw_env[0];
+
+    // Z-fail: a pixel's count is the number of volumes its surface lies inside. Colour is not written.
+    gfx::DrawState volume = mgPortDrawState();
+    mgPortApplyDrawEnv(volume, env);
+    volume.blend = false;
+    volume.alpha_test = false;
+    volume.cull = gfx::CullMode::None;
+    volume.depth_test = gfx::DepthTest::GEqual;
+    volume.depth_write = false;
+    volume.stencil_test = true;
+    volume.stencil_front = VolumeFace(gfx::StencilOp::DecrementWrap);
+    volume.stencil_back = VolumeFace(gfx::StencilOp::IncrementWrap);
+    volume.color_write_mask = 0;
+
+    // Shadow volumes are rebuilt from this tick's matrices, so the previous tick's must not be
+    // interpolated into them.
+    {
+        mgPortInterpScope scope(this, kMgPortFrameTeleportDistance, false, true);
+        mgPortDrawMeshImmediate(vertices, indices, constants, gfx::TextureBinding{}, volume, &transform);
+    }
+
     return 0;
-}
-
-// ---- The offscreen shadow pass ------------------------------------------------------------------
-// mgBeginDrawShadow and mgEndDrawShadow live in mglib.cpp, but they bracket the character drop
-// shadows (dng_main.cpp, editloop.cpp), so the shadow unit owns their host side. Retail switches
-// the GS frame buffer to the "work"/"shadow_work" texture, fills it black and draws the flattened
-// models into it; the host draws the same models through the renderer into the texture's render
-// target (mg_texture.cpp registers one under the texture's name), then stamps it back over the
-// screen with the TEXA alpha the ps2 pass reads out of the 24-bit image.
-
-namespace {
-
-// The render target mg_texture.cpp builds for a texture with no image of its own, or kNullTexture
-// when the texture is an ordinary image.
-gfx::TextureHandle ShadowTarget(const mgCTexture *shadow) {
-    if (shadow == nullptr) {
-        return gfx::kNullTexture;
-    }
-
-    gfx::TextureBinding binding;
-    if (!PortMgTextureBinding(shadow, binding)) {
-        return gfx::kNullTexture;
-    }
-
-    return gfx::FindNamedRenderTarget(shadow->name);
-}
-
-} // namespace
-
-PORT_OVERRIDE void mgBeginDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
-    (void) unused;
-
-    gfx::TextureHandle target = ShadowTarget(shadow);
-    if (target == gfx::kNullTexture) {
-        return;
-    }
-
-    gfx::SetRenderTarget(target);
-    // The pass opens on black: retail fills the frame buffer with an unblended RGBAQ(0,0,0,0)
-    // sprite, which for the 32-bit target is exactly a clear.
-    const uint8_t black[4] = {0, 0, 0, 0};
-    gfx::Clear(true, black, false, 0.0f);
-}
-
-PORT_OVERRIDE void mgEndDrawShadow(mgCTexture *shadow, mgCTexture *unused) {
-    (void) unused;
-
-    gfx::SetRenderTarget(gfx::kMainTarget);
-
-    gfx::TextureBinding binding;
-    if (shadow == nullptr || !PortMgTextureBinding(shadow, binding)) {
-        return;
-    }
-
-    // Retail reads the image as PSMCT24, so the alpha that darkens the screen is TEXA's: zero
-    // where the fill left black, TA0 where a shadow was drawn.
-    binding.ignore_alpha = true;
-    binding.filter = gfx::Filter::Linear;
-
-    gfx::DrawState state;
-    state.blend = true;
-    state.alpha = gfx::GsBlend{2, 1, 0, 1, 64};
-    state.alpha_test = true;
-    state.alpha_func = gfx::AlphaFunc::GEqual;
-    state.alpha_ref = 1;
-    state.texa_aem = true;
-    state.texa_ta0 = 48;
-
-    const float texture_width = static_cast<float>(shadow->width);
-    const float texture_height = static_cast<float>(shadow->height);
-
-    gfx::Vertex2D quad[4] = {};
-    quad[0] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f};
-    quad[1] = {gfx::LogicalWidth(), 0.0f, 0.0f, texture_width - 1.0f, 1.0f};
-    quad[2] = {gfx::LogicalWidth(), gfx::LogicalHeight(), 0.0f, texture_width - 1.0f, texture_height - 1.0f};
-    quad[3] = {0.0f, gfx::LogicalHeight(), 0.0f, 1.0f, texture_height - 1.0f};
-
-    for (gfx::Vertex2D &vertex : quad) {
-        vertex.color[0] = 128;
-        vertex.color[1] = 128;
-        vertex.color[2] = 128;
-        vertex.color[3] = 128;
-    }
-
-    gfx::Draw2D(gfx::Primitive::Quads, quad, binding, state);
 }

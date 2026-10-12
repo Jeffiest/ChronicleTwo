@@ -5,8 +5,6 @@
 // Synthetic disc fixtures for the data tests: a DATA.DAT/DATA.HD2 pair laid out as the disc's,
 // packs in the game's 76-byte entry format, and a minimal ISO 9660 image holding the pair.
 
-#include <unistd.h>
-
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -15,11 +13,13 @@
 #include <string>
 #include <vector>
 
-#include "../../../tools/dcdata/dcdata.hpp"
+#include "dc2data.hpp"
+#include "platform_fixture.hpp"
 
 namespace datafix {
 
 namespace fs = std::filesystem;
+namespace dcdata = dc2data;
 
 using Bytes = std::vector<unsigned char>;
 
@@ -36,7 +36,8 @@ struct Disc {
 
 // Resolved, as the working directory comes back: macOS's /var is a symlink.
 inline fs::path TempDir(const char *tag) {
-    fs::path dir = fs::canonical(fs::temp_directory_path()) / std::format("dc_{}_{}", tag, getpid());
+    fs::path dir = fs::canonical(fs::temp_directory_path()) /
+                   std::format("dc_{}_{}", tag, dc::test::ProcessId());
     fs::remove_all(dir);
     fs::create_directories(dir);
     return dir;
@@ -106,20 +107,22 @@ inline Disc MakeDisc(std::vector<File> files) {
         disc.hd2.insert(disc.hd2.end(), file.name.begin(), file.name.end());
         disc.hd2.push_back(0);
         disc.dat.insert(disc.dat.end(), file.data.begin(), file.data.end());
-        disc.dat.resize(dcdata::SectorsFor(disc.dat.size()) * dcdata::kSector, 0xCD);
+        const std::size_t sectors = (disc.dat.size() + dcdata::kSector - 1) / dcdata::kSector;
+        disc.dat.resize(sectors * dcdata::kSector, 0xCD);
         Put32(disc.hd2, 32 * i, name);
         Put32(disc.hd2, 32 * i + 4, 0xDEADBEEF);
         Put32(disc.hd2, 32 * i + 16, sector * dcdata::kSector);
         Put32(disc.hd2, 32 * i + 20, static_cast<std::uint32_t>(file.data.size()));
         Put32(disc.hd2, 32 * i + 24, sector);
-        Put32(disc.hd2, 32 * i + 28, static_cast<std::uint32_t>(dcdata::SectorsFor(file.data.size())));
+        Put32(disc.hd2, 32 * i + 28,
+              static_cast<std::uint32_t>((file.data.size() + dcdata::kSector - 1) / dcdata::kSector));
     }
     Put32(disc.hd2, 32 * count, static_cast<std::uint32_t>(disc.hd2.size() - 1));
     return disc;
 }
 
 inline std::uint32_t SectorCount(const Bytes &data) {
-    return static_cast<std::uint32_t>(dcdata::SectorsFor(data.size()));
+    return static_cast<std::uint32_t>((data.size() + dcdata::kSector - 1) / dcdata::kSector);
 }
 
 inline Bytes DirectoryRecord(std::string_view name, std::uint32_t extent, std::size_t size, bool directory) {

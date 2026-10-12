@@ -7,3 +7,5 @@ int VSyncCallBack(int field);
 void WaitVSync(int start, int frames);
 void mgTimeFrameBegin();
 float mgTimeFrameFields();
+
+int VSyncCallBack(int field);

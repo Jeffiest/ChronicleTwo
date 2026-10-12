@@ -1,1050 +1,645 @@
-#include <cstdlib>
-#include <cstdio>
+#define MGLIB_IMPLICIT_TEX0_ASSIGNMENT // Texture() copies an mgCTexture by value, which needs sceGsTex0's implicit assignment.
+#include "common.h"
+
 #include <algorithm>
-#include "mg_drawprim.hpp"
-#include "prespr.hpp"
-
-#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
-
+#include <functional>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "gfx/gfx.hpp"
+#include "mg_drawprim.hpp"
+#include "mg_drawprim_port.hpp"
 #include "mglib.hpp"
-
-/**
- * The immediate primitive builder and the draw manager on the host.
- *
- * Retail builds DMA/VIF/GIF packets that the GS executes; the port has no GS, so the same calls
- * build gfx draws instead. A primitive run (Begin/BeginPrim2 to End/EndPrim2/Flush) accumulates
- * the vertices the game writes and submits one gfx::Draw2D call when the run closes, with the
- * draw state the prim's registers describe. The GS registers that outlive a packet (TEX0/TEX1,
- * TEXA, SCISSOR) live here as globals, as they do on the GS.
- *
- * The draw manager sorted packets by texture group for the GS's benefit; the renderer records
- * draws in the order they are made, so its bookkeeping is reduced to what the callers read back
- * (which groups exist).
- */
-
-// What mg_drawenv.cpp provides: the GS units in the renderer's logical space and the draw state
-// the registers describe. The manager's textures resolve through mg_texture.cpp's own binding.
-namespace mgport {
-float LogicalX(int gs_x);
-float LogicalY(int gs_y);
-float Depth(unsigned gs_z);
-gfx::LogicalRect ScissorRect(u_long scissor);
-gfx::DrawState DrawStateOf(const sceGsTest &test, const sceGsZbuf &zbuf, const sceGsAlpha &alpha,
-                           const sceGsPrim &prim, bool texa_aem, u_char texa_ta0,
-                           const gfx::LogicalRect *scissor);
-} // namespace mgport
-
-bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
-mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp, int req_w = 0, int req_h = 0);
+#include "mglib_port.hpp"
 
 namespace {
 
-// 12.4 fixed point, rounding to nearest, as the VU's vftoi4 made of a pixel coordinate.
-int Fixed4(float value) {
-    return static_cast<int>(std::lroundf(value * 16.0f));
-}
-
-// The GS registers that outlive one packet, in the renderer's terms. Begin's packet head copies
-// the prim's draw environment in; Direct writes land on top; every draw afterwards reads them.
-struct GsRegisters {
-    bool       env_seen = false;
-    sceGsTest  test{};
-    sceGsZbuf  zbuf{};
-    sceGsAlpha alpha{};
-
-    bool   texa_seen = false;
-    u_char texa_ta0 = 0x80;
-    bool   texa_aem = true;
-
-    bool             scissor_seen = false;
-    gfx::LogicalRect scissor{0.0f, 0.0f, gfx::LogicalWidth(), gfx::LogicalHeight()};
-
-    // The image-transfer registers the last Direct writes assembled; TRXDIR runs the transfer.
-    u_long transfer_bitbltbuf = 0;
-    u_long transfer_trxpos = 0;
-    u_long transfer_trxreg = 0;
-
-    bool                texture_resolved = false;
-    gfx::TextureBinding binding{};
-    float               u_scale = 1.0f;
-    float               v_scale = 1.0f;
+struct PrimRun {
+    int                        prim_type = MG_PRIM_POINT;
+    bool                       packed = false;
+    uint8_t                    color[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    uint8_t                    fog = 0xFF;
+    float                      q = 1.0f;
+    float                      s = 0.0f;
+    float                      t = 0.0f;
+    float                      u = 0.0f;
+    float                      v = 0.0f;
+    std::vector<gfx::Vertex2D> queue;
+    std::vector<gfx::Vertex2D> batch;
+    gfx::Primitive             batch_primitive = gfx::Primitive::Quads;
 };
 
-GsRegisters g_regs;
+std::unordered_map<const mgCDrawPrim *, PrimRun>        runs;
+std::unordered_set<u_long>                               ignored_direct_registers;
+std::unordered_map<const void *, std::function<void()>> packet_draws;
+mgPortPrimSink                                           prim_sink;
 
-// One builder's open run and the vertex registers, which the GS keeps between runs.
-struct PrimState {
-    int                 type = MG_PRIM_SPRITE;
-    bool                open = false;
-    bool                packed = false;
-    int                 roles[16] = {};
-    int                 role_count = 0;
-    int                 role_index = 0;
-    std::vector<gfx::Vertex2D> vertices;
-    // Packed-mode words whose values are not yet known when they are queued: Data's quad is
-    // recorded as it arrives, and DirectData hands the caller memory it only fills afterwards.
-    // Both are fed through the role cycle when the run closes, in the order the caller wrote.
-    std::vector<u_long128> raw_quads;
-    std::vector<int>       raw_roles;
-    bool                sprite_have_first = false;
-    gfx::Vertex2D       sprite_first{};
-    float               u = 0.0f;
-    float               v = 0.0f;
-    u_char              color[4] = {0, 0, 0, 0};
-};
-
-std::unordered_map<const mgCDrawPrim *, PrimState> &States() {
-    static std::unordered_map<const mgCDrawPrim *, PrimState> states;
-    return states;
+PrimRun *Find(const mgCDrawPrim *self) {
+    const auto it = runs.find(self);
+    return it == runs.end() ? nullptr : &it->second;
 }
 
-PrimState &State(const mgCDrawPrim *prim) {
-    return States()[prim];
-}
-
-gfx::DrawState CurrentState(const mgCDrawPrim &owner) {
-    sceGsTest  test;
-    sceGsZbuf  zbuf;
-    sceGsAlpha alpha;
-
-    if (g_regs.env_seen) {
-        test = g_regs.test;
-        zbuf = g_regs.zbuf;
-        alpha = g_regs.alpha;
-    } else {
-        const mgCDrawEnv &env = mgRenderInfo.draw_env[0];
-        test = env.test;
-        zbuf = env.zbuf;
-        alpha = env.alpha;
-    }
-
-    // ZMask is a member of the builder, applied to the depth buffer every time a packet opens.
-    zbuf.bits.zmsk = owner.z_mask == MG_Z_MASK_WRITE ? 0 : 1;
-
-    const bool   aem = g_regs.texa_seen ? g_regs.texa_aem : mgTEXA_1.AEM != 0;
-    const u_char ta0 = g_regs.texa_seen ? g_regs.texa_ta0 : static_cast<u_char>(mgTEXA_1.TA0);
-
-    return mgport::DrawStateOf(test, zbuf, alpha, owner.prim, aem, ta0,
-                               g_regs.scissor_seen ? &g_regs.scissor : nullptr);
-}
-
-void AddVertex(PrimState &state, int x, int y, int z, float u, float v, const u_char color[4],
-               u_char fog) {
-    gfx::Vertex2D vertex = {};
-    vertex.x = mgport::LogicalX(x);
-    vertex.y = mgport::LogicalY(y);
-    vertex.z = mgport::Depth(static_cast<unsigned>(z) & 0xFFFFFFu);
-    vertex.u = u;
-    vertex.v = v;
-    vertex.color[0] = color[0];
-    vertex.color[1] = color[1];
-    vertex.color[2] = color[2];
-    vertex.color[3] = color[3];
-    vertex.fog = fog;
-
-    if (state.type != MG_PRIM_SPRITE) {
-        state.vertices.push_back(vertex);
-        return;
-    }
-
-    if (!state.sprite_have_first) {
-        state.sprite_first = vertex;
-        state.sprite_have_first = true;
-        return;
-    }
-
-    // A GS sprite is two opposite corners; the renderer's quads want all four. The missing
-    // corners take each texture coordinate from the corner that owns its axis, so a texture maps
-    // axis-aligned as it did on the GS. Colours follow the horizontal edge.
-    const gfx::Vertex2D a = state.sprite_first;
-    const gfx::Vertex2D b = vertex;
-
-    gfx::Vertex2D top_left = a;
-    gfx::Vertex2D top_right = b;
-    top_right.y = a.y;
-    top_right.v = a.v;
-    gfx::Vertex2D bottom_right = b;
-    gfx::Vertex2D bottom_left = a;
-    bottom_left.y = b.y;
-    bottom_left.v = b.v;
-
-    state.vertices.push_back(top_left);
-    state.vertices.push_back(top_right);
-    state.vertices.push_back(bottom_right);
-    state.vertices.push_back(bottom_left);
-    state.sprite_have_first = false;
-}
-
-void OpenRun(PrimState &state, int type, bool packed, int unit_count, u_int data_a, u_int data_b) {
-    state.type = type;
-    state.packed = packed;
-    state.open = true;
-    state.role_index = 0;
-    state.role_count = 0;
-    state.vertices.clear();
-    state.raw_quads.clear();
-    state.raw_roles.clear();
-    state.sprite_have_first = false;
-
-    if (!packed) {
-        return;
-    }
-
-    const uint64_t regs = static_cast<uint64_t>(data_a) | (static_cast<uint64_t>(data_b) << 32);
-    state.role_count = unit_count < 16 ? unit_count : 16;
-
-    for (int i = 0; i < state.role_count; i++) {
-        state.roles[i] = static_cast<int>((regs >> (4 * i)) & 0xF);
-    }
-}
-
-// The packed-mode layouts: each field sits in the low bits of its own 32-bit word (this is
-// exactly what the game's vectors hold, so Data/Data0/Data4 read straight out of them).
-void FeedRole(PrimState &state, int role, const int *words) {
-    switch (role) {
-        case SCE_GS_RGBAQ:
-            state.color[0] = static_cast<u_char>(words[0] & 0xFF);
-            state.color[1] = static_cast<u_char>(words[1] & 0xFF);
-            state.color[2] = static_cast<u_char>(words[2] & 0xFF);
-            state.color[3] = static_cast<u_char>(words[3] & 0xFF);
-            break;
-        case SCE_GS_UV:
-            state.u = static_cast<float>(words[0] & 0x3FFF) / 16.0f;
-            state.v = static_cast<float>(words[1] & 0x3FFF) / 16.0f;
-            break;
-        case SCE_GS_XYZF2: {
-            const int      x = words[0] & 0xFFFF;
-            const int      y = words[1] & 0xFFFF;
-            const int      z = (words[2] >> 4) & 0xFFFFFF;
-            const u_char   fog = static_cast<u_char>((words[3] >> 4) & 0xFF);
-            AddVertex(state, x, y, z, state.u, state.v, state.color, fog);
-            break;
-        }
-        case SCE_GS_XYZ2: {
-            const int x = words[0] & 0xFFFF;
-            const int y = words[1] & 0xFFFF;
-            const int z = words[2] & 0xFFFFFF;
-            AddVertex(state, x, y, z, state.u, state.v, state.color, 0xFF);
-            break;
-        }
-        default:
-            PS2_UNIMPLEMENTED();
-    }
-}
-
-// Records one packed-mode quad whose register role the run's cycle names.
-void EnqueueRaw(PrimState &state, int role, const int *words) {
-    u_long128 quad = 0;
-    std::memcpy(&quad, words, sizeof(quad));
-    state.raw_quads.push_back(quad);
-    state.raw_roles.push_back(role);
-}
-
-// Feeds the run's queued quads through its register cycle; the run closes only after the caller
-// has written the memory DirectData handed out.
-void FlushRawStream(PrimState &state) {
-    for (size_t index = 0; index < state.raw_quads.size(); index++) {
-        int words[4];
-        std::memcpy(words, &state.raw_quads[index], sizeof(words));
-        FeedRole(state, state.raw_roles[index], words);
-    }
-
-    state.raw_quads.clear();
-    state.raw_roles.clear();
-}
-
-} // namespace
-
-// The manager's texture placed at a TBP0, or NULL when none is. The engine's other units still
-// speak in these GS placements, which is what a transfer register carries.
-mgCTexture *FindVramTexture(mgCTextureManager *manager, u_int tbp, int req_w, int req_h) {
-    if (manager == NULL || manager->blocks == NULL) {
-        return NULL;
-    }
-
-    auto matches = [tbp, req_w, req_h](mgCTexture *tex, bool strict_bounds) {
-        if ((tex->tex0.value & 0x3FFF) != tbp) {
-            return false;
-        }
-        if (strict_bounds && (req_w > 0 || req_h > 0)) {
-            if (tex->width < req_w || tex->height < req_h) {
-                return false;
-            }
-        }
-        return true;
-    };
-
-    // 1. Search the currently active/loaded block first (manager->last_block)
-    if (manager->last_block >= 0 && manager->last_block < manager->block_max) {
-        for (mgCTexture *texture = manager->blocks[manager->last_block].texture; texture != NULL;
-             texture = texture->next) {
-            if (matches(texture, true)) {
-                return texture;
-            }
-        }
-    }
-
-    // 2. Search fix_block
-    for (mgCTexture *texture = manager->fix_block.texture; texture != NULL; texture = texture->next) {
-        if (matches(texture, true)) {
-            return texture;
-        }
-    }
-
-    // 3. Search other blocks
-    for (int block = 0; block < manager->block_max; block++) {
-        if (block == manager->last_block) {
-            continue;
-        }
-        for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
-             texture = texture->next) {
-            if (matches(texture, true)) {
-                return texture;
-            }
-        }
-    }
-
-    // Relaxed search if strict bounds didn't match
-    if (req_w > 0 || req_h > 0) {
-        if (manager->last_block >= 0 && manager->last_block < manager->block_max) {
-            for (mgCTexture *texture = manager->blocks[manager->last_block].texture; texture != NULL;
-                 texture = texture->next) {
-                if (matches(texture, false)) {
-                    return texture;
-                }
-            }
-        }
-        for (mgCTexture *texture = manager->fix_block.texture; texture != NULL; texture = texture->next) {
-            if (matches(texture, false)) {
-                return texture;
-            }
-        }
-        for (int block = 0; block < manager->block_max; block++) {
-            if (block == manager->last_block) {
-                continue;
-            }
-            for (mgCTexture *texture = manager->blocks[block].texture; texture != NULL;
-                 texture = texture->next) {
-                if (matches(texture, false)) {
-                    return texture;
-                }
-            }
-        }
-    }
-
-    return NULL;
-}
-
-namespace {
-
-// The GS's VRAM-to-VRAM image copy, the only transfer direction the game asks for (the item icon
-// moved between rectangles of one texture in menudraw.cpp): the registers decode to one
-// gfx::CopyTexture over the two textures TBP0 names.
-void StartImageTransfer(u_int direction) {
-    switch (direction & 0x3) {
-        case 3:
-            // Deactivates the transfer.
-            return;
-        case SCE_GS_LOCAL_LOCAL:
-            break;
-        default:
-            // The host-to-local and local-to-host directions moved pixel data through the packet
-            // stream, which the port replaced with the texture manager's own decode.
-            PS2_UNIMPLEMENTED();
-    }
-
-    mgCTextureManager *manager =
-        mgDrawManager.texture_manager != NULL ? mgDrawManager.texture_manager : &mgTexManager;
-    const u_int source_base = static_cast<u_int>(g_regs.transfer_bitbltbuf & 0x3FFF);
-    const u_int dest_base = static_cast<u_int>((g_regs.transfer_bitbltbuf >> 32) & 0x3FFF);
-
-    const int source_x = static_cast<int>(g_regs.transfer_trxpos & 0x7FF);
-    const int source_y = static_cast<int>((g_regs.transfer_trxpos >> 16) & 0x7FF);
-    const int dest_x = static_cast<int>((g_regs.transfer_trxpos >> 32) & 0x7FF);
-    const int dest_y = static_cast<int>((g_regs.transfer_trxpos >> 48) & 0x7FF);
-    const int width = static_cast<int>(g_regs.transfer_trxreg & 0xFFF);
-    const int height = static_cast<int>((g_regs.transfer_trxreg >> 32) & 0xFFF);
-
-    mgCTexture *source = FindVramTexture(manager, source_base, source_x + width, source_y + height);
-    mgCTexture *dest = FindVramTexture(manager, dest_base, dest_x + width, dest_y + height);
-
-    if (source == NULL || dest == NULL) {
-        std::fprintf(stderr, "StartImageTransfer: lookup failed (src %p, dst %p, sbase %#x, dbase %#x)\n",
-                     source, dest, source_base, dest_base);
-        PS2_UNIMPLEMENTED();
-    }
-
-    // Reject out-of-bounds invalid transfers
-    if (width <= 0 || height <= 0 || source_x < 0 || source_y < 0 || dest_x < 0 || dest_y < 0 ||
-        source_x + width > source->width || source_y + height > source->height ||
-        dest_x + width > dest->width || dest_y + height > dest->height) {
-        std::fprintf(stderr, "StartImageTransfer: out of bounds (%dx%d at %d,%d -> %d,%d on %dx%d -> %dx%d)\n",
-                     width, height, source_x, source_y, dest_x, dest_y, source->width, source->height,
-                     dest->width, dest->height);
-        PS2_UNIMPLEMENTED();
-    }
-
-    // Sync backing CPU image memory if present (using memmove for overlapping regions)
-    if (source->image[0] != NULL && dest->image[0] != NULL && source->bpp == dest->bpp) {
-        if (source->bpp == 8) {
-            uint8_t *src_p = reinterpret_cast<uint8_t *>(source->image[0]);
-            uint8_t *dst_p = reinterpret_cast<uint8_t *>(dest->image[0]);
-            for (int n = 0; n < height; ++n) {
-                int row = src_p == dst_p && dest_y > source_y ? height - 1 - n : n;
-                std::memmove(dst_p + static_cast<size_t>(dest_y + row) * dest->width + dest_x,
-                             src_p + static_cast<size_t>(source_y + row) * source->width + source_x,
-                             width);
-            }
-        } else if (source->bpp == 32) {
-            uint32_t *src_p = reinterpret_cast<uint32_t *>(source->image[0]);
-            uint32_t *dst_p = reinterpret_cast<uint32_t *>(dest->image[0]);
-            for (int n = 0; n < height; ++n) {
-                int row = src_p == dst_p && dest_y > source_y ? height - 1 - n : n;
-                std::memmove(dst_p + static_cast<size_t>(dest_y + row) * dest->width + dest_x,
-                             src_p + static_cast<size_t>(source_y + row) * source->width + source_x,
-                             width * sizeof(uint32_t));
-            }
-        }
-    }
-
-    gfx::TextureBinding source_binding;
-    gfx::TextureBinding dest_binding;
-
-    if (!PortMgTextureBinding(source, source_binding) || !PortMgTextureBinding(dest, dest_binding)) {
-        PS2_UNIMPLEMENTED();
-    }
-
-    if (!gfx::CopyTexture(source_binding.texture, {source_x, source_y, width, height},
-                          dest_binding.texture, dest_x, dest_y)) {
-        std::fprintf(stderr, "StartImageTransfer: CopyTexture failed (%dx%d from %#x to %#x)\n",
-                     width, height, source_binding.texture, dest_binding.texture);
-        PS2_UNIMPLEMENTED();
-    }
-}
-
-void SubmitRun(PrimState &state, const mgCDrawPrim &owner) {
-    state.open = false;
-    state.sprite_have_first = false;
-    FlushRawStream(state);
-
-    if (state.vertices.empty()) {
-        return;
-    }
-
-    gfx::Primitive primitive;
-
-    switch (state.type) {
-        case MG_PRIM_LINE:
-            primitive = gfx::Primitive::Lines;
-            break;
-        case MG_PRIM_LINE_STRIP:
-            primitive = gfx::Primitive::LineStrip;
-            break;
-        case MG_PRIM_TRIANGLE:
-            primitive = gfx::Primitive::Triangles;
-            break;
-        case MG_PRIM_TRIANGLE_STRIP:
-            primitive = gfx::Primitive::TriangleStrip;
-            break;
-        case MG_PRIM_TRIANGLE_FAN:
-            primitive = gfx::Primitive::TriangleFan;
-            break;
-        case MG_PRIM_SPRITE:
-            primitive = gfx::Primitive::Quads;
-            break;
-        case MG_PRIM_POINT:
-            // Points only ever carry register writes (a scissor, an image transfer).
-            PS2_UNIMPLEMENTED();
-        default:
-            PS2_UNIMPLEMENTED();
-    }
+void DrawVertices(const mgCDrawPrim &self, gfx::Primitive primitive, std::span<const gfx::Vertex2D> vertices) {
+    gfx::DrawState state = mgPortDrawState();
+    state.blend = self.prim.ABE != 0;
+    state.fog = self.prim.FGE != 0;
 
     gfx::TextureBinding binding;
 
-    if (owner.prim.TME != 0) {
-        if (!g_regs.texture_resolved) {
-            // Nothing to sample with; drop the run as the 2D units drop their sprites.
-            state.vertices.clear();
-            return;
-        }
-
-        binding = g_regs.binding;
-
-        for (gfx::Vertex2D &vertex : state.vertices) {
-            vertex.u *= g_regs.u_scale;
-            vertex.v *= g_regs.v_scale;
-        }
+    if (self.prim.TME != 0) {
+        binding = mgPortBinding(self.texture.tex0_bits, self.texture.tex1_bits);
     }
 
-    // Diagnostic: DC2_DUMP_DRAWS=1 prints untextured black runs with their extent, target and state.
-    static const bool dump_black = std::getenv("DC2_DUMP_DRAWS") != nullptr;
-    static int        dumped_black;
-
-    if (dump_black && dumped_black < 150 && owner.prim.TME == 0 && !state.vertices.empty()) {
-        const gfx::Vertex2D &first = state.vertices[0];
-
-        if (first.color[0] == 0 && first.color[1] == 0 && first.color[2] == 0) {
-            float lo_x = 1e30f, lo_y = 1e30f, hi_x = -1e30f, hi_y = -1e30f;
-            for (const gfx::Vertex2D &vertex : state.vertices) {
-                lo_x = std::min(lo_x, vertex.x);
-                hi_x = std::max(hi_x, vertex.x);
-                lo_y = std::min(lo_y, vertex.y);
-                hi_y = std::max(hi_y, vertex.y);
-            }
-            gfx::DrawState current = CurrentState(owner);
-            bool           narrow = hi_x - lo_x < 120.0f && hi_y - lo_y > 150.0f;
-
-            if (!narrow && gfx::CurrentRenderTarget() == gfx::kMainTarget) {
-                goto skip_black;
-            }
-            dumped_black++;
-            std::fprintf(stderr,
-                         "black2d prim %d verts %zu x %.1f..%.1f y %.1f..%.1f rgba %u %u %u %u target %#x blend %d "
-                         "depth_test %d depth_write %d cwm %u scissor %d\n",
-                         (int) primitive, state.vertices.size(), lo_x, hi_x, lo_y, hi_y, first.color[0], first.color[1],
-                         first.color[2], first.color[3], gfx::CurrentRenderTarget(), current.blend,
-                         (int) current.depth_test, current.depth_write, (unsigned) current.color_write_mask,
-                         current.scissor);
-        }
-    }
-skip_black:
-
-    gfx::Draw2D(primitive, state.vertices, binding, CurrentState(owner));
-    state.vertices.clear();
-}
-
-} // namespace
-
-PORT_OVERRIDE mgCDrawPrim::mgCDrawPrim() {
-    memory = NULL;
-    vif_packet = NULL;
-    draw_manager = NULL;
-    disabled = 1;
-    q = 1.0f;
-    *(u_long *) &prim = MG_GS_PRIM_FST;
-    bilinear = 1;
-    z_mask = MG_Z_MASK_WRITE;
-    coord = 0;
-    offset_x = 0;
-    offset_y = 0;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Initialize(mgCMemory *memory, sceVif1Packet *vif_packet) {
-    if (vif_packet == NULL) {
-        vif_packet = mgVif1Packet;
-    }
-
-    if (memory == NULL) {
-        memory = mgGetDataBuffer();
-    }
-
-    this->memory = memory;
-    this->vif_packet = vif_packet;
-    detached = 0;
-
-    if (draw_manager == NULL) {
-        draw_manager = &mgDrawManager;
-    }
-
-    disabled = 1;
-    texture.Initialize();
-    draw_env.Initialize(0);
-
-    PrimState &state = State(this);
-    state = PrimState();
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Begin(int prim_type) {
-    this->prim.PRIM = prim_type;
-    this->q = 1.0f;
-    this->disabled = 0;
-    Begin2();
-    BeginDma();
-}
-
-PORT_OVERRIDE void mgCDrawPrim::BeginDma() {
-    PrimState &state = State(this);
-    OpenRun(state, this->prim.PRIM, false, 0, 0, 0);
-}
-
-PORT_OVERRIDE void mgCDrawPrim::EndDma() {
-    PrimState &state = State(this);
-
-    if (state.open) {
-        SubmitRun(state, *this);
+    if (prim_sink) {
+        prim_sink(primitive, vertices, binding, state);
+    } else {
+        mgPortDraw2D(primitive, vertices, binding, state);
     }
 }
 
-PORT_OVERRIDE void mgCDrawPrim::Flush() {
-    EndDma();
-    BeginDma();
-}
-
-PORT_OVERRIDE void mgCDrawPrim::End() {
-    EndDma();
-    End2();
-    g_regs.scissor_seen = false;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Begin2() {
-    this->disabled = 0;
-
-    // The packet head sends the draw environment; on the GS those registers then hold until the
-    // next packet, and Direct writes land on top of them.
-    g_regs.test = draw_env.test;
-    g_regs.zbuf = draw_env.zbuf;
-    g_regs.alpha = draw_env.alpha;
-    g_regs.env_seen = true;
-    g_regs.scissor_seen = false;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int type) {
-    this->prim.PRIM = type;
-    this->q = 1.0f;
-    PrimState &state = State(this);
-    OpenRun(state, type, false, 0, 0, 0);
-}
-
-PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int prim_type, u_int data_a, u_int data_b, int unit_count) {
-    this->prim.PRIM = prim_type;
-    this->q = 1.0f;
-    PrimState &state = State(this);
-    OpenRun(state, prim_type, true, unit_count, data_a, data_b);
-}
-
-PORT_OVERRIDE void mgCDrawPrim::EndPrim2() {
-    PrimState &state = State(this);
-
-    if (state.open) {
-        SubmitRun(state, *this);
-    }
-}
-
-PORT_OVERRIDE void mgCDrawPrim::End2() {
-    PrimState &state = State(this);
-
-    if (state.open) {
-        SubmitRun(state, *this);
-    }
-}
-
-void mgCDrawPrim::Data0(float *data) {
-    int words[4] = {static_cast<int>(data[0]), static_cast<int>(data[1]), static_cast<int>(data[2]),
-                    static_cast<int>(data[3])};
-    PrimState &state = State(this);
-    FeedRole(state, SCE_GS_RGBAQ, words);
-}
-
-void mgCDrawPrim::Data4(float *data) {
-    // Retail converts all four with vftoi4; the packed XYZF2 layout shifts Z and F back down.
-    int words[4] = {Fixed4(data[0]), Fixed4(data[1]), Fixed4(data[2]), Fixed4(data[3])};
-    PrimState &state = State(this);
-    FeedRole(state, SCE_GS_XYZF2, words);
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Data(int *data) {
-    PrimState &state = State(this);
-
-    if (!state.open || !state.packed || state.role_count == 0) {
-        PS2_UNIMPLEMENTED();
-    }
-
-    EnqueueRaw(state, state.roles[state.role_index], data);
-    state.role_index = (state.role_index + 1) % state.role_count;
-}
-
-PORT_OVERRIDE u_long128 *mgCDrawPrim::DirectData(int count) {
-    PrimState &state = State(this);
-
-    if (!state.open || !state.packed || state.role_count == 0 || count <= 0) {
-        // Raw quads only make sense inside a packed run, whose register cycle names what each one
-        // means; nothing outside outline.cpp's chunked sprites hands out packet memory.
-        PS2_UNIMPLEMENTED();
-    }
-
-    // The caller writes the quads here and the run feeds them through the role cycle when it
-    // closes (FlushRawStream); the roles reserved are the ones the next quads would have taken.
-    const size_t base = state.raw_quads.size();
-    state.raw_quads.resize(base + static_cast<size_t>(count));
-
-    for (int i = 0; i < count; i++) {
-        state.raw_roles.push_back(state.roles[state.role_index]);
-        state.role_index = (state.role_index + 1) % state.role_count;
-    }
-
-    return state.raw_quads.data() + base;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Vertex(int x, int y, int z) {
-    Vertex4(x << 4, y << 4, z);
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Vertex(float x, float y, float z) {
-    float pos[4] = {x, y, z, 0.0f};
-    Vertex(pos);
-}
-
-void mgCDrawPrim::Vertex(float *pos) {
-    Vertex4(Fixed4(pos[0]), Fixed4(pos[1]), static_cast<int>(pos[2]));
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Vertex4(int x, int y, int z) {
-    PrimState &state = State(this);
-
-    if (!state.open) {
+void FlushBatch(const mgCDrawPrim &self, PrimRun &run) {
+    if (run.batch.empty()) {
         return;
     }
 
-    int offset_x = 0;
-    int offset_y = 0;
-    GetOffset(&offset_x, &offset_y);
-    AddVertex(state, x + offset_x, y + offset_y, z, state.u, state.v, state.color, 0xFF);
+    DrawVertices(self, run.batch_primitive, run.batch);
+    run.batch.clear();
 }
 
-PORT_OVERRIDE void mgCDrawPrim::Vertex4(int *pos) {
-    Vertex4(pos[0], pos[1], pos[2]);
+void FlushPending(const mgCDrawPrim *self) {
+    if (PrimRun *run = Find(self)) {
+        FlushBatch(*self, *run);
+    }
+}
+
+void Submit(const mgCDrawPrim &self, PrimRun &run, gfx::Primitive primitive, const gfx::Vertex2D *in,
+            std::size_t count) {
+    gfx::Vertex2D out[4]{};
+    std::copy_n(in, count, out);
+
+    if (self.prim.IIP == 0 && primitive != gfx::Primitive::Quads) {
+        for (std::size_t i = 0; i < count; ++i) {
+            std::copy_n(in[count - 1].color, 4, out[i].color);
+        }
+    }
+
+    if (!run.batch.empty() && run.batch_primitive != primitive) {
+        FlushBatch(self, run);
+    }
+
+    run.batch_primitive = primitive;
+    run.batch.insert(run.batch.end(), out, out + count);
+}
+
+void AssembleSprite(const mgCDrawPrim &self, PrimRun &run, const gfx::Vertex2D &a, const gfx::Vertex2D &b) {
+    auto corner = [&b](float x, float y, float u, float v) {
+        gfx::Vertex2D out = b;
+        out.x = x;
+        out.y = y;
+        out.u = u;
+        out.v = v;
+        return out;
+    };
+
+    const gfx::Vertex2D quad[4] = {
+        corner(a.x, a.y, a.u, a.v),
+        corner(b.x, a.y, b.u, a.v),
+        corner(b.x, b.y, b.u, b.v),
+        corner(a.x, b.y, a.u, b.v),
+    };
+    Submit(self, run, gfx::Primitive::Quads, quad, 4);
+}
+
+void Assemble(const mgCDrawPrim &self, PrimRun &run, const gfx::Vertex2D &vertex) {
+    std::vector<gfx::Vertex2D> &queue = run.queue;
+
+    switch (run.prim_type) {
+        case MG_PRIM_POINT: {
+            gfx::Vertex2D quad[4] = {vertex, vertex, vertex, vertex};
+            quad[1].x += 1.0f;
+            quad[2].x += 1.0f;
+            quad[2].y += 1.0f;
+            quad[3].y += 1.0f;
+            Submit(self, run, gfx::Primitive::Quads, quad, 4);
+            break;
+        }
+        case MG_PRIM_LINE:
+            queue.push_back(vertex);
+
+            if (queue.size() == 2) {
+                Submit(self, run, gfx::Primitive::Lines, queue.data(), 2);
+                queue.clear();
+            }
+
+            break;
+        case MG_PRIM_LINE_STRIP:
+            queue.push_back(vertex);
+
+            if (queue.size() == 2) {
+                Submit(self, run, gfx::Primitive::Lines, queue.data(), 2);
+                queue.erase(queue.begin());
+            }
+
+            break;
+        case MG_PRIM_TRIANGLE:
+            queue.push_back(vertex);
+
+            if (queue.size() == 3) {
+                Submit(self, run, gfx::Primitive::Triangles, queue.data(), 3);
+                queue.clear();
+            }
+
+            break;
+        case MG_PRIM_TRIANGLE_STRIP:
+            queue.push_back(vertex);
+
+            if (queue.size() == 3) {
+                Submit(self, run, gfx::Primitive::Triangles, queue.data(), 3);
+                queue.erase(queue.begin());
+            }
+
+            break;
+        case MG_PRIM_TRIANGLE_FAN:
+            queue.push_back(vertex);
+
+            if (queue.size() == 3) {
+                Submit(self, run, gfx::Primitive::Triangles, queue.data(), 3);
+                queue.erase(queue.begin() + 1);
+            }
+
+            break;
+        case MG_PRIM_SPRITE:
+            queue.push_back(vertex);
+
+            if (queue.size() == 2) {
+                AssembleSprite(self, run, queue[0], queue[1]);
+                queue.clear();
+            }
+
+            break;
+    }
+}
+
+void Kick(const mgCDrawPrim &self, PrimRun *run, uint32_t gs_x, uint32_t gs_y, uint32_t gs_z) {
+    // End2 is skipped for a disabled builder, so nothing would ever flush or clear what it batched.
+    if (run == nullptr || self.disabled != 0) {
+        return;
+    }
+
+    gfx::Vertex2D vertex{};
+    vertex.x = mgPortLogicalX(static_cast<int>(gs_x & 0xFFFF));
+    vertex.y = mgPortLogicalY(static_cast<int>(gs_y & 0xFFFF));
+    vertex.z = mgPortDepth(gs_z);
+
+    if (self.prim.TME != 0 && self.prim.FST == 0) {
+        const float width = static_cast<float>(1u << self.texture.tex0.TW);
+        const float height = static_cast<float>(1u << self.texture.tex0.TH);
+        vertex.u = run->s / run->q * width;
+        vertex.v = run->t / run->q * height;
+    } else {
+        vertex.u = run->u;
+        vertex.v = run->v;
+    }
+
+    std::copy_n(run->color, 4, vertex.color);
+    vertex.fog = run->fog;
+    Assemble(self, *run, vertex);
+}
+
+}  // namespace
+
+PORT_OVERRIDE void mgCDrawPrim::Begin2() {
+    // A disabled builder skips End2, so state left by an earlier primitive is dropped here.
+    runs.insert_or_assign(this, PrimRun{});
+
+    disabled = 1;
+
+    if (memory == NULL || vif_packet == NULL || draw_manager == NULL) {
+        return;
+    }
+
+    mgRENDER_INFO *render_info = draw_manager->render_info;
+
+    if (render_info == NULL) {
+        return;
+    }
+
+    disabled = 0;
+    sceGsZbuf zbuf = render_info->draw_env[0].zbuf;
+    draw_env.zbuf = zbuf;
+    draw_env.SetZBuf(z_mask);
+
+    mgPortGs().test = draw_env.test.value;
+    mgPortGs().zbuf = draw_env.zbuf.value;
+    mgPortGs().alpha = draw_env.alpha.value;
+}
+
+PORT_OVERRIDE void mgCDrawPrim::BeginDma() {
+    // A PRIM write restarts primitive assembly on the GS.
+    PrimRun &run = runs[this];
+    run.prim_type = static_cast<int>(prim.PRIM);
+    run.queue.clear();
+}
+
+PORT_OVERRIDE void mgCDrawPrim::EndDma() {
+    FlushPending(this);
+}
+
+PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int type) {
+    packed = 0;
+    prim.PRIM = type;
+    q = 1.0f;
+
+    PrimRun &run = runs[this];
+    run.packed = false;
+    run.q = 1.0f;
+
+    BeginDma();
+}
+
+PORT_OVERRIDE void mgCDrawPrim::BeginPrim2(int prim_type, u_int data_a, u_int data_b, int unit_count) {
+    packed = 1;
+    prim.PRIM = prim_type;
+    q = 1.0f;
+    nreg = unit_count;
+
+    PrimRun &run = runs[this];
+    run.packed = true;
+    run.prim_type = prim_type;
+    run.q = 1.0f;
+    run.queue.clear();
+}
+
+PORT_OVERRIDE void mgCDrawPrim::EndPrim2() {
+    FlushPending(this);
+}
+
+PORT_OVERRIDE void mgCDrawPrim::End2() {
+    FlushPending(this);
+    runs.erase(this);
+}
+
+PORT_OVERRIDE void mgCDrawPrim::Data(int *data) {
+    // write is null on PC unless a caller points it at a buffer, so retail's quadword copy is guarded here.
+    if (write != NULL) {
+        memcpy(write, data, sizeof(u_long128));
+        write++;
+    }
+
+    const PrimRun *run = Find(this);
+
+    if (run == nullptr || !run->packed) {
+        return;
+    }
+
+    static bool reported = false;
+
+    if (!reported) {
+        reported = true;
+        std::fprintf(stderr, "mg_drawprim: packed GIF data ignored; its caller needs a port override\n");
+    }
+}
+
+PORT_OVERRIDE u_long128 *mgCDrawPrim::DirectData(int count) {
+    thread_local std::vector<u_long128> scratch(256);
+
+    if (count > 0 && static_cast<std::size_t>(count) > scratch.size()) {
+        scratch.resize(static_cast<std::size_t>(count));
+    }
+
+    return scratch.data();
+}
+
+PORT_OVERRIDE void mgCDrawPrim::Vertex4(int x, int y, int z) {
+    int ox = 0;
+    int oy = 0;
+    GetOffset(&ox, &oy);
+    Kick(*this, Find(this), static_cast<uint32_t>(x + ox), static_cast<uint32_t>(y + oy), static_cast<uint32_t>(z));
 }
 
 PORT_OVERRIDE void mgCDrawPrim::Color(int r, int g, int b, int a) {
-    PrimState &state = State(this);
-    state.color[0] = static_cast<u_char>(r);
-    state.color[1] = static_cast<u_char>(g);
-    state.color[2] = static_cast<u_char>(b);
-    state.color[3] = static_cast<u_char>(a);
+    PrimRun *run = Find(this);
+
+    if (run == nullptr) {
+        return;
+    }
+
+    run->color[0] = static_cast<uint8_t>(r & 0xFF);
+    run->color[1] = static_cast<uint8_t>(g & 0xFF);
+    run->color[2] = static_cast<uint8_t>(b & 0xFF);
+    run->color[3] = static_cast<uint8_t>(a & 0xFF);
 }
 
-void mgCDrawPrim::Color(float *color) {
-    Color(static_cast<int>(color[0]), static_cast<int>(color[1]), static_cast<int>(color[2]),
-          static_cast<int>(color[3]));
-}
 
 PORT_OVERRIDE void mgCDrawPrim::TextureCrd4(int u, int v) {
-    PrimState &state = State(this);
-    // 12.4 texel coordinates, signed 16-bit fields on the GS.
-    state.u = static_cast<float>(static_cast<s16>(u)) / 16.0f;
-    state.v = static_cast<float>(static_cast<s16>(v)) / 16.0f;
+    PrimRun *run = Find(this);
+
+    if (run == nullptr) {
+        return;
+    }
+
+    run->u = static_cast<float>(u) / 16.0f;
+    run->v = static_cast<float>(v) / 16.0f;
 }
 
-PORT_OVERRIDE void mgCDrawPrim::TextureCrd(int u, int v) {
-    TextureCrd4(u << 4, v << 4);
-}
+PORT_OVERRIDE void mgCDrawPrim::Direct(unsigned long long reg, unsigned long long data) {
+    // The pending batch was built under the state that is about to change.
+    FlushPending(this);
 
-PORT_OVERRIDE void mgCDrawPrim::Direct(u_long reg, u_long data) {
+    mgPortGsState &gs = mgPortGs();
+
     switch (reg) {
-        case SCE_GS_TEXFLUSH:
-            // The GS's sampler had a cache; the renderer samples the live image.
+        case SCE_GS_TEXA:
+            gs.texa = data;
             break;
-        case SCE_GS_TEXA: {
-            sceGsTexa texa;
-            *(u_long *) &texa = data;
-            g_regs.texa_seen = true;
-            g_regs.texa_ta0 = static_cast<u_char>(texa.TA0);
-            g_regs.texa_aem = texa.AEM != 0;
-            break;
-        }
-        case SCE_GS_TEST_1:
-        case SCE_GS_TEST_2: {
-            PrimState &state = State(this);
-            if (state.open && !state.vertices.empty()) {
-                SubmitRun(state, *this);
-                state.open = true;
-            }
-            g_regs.test.value = data;
-            g_regs.env_seen = true;
-            break;
-        }
-        case SCE_GS_ZBUF_1:
-        case SCE_GS_ZBUF_2: {
-            PrimState &state = State(this);
-            if (state.open && !state.vertices.empty()) {
-                SubmitRun(state, *this);
-                state.open = true;
-            }
-            g_regs.zbuf.value = data;
-            g_regs.env_seen = true;
-            break;
-        }
         case SCE_GS_ALPHA_1:
-        case SCE_GS_ALPHA_2: {
-            PrimState &state = State(this);
-            if (state.open && !state.vertices.empty()) {
-                SubmitRun(state, *this);
-                state.open = true;
-            }
-            g_regs.alpha.value = data;
-            g_regs.env_seen = true;
+            gs.alpha = data;
             break;
-        }
-        case SCE_GS_SCISSOR_1: {
-            PrimState &state = State(this);
-            if (state.open && !state.vertices.empty()) {
-                SubmitRun(state, *this);
-                state.open = true;
-            }
-            g_regs.scissor = mgport::ScissorRect(data);
-            g_regs.scissor_seen = true;
+        case SCE_GS_TEST_1:
+            gs.test = data;
             break;
-        }
-        case SCE_GS_BITBLTBUF:
-            g_regs.transfer_bitbltbuf = data;
+        case SCE_GS_ZBUF_1:
+            gs.zbuf = data;
             break;
-        case SCE_GS_TRXPOS:
-            g_regs.transfer_trxpos = data;
+        case SCE_GS_CLAMP_1:
+            gs.clamp = data;
             break;
-        case SCE_GS_TRXREG:
-            g_regs.transfer_trxreg = data;
+        case SCE_GS_TEX1_1:
+            gs.tex1 = data;
             break;
-        case SCE_GS_TRXDIR:
-            StartImageTransfer(static_cast<u_int>(data));
+        case SCE_GS_FOGCOL:
+            gs.fog_color[0] = static_cast<uint8_t>(data & 0xFF);
+            gs.fog_color[1] = static_cast<uint8_t>((data >> 8) & 0xFF);
+            gs.fog_color[2] = static_cast<uint8_t>((data >> 16) & 0xFF);
+            break;
+        case SCE_GS_SCISSOR_1:
+            gs.scissor[0] = static_cast<int>(data & 0x7FF);
+            gs.scissor[1] = static_cast<int>((data >> 32) & 0x7FF);
+            gs.scissor[2] = static_cast<int>((data >> 16) & 0x7FF);
+            gs.scissor[3] = static_cast<int>((data >> 48) & 0x7FF);
+            break;
+        case SCE_GS_TEXFLUSH:
+        case SCE_GS_PRMODECONT:
             break;
         default:
-            PS2_UNIMPLEMENTED();
+            if (ignored_direct_registers.insert(reg).second) {
+                std::fprintf(stderr, "mg_drawprim: Direct register 0x%x ignored\n", static_cast<unsigned>(reg));
+            }
+
+            break;
     }
 }
 
 PORT_OVERRIDE void mgCDrawPrim::Texture(mgCTexture *source) {
-    if (source != 0) {
-        PrimState &state = State(this);
-        if (state.open && !state.vertices.empty()) {
-            SubmitRun(state, *this);
-            state.open = true;
+    FlushPending(this);
+
+    if (source == NULL) {
+        return;
+    }
+
+    texture = *source;
+    texture.Bilinear(bilinear);
+}
+
+PORT_OVERRIDE int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
+    mgCTextureManager *manager = texture_manager;
+
+    if (group < 0 || group >= manager->block_max) {
+        return 0;
+    }
+
+    const int index = draw_order != NULL ? order_index[group] : group;
+
+    if (index < 0) {
+        return 0;
+    }
+
+    manager->ReloadTexture(group, vif_packet);
+    return 1;
+}
+
+PORT_OVERRIDE int mgCDrawManager::Draw(int group, sceVif1Packet *) {
+    if (group < 0 || group >= texture_manager->block_max) {
+        return 0;
+    }
+
+    if (draw_order != NULL) {
+        group = order_index[group];
+    }
+
+    if (group < 0) {
+        return 0;
+    }
+
+    mgSORT_PACKET **list = packet_list[group];
+
+    if (list == NULL) {
+        return 1;
+    }
+
+    u_long128 *common = NULL;
+
+    // Packets are called in the reverse of their registration order.
+    for (int i = packet_num[group] - 1; i >= 0; --i) {
+        const mgSORT_PACKET *entry = list[i];
+
+        if (entry == NULL) {
+            continue;
         }
-        // A plain data copy, as retail made of the texture fields: sceGsTex0's assignment is a
-        // link-time function in the texture unit, the copy in the packet never called it.
-        memcpy(&this->texture, source, sizeof(mgCTexture));
-        this->texture.Bilinear(bilinear);
 
-        g_regs.u_scale = 1.0f;
-        g_regs.v_scale = 1.0f;
-        // The manager's registry is keyed by the texture the game hands around, so the binding
-        // resolves from the source; the copy above stays the retail-shaped record.
-        g_regs.texture_resolved = PortMgTextureBinding(source, g_regs.binding);
-        // Bilinear() lands on the copy's TEX1, never the source's, and the packet sent that copy;
-        // the renderer's filter follows the same MMAG bit the resolver reads, so the override
-        // still chooses it.
-        g_regs.binding.filter =
-            (this->texture.tex1_bits >> 5) & 1 ? gfx::Filter::Linear : gfx::Filter::Nearest;
+        mgSendVuProg(nullptr, entry->vu_program);
+
+        if (common != entry->common) {
+            mgPortPacketDraw(entry->common);
+            common = entry->common;
+        }
+
+        mgPortPacketDraw(entry->packet);
+    }
+
+    return 1;
+}
+
+void mgPortSetPrimSink(mgPortPrimSink sink) {
+    prim_sink = std::move(sink);
+}
+
+void mgPortSetPacketDraw(const void *packet, std::function<void()> draw) {
+    if (packet == NULL) {
+        return;
+    }
+
+    packet_draws[packet] = std::move(draw);
+}
+
+void mgPortClearPacketDraw(const void *packet) {
+    packet_draws.erase(packet);
+}
+
+bool mgPortPacketDraw(const void *packet) {
+    if (packet == NULL) {
+        return false;
+    }
+
+    const auto it = packet_draws.find(packet);
+
+    if (it == packet_draws.end()) {
+        return false;
+    }
+
+    // Copied because the draw may clear or replace its own entry while it runs.
+    const std::function<void()> draw = it->second;
+    draw();
+    return true;
+}
+
+void mgPortPrimSubmit(mgCDrawPrim &prim, gfx::Primitive primitive, std::span<const gfx::Vertex2D> vertices) {
+    FlushPending(&prim);
+
+    // A disabled builder never flushes what it would batch, so it draws nothing here either.
+    if (prim.disabled != 0 || vertices.empty()) {
+        return;
+    }
+
+    const std::size_t group = primitive == gfx::Primitive::Lines       ? 2
+                              : primitive == gfx::Primitive::Triangles ? 3
+                                                                       : 0;
+
+    if (prim.prim.IIP != 0 || group == 0) {
+        DrawVertices(prim, primitive, vertices);
+        return;
+    }
+
+    std::vector<gfx::Vertex2D> flat(vertices.begin(), vertices.end());
+
+    for (std::size_t first = 0; first + group <= flat.size(); first += group) {
+        const std::size_t last = first + group - 1;
+
+        for (std::size_t i = first; i < last; ++i) {
+            std::copy_n(flat[last].color, 4, flat[i].color);
+        }
+    }
+
+    DrawVertices(prim, primitive, flat);
+}
+
+void mgPortStripTriangles(std::span<const gfx::Vertex2D> strip, std::vector<gfx::Vertex2D> &out) {
+    for (std::size_t i = 2; i < strip.size(); ++i) {
+        out.push_back(strip[i - 2]);
+        out.push_back(strip[i - 1]);
+        out.push_back(strip[i]);
     }
 }
 
-PORT_OVERRIDE void mgCDrawPrim::AlphaBlendEnable(int enable) {
-    prim.ABE = enable;
+void mgPortPrimColor(const mgCDrawPrim &prim, uint8_t rgba[4]) {
+    static constexpr uint8_t kWhite[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    const PrimRun *run = Find(&prim);
+    std::copy_n(run != nullptr ? run->color : kWhite, 4, rgba);
 }
 
-PORT_OVERRIDE void mgCDrawPrim::AlphaBlend(int mode) {
-    draw_env.SetAlpha(mode);
+gfx::Vertex2D mgPortPrimVertex(const mgCDrawPrim &prim, float gs_x, float gs_y, float gs_z, float u, float v,
+                               const uint8_t rgba[4], uint8_t fog) {
+    int offset_x = 0;
+    int offset_y = 0;
+    // GetOffset only reads the builder; retail declares it non-const.
+    const_cast<mgCDrawPrim &>(prim).GetOffset(&offset_x, &offset_y);
+
+    const float origin_x = mgPortLogicalX(0);
+    const float origin_y = mgPortLogicalY(0);
+    // The slope comes from the seam, which is affine, rather than from a fixed pixel-to-unit ratio.
+    const float scale_x = mgPortLogicalX(16) - origin_x;
+    const float scale_y = mgPortLogicalY(16) - origin_y;
+
+    gfx::Vertex2D vertex{};
+    vertex.x = origin_x + (gs_x + static_cast<float>(offset_x) / 16.0f) * scale_x;
+    vertex.y = origin_y + (gs_y + static_cast<float>(offset_y) / 16.0f) * scale_y;
+    // 4294967040 is the largest float below 2^32, so the cast to uint32_t is defined for every input.
+    vertex.z = mgPortDepth(static_cast<uint32_t>(std::clamp(gs_z, 0.0f, 4294967040.0f)));
+    vertex.u = u;
+    vertex.v = v;
+    std::copy_n(rgba, 4, vertex.color);
+    vertex.fog = fog;
+    return vertex;
 }
 
-// Sprite helpers change the active run's registers, after Begin sent draw_env.
-PORT_OVERRIDE void CPreSprite::SetAlphaBlend(int mode) {
-    switch (mode) {
-        case MG_ALPHA_BLEND_NORMAL:
-            Direct(SCE_GS_ALPHA_1, 0x44);
-            break;
-        case MG_ALPHA_BLEND_ADD:
-            Direct(SCE_GS_ALPHA_1, 0x48);
-            break;
-        case MG_ALPHA_BLEND_SUB:
-            Direct(SCE_GS_ALPHA_1, 0x42);
-            break;
-        case MG_ALPHA_BLEND_NONE:
-            Direct(SCE_GS_ALPHA_1, 0x800000002AULL);
-            break;
-    }
+// Stride fixes: retail sizes the pointer tables at four bytes an entry (n / 4 + 1 quadwords) and clears them as ints.
+namespace {
+
+template <typename T>
+T *AllocTable(mgCMemory *memory, int count) {
+    return reinterpret_cast<T *>(memory->Alloc(static_cast<int>((count * sizeof(T) + 15) / 16) + 1));
 }
 
-PORT_OVERRIDE void CPreSprite::SetScirror(int x, int y, int w, int h) {
-    Direct(SCE_GS_SCISSOR_1, static_cast<u_long>(x) | (static_cast<u_long>(x + w) << 16) |
-                               (static_cast<u_long>(y) << 32) | (static_cast<u_long>(y + h) << 48));
-}
-
-PORT_OVERRIDE void mgCDrawPrim::AlphaTestEnable(int enable) {
-    draw_env.test.bits.ate = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::AlphaTest(int method, int ref) {
-    draw_env.test.bits.atst = method;
-    draw_env.test.bits.aref = ref;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::DAlphaTest(int enable, int mode) {
-    draw_env.test.bits.date = enable;
-    draw_env.test.bits.datm = mode;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::DepthTestEnable(int enable) {
-    sceGsTest *test = &draw_env.test;
-
-    if (enable == 0) {
-        test->bits.zte = 1;
-        test->bits.ztst = 1;
-    } else {
-        DepthTest(MG_DEPTH_TEST_GEQUAL);
-    }
-}
-
-PORT_OVERRIDE void mgCDrawPrim::DepthTest(int mode) {
-    sceGsTest *test = &draw_env.test;
-    test->bits.zte = 1;
-
-    switch (mode) {
-        case -1:
-            test->bits.ztst = 1;
-            break;
-        case 1:
-            test->bits.ztst = 2;
-            break;
-        case 2:
-            test->bits.ztst = 3;
-            break;
-    }
-}
-
-PORT_OVERRIDE void mgCDrawPrim::ZMask(int mask) {
-    z_mask = mask;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::TextureMapEnable(int enable) {
-    prim.TME = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Bilinear(int enable) {
-    bilinear = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Shading(int enable) {
-    prim.IIP = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::AntiAliasing(int enable) {
-    prim.AA1 = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::FogEnable(int enable) {
-    prim.FGE = enable;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::Coord(int coord) {
-    this->coord = coord;
-}
-
-PORT_OVERRIDE void mgCDrawPrim::GetOffset(int *x, int *y) {
-    *y = 0;
-    *x = 0;
-
-    if (coord == 0) {
-        *x = mgScreenOffx << 4;
-        *y = mgScreenOffy << 4;
-    }
-
-    *x += offset_x;
-    *y += offset_y;
-}
-
-PORT_OVERRIDE mgCDrawManager::mgCDrawManager() {
-    unk_68 = 0x40;
-    unk_6c = 0;
-    unk_70 = 0;
-}
-
-PORT_OVERRIDE void mgCDrawManager::SetSortTable(int num) {
-    float near_dist = 1.0f;
-    float far_dist = 2.0f;
-
-    if (render_info != NULL) {
-        near_dist = render_info->clip_min[2];
-        far_dist = render_info->clip_max[2];
-    }
-
-    sort_num = num;
-    sort_max = sort_num - 1;
-    sort_num_f = (float) num;
-    near_clip = near_dist;
-    far_clip = far_dist;
-    clip_range = far_dist - near_clip;
-    sort_near = near_clip;
-    sort_ratio = near_clip / far_clip;
-    sort_scale = sort_num_f;
-}
+}  // namespace
 
 PORT_OVERRIDE void mgCDrawManager::BeginDraw(mgCMemory *new_memory, int *id_list) {
-    memory = new_memory;
+    memory = new_memory != NULL ? new_memory : packet_memory;
+    group_num = texture_manager->block_max;
+    group_max = group_num;
+    order_index = NULL;
+    draw_order = NULL;
 
-    if (memory == 0) {
-        memory = packet_memory;
-    }
+    if (id_list != NULL) {
+        order_index = AllocTable<int>(memory, group_max);
 
-    group_max = texture_manager != NULL ? texture_manager->block_max : 0;
-    group_num = group_max;
-    order_index = 0;
-    draw_order = 0;
+        for (int i = 0; i < group_max; i++) {
+            order_index[i] = -1;
+        }
 
-    if (id_list != 0) {
         int used_count = 0;
 
         while (id_list[used_count] >= 0) {
             used_count++;
         }
 
+        draw_order = AllocTable<int>(memory, used_count + 1);
+
+        for (int i = 0; i < used_count; i++) {
+            draw_order[i] = id_list[i];
+            order_index[draw_order[i]] = i;
+        }
+
+        draw_order[used_count] = -1;
         group_num = used_count;
     }
+
+    const int tables = group_num + 1;
+    packet_list = AllocTable<mgSORT_PACKET **>(memory, tables);
+    unk_14 = AllocTable<int>(memory, tables);
+    packet_num = AllocTable<int>(memory, tables);
+    sort_table = AllocTable<mgSORT_PACKET *>(memory, sort_num);
+    ClearTable();
 }
 
-PORT_OVERRIDE void mgCDrawManager::ClearTable() {}
-
-PORT_OVERRIDE void mgCDrawManager::PreEndDraw() {}
-
-PORT_OVERRIDE int mgCDrawManager::ReloadTexture(int group, sceVif1Packet *vif_packet) {
-    // The renderer's textures are the game's already; only the group's existence matters to the
-    // callers, which use the result to decide whether a block is drawn this pass.
-    (void) vif_packet;
-
-    if (texture_manager == NULL || group < 0 || group >= texture_manager->block_max) {
-        return 0;
+PORT_OVERRIDE void mgCDrawManager::ClearTable() {
+    for (int i = 0; i < group_num; i++) {
+        packet_list[i] = NULL;
+        unk_14[i] = 0;
+        packet_num[i] = 0;
     }
 
-    return 1;
-}
-
-PORT_OVERRIDE int mgCDrawManager::Draw(int group, sceVif1Packet *vif_packet) {
-    (void) vif_packet;
-
-    if (texture_manager == NULL || group < 0 || group >= texture_manager->block_max) {
-        return 0;
+    for (int i = 0; i < sort_num; i++) {
+        sort_table[i] = NULL;
     }
-
-    return 1;
 }
 
-PORT_OVERRIDE void mgCDrawManager::EndDraw(sceVif1Packet *vif_packet) {
-    (void) vif_packet;
-}
+PORT_OVERRIDE void mgCDrawManager::PreEndDraw() {
+    packet_cursor = AllocTable<mgSORT_PACKET **>(memory, group_num);
 
-PORT_OVERRIDE void mgCDrawManager::AddPacket(int group, u_long128 *common, u_long128 *packet, int vu_program) {
-    // Retail registered the packet in its texture group's sort list and the frame's DMA chain
-    // called it on the GS. A VU1 program has no host executor, and the units that built these
-    // packets (the visual ones) draw through the renderer directly now, so registration keeps the
-    // only decision retail's callers could observe: a packet for a group this pass does not draw
-    // is dropped, one for a drawn group is accepted with nothing left to run.
-    (void) common;
-    (void) packet;
-    (void) vu_program;
-
-    if (group >= group_max) {
-        return;
-    }
-
-    if (order_index != 0) {
-        const int index = group < 0 ? order_index[*draw_order] : order_index[group];
-
-        if (index < 0) {
-            return;
+    for (int i = 0; i < group_num; i++) {
+        if (packet_num[i] > 0) {
+            packet_list[i] = AllocTable<mgSORT_PACKET *>(memory, packet_num[i]);
+            packet_cursor[i] = packet_list[i];
         }
+    }
+
+    // Only the first sort bucket is used.
+    for (mgSORT_PACKET *item = sort_table[0]; item != NULL; item = item->next) {
+        *packet_cursor[item->group]++ = item;
     }
 }

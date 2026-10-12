@@ -580,7 +580,7 @@ index 7d4424cf..67fa0501 100644
 +        // as it is here.
 +        s32 ch = ((u8 *) text)[back - 1];
 +#else
-         s32 ch = ((u8 *) (back + (s32) text))[-1];
+         s32 ch = ((u8 *) (back + (uptr) text))[-1];
 +#endif
          s32 digit = 0;
  
@@ -1106,8 +1106,8 @@ index 6b40053c..fd75037d 100644
  #include "sceneload.hpp"
  #include "scenesnd.hpp"
  
--static int         LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
-+static int LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
+-static uptr        LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
++static uptr LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
 +
 +#ifdef PORT
 +#include <chrono>
@@ -1186,7 +1186,7 @@ index eca3d995..11ece85a 100644
 +                                    // half with the PS2's strides; the member itself is used here.
 +                                    place = schedule->place[alternative][time];
 +#else
-                                     place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + alternative_offset + 8);
+                                     place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (uptr) schedule + alternative_offset + 8);
 +#endif
  
                                      if (place != NULL) {
@@ -1198,7 +1198,7 @@ index eca3d995..11ece85a 100644
 +#ifdef PORT
 +                            place = schedule->place[fallback_alternative][time];
 +#else
-                             place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + fallback_offset + 8);
+                             place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (uptr) schedule + fallback_offset + 8);
 +#endif
  
                              if (place != NULL && map_no >= 0 && place->map_no == map_no) {
@@ -1207,52 +1207,52 @@ diff --git a/ps2/src/water.cpp b/ps2/src/water.cpp
 index f006fb2d..073351db 100644
 --- a/ps2/src/water.cpp
 +++ b/ps2/src/water.cpp
-@@ -671,7 +671,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -671,7 +671,11 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
      int                point_count;
      int                started;
      mgCMemory         *memory;
 +#ifdef PORT
-+    u_long128         *base;
++    uptr               base;
 +#else
-     u_int              base;
+     uptr               base;
 +#endif
      WaterFinishPacket *finish;
      u_int             *counts;
      float             *previous;
-@@ -732,8 +736,14 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -732,8 +736,14 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
          slope[2][c][3] = 0.3f;
      }
  
 +#ifdef PORT
 +    // The packet is written through the host pointer; the PS2's uncached alias does not exist.
-+    base = memory->stGetTop();
-+    start = base;
++    base = (uptr) memory->stGetTop();
++    start = (u_long128 *) base;
 +#else
-     base = (u_int) memory->stGetTop();
+     base = (uptr) memory->stGetTop();
      start = (u_long128 *) (base | MG_UNCACHED);
 +#endif
      end = start;
  
      if (texture != NULL) {
-@@ -794,7 +804,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -794,7 +804,11 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
              positions = (u_long128 *) (strip + 1);
              vertex_count = point_count * 2;
              int bytes = point_count * 32;
 +#ifdef PORT
 +            out = (u_long128 *) ((u_char *) strip + bytes) + 3;
 +#else
-             out = (u_long128 *) (bytes + (u_int) strip) + 3;
+             out = (u_long128 *) (bytes + (uptr) strip) + 3;
 +#endif
  
              for (index = 0; index < point_count; index++) {
                  positions[0] = *(u_long128 *) position0;
-@@ -857,8 +871,13 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -857,8 +871,13 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
      finish->ret.vif[1] = 0;
      out += 3;
      memory->Alloc(out - start);
 +#ifdef PORT
-+    packet = (u_int) (unsigned long) base;
-+    return (u_int) (unsigned long) base;
++    packet = base;
++    return base;
 +#else
      packet = base;
      return base;

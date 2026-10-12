@@ -6,6 +6,7 @@
 #include "mg_frame.hpp"
 #include "mg_math.hpp"
 #include "mglib.hpp"
+#include "mglib_port.hpp"
 #include "stubs/mg_frame.hpp"
 #include "vu0_lanes.hpp"
 
@@ -361,13 +362,13 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
         DivideByW(divided, transformed);
         BoxOf(divided, rect_max, rect_min);
 
-        // The box counts only when it overlaps the screen, whose coordinates are relative to its
-        // centre, and does not lie behind the near plane; it is then moved to screen coordinates.
+        // Cull against what the target shows, not the 4:3 screen: a wider window shows more at the sides.
         visible = 0;
-        left = 0.5f * -mgScreenWidth;
-        top = 0.5f * -mgScreenHeight;
-        float right = left + mgScreenWidth;
-        float bottom = top + mgScreenHeight;
+        const mgPortExtent extent = mgPortVisibleExtent();
+        left = extent.left - 0.5f * mgScreenWidth;
+        top = extent.top - 0.5f * mgScreenHeight;
+        float right = extent.right - 0.5f * mgScreenWidth;
+        float bottom = extent.bottom - 0.5f * mgScreenHeight;
 
         if (rect_min[0] <= right && rect_max[0] >= left && rect_min[1] <= bottom && rect_max[1] >= top &&
             rect_max[3] >= info->clip_min[2]) {

@@ -58,14 +58,13 @@ int main(int argc, char **argv) {
     sound.StreamPlay(0);
     sound.StreamPlay(1);
     sound.StreamStop(0);
-    assert(!mixer.IsGameStreamPlaying(0) && mixer.IsGameStreamPlaying(1));
+    assert(sound.StreamGetState(0) == 0 && sound.StreamGetState(1) == 0x1000);
     sound.StreamPlay(0);
     sound.Exit();
     assert(sound.StreamGetState(0) == 0 && sound.StreamGetState(1) == 0);
-    assert(!mixer.IsGameStreamPlaying(0) && !mixer.IsGameStreamPlaying(1));
-    mixer.PlayGameStream(0);
-    mixer.PlayGameStream(1);
-    assert(!mixer.IsGameStreamPlaying(0) && !mixer.IsGameStreamPlaying(1));
+    sound.StreamPlay(0);
+    sound.StreamPlay(1);
+    assert(sound.StreamGetState(0) == 0 && sound.StreamGetState(1) == 0);
     sound.StreamOpenFast(0, direct.data());
     sound.StreamPlay(0);
     assert(sound.StreamGetState(0) == 0x1000);

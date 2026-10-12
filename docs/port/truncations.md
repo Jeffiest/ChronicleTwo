@@ -28,28 +28,20 @@ Origin is where the pointer points, where the expression shows it: **image** (a 
 
 | class | replaced | open | total |
 |---|---|---|---|
-| round-trip | 1 | 8 | 9 |
-| resolved | 2 | 0 | 2 |
-| escapes | 39 | 71 | 110 |
-| low-bits | 0 | 2 | 2 |
-| **all** | 42 | 81 | 123 |
+| round-trip | 0 | 2 | 2 |
+| resolved | 1 | 0 | 1 |
+| escapes | 31 | 3 | 34 |
+| low-bits | 4 | 6 | 10 |
+| **all** | 36 | 11 | 47 |
 
-Open round trips by unit: ps2/src/ezmidi.cpp 1, ps2/src/mg_sprite.cpp 2, ps2/src/mg_visual.cpp 1, ps2/src/runscript_opcodes.cpp 2, ps2/src/vlgr_info.cpp 1, ps2/src/water.cpp 1.
+Open round trips by unit: ps2/src/movie.cpp 2.
 
-## Open round trips in linked code (8)
+## Open round trips in linked code (0)
 
 Each is assigned the phase whose work package replaces its function (`PHASE_OF` in `scripts/port/truncations.py`).
 
 | unit | line | function | phase | expression |
 |---|---|---|---|---|
-| ps2/src/ezmidi.cpp | 79 | ezTransToIOP2 | Phase 5 | `(u32)ee_address` |
-| ps2/src/mg_sprite.cpp | 239 | mgC3DSprite::Draw | Phase 4 | `(int)data_memory->stAllocTest(0x3C)` |
-| ps2/src/mg_sprite.cpp | 539 | mgCSprite::Draw | Phase 4 | `(int)memory->stAllocTest(0x3C)` |
-| ps2/src/mg_visual.cpp | 607 | mgCVisualFixMDT::DataAssignMDT | Phase 4 | `(int)& memory->stack[memory->stack_used]` |
-| ps2/src/runscript_opcodes.cpp | 4481 | _SET_INDEXOBJ_SIZE | Phase 7 | `(int)objects` |
-| ps2/src/runscript_opcodes.cpp | 4504 | _GET_INDEXOBJ_SIZE | Phase 7 | `(int)& monster->entry_object` |
-| ps2/src/vlgr_info.cpp | 464 | niNPC_INFO_NUM | Phase 7 | `(int)new(niStack->Alloc(blocks + 2))CVillagerInfo[count]` |
-| ps2/src/water.cpp | 595 | CWater::Draw | Phase 4 | `(int)data_memory->stAllocTest(0x3C)` |
 
 ## Address-alias literals (text scan, 20 lines)
 
@@ -59,10 +51,10 @@ the same literals in their **masked** column when the masked expression holds a 
 
 | unit | line | cast | text |
 |---|---|---|---|
-| ps2/src/mg_shadow.cpp | 63 | yes | `if (((u_int) packet & 0xF0000000) == 0x20000000) {` |
+| ps2/src/mg_shadow.cpp | 63 | no | `if (((uptr) packet & 0xF0000000) == 0x20000000) {` |
 | ps2/src/mg_shadow.cpp | 239 | no | `int count = CreateFacePacket((u_int *) (face_cursor \| 0x20000000), group);` |
-| ps2/src/mg_shadow.cpp | 259 | yes | `return (int) packet_start & 0x0FFFFFFF;` |
-| ps2/src/mg_sprite.cpp | 526 | yes | `return (u_int) start & 0xFFFFFFF;` |
+| ps2/src/mg_shadow.cpp | 259 | no | `return (uptr) packet_start & 0x0FFFFFFF;` |
+| ps2/src/mg_sprite.cpp | 526 | no | `return (uptr) start & 0xFFFFFFF;` |
 | ps2/src/mg_visual.cpp | 106 | no | `int address_mask = 0x0FFFFFFF;` |
 | ps2/src/mg_visual.cpp | 131 | no | `DmaCH8->sadr = (u_long) GetScrPad() & 0x0FFFFFFF;` |
 | ps2/src/mg_visual.cpp | 689 | no | `int    size = SetMaterialRef((u_long128 *) (data_cursor \| 0x20000000),` |
@@ -71,304 +63,128 @@ the same literals in their **masked** column when the masked expression holds a 
 | ps2/src/mg_visual.cpp | 739 | no | `return start & 0xFFFFFFF;` |
 | ps2/src/mg_visual.cpp | 764 | no | `SetMaterialRef((u_long128 *) (data_cursor \| 0x20000000), material + node->material,` |
 | ps2/src/mg_visual.cpp | 777 | no | `SetPModeRef((u_long128 *) (data_cursor \| 0x20000000), sub->type);` |
-| ps2/src/movie.cpp | 186 | yes | `return (void *) ((u32) addr & 0xFFFFFFF);` |
-| ps2/src/movie.cpp | 190 | yes | `return (void *) (((u32) addr & 0xFFFFFFF) \| 0x20000000);` |
-| ps2/src/movie.cpp | 759 | yes | `if (addr == (void *) (((u32) buf->tag + (buf->n + 1) * 0x10) & 0xFFFFFFF)) {` |
-| ps2/src/movie.cpp | 790 | yes | `buf->tag = (u_long128 *) (((u32) tags & 0xFFFFFFF) \| 0x20000000);` |
-| ps2/src/movie.cpp | 827 | yes | `*(int *) 0x1000B410 = (u32) buf->data & 0xFFFFFFF;` |
-| ps2/src/movie.cpp | 828 | yes | `*(int *) 0x1000B430 = (u32) buf->tag & 0xFFFFFFF;` |
+| ps2/src/movie.cpp | 186 | no | `return (void *) ((uptr) addr & 0xFFFFFFF);` |
+| ps2/src/movie.cpp | 190 | no | `return (void *) (((uptr) addr & 0xFFFFFFF) \| 0x20000000);` |
+| ps2/src/movie.cpp | 759 | no | `if (addr == (void *) (((uptr) buf->tag + (buf->n + 1) * 0x10) & 0xFFFFFFF)) {` |
+| ps2/src/movie.cpp | 790 | no | `buf->tag = (u_long128 *) (((uptr) tags & 0xFFFFFFF) \| 0x20000000);` |
+| ps2/src/movie.cpp | 827 | no | `*(int *) 0x1000B410 = (uptr) buf->data & 0xFFFFFFF;` |
+| ps2/src/movie.cpp | 828 | no | `*(int *) 0x1000B430 = (uptr) buf->tag & 0xFFFFFFF;` |
 | ps2/src/movie.cpp | 903 | no | `chcr = (chcr & 0xFFFFFFF) \| 0x30000000;` |
 | ps2/src/movie.cpp | 946 | no | `MOVIE_CHCR_LOW_MASK = 0xFFFFFFF, /**< Keeps the low 28 bits of a saved DMA channel control word when its upper tag bits are replaced. */` |
 
-## ps2/src/automap.cpp (1 rows)
+## ps2/src/dataread.cpp (1 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 1489 | CAutoMapGen::CreatTermParts | open | escapes | `(int)cells` | local pointer | other: Unknown | - |
-
-## ps2/src/character.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 813 | CCharacter2::SetMotionPara | open | low-bits | `(int)sequence` | local pointer | test | - |
-
-## ps2/src/dataread.cpp (2 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 532 | InitCDFile | replaced | escapes | `(int)header_buff` | image | other: Unknown | - |
-| 926 | InitFileCache | replaced | resolved | `(u_int)address` | parameter | argument: align_size (read back only in InitFileCache) | - |
+| 926 | InitFileCache | replaced | resolved | `(uptr)address` | parameter | argument: align_size (read back only in InitFileCache) | - |
 
 ## ps2/src/editdata.cpp (2 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 303 | CEditMap::SaveData | open | escapes | `(int)out` | local pointer | other: Unknown | - |
-| 494 | CEditMap::LoadData | open | escapes | `(int)in` | local pointer | other: Unknown | - |
+| 303 | CEditMap::SaveData | open | low-bits | `(uptr)out` | local pointer | test | - |
+| 494 | CEditMap::LoadData | open | low-bits | `(uptr)in` | local pointer | test | - |
 
-## ps2/src/editriver.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 393 | CEditGrid::GetFast | open | escapes | `(int)data` | field | other: Unknown | - |
-
-## ps2/src/effscript.cpp (2 rows)
+## ps2/src/mainloop.cpp (1 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 372 | CEffectScriptMan::LoadBaseEffSpt | open | escapes | `(int)load_buffer` | field | other: Unknown | - |
-| 384 | CEffectScriptMan::LoadBaseEffSpt | open | escapes | `(int)load_buffer` | field | other: Unknown | - |
-
-## ps2/src/event_func.cpp (5 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 16548 | _DIST_VECTOR | open | escapes | `(int)stack` | parameter | other: Unknown | - |
-| 16564 | _DIST_VECTOR2 | open | escapes | `(int)stack` | parameter | other: Unknown | - |
-| 17167 | _SWE_SET_COLOR | open | escapes | `(int)chara` | local pointer | other: Unknown | - |
-| 17217 | _SWE_SET_TEXTURE | open | escapes | `(int)chara` | local pointer | other: Unknown | - |
-| 17262 | _SWE_START_EFFECT | open | escapes | `(int)chara` | local pointer | other: Unknown | - |
-
-## ps2/src/ezmidi.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 79 | ezTransToIOP2 | open | round-trip | `(u32)ee_address` | parameter | store: source | Phase 5 |
-
-## ps2/src/fishing.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 1327 | CreateLoadThread | open | escapes | `(int)memory->Alloc(0x4001)` | arena (Alloc) | other: Unknown | - |
-
-## ps2/src/mainloop.cpp (2 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 556 | MainLoop | replaced | escapes | `(int)(read_memory->stack + read_memory->stack_used)` | unknown | other: Unknown | - |
-| 1450 | LoadFontTexture | open | escapes | `(u32)buffer` | local pointer | other: Unknown | - |
-
-## ps2/src/menucommon.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 866 | MenuCalcBufAlignment | open | escapes | `(int)buffer` | parameter | store: size | - |
-
-## ps2/src/menudraw.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 6397 | CRepairManager::Generate | open | escapes | `(int)this` | this | other: Unknown | - |
+| 1450 | LoadFontTexture | open | low-bits | `(uptr)buffer` | local pointer | store: misalign | - |
 
 ## ps2/src/menusys.cpp (1 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 6860 | CMenuItemInfo::ExitEnd | open | escapes | `(int)*(void * *)& MenuCommonInfo->cursor` | field | other: Unknown | - |
+| 6860 | CMenuItemInfo::ExitEnd | open | escapes | `(int)*(void * *)& MenuCommonInfo->cursor` | field | store: MenuSystemDataPtr->item_cursor | - |
 
-## ps2/src/mg_dataset.cpp (2 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 187 | htoi | open | escapes | `(s32)text` | parameter | other: Unknown | - |
-| 682 | mgLoadMDSFile | open | escapes | `(int)mds` | local pointer | other: Unknown | - |
-
-## ps2/src/mg_drawenv.cpp (1 rows)
+## ps2/src/mg_drawprim.cpp (2 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 401 | mgRENDER_INFO::GetPlight | open | escapes | `(int)GetpLightInfo()` | call (GetpLightInfo) | other: Unknown | - |
-
-## ps2/src/mg_drawprim.cpp (3 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 137 | mgCDrawPrim::Begin2 | replaced | escapes | `(u_int)packet_start` | field | other: Unknown | - |
-| 693 | mgCDrawManager::Draw | open | escapes | `(u_int)(* entry)->common` | field | other: Unknown | - |
-| 701 | mgCDrawManager::Draw | open | escapes | `(u_int)(* entry)->packet` | field | other: Unknown | - |
+| 693 | mgCDrawManager::Draw | replaced | escapes | `(uptr)(* entry)->common` | field | store to memory: tag[1] | - |
+| 701 | mgCDrawManager::Draw | replaced | escapes | `(uptr)(* entry)->packet` | field | store to memory: tag[1] | - |
 
 ## ps2/src/mg_memory.cpp (2 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 234 | mgCMemory::stAlign64 | replaced | escapes | `(u_int)& stack[stack_used]` | arena (stack) | other: Unknown | - |
-| 252 | mgCMemory::Align64 | replaced | escapes | `(u_int)& stack[stack_used]` | arena (stack) | other: Unknown | - |
+| 234 | mgCMemory::stAlign64 | replaced | low-bits | `(uptr)& stack[stack_used]` | arena (stack) | store: misalign | - |
+| 252 | mgCMemory::Align64 | replaced | low-bits | `(uptr)& stack[stack_used]` | arena (stack) | store: misalign | - |
 
-## ps2/src/mg_shadow.cpp (3 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 63 | mgCShadowMDT::CreateFacePacket | replaced | escapes | `(u_int)packet` | parameter | other: Unknown | - |
-| 222 | mgCShadowMDT::CreatePacket | replaced | resolved | `(int)& face_memory->stack[face_memory->stack_used]` | arena (stack) | store: face_start (read back only in mgCShadowMDT::CreatePacket) | - |
-| 259 | mgCShadowMDT::CreatePacket | replaced | escapes | `(int)packet_start` | arena (stack) | other: Unknown | - |
-
-## ps2/src/mg_sprite.cpp (7 rows)
+## ps2/src/mg_sprite.cpp (3 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 239 | mgC3DSprite::Draw | open | round-trip | `(int)data_memory->stAllocTest(0x3C)` | arena (stAllocTest) | store: buffer | Phase 4 |
-| 250 | mgC3DSprite::Draw | open | escapes | `(u_int)packet` | field | other: Unknown | - |
-| 266 | mgC3DSprite::BeginCreatePacket | replaced | escapes | `(u_int)packet` | field | other: Unknown | - |
-| 524 | mgCSprite::CreatePacket | replaced | escapes | `(int)(end_tag + 4)` | unknown | other: Unknown | - |
-| 524 | mgCSprite::CreatePacket | replaced | escapes | `(int)start` | local pointer | other: Unknown | - |
-| 526 | mgCSprite::CreatePacket | replaced | escapes | `(u_int)start` | local pointer | other: Unknown | - |
-| 539 | mgCSprite::Draw | open | round-trip | `(int)memory->stAllocTest(0x3C)` | arena (stAllocTest) | store: buffer | Phase 4 |
+| 250 | mgC3DSprite::Draw | replaced | escapes | `(uptr)packet` | field | store to memory: cursor[1] | - |
+| 524 | mgCSprite::CreatePacket | replaced | escapes | `(sptr)(end_tag + 4)` | local pointer | argument: Alloc | - |
+| 524 | mgCSprite::CreatePacket | replaced | escapes | `(sptr)start` | local pointer | argument: Alloc | - |
 
-## ps2/src/mg_tanime.cpp (1 rows)
+## ps2/src/mg_texture.cpp (1 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 675 | mgCTextureAnime::NewTexAnimeGroupData | open | escapes | `(int)this` | this | other: Unknown | - |
+| 1417 | mgLoadImage | replaced | escapes | `(uptr)image` | parameter | store to memory: packet[9] | - |
 
-## ps2/src/mg_texture.cpp (6 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 539 | mgCTextureManager::Initialize | open | escapes | `(int)blocks` | field | other: Unknown | - |
-| 546 | mgCTextureManager::Initialize | open | escapes | `(int)this` | this | other: Unknown | - |
-| 644 | mgCTextureManager::SearchHash | open | escapes | `(int)this` | this | other: Unknown | - |
-| 1417 | mgLoadImage | open | escapes | `(u_int)image` | parameter | other: Unknown | - |
-| 1474 | mgCTextureManager::ReloadTexture | open | escapes | `(int)base` | field | other: Unknown | - |
-| 1566 | mgCTextureManager::ReloadTexture | open | escapes | `(int)texture` | local pointer | other: Unknown | - |
-
-## ps2/src/mg_visual.cpp (20 rows)
+## ps2/src/mg_visual.cpp (6 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 410 | mgCVisualMDT::CopyMDTDataPointer | open | escapes | `(int)header` | parameter | other: Unknown | - |
-| 411 | mgCVisualMDT::CopyMDTDataPointer | open | escapes | `(int)header` | parameter | other: Unknown | - |
-| 412 | mgCVisualMDT::CopyMDTDataPointer | open | escapes | `(int)header` | parameter | other: Unknown | - |
-| 413 | mgCVisualMDT::CopyMDTDataPointer | open | escapes | `(int)header` | parameter | other: Unknown | - |
-| 547 | mgCVisualMDT::CreateFace | open | low-bits | `(int)out_face` | parameter | test | - |
-| 607 | mgCVisualFixMDT::DataAssignMDT | open | round-trip | `(int)& memory->stack[memory->stack_used]` | arena (stack) | store: address | Phase 4 |
-| 637 | mgCVisualMDT::Draw | open | escapes | `(int)buffer` | local pointer | other: Unknown | - |
-| 645 | mgCVisualMDT::Draw | open | escapes | `(u_int)node->packet` | field | other: Unknown | - |
-| 680 | mgCVisualMDT::CreatePacket | replaced | round-trip | `(u_int)(packet_memory->stack + packet_memory->stack_used)` | unknown | store: start | - |
-| 682 | mgCVisualMDT::CreatePacket | replaced | escapes | `(u_int)(data_memory->stack + data_memory->stack_used)` | unknown | other: Unknown | - |
-| 733 | mgCVisualMDT::CreatePacket | replaced | escapes | `(int)cursor` | integer | other: Unknown | - |
-| 733 | mgCVisualMDT::CreatePacket | replaced | escapes | `(int)node->packet` | field | other: Unknown | - |
-| 737 | mgCVisualMDT::CreatePacket | replaced | escapes | `(int)cursor` | integer | other: Unknown | - |
-| 755 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(u_int)(data_memory->stack + data_memory->stack_used)` | unknown | other: Unknown | - |
-| 799 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(int)cursor` | parameter | other: Unknown | - |
-| 799 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(int)node->packet` | field | other: Unknown | - |
-| 803 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(int)cursor` | parameter | other: Unknown | - |
-| 803 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(int)(u_int *)manager` | parameter | other: Unknown | - |
-| 805 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(u_int)manager` | parameter | return | - |
-| 1090 | mgCVisualMDT::CreateFacePacket | replaced | escapes | `(u_int)packet` | parameter | other: Unknown | - |
+| 637 | mgCVisualMDT::Draw | replaced | escapes | `(uptr)buffer` | arena (stack) | store to memory: tag[1] | - |
+| 645 | mgCVisualMDT::Draw | replaced | escapes | `(uptr)node->packet` | field | store to memory: cursor[1] | - |
+| 733 | mgCVisualMDT::CreatePacket | replaced | escapes | `(sptr)cursor` | integer | store: node->packet_size | - |
+| 733 | mgCVisualMDT::CreatePacket | replaced | escapes | `(sptr)node->packet` | field | store: node->packet_size | - |
+| 799 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(sptr)cursor` | parameter | store: node->packet_size | - |
+| 799 | mgCVisualFixMDT::CreatePacket | replaced | escapes | `(sptr)node->packet` | field | store: node->packet_size | - |
 
 ## ps2/src/mglib.cpp (3 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 563 | mgInitVif1Packet | open | escapes | `(int)packetbuf[0]` | field | other: Unknown | - |
-| 569 | mgInitVif1Packet | open | escapes | `(int)packetbuf[1]` | field | other: Unknown | - |
-| 1910 | mgSendVuProg | open | escapes | `(u_int)packet` | call (mgGetVuProgPacket) | other: Unknown | - |
+| 563 | mgInitVif1Packet | replaced | low-bits | `(sptr)packetbuf[0]` | field | store: misalign | - |
+| 569 | mgInitVif1Packet | replaced | low-bits | `(sptr)packetbuf[1]` | field | store: misalign | - |
+| 1910 | mgSendVuProg | replaced | escapes | `(uptr)packet` | call (mgGetVuProgPacket) | store to memory: tag[1] | - |
 
-## ps2/src/movie.cpp (24 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 186 | DmaAddr | open | escapes | `(u32)addr` | parameter | other: Unknown | - |
-| 190 | UncAddr | open | escapes | `(u32)addr` | parameter | other: Unknown | - |
-| 759 | getFIFOindex | open | escapes | `(u32)buf->tag` | field | other: Unknown | - |
-| 763 | getFIFOindex | open | escapes | `(u32)addr` | parameter | other: Unknown | - |
-| 763 | getFIFOindex | open | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 785 | scTag2 | open | escapes | `(u32)addr` | parameter | other: Unknown | - |
-| 790 | viBufCreate | replaced | escapes | `(u32)tags` | parameter | other: Unknown | - |
-| 827 | viBufReset | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 828 | viBufReset | replaced | escapes | `(u32)buf->tag` | field | other: Unknown | - |
-| 982 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 984 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 985 | viBufRestartDMA | replaced | escapes | `(u32)DmaAddr(buf->tag)` | call (DmaAddr) | other: Unknown | - |
-| 987 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 987 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 997 | viBufRestartDMA | replaced | escapes | `(u32)DmaAddr(& buf->tag[index])` | call (DmaAddr) | other: Unknown | - |
-| 998 | viBufRestartDMA | replaced | escapes | `(u32)& buf->data_bytes[index << 11]` | field | other: Unknown | - |
-| 999 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 999 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 1000 | viBufRestartDMA | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 1159 | viBufGetTs | replaced | escapes | `(u32)buf->data` | field | other: Unknown | - |
-| 1234 | strFileOpen | open | escapes | `(u32)file->iop_buf` | field | other: Unknown | - |
-| 1357 | audioDecCreate | open | escapes | `(int)sceSifAllocIopHeap(iop_size)` | call (sceSifAllocIopHeap) | other: Unknown | - |
-| 1366 | audioDecCreate | open | escapes | `(int)sceSifAllocIopHeap(0x800)` | call (sceSifAllocIopHeap) | other: Unknown | - |
-| 1704 | audioDecBeginPut | open | escapes | `(int)dec->hdr` | member array of parameter | other: Unknown | - |
-
-## ps2/src/runscript_opcodes.cpp (2 rows)
+## ps2/src/movie.cpp (7 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 4481 | _SET_INDEXOBJ_SIZE | open | round-trip | `(int)objects` | member array of global pointer | store: address | Phase 7 |
-| 4504 | _GET_INDEXOBJ_SIZE | open | round-trip | `(int)& monster->entry_object` | global pointer | store: object_base | Phase 7 |
-
-## ps2/src/sceneload.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 177 | LoadMapData | open | escapes | `(int)load_buf` | field | return | - |
+| 763 | getFIFOindex | open | round-trip | `(uptr)addr` | parameter | return | not linked |
+| 763 | getFIFOindex | open | round-trip | `(uptr)buf->data` | field | return | not linked |
+| 827 | viBufReset | open | low-bits | `(uptr)buf->data` | field | store to memory: *(int *)0x1000B410 (masked 0x0FFFFFFF) | - |
+| 828 | viBufReset | open | low-bits | `(uptr)buf->tag` | field | store to memory: *(int *)0x1000B430 (masked 0x0FFFFFFF) | - |
+| 984 | viBufRestartDMA | open | escapes | `(uptr)buf->data` | field | store: qwc | - |
+| 998 | viBufRestartDMA | open | escapes | `(uptr)& buf->data_bytes[index << 11]` | field | store: qwc | - |
+| 1159 | viBufGetTs | open | low-bits | `(uptr)buf->data` | field | store: read_pos | - |
 
 ## ps2/src/snd_mngr.cpp (5 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 1014 | sndLoadSound | open | escapes | `(int)hd` | local pointer | argument: LoadHdBd | - |
-| 1014 | sndLoadSound | open | escapes | `(int)bd` | local pointer | argument: LoadHdBd | - |
-| 1026 | sndLoadSound | open | escapes | `(int)hd` | local pointer | argument: LoadHdBdAdd | - |
-| 1026 | sndLoadSound | open | escapes | `(int)bd` | local pointer | argument: LoadHdBdAdd | - |
-| 1055 | sndLoadSound | open | escapes | `(int)sq[i]` | field | argument: LoadSeq | - |
-
-## ps2/src/snd_seseq.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 99 | sndCSeSeqData::LoadSMF | open | escapes | `(int)smf` | parameter | other: Unknown | - |
+| 1014 | sndLoadSound | replaced | escapes | `(uptr)hd` | local pointer | argument: LoadHdBd | - |
+| 1014 | sndLoadSound | replaced | escapes | `(uptr)bd` | local pointer | argument: LoadHdBd | - |
+| 1026 | sndLoadSound | replaced | escapes | `(uptr)hd` | local pointer | argument: LoadHdBdAdd | - |
+| 1026 | sndLoadSound | replaced | escapes | `(uptr)bd` | local pointer | argument: LoadHdBdAdd | - |
+| 1055 | sndLoadSound | replaced | escapes | `(uptr)sq[i]` | field | argument: LoadSeq | - |
 
 ## ps2/src/sound.cpp (13 rows)
 
 | line | function | state | class | expression | origin | use | phase |
 |---|---|---|---|---|---|---|---|
-| 423 | CSound::DEL_PORT | open | escapes | `(int)midi_state.port[port].resident_sequence` | field | argument: ezMidi | - |
-| 444 | CSound::DEL_PORT | open | escapes | `(int)midi_state.port[midi_state.port[port].linked_port].resident_sequence` | field | argument: ezMidi | - |
-| 469 | CSound::DEL_PORT | open | escapes | `(int)midi_state.port[dependent_port].resident_sequence` | field | argument: ezMidi | - |
-| 494 | CSound::SQ_Play | open | escapes | `(int)sequence` | local pointer | argument: ezMidi | - |
-| 726 | CSound::LoadHdBd2 | open | escapes | `(int)& gBank` | image | argument: ezMidi | - |
-| 730 | CSound::LoadHdBd2 | open | escapes | `(int)& gBank` | image | argument: ezMidi | - |
-| 742 | CSound::LoadHdBd2 | open | escapes | `(int)midi_state.port[port].resident_sequence` | field | argument: ezMidi | - |
-| 767 | CSound::LoadHdBd2 | open | escapes | `(int)midi_state.port[midi_state.port[port].linked_port].resident_sequence` | field | argument: ezMidi | - |
-| 847 | CSound::LoadHdBdAdd | open | escapes | `(int)& gBank` | image | argument: ezMidi | - |
-| 850 | CSound::LoadHdBdAdd | open | escapes | `(int)& gBank` | image | argument: ezMidi | - |
-| 886 | CSound::LoadSeq | open | escapes | `(int)sequence` | local pointer | argument: ezMidi | - |
-| 932 | CSound::StreamOpenFast | open | escapes | `(int)file_name` | stack | argument: ezBgm | - |
-| 941 | CSound::StreamOpenFromFPLFast | open | escapes | `(int)& request` | stack | argument: ezBgm | - |
+| 423 | CSound::DEL_PORT | replaced | escapes | `(uptr)midi_state.port[port].resident_sequence` | field | argument: ezMidi | - |
+| 444 | CSound::DEL_PORT | replaced | escapes | `(uptr)midi_state.port[midi_state.port[port].linked_port].resident_sequence` | field | argument: ezMidi | - |
+| 469 | CSound::DEL_PORT | replaced | escapes | `(uptr)midi_state.port[dependent_port].resident_sequence` | field | argument: ezMidi | - |
+| 494 | CSound::SQ_Play | replaced | escapes | `(uptr)sequence` | local pointer | argument: ezMidi | - |
+| 726 | CSound::LoadHdBd2 | replaced | escapes | `(uptr)& gBank` | image | argument: ezMidi | - |
+| 730 | CSound::LoadHdBd2 | replaced | escapes | `(uptr)& gBank` | image | argument: ezMidi | - |
+| 742 | CSound::LoadHdBd2 | replaced | escapes | `(uptr)midi_state.port[port].resident_sequence` | field | argument: ezMidi | - |
+| 767 | CSound::LoadHdBd2 | replaced | escapes | `(uptr)midi_state.port[midi_state.port[port].linked_port].resident_sequence` | field | argument: ezMidi | - |
+| 847 | CSound::LoadHdBdAdd | replaced | escapes | `(uptr)& gBank` | image | argument: ezMidi | - |
+| 850 | CSound::LoadHdBdAdd | replaced | escapes | `(uptr)& gBank` | image | argument: ezMidi | - |
+| 886 | CSound::LoadSeq | replaced | escapes | `(uptr)sequence` | local pointer | argument: ezMidi | - |
+| 932 | CSound::StreamOpenFast | replaced | escapes | `(uptr)file_name` | stack | argument: ezBgm | - |
+| 941 | CSound::StreamOpenFromFPLFast | replaced | escapes | `(uptr)& request` | stack | argument: ezBgm | - |
 
-## ps2/src/villagermngr.cpp (2 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 430 | CVillagerMngr::GetAppearVlgr | open | escapes | `(int)schedule` | local pointer | other: Unknown | - |
-| 470 | CVillagerMngr::GetAppearVlgr | open | escapes | `(int)schedule` | local pointer | other: Unknown | - |
-
-## ps2/src/visualmotion.cpp (2 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 246 | mgCVisualMotionMDT::DataAssignMotionMDT | open | escapes | `(int)memory->stGetTop()` | arena (stGetTop) | other: Unknown | - |
-| 558 | mgCVisualMotionMDT::CreateFaceMotionPacket | replaced | escapes | `(u_int)packet` | parameter | other: Unknown | - |
-
-## ps2/src/vlgr_info.cpp (1 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 464 | niNPC_INFO_NUM | open | round-trip | `(int)new(niStack->Alloc(blocks + 2))CVillagerInfo[count]` | unknown | cast back: (CVillagerInfo *)(int)new(niStack->Alloc(blocks + 2))CVil... | Phase 7 |
-
-## ps2/src/water.cpp (3 rows)
-
-| line | function | state | class | expression | origin | use | phase |
-|---|---|---|---|---|---|---|---|
-| 595 | CWater::Draw | open | round-trip | `(int)data_memory->stAllocTest(0x3C)` | arena (stAllocTest) | store: render_info_packet | Phase 4 |
-| 735 | CWater::CreatePacket | replaced | escapes | `(u_int)memory->stGetTop()` | arena (stGetTop) | other: Unknown | - |
-| 797 | CWater::CreatePacket | replaced | escapes | `(u_int)strip` | local pointer | other: Unknown | - |
-
-## Where round-trip values become pointers again (10)
+## Where round-trip values become pointers again (1)
 
 Casts from an integer to a pointer that read an integer a round-trip row above stored into, followed through
 integer assignments, arguments and returns. A round trip is fixed at either end: keep the pointer where it is
@@ -376,13 +192,96 @@ stored, or resolve the integer where it comes back.
 
 | site | function | state | expression | carries |
 |---|---|---|---|---|
-| ps2/src/dataread.cpp:926 | InitFileCache | replaced | `(u_long128 *)align_size((u_int)address,64)` | align_size |
-| ps2/src/ezmidi.cpp:95 | ezTransToIOP2 | open | `(void *)source` | source |
-| ps2/src/mg_shadow.cpp:239 | mgCShadowMDT::CreatePacket | replaced | `(u_int *)(face_cursor \| 0x20000000)` | face_start |
-| ps2/src/mg_sprite.cpp:240 | mgC3DSprite::Draw | open | `(u_int *)buffer` | buffer |
-| ps2/src/mg_sprite.cpp:540 | mgCSprite::Draw | open | `(u_int *)buffer` | buffer |
-| ps2/src/mg_visual.cpp:608 | mgCVisualFixMDT::DataAssignMDT | open | `(u_int *)address` | address |
-| ps2/src/mg_visual.cpp:684 | mgCVisualMDT::CreatePacket | replaced | `(u_char *)start` | start |
-| ps2/src/runscript_opcodes.cpp:4483 | _SET_INDEXOBJ_SIZE | open | `(CHARA_ENTRY_OBJECT *)address` | address |
-| ps2/src/runscript_opcodes.cpp:4507 | _GET_INDEXOBJ_SIZE | open | `(CHARA_ENTRY_OBJECT *)object_index` | object_base |
-| ps2/src/water.cpp:597 | CWater::Draw | open | `(u_int *)render_info_packet` | render_info_packet |
+| ps2/src/dataread.cpp:926 | InitFileCache | replaced | `(u_long128 *)align_size((uptr)address,64)` | align_size |
+
+## Narrowing pointer casts: 15 narrowing sites in compiled ps2/ code (15 owned, 0 unowned), 18 benign, 37 in replaced functions
+
+A pointer cast to a narrow integer, or a `uptr`/`sptr` value that a conversion narrows, in a unit under `ps2/src` (headers under `ps2/src` and `ps2/include` included). The destination is where the value goes. Benign sites are listed apart: their narrowed expression cannot carry an address.
+
+### In compiled functions: 15 sites
+
+| unit | sites |
+|---|---|
+| ps2/src/menusys.cpp | 1 |
+| ps2/src/mg_visual.cpp | 1 |
+| ps2/src/movie.cpp | 12 |
+| ps2/src/visualmotion.cpp | 1 |
+
+- `ps2/src/menusys.cpp:6860 CMenuItemInfo::ExitEnd field CMenuSystemData::item_cursor (ps2/include/menusystemdata.hpp:53)`: records: stored into the save record CMenuSystemData::item_cursor
+- `ps2/src/mg_visual.cpp:610 mgCVisualFixMDT::DataAssignMDT other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/movie.cpp:984 viBufRestartDMA local qwc`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:998 viBufRestartDMA local qwc`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1022 viBufRestartDMA other (memory)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1159 viBufGetTs local read_pos`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1376 audioDecCreate arg sendToIOP#0 (int)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1392 audioDecPause field AudioDec::iop_pause_pos (ps2/include/movie.hpp:213)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1399 audioDecResume local base`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1435 audioDecSendToIOP local iop_addr1`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1442 audioDecSendToIOP arg iopGetArea#5 (int)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1477 iopGetArea other (memory)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1482 iopGetArea other (memory)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/movie.cpp:1484 iopGetArea other (memory)`: movies: DMA/IPU/IOP addresses (unit replaced whole)
+- `ps2/src/visualmotion.cpp:249 mgCVisualMotionMDT::DataAssignMotionMDT other (memory)`: prog0: packet tag word in DataAssignMotionMDT
+
+### In replaced functions (widening-only override candidates): 37 sites
+
+- `ps2/src/dataread.cpp:926 InitFileCache arg align_size#0 (u_int)`: data/integrator: address through align_size(u_int) (replaced function)
+- `ps2/src/mg_drawprim.cpp:693 mgCDrawManager::Draw other (memory)`: draw2d: DMA tag words in mgCDrawManager::Draw (packet path replaced)
+- `ps2/src/mg_drawprim.cpp:701 mgCDrawManager::Draw other (memory)`: draw2d: DMA tag words in mgCDrawManager::Draw (packet path replaced)
+- `ps2/src/mg_shadow.cpp:236 mgCShadowMDT::CreatePacket other (memory)`: fx-shadow
+- `ps2/src/mg_sprite.cpp:245 mgC3DSprite::Draw other (memory)`: draw2d: packet words (mgC3DSprite/mgCSprite packet build, replaced through the seam)
+- `ps2/src/mg_sprite.cpp:250 mgC3DSprite::Draw other (memory)`: draw2d: packet words (mgC3DSprite/mgCSprite packet build, replaced through the seam)
+- `ps2/src/mg_sprite.cpp:545 mgCSprite::Draw other (memory)`: draw2d: packet words (mgC3DSprite/mgCSprite packet build, replaced through the seam)
+- `ps2/src/mg_sprite.cpp:549 mgCSprite::Draw other (memory)`: draw2d: packet words (mgC3DSprite/mgCSprite packet build, replaced through the seam)
+- `ps2/src/mg_texture.cpp:1417 mgLoadImage other (memory)`: textures/draw2d: GS packet word in mgLoadImage (replaced function)
+- `ps2/src/mg_visual.cpp:637 mgCVisualMDT::Draw other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:645 mgCVisualMDT::Draw other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:695 mgCVisualMDT::CreatePacket other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:707 mgCVisualMDT::CreatePacket other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:717 mgCVisualMDT::CreatePacket other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:769 mgCVisualFixMDT::CreatePacket other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mg_visual.cpp:781 mgCVisualFixMDT::CreatePacket other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
+- `ps2/src/mglib.cpp:1910 mgSendVuProg other (memory)`: present-core: VIF packet words (replaced functions)
+- `ps2/src/snd_mngr.cpp:1014 sndLoadSound arg CSound::LoadHdBd#1 (int)`: audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq int parameters (override pairs)
+- `ps2/src/snd_mngr.cpp:1014 sndLoadSound arg CSound::LoadHdBd#3 (int)`: audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq int parameters (override pairs)
+- `ps2/src/snd_mngr.cpp:1026 sndLoadSound arg CSound::LoadHdBdAdd#1 (int)`: audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq int parameters (override pairs)
+- `ps2/src/snd_mngr.cpp:1026 sndLoadSound arg CSound::LoadHdBdAdd#3 (int)`: audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq int parameters (override pairs)
+- `ps2/src/snd_mngr.cpp:1055 sndLoadSound arg CSound::LoadSeq#1 (int)`: audio-game: addresses through CSound::LoadHdBd/LoadHdBdAdd/LoadSeq int parameters (override pairs)
+- `ps2/src/sound.cpp:423 CSound::DEL_PORT arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:444 CSound::DEL_PORT arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:469 CSound::DEL_PORT arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:494 CSound::SQ_Play arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:726 CSound::LoadHdBd2 arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:730 CSound::LoadHdBd2 arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:742 CSound::LoadHdBd2 arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:767 CSound::LoadHdBd2 arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:847 CSound::LoadHdBdAdd arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:850 CSound::LoadHdBdAdd arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:886 CSound::LoadSeq arg ezMidi#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:932 CSound::StreamOpenFast arg ezBgm#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/sound.cpp:941 CSound::StreamOpenFromFPLFast arg ezBgm#1 (int)`: audio-game: addresses through ezMidi/ezBgm int parameters (override pairs)
+- `ps2/src/water.cpp:603 CWater::Draw other (memory)`: fx-shadow: packet tag words in CWater::Draw
+- `ps2/src/water.cpp:608 CWater::Draw other (memory)`: fx-shadow: packet tag words in CWater::Draw
+
+### Benign (18 sites)
+
+Narrowed expression is an address-alias mask (`& K`, `K` a non-negative 32-bit constant), a residue (`% K`), or a difference of two pointer-wide operands, bare or divided or shifted by a constant. Never fails `--check`.
+
+- `ps2/src/editdata.cpp:303 CEditMap::SaveData other`: benign:low-bits (open)
+- `ps2/src/editdata.cpp:494 CEditMap::LoadData other`: benign:low-bits (open)
+- `ps2/src/fishing.cpp:1328 CreateLoadThread local misalignment`: benign:low-bits (open)
+- `ps2/src/mainloop.cpp:557 MainLoop local alignment`: benign:residue (replaced)
+- `ps2/src/mainloop.cpp:1450 LoadFontTexture local misalign`: benign:low-bits (open)
+- `ps2/src/mg_dataset.cpp:1133 mgCMDTBuilder::EndFaces field MDT_HEADER::faces_size (ps2/include/mg_visual.hpp:60)`: benign:difference (open)
+- `ps2/src/mg_dataset.cpp:1134 mgCMDTBuilder::EndFaces local misalign`: benign:low-bits (open)
+- `ps2/src/mg_memory.cpp:234 mgCMemory::stAlign64 local misalign`: benign:low-bits (replaced)
+- `ps2/src/mg_memory.cpp:252 mgCMemory::Align64 local misalign`: benign:low-bits (replaced)
+- `ps2/src/mg_shadow.cpp:258 mgCShadowMDT::CreatePacket arg mgCMemory::Alloc#0 (int)`: benign:difference (replaced)
+- `ps2/src/mg_sprite.cpp:524 mgCSprite::CreatePacket arg mgCMemory::Alloc#0 (int)`: benign:difference (replaced)
+- `ps2/src/mg_visual.cpp:733 mgCVisualMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:161)`: benign:difference (replaced)
+- `ps2/src/mg_visual.cpp:799 mgCVisualFixMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:161)`: benign:difference (replaced)
+- `ps2/src/mglib.cpp:563 mgInitVif1Packet local misalign`: benign:residue (replaced)
+- `ps2/src/mglib.cpp:569 mgInitVif1Packet local misalign`: benign:residue (replaced)
+- `ps2/src/movie.cpp:763 getFIFOindex return getFIFOindex (u32)`: benign:difference (open)
+- `ps2/src/movie.cpp:827 viBufReset other (memory)`: benign:low-bits (open)
+- `ps2/src/movie.cpp:828 viBufReset other (memory)`: benign:low-bits (open)

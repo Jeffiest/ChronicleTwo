@@ -27,10 +27,11 @@ def main():
     args = parser.parse_args()
     if not args.skip_capture and not args.capture:
         parser.error("--capture is required unless --skip-capture is specified")
+    run(args.arena, "zero-capacity", "allocation overflow")
     for case in ("bounds-growth", "invalid-reset-align", "optional-null", "reset-growth", "diagnostics-lifecycle"):
         run(args.arena, case)
-    run(args.arena, "growth-failure", "arena placement failed")
-    run(args.arena, "suppressed-growth-failure", "arena placement failed")
+    run(args.arena, "growth-failure", "allocation overflow")
+    run(args.arena, "suppressed-growth-failure", "allocation overflow")
     run(args.scripts)
     run(args.scripts, "null-arena", "script storage has no arena")
     run(args.scripts, "small-arena", "script storage allocation failed")

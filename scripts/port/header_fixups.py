@@ -34,6 +34,9 @@ FIXUPS = [
     ("sce/eekernel.h", "int CreateThread(struct ThreadParam *param);", "int CreateThread(struct ThreadParam *param) __asm__(\"Ps2CreateThread\");"),
     ("sce/eekernel.h", "int TerminateThread(int thread_id);", "int TerminateThread(int thread_id) __asm__(\"Ps2TerminateThread\");"),
     ("sce/eekernel.h", "int GetThreadId(void);", "int GetThreadId(void) __asm__(\"Ps2GetThreadId\");"),
+    # InventData's mgVu0FBOX makes the union's copy assignment deleted; MWCC generated the memberwise copy
+    # GetLight and GetCharaLight assign with, so the mirror spells it out on the declaration's line.
+    ("mapload.hpp", "    CFuncPoint() {}", '    CFuncPoint() {} CFuncPoint &operator=(CFuncPoint &other) { name = other.name; type = other.type; unk_8 = other.unk_8; flag_no = other.flag_no; enable = other.enable; start = other.start; end = other.end; __builtin_memcpy(static_cast<void *>(data), other.data, reinterpret_cast<char *>(&frame) - reinterpret_cast<char *>(data)); frame = other.frame; __builtin_memcpy(position, other.position, sizeof(position)); __builtin_memcpy(rotation, other.rotation, sizeof(rotation)); __builtin_memcpy(scale, other.scale, sizeof(scale)); active = other.active; return *this; }'),
 ]
 
 # Native disk-layout and declaration-order adaptations retained from the working port.
@@ -87,8 +90,11 @@ FIXUPS += [('mg_tanime.hpp',
 
 # The leading newline anchors each match to its line start: a copy already rewritten fails the exactly-once check
 # instead of gaining a second `inline`.
+# COFF has no inline-vs-strong resolution: map.cpp's out-of-line CMapParts::CMapParts is the single definition,
+# so the identical inline copies in editeff.cpp/editmap.cpp are blanked rather than kept.
 UNIT_FIXUPS = [
-    ("map.cpp", "\nCMapParts::CMapParts() { Initialize(); }", "\ninline CMapParts::CMapParts() { Initialize(); }"),
+    ("editeff.cpp", "\ninline CMapParts::CMapParts() { Initialize(); }", "\n"),
+    ("editmap.cpp", "\ninline CMapParts::CMapParts() { Initialize(); }", "\n"),
     ("dng_debug.cpp", "\nvoid CTreasureBox::Initialize() {", "\ninline void CTreasureBox::Initialize() {"),
 ]
 

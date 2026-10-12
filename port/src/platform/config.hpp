@@ -1,81 +1,41 @@
 #pragma once
 
-#include <filesystem>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "platform/settings.hpp"
+
+// The disc is the PAL release, so its logic runs at the PAL field rate, not the NTSC 60 the host defaults to.
+inline constexpr double kConfigTickRateDefault = 50.0;
+inline constexpr double kConfigTickRateMin = 25.0;
+inline constexpr double kConfigTickRateMax = 240.0;
 
 enum class ConfigAspect {
     Auto,
     FourThree,
 };
 
-// The shared host layer's settings (platform/settings.hpp) with this game's own on top. config.json
-// holds the fields ConfigSerialize names; the host fields it leaves out keep Config()'s values.
 struct Config : HostSettings {
-    bool         debug_mode = true;
+    Config() { tick_rate = kConfigTickRateDefault; }
+
     bool         interpolation = true;
     ConfigAspect aspect = ConfigAspect::Auto;
     float        ui_scale = 1.0f;
-    float        detail_distance = 0.0f;
-    float        shadow_distance = 0.0f;
-
-    // The host layer's defaults are another game's: this one ticks at the PAL field rate, reads the
-    // raw stick and lets Escape release the captured mouse.
-    Config();
 
     bool operator==(const Config &) const = default;
 };
 
-const Config &ConfigGet();
-
-// How far from the player or the eye town houses, villagers and dungeon monsters keep their full
-// detail: video.detail_distance, or infinity where it is 0. Past it the game's own distances apply.
-float ConfigDetailDistance();
-
-// How far from the eye a town part casts its shadow at full strength: video.shadow_distance, or
-// infinity where it is 0. Past it the game's own distances apply.
-float ConfigShadowDistance();
-
-// Parses a JSON text (comments allowed) over the defaults: an object of the sections game, video,
-// audio and input. Unknown keys and bad values are reported on stderr and leave the default in
-// place, as does a text that is not JSON; an empty text is the defaults.
-Config ConfigParse(std::string_view text);
-
-// The JSON text ConfigParse reads back as the same settings.
-std::string ConfigSerialize(const Config &config);
-
-// Writes the current settings to <save root>/config.json, creating the save root if need be, and
-// says on stderr where it saved, or that it could not. Returns whether the file was written. The
-// text goes to config.json.tmp first and is renamed over config.json, so a crash leaves the old
-// file or the new one, never a part.
+// <save root>/config.json. A missing file is written with the defaults. A file that exists but cannot
+// be read leaves the defaults in memory and is never written this session. Returns whether it was read.
+bool ConfigLoad();
 bool ConfigSave();
 
-// Loads <save root>/config.json and says on stderr where it loaded from. With no file there, keeps
-// the defaults and saves them as a new config.json. Returns whether a file was read.
-bool ConfigLoad();
+// Called by SettingsChange once a changed value is stored, with the settings before and after it.
+using ConfigChangeHook = void (*)(const HostSettings &before, const HostSettings &after);
+void ConfigSetChangeHook(ConfigChangeHook hook);
 
-// Applies a change of settings to the running game; before is what ConfigChange replaced. Each part
-// of the game that holds a setting adds its own and looks only at its own keys.
-using ConfigChangeHook = void (*)(const Config &before, const Config &after);
+const Config &ConfigGet();
 
-// Adding a hook twice runs it once. Hooks added or removed while a change is being applied take part
-// from the next change.
-void ConfigAddChangeHook(ConfigChangeHook hook);
-
-void ConfigRemoveChangeHook(ConfigChangeHook hook);
-
-// What a settings screen calls with the settings it edited. They are taken as config.json would read
-// them back (a bad value is reported and becomes its default), become ConfigGet(), are saved (comments
-// in the file are not kept), and reach the running game through the change hooks, in the order they
-// were added; ConfigAppliesOnRestart names the settings that wait for the next start instead. Settings
-// equal to the current ones change nothing, but are saved if the last save failed. Returns whether the
-// settings are saved. A call from a change hook is refused and returns false. Main thread only, as are
-// the hooks.
-bool ConfigChange(const Config &config);
-
-// Whether a change to the setting, by its config.json name ("game.debug_mode"), reaches the running
-// game only at the next start.
-bool ConfigAppliesOnRestart(std::string_view key);
+// Unknown keys and values of the wrong type or range keep their defaults and are reported on stderr.
+Config      ConfigParse(std::string_view text);
+std::string ConfigSerialize(const Config &config);

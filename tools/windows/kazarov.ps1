@@ -59,6 +59,7 @@ $markers = @(
     'deps/ninja/ninja.exe',
     'deps/glslang/bin/glslang.exe',
     'deps/sdl/SDL3-3.4.18/x86_64-w64-mingw32/lib/cmake/SDL3',
+    'deps/ffmpeg/ffmpeg-n7.1.1-5-g276bd388f3-win64-lgpl-shared-7.1/bin/avcodec-61.dll',
     'deps/vulkan/Vulkan-Headers-vulkan-sdk-1.4.363.0/include'
 )
 if (@($markers | Where-Object { -not (Test-Path -LiteralPath (Join-Path $root $_)) }).Count -gt 0) {
@@ -70,22 +71,26 @@ $deps.Dispose()
 # A stale cache is deleted before configuring: CMake would otherwise reuse paths that no longer exist.
 function Read-CacheValue([string]$File, [string]$Key) {
     if (-not (Test-Path -LiteralPath $File)) { return $null }
-    $match = Select-String -LiteralPath $File -Pattern "^$([regex]::Escape($Key)):INTERNAL=(.*)$" | Select-Object -First 1
+    $match = Select-String -LiteralPath $File -Pattern "^$([regex]::Escape($Key)):[A-Z]+=(.*)$" | Select-Object -First 1
     if ($match) { return $match.Matches[0].Groups[1].Value.Trim() }
     return $null
 }
 $source = $checkout.Replace('\', '/')
 $buildPath = $build.Replace('\', '/')
+$ffmpegDir = "$($root.Replace('\', '/'))/deps/ffmpeg/ffmpeg-n7.1.1-5-g276bd388f3-win64-lgpl-shared-7.1"
 $cache = Join-Path $build 'CMakeCache.txt'
 $cachedSource = Read-CacheValue $cache 'CMAKE_HOME_DIRECTORY'
 $cachedBuild = Read-CacheValue $cache 'CMAKE_CACHEFILE_DIR'
+$cachedFfmpeg = Read-CacheValue $cache 'KZ_FFMPEG_DIR'
 $stale = ($null -ne $cachedSource -and $cachedSource -ne $source) -or ($null -ne $cachedBuild -and $cachedBuild -ne $buildPath)
 if ($stale) {
     foreach ($file in 'CMakeCache.txt', 'CMakeFiles', 'build.ninja', '.ninja_log', '.ninja_deps') {
         Remove-Item -LiteralPath (Join-Path $build $file) -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
-if ($stale -or -not (Test-Path -LiteralPath (Join-Path $build 'build.ninja'))) {
+# ninja re-runs CMake from the existing cache on its own, so a cache configured without KZ_FFMPEG_DIR must be reconfigured here.
+$reconfigure = $cachedFfmpeg -ne $ffmpegDir
+if ($stale -or $reconfigure -or -not (Test-Path -LiteralPath (Join-Path $build 'build.ninja'))) {
     & "$PSScriptRoot/configure.ps1" -Root $root -BuildDirectory $build -BuildType $buildType
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
 }

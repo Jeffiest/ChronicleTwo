@@ -1,35 +1,23 @@
-# Wide-fill character culling
+# Wide-fill model visibility
 
 ## Symptom
 
-The user reports that distant characters move with the camera and disappear near the vertical edges of the original 4:3 view, while the wider scene remains visible. This is consistent with a mismatch between the renderer's fill viewport and the game's projected character bounds.
+At wide resolutions, the user saw people shift with the camera and vanish at the old 4:3 side bounds while the background remained visible. That points to the model culling and model clip transform using a different visible extent from the active render target.
 
-## Change
+## Upstream renderer path
 
-The renderer uses `AspectMode::Fill` for `video.aspect = "auto"`. `gfx::VisibleLogicalRect(gfx::kMainTarget)` reports the logical span actually shown. `mgRENDER_INFO::SetRenderInfo` now scales the PS2 screen width and height by that visible span before building the view projection, guard area and screen box. Letterboxed 4:3 remains at the original extents.
+The synced renderer derives `mgPortVisibleExtent()` from `gfx::VisibleLogicalRect()` for the active target. `mgSetRenderInfo()` updates `mgRENDER_INFO::screen_box_min/max` to that extent, and `mgCFrame::GetDrawRect()` culls against the same bounds. This keeps the model hierarchy's visibility test aligned with the pixels the target shows.
 
-`mgCFrame::GetDrawRect` previously rejected projected bounds against `mgScreenWidth` and `mgScreenHeight` even though the renderer could show beyond those limits. It now tests against the matching `mgRENDER_INFO::screen_box_min/max`; it still offsets surviving rectangles by the original PS2 screen dimensions so downstream GS-to-logical scaling is unchanged.
+The native mesh path in `port/src/mg_visual.cpp` applies `VisibleClipFit()` to model clip matrices. The fit maps the retail guard band onto the active target's visible extent and accounts for its center. A 4:3 target produces the identity fit; a wider Fill target keeps models from being clipped at the original 4:3 edges. `mgPortVisibleExtent()` follows the active render target, so the calculation also works while rendering into another target.
 
-The host mesh path then converts `world_screen` coordinates to Vulkan clip space through `PortMgScreenToClip`. That transform still mapped the original PS2 frame edges to the full clip range, so the wider camera and culling bounds could accept a model that Vulkan clipped at the old 4:3 edges. It now scales around the active target's center by its logical frame divided by `gfx::VisibleLogicalRect(target)`. The native frame occupies the center of a Fill target while the expanded camera view reaches its sides; a 4:3 target keeps a scale of one. The shared transform also keeps model shadows aligned.
-
-The shared extent helper rounds expanded spans up to an even number of GS pixels and rejects invalid inputs. It does not change `aspect_y`, native screen dimensions or scene data.
-
-## Off-screen framebuffer targets
-
-The wider camera and culling bounds can still be clipped when a scene pass is redirected to a named render target. `mgSetPkFrameBuffer` now promotes a manager-backed, no-image framebuffer target to the renderer's frame-target shape, which retains side pixels in Fill mode. Ordinary texture lookups for `mgGetFrameBuffer` copies preserve the shape already registered under the same target name, so the copy cannot recreate that target as a 4:3 surface. Textures with their own image data are not promoted.
-
-`MgTexture.FrameBufferPromotionPreservesWideFillSides` first resolves a 512x480 target as an ordinary texture, promotes it during framebuffer binding at 1280x720, then resolves a distinct same-name frame-copy record. It checks that the copy resolves to the same target handle and keeps the expanded visible rectangle.
+This is the upstream `VisibleClipFit` design, not the earlier local `PortMgScreenToClip` experiment. That experiment and its projection test were removed during the sync because the upstream renderer now owns the model mesh and clip path.
 
 ## Regression coverage
 
-- A 512x448 PAL frame stays 512x448 when the visible logical span is 640x480.
-- A 16:9 fill span expands that frame to 684x448.
-- A tall fill span expands height to 512x624.
-- A projected actor at x=300, outside the original ±256 horizontal cull, remains visible inside the expanded ±342 bound.
-- The 4:3 screen edges map to ±0.75 clip space in a 16:9 Fill window, for both the main target and a frame target; they remain at ±1.0 in a 4:3 window.
-
-Windows `darkchronicle` and `darkchronicle_tests` build successfully. The focused projection, culling and framebuffer tests pass. CTest reports 358 passed, 16 skips and zero failures out of 374 registered cases.
+- `MgVisual.VisibleExtentKeepsBoxAtSixteenNine` verifies a model box remains drawable at 16:9.
+- `MgVisual.VisibleExtentCullsBoxAtFourThree` verifies the same box remains culled when it lies outside a 4:3 target.
+- `mglib_aspect_test.cpp` covers visible extents and GS/logical coordinate mapping for supported aspect modes.
 
 ## Runtime status
 
-The game executable was rebuilt, but the user directed that no more computer-use control be attempted. The source-level regressions verify clip-space expansion, culling bounds and target shape; they do not establish that characters now render correctly in the circus scene. Visual acceptance remains pending. The earlier framebuffer-name experiment was reverted after the user reported that it did not fix model visibility.
+The code-level tests establish that rendering and culling use the active target's visible extent. They do not confirm that the circus characters now render correctly in the user's scene. Visual acceptance is pending; this session is limited to source, build and headless-test work.

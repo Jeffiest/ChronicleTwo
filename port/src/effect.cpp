@@ -2,25 +2,23 @@
 
 #include "gfx/gfx.hpp"
 #include "mglib.hpp"
+#include "mglib_port.hpp"
 
 /**
  * The effect units' texture seam.
  *
  * A textured mgCDrawPrim run - the scripted particles, the sword trail and every menu and map
  * primitive drawn through the same builder - resolves its texture through mgport::ResolveTexture.
- * The texture unit only exposes PortMgTextureBinding, so the resolver lives here with the effect
- * units that first read it.
+ * Resolve through the renderer seam so texture-manager images and named frame targets share the
+ * same lookup path.
  */
-
-// mg_texture.cpp's resolver, declared the way the other units declare it (there is no shared
-// header for it yet).
-bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
 namespace mgport {
 
 bool ResolveTexture(const mgCTexture &texture, gfx::TextureBinding &binding, float &u_scale,
                     float &v_scale) {
-    if (!PortMgTextureBinding(&texture, binding)) {
+    binding = mgPortBinding(&texture);
+    if (binding.texture == gfx::kNullTexture) {
         return false;
     }
 

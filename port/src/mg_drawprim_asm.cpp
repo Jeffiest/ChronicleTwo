@@ -1,3 +1,4 @@
+
 #include "common.h"
 
 #include <cstring>
@@ -5,18 +6,27 @@
 #include "mg_drawprim.hpp"
 #include "vu0_lanes.hpp"
 
-void mgCDrawPrim::Data0(float *data) {
-    u_long128 *destination = write;
+namespace {
+
+void StoreLanes(u_long128 *&write, const int lanes[4]) {
+    if (write == NULL) {
+        return;
+    }
+
+    std::memcpy(write, lanes, sizeof(int) * 4);
     write++;
+}
+
+} // namespace
+
+void mgCDrawPrim::Data0(float *data) {
     const int lanes[4] = {vu0::Ftoi(data[0]), vu0::Ftoi(data[1]), vu0::Ftoi(data[2]), vu0::Ftoi(data[3])};
-    memcpy(destination, lanes, sizeof(lanes));
+    StoreLanes(write, lanes);
 }
 
 void mgCDrawPrim::Data4(float *data) {
-    u_long128 *destination = write;
-    write++;
     const int lanes[4] = {vu0::Ftoi4(data[0]), vu0::Ftoi4(data[1]), vu0::Ftoi4(data[2]), vu0::Ftoi4(data[3])};
-    memcpy(destination, lanes, sizeof(lanes));
+    StoreLanes(write, lanes);
 }
 
 void mgCDrawPrim::Vertex(float *pos) {

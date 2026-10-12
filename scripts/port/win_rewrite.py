@@ -58,8 +58,6 @@ RULES = {
         (r"%lu", "%llu", 1),
     ],
     "src/userdata.cpp": [(U64, "u64", 2)],
-    # An address stored in a 32-bit field: a pointer does not fit unsigned long here.
-    "src/water.cpp": [(r"\(u_int\) \(unsigned long\) base", "(u_int) (u64) base", 2)],
     "include/crandom.hpp": [(r"^float abs\(float value\);$", "#include <stdlib.h>", 1)],
 
 }

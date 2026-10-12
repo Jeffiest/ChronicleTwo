@@ -810,7 +810,7 @@ void CCharacter2::SetMotionPara(char *name, int flags, int keep_seq) {
     } else {
         sequence = GetSeqHeaderPtr(name, &set);
 
-        switch ((int) sequence) {
+        switch ((uptr) sequence) {
             case 0:
                 break;
             default:

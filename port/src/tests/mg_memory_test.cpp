@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <string>
 
 #include "mg_memory.hpp"
 #include "mg_memory_port.hpp"
+#include "platform/arena.hpp"
 #include "platform/memory.hpp"
 #include "platform_fixture.hpp"
 
@@ -15,34 +17,23 @@ constexpr int kQuadwords = 4096;
 constexpr std::size_t kBytes = static_cast<std::size_t>(kQuadwords) * 16;
 constexpr int kHeader = static_cast<int>((sizeof(mgMEMORY_BLOCK) + 15) / 16);
 
-alignas(64) u_long128 ordinary_storage[kQuadwords];
-
-enum class Source { Ordinary, AboveFourGiB };
-
 std::uintptr_t AddressOf(const void *pointer) {
     return reinterpret_cast<std::uintptr_t>(pointer);
 }
 
+void NameArena(mgCMemory &memory, const char *name) {
+    std::strncpy(memory.name, name, sizeof memory.name);
+}
+
 } // namespace
 
-class MgMemory : public testing::TestWithParam<Source> {
+// Each buffer is a child view of an ArenaBlock, so the manager runs retail's arithmetic on it as-is.
+class MgMemory : public testing::Test {
 protected:
     void SetUp() override {
-        if (GetParam() == Source::Ordinary) {
-            std::memset(ordinary_storage, 0, sizeof ordinary_storage);
-            buffer_ = ordinary_storage;
-            return;
-        }
-
-        arena_ = ArenaMemoryMap(kBytes);
-        if (!IsAbove4GiB(arena_.base)) {
-            GTEST_SKIP() << "the platform maps no memory above 4 GiB";
-        }
-        buffer_ = reinterpret_cast<u_long128 *>(arena_.base);
-    }
-
-    void TearDown() override {
-        ArenaMemoryUnmap(arena_);
+        static char key;
+        buffer_ = reinterpret_cast<u_long128 *>(ArenaBlock(&key, kBytes));
+        std::memset(buffer_, 0, kBytes);
     }
 
     bool Inside(const void *pointer, int quadwords) const {
@@ -52,12 +43,12 @@ protected:
     }
 
     u_long128 *buffer_ = nullptr;
-    ArenaMemory arena_{};
 };
 
-TEST_P(MgMemory, StackAllocationStopsAtRetailCapacity) {
+TEST_F(MgMemory, StackAllocationStopsAtRetailCapacity) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 40);
+    NameArena(memory, "MgStack");
 
     // Retail refuses a request whose total would reach the capacity, so 39 of 40 quadwords are usable.
     for (int i = 0; i < 39; ++i) {
@@ -66,14 +57,14 @@ TEST_P(MgMemory, StackAllocationStopsAtRetailCapacity) {
 
     EXPECT_EQ(memory.stGetUsed(), 39);
     EXPECT_EQ(memory.stGetRest(), 1);
-    EXPECT_EQ(memory.Alloc(1), nullptr);
-    EXPECT_EQ(memory.stAlloc(1), nullptr);
+    EXPECT_DEATH(memory.Alloc(1), "arena MgStack: allocation overflow, 40 of 40 quadwords");
+    EXPECT_DEATH(memory.stAlloc(1), "arena MgStack: allocation overflow, 40 of 40 quadwords");
     EXPECT_EQ(memory.Alloc(0), nullptr);
     EXPECT_EQ(memory.Alloc(-1), nullptr);
     EXPECT_EQ(memory.stGetUsed(), 39);
 }
 
-TEST_P(MgMemory, StackAllocationsAreContiguousAndInside) {
+TEST_F(MgMemory, StackAllocationsAreContiguousAndInside) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 100);
 
@@ -87,7 +78,7 @@ TEST_P(MgMemory, StackAllocationsAreContiguousAndInside) {
     EXPECT_TRUE(Inside(second, 5));
 }
 
-TEST_P(MgMemory, Stack64AlignmentAdvancesToTheBoundary) {
+TEST_F(MgMemory, Stack64AlignmentAdvancesToTheBoundary) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_ + 1, 100);
 
@@ -104,7 +95,7 @@ TEST_P(MgMemory, Stack64AlignmentAdvancesToTheBoundary) {
     EXPECT_EQ(memory.stGetUsed(), 5);
 }
 
-TEST_P(MgMemory, Stack64AlignmentClampsAtTheEnd) {
+TEST_F(MgMemory, Stack64AlignmentClampsAtTheEnd) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_ + 1, 2);
 
@@ -113,7 +104,7 @@ TEST_P(MgMemory, Stack64AlignmentClampsAtTheEnd) {
     EXPECT_EQ(memory.stGetRest(), 0);
 }
 
-TEST_P(MgMemory, StackLockRefusesAllocationAndAlignment) {
+TEST_F(MgMemory, StackLockRefusesAllocationAndAlignment) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_ + 1, 100);
     memory.lock = 1;
@@ -128,7 +119,7 @@ TEST_P(MgMemory, StackLockRefusesAllocationAndAlignment) {
     EXPECT_NE(memory.Alloc(1), nullptr);
 }
 
-TEST_P(MgMemory, StackTestDoesNotClaim) {
+TEST_F(MgMemory, StackTestDoesNotClaim) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 10);
 
@@ -137,7 +128,7 @@ TEST_P(MgMemory, StackTestDoesNotClaim) {
     EXPECT_EQ(memory.stGetUsed(), 0);
 }
 
-TEST_P(MgMemory, StackPushPopAndReset) {
+TEST_F(MgMemory, StackPushPopAndReset) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 100);
 
@@ -155,7 +146,7 @@ TEST_P(MgMemory, StackPushPopAndReset) {
     EXPECT_EQ(memory.Alloc(1), buffer_);
 }
 
-TEST_P(MgMemory, StackAllocationsAreQuadwordAlignedAndInside) {
+TEST_F(MgMemory, StackAllocationsAreQuadwordAlignedAndInside) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_ + 1, kQuadwords - 1);
 
@@ -172,7 +163,7 @@ TEST_P(MgMemory, StackAllocationsAreQuadwordAlignedAndInside) {
     }
 }
 
-TEST_P(MgMemory, HeapFirstGapHoldsTheStackRegion) {
+TEST_F(MgMemory, HeapFirstGapHoldsTheStackRegion) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -184,7 +175,7 @@ TEST_P(MgMemory, HeapFirstGapHoldsTheStackRegion) {
     EXPECT_EQ(memory.stGetUsed(), 0);
 }
 
-TEST_P(MgMemory, HeapFreeMakesTheGapReusable) {
+TEST_F(MgMemory, HeapFreeMakesTheGapReusable) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -202,7 +193,7 @@ TEST_P(MgMemory, HeapFreeMakesTheGapReusable) {
     EXPECT_EQ(memory.StartStackMode(1, 0), first);
 }
 
-TEST_P(MgMemory, HeapFitModeNeedsMoreThanTheRequest) {
+TEST_F(MgMemory, HeapFitModeNeedsMoreThanTheRequest) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -211,7 +202,7 @@ TEST_P(MgMemory, HeapFitModeNeedsMoreThanTheRequest) {
     EXPECT_EQ(memory.stGetSize(), kQuadwords - 3 * kHeader);
 }
 
-TEST_P(MgMemory, HeapLargestModeAndUnknownModes) {
+TEST_F(MgMemory, HeapLargestModeAndUnknownModes) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -219,7 +210,7 @@ TEST_P(MgMemory, HeapLargestModeAndUnknownModes) {
     EXPECT_EQ(memory.StartStackMode(2, 0), buffer_ + 2 * kHeader);
 }
 
-TEST_P(MgMemory, HeapLargestModeSizesTheStackFromTheChosenGap) {
+TEST_F(MgMemory, HeapLargestModeSizesTheStackFromTheChosenGap) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -241,17 +232,19 @@ TEST_P(MgMemory, HeapLargestModeSizesTheStackFromTheChosenGap) {
     EXPECT_TRUE(Inside(buffer_ + 2 * kHeader, memory.stGetSize()));
 }
 
-TEST_P(MgMemory, HeapStackModeRefusesPastItsRegion) {
+TEST_F(MgMemory, HeapStackModeRefusesPastItsRegion) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
+    NameArena(memory, "MgHeap");
 
     ASSERT_NE(memory.StartStackMode(1, 0), nullptr);
     ASSERT_NE(memory.Alloc(memory.stGetSize() - 1), nullptr);
-    EXPECT_EQ(memory.Alloc(1), nullptr);
+    const std::string size = std::to_string(memory.stGetSize());
+    EXPECT_DEATH(memory.Alloc(1), "arena MgHeap: allocation overflow, " + size + " of " + size + " quadwords");
     EXPECT_EQ(memory.stGetUsed(), memory.stGetSize() - 1);
 }
 
-TEST_P(MgMemory, HeapReturnsNullWhenNoGapFits) {
+TEST_F(MgMemory, HeapReturnsNullWhenNoGapFits) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -265,7 +258,7 @@ TEST_P(MgMemory, HeapReturnsNullWhenNoGapFits) {
     EXPECT_EQ(memory.StartStackMode(3, 0), nullptr);
 }
 
-TEST_P(MgMemory, HeapClearRestoresAnEmptyHeap) {
+TEST_F(MgMemory, HeapClearRestoresAnEmptyHeap) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -277,7 +270,7 @@ TEST_P(MgMemory, HeapClearRestoresAnEmptyHeap) {
     EXPECT_EQ(memory.stGetSize(), kQuadwords - 3 * kHeader);
 }
 
-TEST_P(MgMemory, HeapRefusesBuffersTooSmallOrNull) {
+TEST_F(MgMemory, HeapRefusesBuffersTooSmallOrNull) {
     mgCMemory memory;
     memory.SetHeapMem(nullptr, kQuadwords);
     EXPECT_EQ(memory.StartStackMode(1, 0), nullptr);
@@ -290,7 +283,7 @@ TEST_P(MgMemory, HeapRefusesBuffersTooSmallOrNull) {
     EXPECT_EQ(memory.StartStackMode(1, 0), nullptr);
 }
 
-TEST_P(MgMemory, HeapPointersAreAlignedInsideAndOrdered) {
+TEST_F(MgMemory, HeapPointersAreAlignedInsideAndOrdered) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -311,7 +304,7 @@ TEST_P(MgMemory, HeapPointersAreAlignedInsideAndOrdered) {
     }
 }
 
-TEST_P(MgMemory, HeapStoresPointersThatRoundTrip) {
+TEST_F(MgMemory, HeapStoresPointersThatRoundTrip) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -320,15 +313,15 @@ TEST_P(MgMemory, HeapStoresPointersThatRoundTrip) {
     memory.EndStackMode();
 
     // Free finds the block by the data pointer its header stores, so a truncated header pointer fails here.
-    if (GetParam() == Source::AboveFourGiB) {
-        EXPECT_TRUE(IsAbove4GiB(region));
-    }
+#ifndef NDEBUG
+    EXPECT_TRUE(IsAbove4GiB(region));
+#endif
 
     memory.Free(region);
     EXPECT_EQ(memory.StartStackMode(1, 0), region);
 }
 
-TEST_P(MgMemory, HeapFreeOfAnUnknownPointerAborts) {
+TEST_F(MgMemory, HeapFreeOfAnUnknownPointerAborts) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
     ASSERT_NE(memory.StartStackMode(1, 0), nullptr);
@@ -337,7 +330,7 @@ TEST_P(MgMemory, HeapFreeOfAnUnknownPointerAborts) {
     KZ_ASSERT_ABORT([&] { memory.Free(buffer_ + 3); });
 }
 
-TEST_P(MgMemory, UsageTracksTheStackHighWaterMark) {
+TEST_F(MgMemory, UsageTracksTheStackHighWaterMark) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 100);
 
@@ -353,7 +346,7 @@ TEST_P(MgMemory, UsageTracksTheStackHighWaterMark) {
     MemoryForget(memory);
 }
 
-TEST_P(MgMemory, UsageResetsWhenTheBufferIsSetAgain) {
+TEST_F(MgMemory, UsageResetsWhenTheBufferIsSetAgain) {
     mgCMemory memory;
     memory.stSetBuffer(buffer_, 100);
     ASSERT_NE(memory.Alloc(40), nullptr);
@@ -369,7 +362,7 @@ TEST_P(MgMemory, UsageResetsWhenTheBufferIsSetAgain) {
     MemoryForget(memory);
 }
 
-TEST_P(MgMemory, UsageTracksTheHeapHighWaterMark) {
+TEST_F(MgMemory, UsageTracksTheHeapHighWaterMark) {
     mgCMemory memory;
     memory.SetHeapMem(buffer_, kQuadwords);
 
@@ -394,7 +387,3 @@ TEST_P(MgMemory, UsageTracksTheHeapHighWaterMark) {
     MemoryForget(memory);
 }
 
-INSTANTIATE_TEST_SUITE_P(Buffers, MgMemory, testing::Values(Source::Ordinary, Source::AboveFourGiB),
-                         [](const testing::TestParamInfo<Source> &info) {
-                             return std::string(info.param == Source::Ordinary ? "Ordinary" : "AboveFourGiB");
-                         });

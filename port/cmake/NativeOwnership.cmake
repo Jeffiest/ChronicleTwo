@@ -17,9 +17,7 @@ set(CT_NATIVE_SUPERSEDED_SOURCES
     "${PORT_DIR}/editmap2.cpp"            # PlaneNormalXZ remains private to retail editmap2.cpp
     "${PORT_DIR}/gameutil_asm.cpp"        # gameutil_motion.cpp and vu0_gaps.cpp
     "${PORT_DIR}/linknames.cpp"           # runtime.cpp, eekernel.cpp, title.cpp, and sce/vuprog.cpp
-    "${PORT_DIR}/mg_drawprim_asm.cpp"     # mg_drawprim.cpp
-    "${PORT_DIR}/mg_frame_asm.cpp"        # mg_frame.cpp and mg_frame_math.cpp
-    "${PORT_DIR}/mg_visual_asm.cpp"       # mg_visual.cpp
+    "${PORT_DIR}/mg_frame_asm.cpp"        # mg_frame_math.cpp owns matrices; culling helpers live there too
     "${PORT_DIR}/platform/settings.cpp"   # platform/config.cpp
 )
 
@@ -27,4 +25,4 @@ set(CT_NATIVE_SUPERSEDED_SOURCES
 # mglib.cpp and sce/*.cpp. libvu0 and the shared unimplemented reporter stay shared.
 set(CT_NATIVE_SDK_FAMILIES
     libpad libmc sifdev sifrpc eekernel libcdvd libgraph libdma libpkt
-    libdev libmpeg libsdr modmsin sifdma)
+    libdev libsdr modmsin sifdma)

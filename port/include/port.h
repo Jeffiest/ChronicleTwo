@@ -35,3 +35,7 @@ inline char *index(const char *s, int c) {
 #include "common.h"
 #undef STATIC_ASSERT
 #define STATIC_ASSERT(expr)
+
+// Records keep the disc's layout on PC too, so their size checks stay on.
+#undef PORT_RECORD_ASSERT
+#define PORT_RECORD_ASSERT(expr) static_assert(expr)

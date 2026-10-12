@@ -360,8 +360,8 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
     char pack[0x80];
     int  path_size;
     int  pack_size;
-    int  path_buffer;
-    int  pack_buffer;
+    uptr path_buffer;
+    uptr pack_buffer;
 
     for (int i = 0; i < EFF_SPT_BASE_MAX; i++) {
         if (base[i] != 0 && base[i]->base_no == base_no) {
@@ -369,7 +369,7 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
         }
     }
 
-    path_buffer = (int) load_buffer;
+    path_buffer = (uptr) load_buffer;
 
     if (path_buffer == 0) {
         return -1;
@@ -381,7 +381,7 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
 
     if (LoadFile2(path, (void *) path_buffer, &path_size, 0) == 0) {
         path_size = 0;
-        pack_buffer = (int) load_buffer;
+        pack_buffer = (uptr) load_buffer;
         path_buffer = 0;
     } else {
         int rest = path_size & 0x3F;
@@ -5560,7 +5560,7 @@ int _GET_EOH_POS(RS_STACKDATA *stack, int argc) {
  *
  */
 int SetEffectScript(CRunScript *script, char *program, mgCMemory *memory) {
-    RS_STACKDATA *stack = (RS_STACKDATA *) memory->Alloc(0x20);
+    RS_STACKDATA *stack = (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) * 0x40 + 15) / 16);
     RS_CALLDATA  *call_data = (RS_CALLDATA *) memory->Alloc(1);
     script->load((RS_PROG_HEADER *) program, stack, 0x40, call_data, 2);
     script->ext_func(ext_func, 0x100);

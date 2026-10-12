@@ -46,6 +46,16 @@ PORT_OVERRIDE void WaitVSync(int start, int frames) {
     }
 }
 
+void mgTimeWaitTicks(int start, int frames, ClockWaitHook hook) {
+    while (ClockTickCount() - start < frames) {
+        if (g_rotate_priority > 0) {
+            RotateThreadReadyQueue(g_rotate_priority);
+        }
+        ClockWaitNextTick(hook);
+        ClockPump();
+    }
+}
+
 PORT_OVERRIDE int mgGetVSyncCount() {
     return static_cast<int>(ClockTickCount());
 }

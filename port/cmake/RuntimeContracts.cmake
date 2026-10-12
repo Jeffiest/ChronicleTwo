@@ -1,14 +1,7 @@
 # Current compiler flags and production callbacks are checked on ordinary game builds.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-add_custom_target(ct_runtime_contract_check
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_runtime_contracts.py
-        --source ${PORT_DIR}/mg_visual.cpp --compile-commands ${CMAKE_BINARY_DIR}/compile_commands.json
-        --negative-control
-    DEPENDS ps2_include WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} VERBATIM)
-if(TARGET ct_win_headers)
-    add_dependencies(ct_runtime_contract_check ct_win_headers)
-endif()
-add_dependencies(ct_port ct_runtime_contract_check)
+# Upstream replaced mgCVisualMDT's CopyMDTDataPointer arena allocation with an owned GPU-mesh
+# representation; its focused mg_visual_test.cpp coverage now exercises that renderer path.
 set(ct_runtime_tests "")
 function(ct_runtime_test target name)
     target_compile_options(${target} PRIVATE -UNDEBUG)
@@ -21,7 +14,9 @@ function(ct_runtime_test target name)
     endif()
     set(ct_runtime_tests ${ct_runtime_tests} ${target} PARENT_SCOPE)
 endfunction()
-foreach(pair IN ITEMS "05_image_copy" "06_atlas_storage" "07_texture_lifetime" "08_hud_state" "12_sound_bridge" "12_weighted_models" "13_texture_tables")
+# The old image-copy and atlas probes target FindVramTexture/PortMgTextureBinding, removed by the
+# upstream texture seam. mg_texture_test.cpp and menudraw_grab_test.cpp cover the current paths.
+foreach(pair IN ITEMS "07_texture_lifetime" "08_hud_state" "12_sound_bridge" "12_weighted_models" "13_texture_tables")
     add_executable(ct_wp${pair}_test EXCLUDE_FROM_ALL ${PORT_DIR}/tests/wp${pair}_standalone.cpp)
     ct_link_game(ct_wp${pair}_test)
     ct_runtime_test(ct_wp${pair}_test ${pair} ${CMAKE_SOURCE_DIR}/data)
@@ -75,7 +70,7 @@ if(CT_BUILD_TESTS)
         ${PORT_DIR}/tests/wp02_action_vm_decoder_test.py ${CMAKE_SOURCE_DIR}/data)
     set_tests_properties(RuntimeContract.action_decoder PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT ${CT_TEST_TIMEOUT})
 endif()
-add_custom_target(ct_runtime_contract_tests DEPENDS ct_runtime_contract_check ${ct_runtime_tests})
+add_custom_target(ct_runtime_contract_tests DEPENDS ${ct_runtime_tests})
 foreach(target IN ITEMS darkchronicle_tests ct_completion_tests ct_completion_tests_headless)
     if(TARGET ${target})
         add_dependencies(${target} ct_runtime_contract_tests)
