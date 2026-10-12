@@ -299,6 +299,55 @@ TEST(MgVisual, LightingOffVector) {
     ExpectCentre(64, 32, 16);
 }
 
+TEST(MgVisual, FillShowsMeshBeyondNativeFourThreeFrame) {
+    VisualRenderer renderer(1280, 720);
+    gfx::SetFrameLayout({gfx::AspectMode::Fill, 1.0f});
+    mgSetBackGround(0.0f, 0.0f, 0.0f, 128.0f);
+    SetCamera();
+
+    ModelSpec model;
+    model.vertices = {{-20.0f, -20.0f, 0.0f}, {20.0f, -20.0f, 0.0f}, {-20.0f, 20.0f, 0.0f}};
+    model.faces.push_back({kPrimTriangle | kUntextured, {0, 1, 2}});
+    MdtFile file(model);
+    MemoryPool pool;
+    mgCVisualMDT visual;
+    ASSERT_EQ(visual.DataAssignMDT(file.header(), &pool.memory(), nullptr), 1);
+
+    mgCFrameAttr attr;
+    attr.no_light = 1;
+    SetColour(attr, {128.0f, 128.0f, 128.0f, 128.0f});
+    float matrix[4][4];
+    Identity(matrix);
+    matrix[3][0] = 700.0f;
+    matrix[3][2] = 1000.0f;
+    PrepareObject(attr);
+
+    u_int tag[4] = {};
+    mgBeginFrame(nullptr);
+    visual.Draw(tag, matrix, nullptr);
+    mgEndFrame(nullptr);
+
+    std::vector<uint8_t> rgba;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    ASSERT_TRUE(mgPortReadColor(gfx::kMainTarget, rgba, width, height));
+    ASSERT_EQ(width, 1280u);
+    ASSERT_EQ(height, 720u);
+
+    const gfx::LogicalMapping mapping = gfx::GetLogicalMapping(gfx::kMainTarget);
+    const float native_frame_right = mapping.offset_x + gfx::LogicalWidth() * mapping.scale_x;
+    uint32_t pixels_past_frame = 0;
+    for (uint32_t y = 0; y < height; ++y) {
+        for (uint32_t x = static_cast<uint32_t>(native_frame_right + 2.0f); x < width; ++x) {
+            const size_t at = (static_cast<size_t>(y) * width + x) * 4;
+            if (rgba[at] > 32 || rgba[at + 1] > 32 || rgba[at + 2] > 32) {
+                ++pixels_past_frame;
+            }
+        }
+    }
+    EXPECT_GT(pixels_past_frame, 0u);
+}
+
 // prog0.md 10.2
 TEST(MgVisual, OneLightVector) {
     VisualRenderer renderer(640, 480);
