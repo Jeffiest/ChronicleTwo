@@ -20,4 +20,4 @@ This is the upstream `VisibleClipFit` design, not the earlier local `PortMgScree
 
 ## Runtime status
 
-The code-level tests establish that rendering and culling use the active target's visible extent. They do not confirm that the circus characters now render correctly in the user's scene. Visual acceptance is pending; this session is limited to source, build and headless-test work.
+Headless real-data captures from a scratch copy of File 2 (`Palm Brinks / A night at the circus`) confirm the corrected path at 1280x720 Fill. A partial right turn at frame 15140, a full right turn at frame 15400, and a full left turn at frame 15400 show Max and nearby NPCs at the corresponding camera angles without the old inner 4:3 lines or bright dropped-draw blocks. The replay logs contain zero main-target self-sampling and missing-texture warnings after the snapshot fix. This verifies the town wide-fill case, but the user's distant bench/cutscene disappearance and movie playback remain open.
