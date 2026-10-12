@@ -31,6 +31,7 @@ set(TEST_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/mg_frame_asm_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mg_math_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mg_memory_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/mg_texture_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/mglib_time_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/platform_config_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/platform_pad_test.cpp

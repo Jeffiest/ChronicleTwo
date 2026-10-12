@@ -18,6 +18,7 @@
 #include "color_capture.hpp"
 
 bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out);
+bool PortMgFrameBufferBinding(const mgCTexture *texture, gfx::TextureBinding &out);
 
 // The VSync and timing group of ps2/src/mglib.cpp, moved onto the platform clock
 // (platform/clock.hpp) in place of the PS2's root counter and VSync interrupt, plus the frame
@@ -413,7 +414,7 @@ PORT_OVERRIDE void mgSetPkFrameBuffer(int fbp, int width, int height, int psm) {
         }
     }
 
-    if (target != NULL && PortMgTextureBinding(target, binding) && binding.texture != gfx::kNullTexture) {
+    if (target != NULL && PortMgFrameBufferBinding(target, binding) && binding.texture != gfx::kNullTexture) {
         gfx::SetRenderTarget(binding.texture);
         g_frame_redirected = true;
 

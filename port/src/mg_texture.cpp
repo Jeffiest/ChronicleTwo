@@ -53,6 +53,7 @@ struct Entry {
     const void        *shared_storage = nullptr;
     bool               dirty = true;
     bool               target = false; // a named render target: the renderer keeps it alive
+    bool               frame_target = false; // used as a GS framebuffer; retain fill-mode side pixels
     uint32_t           width = 0;
     uint32_t           height = 0;
     uint32_t           mips = 0;
@@ -286,9 +287,21 @@ void Sync(const mgCTexture *texture, Entry &entry) {
         // render target for 16 bits and up, an index image with a palette of zeroes below.
         bool has_alpha = texture->bpp != 24;
         if (texture->bpp > 8) {
+            bool frame_target = entry.frame_target;
+            if (!frame_target) {
+                // mgGetFrameBuffer returns another mgCTexture with the same target name. Keep
+                // that copy from demoting a target already promoted by mgSetPkFrameBuffer.
+                gfx::TextureHandle named = gfx::FindNamedRenderTarget(texture->name);
+                if (named != gfx::kNullTexture) {
+                    auto named_info = gfx::GetTextureInfo(named);
+                    frame_target = named_info.has_value() && named_info->frame_target;
+                }
+            }
             Release(texture, "retarget", entry);
+            entry.frame_target = frame_target;
             entry.texture = gfx::NamedRenderTarget(texture->name, static_cast<uint32_t>(texture->width),
-                                                   static_cast<uint32_t>(texture->height), has_alpha);
+                                                   static_cast<uint32_t>(texture->height), has_alpha, false,
+                                                   frame_target);
             entry.target = entry.texture != gfx::kNullTexture;
             if (gfx::TraceTextures()) {
                 gfx::TraceTexture("mg sync-target %s %p -> %#x %dx%d alpha %d", texture->name,
@@ -433,12 +446,18 @@ void Forget(const mgCTexture *texture) {
 // Resolves one of the manager's textures to what the renderer samples. False when the texture has
 // no image yet; the caller then draws it untextured. Creates or refreshes the renderer's copy on
 // first use, never inside the loading screen's own frame.
-bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
+namespace {
+
+bool ResolvePortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out, bool framebuffer) {
     out = gfx::TextureBinding{};
     if (texture == nullptr) {
         return false;
     }
     Entry &entry = g_entries[texture];
+    if (framebuffer && texture->image[0] == nullptr && texture->bpp > 8 && !entry.frame_target) {
+        entry.frame_target = true;
+        entry.dirty = true;
+    }
     if (entry.dirty) {
         Sync(texture, entry);
     }
@@ -461,6 +480,16 @@ bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
     out.wrap_v = texture->clamp.WMT == 0 ? gfx::Wrap::Repeat : gfx::Wrap::Clamp;
     out.ignore_alpha = texture->tex0.TCC == 0;
     return true;
+}
+
+} // namespace
+
+bool PortMgTextureBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
+    return ResolvePortMgTextureBinding(texture, out, false);
+}
+
+bool PortMgFrameBufferBinding(const mgCTexture *texture, gfx::TextureBinding &out) {
+    return ResolvePortMgTextureBinding(texture, out, true);
 }
 
 PORT_OVERRIDE int mgCTextureManager::ReloadTexture(int block, u_int *packet) {

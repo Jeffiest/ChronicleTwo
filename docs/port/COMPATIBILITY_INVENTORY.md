@@ -276,7 +276,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 62a96f757fb4e861 | raw-member-offset | host-source/src/mg_tanime.cpp:157 | MoveClut | clut + position | host-source/src/mg_tanime.cpp |
 | 48a9e6aa676de341 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:544 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
 | c16b219397765422 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:626 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_tanime.cpp |
-| 8d1d56f3ecbfcd27 | raw-member-offset | host-source/src/mg_texture.cpp:360 | if | clut + position | host-source/src/mg_texture.cpp |
+| f4610704f6f3a8b8 | raw-member-offset | host-source/src/mg_texture.cpp:373 | if | clut + position | host-source/src/mg_texture.cpp |
 | 5db9af6c0845ea4c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:455 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
 | f25c02e36b1055cf | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:458 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
 | 153d4ab8c14b0657 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:464 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
@@ -284,15 +284,15 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | b87b607d1ee723b9 | hardware:scratchpad | host-source/src/mg_visual.cpp:501 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
 | 66c0c6a6185994c9 | hardware:scratchpad | host-source/src/mg_visual.cpp:503 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
 | 9ed003793a441ca9 | hardware:scratchpad | host-source/src/mg_visual.cpp:505 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| 1d087c91436025b5 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:34 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
-| 14e7291afd2eef6e | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:189 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
-| 6872c876693b0cc5 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:287 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| b203411b21e613eb | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:329 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 1ed72a5f3dbd9947 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:451 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 4918dfd7cf8fe606 | pointer-narrowing | host-source/src/mglib.cpp:504 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
-| 052341452de93ac0 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:546 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
-| 89d50409d6b9906a | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:579 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
-| bb1012fc889fde89 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:614 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
+| 94abb38214ff113a | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:35 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
+| 81dd8ee666ef52bd | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:190 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
+| a6d70048854c06f1 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:288 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 2d891032e0d8ff00 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:330 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 9f636ee29c760fe7 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:452 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 437a9c54827e9612 | pointer-narrowing | host-source/src/mglib.cpp:505 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
+| d5543ea93a6b68ae | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:547 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
+| 9eb1cf69af022d12 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:580 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
+| 5a039616f6e46052 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:615 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
 | 0c7e3178fcede0b3 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:22 | <file-scope> | sceMpeg | host-source/src/movie.cpp |
 | 74ec2576cd6f458b | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:81 | ReadTiming | sceMpegAddStrCallback | host-source/src/movie.cpp |
 | a9acbc24c46a7571 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:84 | ReadTiming | sceMpegCallback | host-source/src/movie.cpp |
