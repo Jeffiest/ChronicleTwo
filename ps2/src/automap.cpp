@@ -430,10 +430,21 @@ void CMiniMapSymbol::SetMapInfo(CMap *new_map, CAutoMapParts *new_grid, int widt
     cell_w = cell_width;
     cell_d = cell_depth;
     parts_table = new_map->GetPlacPartsTable(&parts_num);
+#ifdef PORT
+    const int parts_capacity = parts_num;
+    if (parts_table == NULL || parts_capacity <= 0) {
+        parts_num = 0;
+        return;
+    }
+#endif
     CMapParts *part = parts_table;
     parts_num = 0;
 
+#ifdef PORT
+    while (parts_num < parts_capacity && part->name[0] != 0) {
+#else
     while ((part->name[0] == 0) == 0) {
+#endif
         part++;
         parts_num++;
     }
@@ -468,15 +479,23 @@ void CMiniMapSymbol::SetMapInfo(CMap *new_map, CAutoMapParts *new_grid, int widt
 
     part = parts_table;
 
+#ifndef PORT
     if (part == NULL) {
         return;
     }
+#endif
 
     for (int i = 0; i < parts_num; i++) {
         char *parts_name = part->parts_name;
         part->minimap_tile = -1;
 
+#ifdef PORT
+        for (int j = 0; j < AUTOMAP_PARTS_INFO_NUM && PartsInfoData[j].name != NULL &&
+                        PartsInfoData[j].name[0] != 0;
+             j++) {
+#else
         for (int j = 0; PartsInfoData[j].name != NULL; j++) {
+#endif
             if (strcmp(PartsInfoData[j].name, parts_name) == 0) {
                 part->minimap_tile = info->tile[j];
             }

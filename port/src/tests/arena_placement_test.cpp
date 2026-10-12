@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -289,4 +291,22 @@ TEST(CtArenaPlacement, CastRunsAgainstHostSizes) {
     "runscript_opcodes.cpp:4679 RS_CALLDATA x 0x200",
     };
     EXPECT_EQ(outgrowing, kCastOutgrowing);
+}
+
+TEST(CtArenaPlacement, MapDrawPartPointerTableStaysInsideItsArenaAllocation) {
+    constexpr int kParts = 400;
+    std::vector<u_long128> storage(65536);
+    std::memset(storage.data(), 0xA5, storage.size() * sizeof(storage[0]));
+
+    mgCMemory memory;
+    memory.stSetBuffer(storage.data(), static_cast<int>(storage.size()));
+    CMap map;
+    map.Initialize();
+    map.SetPlacePartsBuff(&memory, kParts);
+
+    std::array<u8, sizeof(u_long128)> canary;
+    canary.fill(0xA5);
+    ASSERT_GE(memory.stGetRest(), 1);
+    EXPECT_EQ(0, std::memcmp(memory.stGetTop(), canary.data(), canary.size()))
+        << "clearing the host pointer table wrote past its arena allocation";
 }

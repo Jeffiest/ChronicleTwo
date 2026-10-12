@@ -2,7 +2,6 @@
 # duplicate retained retail code or complete native replacements and must not
 # enter either PORT_SOURCES or the PORT_OVERRIDE definition collector.
 set(CT_NATIVE_SUPERSEDED_SOURCES
-    "${PORT_DIR}/dng_hud.cpp"           # abort stub; keep retained retail implementation
     "${PORT_DIR}/funcpoint.cpp"         # abort stub; keep retained retail implementation
     "${PORT_DIR}/gyorace.cpp"           # abort stub; keep retained retail implementation
     "${PORT_DIR}/menucapt.cpp"          # abort stub; keep retained retail implementation
