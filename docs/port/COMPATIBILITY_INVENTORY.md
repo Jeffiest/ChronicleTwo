@@ -104,9 +104,6 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | b0531457e1ffc49a | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:194 | MappedOffsets | static_cast<int32_t>(std::lround(value * | host-source/src/host_overrides/gfx/resources.cpp |
 | ff7c187e767abce9 | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:198 | MappedOffsets | static_cast<int32_t>(std::lround(value * | host-source/src/host_overrides/gfx/resources.cpp |
 | 5b33f78365191e17 | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:801 | ConvertPs2Alpha | static_cast<uint8_t>(std::min(alpha * | host-source/src/host_overrides/gfx/resources.cpp |
-| 7b35b414cd0d70b8 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:41 | <file-scope> | asm | host-source/src/mainloop.cpp |
-| 04d85e2d77aade15 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:42 | <file-scope> | asm | host-source/src/mainloop.cpp |
-| 7df5c23bf8e31967 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:43 | <file-scope> | asm | host-source/src/mainloop.cpp |
 | a17140a49be217ee | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:44 | <file-scope> | asm | host-source/src/mainloop.cpp |
 | ef3c00ae985dd8a9 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:45 | <file-scope> | asm | host-source/src/mainloop.cpp |
 | 1b504dab20e53c44 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:46 | <file-scope> | asm | host-source/src/mainloop.cpp |
@@ -114,16 +111,19 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 57dcb8d0810d6963 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:48 | <file-scope> | asm | host-source/src/mainloop.cpp |
 | 2e4a831e35561530 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:49 | <file-scope> | asm | host-source/src/mainloop.cpp |
 | bb43f1cb32ce37fb | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:50 | <file-scope> | asm | host-source/src/mainloop.cpp |
-| 8caad42b24760028 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:95 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
-| d0e4e740afcb6362 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:105 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
-| 544328e9bb1629e6 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:107 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
-| 5c316d0c4f63abe8 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:109 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
-| 0345d6b58a83683f | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:326 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 404796b6a1718042 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:369 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 1c51839496e8a1ec | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:371 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 3531a042dd8d89b4 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:374 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| d885fd79776a7669 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:381 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
-| 351231a1f0282fa3 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:383 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| bf07cc12080729c3 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:51 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 6f4df46e9b1551ff | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:52 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 69cb130e95b4cd39 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:53 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| b10c7a68eb485115 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:98 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 8df4c7914ae72120 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:108 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 7f8eae843c41fe9b | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:110 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 355a496000eb9fa8 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:112 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| c6f3597297b4e8a3 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:330 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 567e7cafd233b932 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:373 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| d369e31731052912 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:375 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 969799283eaa4666 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:378 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 1a5109eac1b9604e | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:385 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 4579f3f4dc9c409f | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:387 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
 | e324637ed55c382e | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:11 | <file-scope> | sceMc | host-source/src/memcard.cpp |
 | af540331426d47a2 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:16 | <file-scope> | sceMcEnd | host-source/src/memcard.cpp |
 | 0d3232127f098551 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:18 | <file-scope> | sceMcSeek | host-source/src/memcard.cpp |

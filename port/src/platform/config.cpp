@@ -170,6 +170,9 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
             return rate >= kConfigTickRateMin && rate <= kConfigTickRateMax;
         });
     }
+    if (name == "game.debug_mode") {
+        return ReadBool(value, config.debug_mode);
+    }
     if (name == "video.present_mode") {
         return ReadEnum(value, kPresentModeNames, s.present_mode);
     }
@@ -326,6 +329,7 @@ std::string ConfigSerialize(const Config &config) {
     }
     Json root;
     root["game"]["tick_rate"] = s.tick_rate;
+    root["game"]["debug_mode"] = config.debug_mode;
     root["video"]["present_mode"] = kPresentModeNames[static_cast<std::size_t>(s.present_mode)];
     root["video"]["interpolation"] = config.interpolation;
     root["video"]["max_fps"] = s.max_fps;

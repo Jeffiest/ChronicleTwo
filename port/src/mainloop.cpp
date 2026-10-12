@@ -9,6 +9,7 @@
 
 #include "arena_root.hpp"
 #include "dataread.hpp"
+#include "debug_mode.hpp"
 #include "editdata.hpp"
 #include "font.hpp"
 #include "gaiji.hpp"
@@ -30,6 +31,8 @@
 #include "npccfg.hpp"
 #include "padcontrol.hpp"
 #include "platform/arena.hpp"
+#include "platform/config.hpp"
+#include "platform/input.hpp"
 #include "savedata.hpp"
 #include "scene.hpp"
 #include "scenesnd.hpp"
@@ -178,6 +181,7 @@ PORT_OVERRIDE void MainLoop() {
     Font.SetClearance(15, 18);
     CreateGamePadThread(&GamePad__2);
     LoadGameConfig(NULL);
+    PortApplyDebugMode(ConfigGet().debug_mode);
     SetIoErrCallBack(EmergencyMessage);
     SCElogoFade(1, memory);
 
@@ -269,8 +273,8 @@ PORT_OVERRIDE void MainLoop() {
 
             mgPerformanceMeter(pmeter_flag);
 
-            if (GamePad__2.Down2(PAD_CIRCLE)) {
-                DebugFlag = !DebugFlag;
+            if (GamePad__2.Down2(PAD_CIRCLE) || InputHostPressed(InputHostAction::DebugMenu)) {
+                PortToggleDebugMode();
             }
 
             mgBeginFrame(NULL);

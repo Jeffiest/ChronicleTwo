@@ -87,8 +87,11 @@ screen up to "Confirm Max's costume?". Every game frame is a recorded display
 list rendered canonically, with interpolated display frames (bone palettes
 included) between ticks; HUD pieces anchor to the window's corners.
 Confirming the costume loads the opening event, and the repaired frame-tree traversal
-reaches the first battle tutorial. Phase 7 resumes with the first-town and first-dungeon
-sweep; the current acceptance boundary is recorded in `docs/port/HANDOFF.md`.
+reaches the first battle tutorial. The built-in debug menu is unlocked by default; its
+direct route reaches Dungeon 2 Floor 1 loading, where event-point placement currently
+stalls before gameplay. Phase 7 continues with that dungeon-loading blocker and the
+broader first-town/dungeon sweep; the current acceptance boundary is recorded in
+`docs/port/HANDOFF.md`.
 The PS2 build still matches, and `docs/PC.md` describes the port;
 `docs/port/HANDOFF.md` is the working state and `docs/port/process/` the
 schedule and wave records.

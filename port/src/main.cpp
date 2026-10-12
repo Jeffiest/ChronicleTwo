@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <charconv>
 #include <cstdint>
 #include <cstdio>
@@ -221,6 +222,12 @@ void ApplyConfigChange(const HostSettings &before, const HostSettings &after) {
         gfx::SetPresentMode(PresentMode(after.present_mode));
     }
     InputApplyConfig(after);
+    if (std::ranges::none_of(after.key_bindings, [](const ConfigKeyBinding &binding) {
+            return binding.action == "debug_menu";
+        })) {
+        constexpr std::string_view debug_menu_keys[] = {"F10", "Gamepad:paddle1"};
+        InputBindKeys("debug_menu", debug_menu_keys);
+    }
     // HostSettings has no interpolation or aspect, so the present settings come from ConfigGet, which
     // already holds the new values. This also resets an F3 toggle of show_fps to the config's value.
     PresentSetSettings(PresentSettingsFor(ConfigGet(), g_options));
@@ -248,6 +255,12 @@ int Run(int argc, const char **argv) {
     window.vulkan = !offscreen;
     WindowInit(window);
     InputInit();
+    if (std::ranges::none_of(ConfigGet().key_bindings, [](const ConfigKeyBinding &binding) {
+            return binding.action == "debug_menu";
+        })) {
+        constexpr std::string_view debug_menu_keys[] = {"F10", "Gamepad:paddle1"};
+        InputBindKeys("debug_menu", debug_menu_keys);
+    }
     InputScriptInstall(std::move(input_script));
 
     gfx::RendererConfig renderer;
