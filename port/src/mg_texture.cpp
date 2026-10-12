@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -31,6 +32,20 @@ void TraceTexture(const char *format, ...);
 // own texture records, so every later TEX0 the engine builds resolves back to one image here.
 
 namespace {
+
+template <class T> T *AllocateTextureRecords(mgCMemory *memory, int count) {
+    const std::size_t quads = count < 0 ? SIZE_MAX : (static_cast<std::size_t>(count) * sizeof(T) + 15) / 16 + 2;
+    if (memory == nullptr || quads > INT_MAX) {
+        std::fprintf(stderr, "texture table: invalid count %d for %zu-byte records\n", count, sizeof(T));
+        std::abort();
+    }
+    auto *buffer = memory->Alloc(static_cast<int>(quads));
+    if (buffer == nullptr) {
+        std::fprintf(stderr, "texture table: cannot allocate %d %zu-byte records\n", count, sizeof(T));
+        std::abort();
+    }
+    return new (buffer) T[count];
+}
 
 struct Entry {
     gfx::TextureHandle texture = gfx::kNullTexture;
@@ -526,6 +541,22 @@ PORT_OVERRIDE void mgCTextureManager::DeleteTexture(mgCTexture *texture) {
             texture->Initialize();
         }
     }
+}
+
+PORT_OVERRIDE void mgCTextureManager::SetTableBuffer(int texture_count, int block_total, mgCMemory *memory) {
+    // Every table contains host runtime objects or pointers, never serialized PS2 records.
+    block_max = block_total;
+    blocks = AllocateTextureRecords<mgCTextureBlock>(memory, block_max);
+    texture_max = texture_count;
+    texture_buf = AllocateTextureRecords<mgCTexture>(memory, texture_max);
+    texture_stack = AllocateTextureRecords<mgCTexture *>(memory, texture_max);
+    hash_max = texture_count;
+    hash_buf = AllocateTextureRecords<mgTEXTURE_HASH>(memory, hash_max);
+    hash_stack = AllocateTextureRecords<mgTEXTURE_HASH *>(memory, hash_max);
+    for (int i = 0; i < texture_max; ++i) texture_stack[i] = &texture_buf[i];
+    for (int i = 0; i < hash_max; ++i) hash_stack[i] = &hash_buf[i];
+    texture_num = 0;
+    hash_num = 0;
 }
 
 PORT_OVERRIDE void mgCTextureManager::Initialize(int start, int end) {

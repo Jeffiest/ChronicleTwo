@@ -269,7 +269,7 @@ d467ea57d320d863	open
 62a96f757fb4e861	open		
 48a9e6aa676de341	open		
 c16b219397765422	open		
-8e34faad4d76ada5	open		
+8d1d56f3ecbfcd27	open		
 5db9af6c0845ea4c	open		
 f25c02e36b1055cf	open		
 153d4ab8c14b0657	open		
@@ -4376,8 +4376,8 @@ b525f43618ed36c6	open
 93c118814dcef542	open		
 81d9e73673fc3fbe	open		
 93c106f75c7ab220	open		
-bbbf6d2980dc77de	open		
-0a588eab73e14139	open		
+bbbf6d2980dc77de	host-override	port review	SetTableBuffer allocates all five tables by sizeof(host element); production extent/hash/reload fixture fails baseline and passes repair.
+0a588eab73e14139	host-override	port review	SetTableBuffer allocates all five tables by sizeof(host element); production extent/hash/reload fixture fails baseline and passes repair.
 9bdde7c18e4adf0a	open		
 af1aab95f1adbeb5	open		
 f83f2205a0f752cc	open		

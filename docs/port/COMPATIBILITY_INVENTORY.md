@@ -276,7 +276,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 62a96f757fb4e861 | raw-member-offset | host-source/src/mg_tanime.cpp:157 | MoveClut | clut + position | host-source/src/mg_tanime.cpp |
 | 48a9e6aa676de341 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:544 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
 | c16b219397765422 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:626 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_tanime.cpp |
-| 8e34faad4d76ada5 | raw-member-offset | host-source/src/mg_texture.cpp:345 | if | clut + position | host-source/src/mg_texture.cpp |
+| 8d1d56f3ecbfcd27 | raw-member-offset | host-source/src/mg_texture.cpp:360 | if | clut + position | host-source/src/mg_texture.cpp |
 | 5db9af6c0845ea4c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:455 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
 | f25c02e36b1055cf | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:458 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
 | 153d4ab8c14b0657 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:464 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
@@ -4383,8 +4383,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 93c118814dcef542 | hardware:dma_gif_vif | retail/src/mg_texture.cpp:32 | <file-scope> | GIF_EOP | none detected |
 | 81d9e73673fc3fbe | hardware:dma_gif_vif | retail/src/mg_texture.cpp:33 | <file-scope> | GIF_NREG_1 | none detected |
 | 93c106f75c7ab220 | hardware:dma_gif_vif | retail/src/mg_texture.cpp:34 | <file-scope> | GIF_FLG_IMAGE | none detected |
-| bbbf6d2980dc77de | raw-allocation | retail/src/mg_texture.cpp:490 | mgCTextureManager::SetTableBuffer | (mgCTexture **) memory->Alloc(align16_blocks(bytes) | none detected |
-| 0a588eab73e14139 | raw-allocation | retail/src/mg_texture.cpp:502 | mgCTextureManager::SetTableBuffer | (mgTEXTURE_HASH **) memory->Alloc(align16_blocks(bytes) | none detected |
+| bbbf6d2980dc77de | raw-allocation | retail/src/mg_texture.cpp:490 | mgCTextureManager::SetTableBuffer | (mgCTexture **) memory->Alloc(align16_blocks(bytes) | src/mg_texture.cpp |
+| 0a588eab73e14139 | raw-allocation | retail/src/mg_texture.cpp:502 | mgCTextureManager::SetTableBuffer | (mgTEXTURE_HASH **) memory->Alloc(align16_blocks(bytes) | src/mg_texture.cpp |
 | 9bdde7c18e4adf0a | pointer-narrowing | retail/src/mg_texture.cpp:546 | mgCTextureManager::Initialize | (int) this | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
 | af1aab95f1adbeb5 | pointer-narrowing | retail/src/mg_texture.cpp:644 | mgCTextureManager::DelHash | (int) this | none detected |
 | f83f2205a0f752cc | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:736 | mgCTextureManager::GetRemainVRAM | sceGsTex1 | none detected |
