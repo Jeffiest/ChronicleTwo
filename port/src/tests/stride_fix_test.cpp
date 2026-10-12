@@ -50,6 +50,8 @@ TEST(StrideFix, DrawManagerTablesHoldPointers) {
 
     mgCDrawManager manager;
     manager.texture_manager = &texture_manager;
+    // Retail ctor leaves render_info unset; the game's instance is zero-initialised, so match that default.
+    manager.render_info = nullptr;
     manager.SetSortTable(2);
     manager.BeginDraw(&memory, nullptr);
 

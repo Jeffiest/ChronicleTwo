@@ -58,25 +58,6 @@ FIXUPS += [('mg_tanime.hpp',
   'template <>\n'
   'void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);\n'
   '#endif\n'),
- ('runscript.hpp',
-  "    u32   addr;  /**< Nonnegative byte offset of the function's first instruction in the code "
-  'section. */\n'
-  '    char *name;  /**< Name of the function, for runtime error messages. */\n'
-  '    int   local; /**< Number of frame slots, arguments included. */\n'
-  '    int   arg;   /**< Number of argument slots. */\n',
-  "    u32 addr; /**< Nonnegative byte offset of the function's first instruction in the code "
-  'section. */\n'
-  '#ifdef PORT\n'
-  '    // The program images were built for the PS2 and never carry a host name pointer; the field '
-  'is\n'
-  '    // read as the file holds it so local and arg stay at their file offsets.\n'
-  "    u32 name; /**< Name field as the file holds it; only the PS2 build's error messages read "
-  'it. */\n'
-  '#else\n'
-  '    char *name; /**< Name of the function, for runtime error messages. */\n'
-  '#endif\n'
-  '    int local; /**< Number of frame slots, arguments included. */\n'
-  '    int arg;   /**< Number of argument slots. */\n'),
  ('sce/sifdev.h',
   'struct sce_stat {',
   '#ifdef PORT\n'

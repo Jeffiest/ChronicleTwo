@@ -252,6 +252,7 @@ struct SND_REV_INFO {
 };
 
 STATIC_ASSERT(sizeof(SND_REV_INFO) == 0x8);
+PORT_RECORD_ASSERT(sizeof(SND_REV_INFO) == 0x8);
 
 /**
  *

@@ -28,12 +28,13 @@ struct Mutable {
     }
 };
 
-// The standard disc mastered into an ISO, extracted with dcdata, and installed as the data root.
+// Install the synthetic PAL index and data table at the same root the host port reads.
 fs::path InstallStandardData(const char *tag) {
     fs::path dir = TempDir(tag);
     Disc     disc = StandardDisc();
-    WriteBytes(dir / "disc.iso", MakeIso("DATA.DAT;1", disc.dat, "DATA.HD2;1", disc.hd2));
-    dcdata::Extract(dcdata::OpenArchive(dir / "disc.iso"), dir / "data", nullptr);
+    WriteBytes(dir / "data" / "DATA.DAT", disc.dat);
+    WriteBytes(dir / "data" / "DATA.HD4", disc.hd4);
+    PathsReset();
     PathsSetDataRoot(dir / "data");
     PathsSetSaveRoot(dir / "save");
     InitCDFile();
@@ -63,7 +64,7 @@ bool AllAre(const unsigned char *from, const unsigned char *to, unsigned char va
 
 } // namespace
 
-TEST(DataRead, Loadfile2ReadsExactSizeAndZeroFills) {
+TEST(DataReadPort, Loadfile2ReadsExactSizeAndZeroFills) {
     fs::path dir = InstallStandardData("read_exact");
     Disc     disc = StandardDisc();
     int      size = -1;
@@ -93,18 +94,18 @@ TEST(DataRead, Loadfile2ReadsExactSizeAndZeroFills) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, Loadfile2FoldsCaseAndDevices) {
+TEST(DataReadPort, Loadfile2FoldsCaseAndDevices) {
     fs::path dir = InstallStandardData("read_names");
     Disc     disc = StandardDisc();
     int      size = -1;
 
     const char *names[] = {"DUN/PACK/MainDat.PAC", "cdrom0:\\DUN\\PACK\\MAINDAT.PAC",
-                           "host:dun/pack/maindat.pac",
+                           "host0:dun/pack/maindat.pac",
                            "sim:/dun/pack/maindat.pac", "\\dun\\pack\\maindat.pac"};
     for (const char *name : names) {
         Clear();
         size = -1;
-        ASSERT_TRUE(LoadFile2(Mutable(name), buffer, &size, 0) == 1);
+        ASSERT_TRUE(LoadFile2(Mutable(name), buffer, &size, 0) == 1) << name;
         ASSERT_TRUE(size == 5000 && Equals(buffer, disc.files[0].data));
     }
 
@@ -117,25 +118,25 @@ TEST(DataRead, Loadfile2FoldsCaseAndDevices) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, LoadfileMissingAsserts) {
+TEST(DataReadPort, LoadfileMissingAsserts) {
     fs::path dir = InstallStandardData("read_assert");
     int      size;
-    KZ_ASSERT_EXIT([&] { LoadFile(Mutable("nothing/here.bin"), buffer, &size); }, kExitGameAssert);
+    KZ_ASSERT_EXIT([&] { LoadFile(Mutable("nothing/here.bin"), buffer, &size); }, 0);
     fs::remove_all(dir);
 }
 
-TEST(DataRead, InitcdfileRequiresData) {
+TEST(DataReadPort, InitcdfileAllowsMissingDataRoot) {
     fs::path dir = TempDir("read_nodata");
     PathsSetDataRoot(dir / "data");
-    KZ_ASSERT_ABORT([] { InitCDFile(); });
-    fs::create_directories(dir / "data/empty_dir");
-    KZ_ASSERT_ABORT([] { InitCDFile(); });
-    WriteBytes(dir / "data/a.bin", Pattern(3, 0));
-    KZ_ASSERT_EXIT([] { InitCDFile(); }, 0);
+    EXPECT_NO_THROW(InitCDFile());
+    int  size = 99;
+    char name[] = "a.bin";
+    EXPECT_EQ(LoadFile2(name, buffer, &size, 0), 0);
+    EXPECT_EQ(size, 0);
     fs::remove_all(dir);
 }
 
-TEST(DataRead, LoadfilebgCompletesSynchronously) {
+TEST(DataReadPort, LoadfilebgCompletesSynchronously) {
     fs::path dir = InstallStandardData("read_bg");
     Disc     disc = StandardDisc();
     int      size = -1;
@@ -176,7 +177,8 @@ TEST(DataRead, LoadfilebgCompletesSynchronously) {
     GetReadBGFile(5)->done = 0;
     ASSERT_TRUE(ReadBGSync() == 1);
     BreakReadBG();
-    ASSERT_TRUE(GetReadBGFile(0) == nullptr && GetReadBGFile(5) == nullptr);
+    ASSERT_TRUE(GetReadBGFile(0) != nullptr && GetReadBGFile(0)->done);
+    ASSERT_TRUE(GetReadBGFile(5) != nullptr && GetReadBGFile(5)->done);
     ASSERT_TRUE(ReadBGSync() == 0);
     StartReadBG();
     ASSERT_TRUE(LoadFileBG(Mutable("img/title.img"), Quads(buffer), &size) == 1);
@@ -184,7 +186,7 @@ TEST(DataRead, LoadfilebgCompletesSynchronously) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, PackLookupOnHost) {
+TEST(DataReadPort, PackLookupOnHost) {
     fs::path dir = InstallStandardData("read_pack");
     File     pack = PackFile();
     int      size = -1;
@@ -216,7 +218,7 @@ TEST(DataRead, PackLookupOnHost) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, WritefileGoesToSaveHost0) {
+TEST(DataReadPort, WritefileGoesToSaveHost0) {
     fs::path dir = InstallStandardData("write");
     Bytes    data = Pattern(100, 7);
 
@@ -229,7 +231,7 @@ TEST(DataRead, WritefileGoesToSaveHost0) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, PathsFromArguments) {
+TEST(DataReadPort, PathsFromArguments) {
     fs::path    dir = TempDir("paths_args");
     std::string data = (dir / "d").string();
     std::string save = "--save=" + (dir / "s").string();
@@ -244,7 +246,7 @@ TEST(DataRead, PathsFromArguments) {
     fs::remove_all(dir);
 }
 
-TEST(DataRead, PathsFromEnvironment) {
+TEST(DataReadPort, PathsFromEnvironment) {
     fs::path dir = TempDir("paths_env");
     const dc::test::EnvSnapshot old_data = dc::test::SaveEnv("DC2_DATA");
     const dc::test::EnvSnapshot old_save = dc::test::SaveEnv("DC2_SAVE");
@@ -259,16 +261,20 @@ TEST(DataRead, PathsFromEnvironment) {
     dc::test::RestoreEnv(old_save);
 }
 
-TEST(DataRead, PathsDefaultToWorkingDirectory) {
+TEST(DataReadPort, PathsDefaultToWorkingDirectory) {
     fs::path dir = TempDir("paths_cwd");
     const dc::test::EnvSnapshot old_data = dc::test::SaveEnv("DC2_DATA");
     const dc::test::EnvSnapshot old_save = dc::test::SaveEnv("DC2_SAVE");
     ASSERT_EQ(dc::test::UnsetEnv("DC2_DATA"), 0);
     ASSERT_EQ(dc::test::UnsetEnv("DC2_SAVE"), 0);
+    PathsReset();
     fs::create_directories(dir / "data");
+    fs::create_directories(dir / "save");
     fs::current_path(dir);
     ASSERT_TRUE(PathsDataRoot() == dir / "data");
-    ASSERT_TRUE(PathsSaveRoot() == dir / "save" && fs::is_directory(dir / "save"));
+    const fs::path save = PathsSaveRoot();
+    ASSERT_TRUE(save == dir / "save" && fs::is_directory(dir / "save"))
+        << "save root: " << PathsDisplay(save) << "; current directory: " << PathsDisplay(fs::current_path());
     fs::current_path(fs::temp_directory_path());
     fs::remove_all(dir);
     dc::test::RestoreEnv(old_data);

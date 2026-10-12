@@ -83,13 +83,15 @@ Deferred, with owner:
 - W4 `present`: `mgSetPkMoveImage` frame copies (`fire_work` in `sceneevent.cpp`, `screen` in `map.cpp`) as frame targets (heat haze at wide aspect); audit #14 render targets keyed by handle instead of TBP0; bone-palette interpolation; HUD anchors; display frames replay the tick's prog0 lighting; `mgPortInterpScope` restore resets the outer teleport/blend (no gfx getters); the W3 display/aspect gates not run (above); `GfxMisc.PipelineCache` Windows slowness after the FFmpeg DLLs (now 30 s).
 - W4 `sweep-town`: `gyorace.cpp` `sgEffectDrawGyoRace` with `sgLoopGyoRace` (shared unit state; use `mgPortPrimVertex`/`mgPortPrimSubmit`); `MenuChapterInit`, `CMenuItemUse::UseItem`.
 - W4 `sweep-dungeon` or `records`: `event_func` `_SWE_SET_COLOR`/`_SWE_SET_TEXTURE`/`_SWE_START_EFFECT` `(slot << 2)` strides; `CRedMarkModel::Draw`, `CLockOnModel::Draw`.
-- `records` (running from `59ee848` when this was written; it owns `docs/port/records.md`, `scripts/port/records.py`, `runscript_port.*`, `runscript_opcodes.cpp`, `vlgr_info.cpp`, `villagermngr.cpp`, `editdata.cpp`, `editriver.cpp`, `effscript.cpp`, `records_test.cpp`, PC.md "Records"): villager `GetAppearVlgr` stride, `_SET_INDEXOBJ_SIZE`/`_GET_INDEXOBJ_SIZE`, `CMenuSystemData::item_cursor`, `DATA_HEADER` fixup gate, `funcdata::name`, `USER_PICTURE_INFO`/`CInventUserData` image fixup. It must rebase onto the pushed `master`; `docs/port/truncations.md` was regenerated here, so expect to regenerate it again.
+- `records` (running from `59ee848` when this was written; it owns `docs/port/records.md`, `scripts/port/records.py`, `runscript_port.*`, `runscript_opcodes.cpp`, `vlgr_info.cpp`, `villagermngr.cpp`, `editdata.cpp`, `editriver.cpp`, `effscript.cpp`, `records_test.cpp`, PC.md "Records"): villager `GetAppearVlgr` stride, `_SET_INDEXOBJ_SIZE`/`_GET_INDEXOBJ_SIZE`, `CMenuSystemData::item_cursor`, `DATA_HEADER` fixup gate, `funcdata::name`, `USER_PICTURE_INFO`/`CInventUserData` image fixup. It must rebase onto the pushed `master`; `docs/port/truncations.md` was regenerated here, so expect to regenerate it again. Merged after W3; see "Stream `records` (W4)" below.
 - arena/W4: `effscript.cpp:5564` `RS_CALLDATA` one quadword for call depth 2 (undersized in retail too).
 - Open (draw2d): per-object host tables grow with distinct object addresses (3D sprite records never erased); bound them per mode.
 - Open (prog0): GPU meshes for Fix/Motion faces are never freed (live until the face address is reused).
 - Open (fx-shadow): `mgStoreZBuffImage` answers one tick late (photo's first distance is 0); no shadow/water/outline/DOF/lens-flare in-game screenshot yet (the title and demo do not show them clearly).
 - Open (audio-game): end-of-stream 0x8000 held 1 s; `SndInReverb` no-op; movie PCM on mixer port 5 (`kMoviePortAudioPort`) rather than a stream channel, documented in PC.md "Movies".
 - Open: "gfx: a draw samples the target it renders to; snapshot it first" is logged during the logo sequence (a draw binds the target it renders into); harmless so far, find the caller.
+- Fixed after W3: `StrideFix.DrawManagerTablesHoldPointers` segfaulted intermittently because the test's stack `mgCDrawManager` left `render_info` unset (the retail constructor does not set it; the game's instance is a zero-initialised global) and `SetSortTable` read it. The test now clears it; the draw manager overrides were right. `ctest --repeat until-fail:20 -R StrideFix` is green.
+- Open: `MouseCapture.CapturesWhenFullscreenStartupGainsFocusLater` (Kazarov) fails intermittently on Windows while other `darkchronicle.exe` windows are open on the desktop (they take its focus); it passes on rerun. No Kazarov change touched it.
 - Open: Chronicle's Windows `--headless` aborts with `filesystem_error ... __wide_to_char` after exporting the game text (predates Phase 0; for the Chronicle owner).
 
 ## 5. The W4 plan
@@ -107,3 +109,24 @@ Deferred, with owner:
 - Kazarov pytest only in the container: `tools/kazarov/bin/kazarov shell bash -c "python3 -m venv /tmp/v && /tmp/v/bin/pip -q install pytest && cd tools/kazarov && /tmp/v/bin/python -m pytest tests -q"`.
 - Saves: `--save port/build/<config>/save`, never a `save/` beside the executable.
 - Git policy: author `Adubbz <Adubbz@users.noreply.github.com>`; commit messages `Port:`/`Kazarov:`/`Build:`/`Docs:` with no co-author or tool attribution; pushes fast-forward only, in the order Kazarov `main`, Chronicle `master` (from `Chronicle-phase0`), ChronicleTwo `port/pc:master`, and every pin must exist on Kazarov `main` first. Check upstream Chronicle before pushing it: others push there.
+
+## Stream `records` (W4)
+
+Merged into `port/pc` and pushed to `master` (rebased onto the StrideFix test fix; details and the per-format notes in `docs/port/records.md`):
+
+- 57 records carry `PORT_RECORD_ASSERT(sizeof(T) == N)` beside their `STATIC_ASSERT`; all hold on PC, and `scripts/port/records.py --build port/build/pc --require-clang` (ctest `Records.Check`) proves sizes and the absence of pointer, `uptr`/`sptr` and vtable members.
+- `funcdata::name` is `u32`: it is zero in every disc script and retail never resolves it, and as `char *` it moved `local`/`arg` to 16/20 on PC. This is the one pointer-typed declaration changed, kept as a documented exception (approved): the field is a 32-bit on-disc word, always 0, never resolved; `docs/PC.md` "Records" states it.
+- `CVillagerMngr::GetAppearVlgr` (port/src/villagermngr.cpp) indexes `place[alternative][time]` and the output arrays; retail's 4-byte strides are kept in ps2/src because the index form changed MWCC's code.
+- `_GET_INDEXOBJ_SIZE` (port/src/runscript_opcodes.cpp) indexes `entry_object`; retail sums the address into an `int`.
+- `SetEffectScript` (ps2/src/effscript.cpp) sizes its call data by `sizeof(RS_CALLDATA) * 2 / 16`, byte-identical on the PS2.
+- memcard.cpp sizes the save, album and omake images by sizeof; `runscript.cpp`'s stack dump prints strings through `val.s`.
+- The 535 runtime structs were rechecked through their 407 cast sites: no new records.
+
+Left:
+
+- `CMenuItemInfo::ExitEnd` (`ps2/src/menusys.cpp:6860`) reads `MenuCommonInfo->cursor` as a `void *` and truncates it; the plain read is not byte-identical, so it needs an override by the menus' owner. The value is right on little-endian hosts.
+- Save images are host layout on PC; `USER_PICTURE_INFO::image` comes back from the card stale until `CInventUserData::ResetAddress` (`ps2/src/inventmn.cpp:843`, called at 6227 and 7079) runs. A reader before menu init would see a stale host address; none was found.
+- `mgCVisualFixMDT::DataAssignMDT` (`ps2/src/mg_visual.cpp:610`) stores an address in `mgCFace::packet_tag_word` (`u_int`), a runtime packet field for the mesh owner.
+- From `docs/port/HANDOFF.md` section 4, still open and not done by `records`: the `event_func` `_SWE_SET_COLOR`/`_SWE_SET_TEXTURE`/`_SWE_START_EFFECT` `(slot << 2)` strides (now W4 `sweep-dungeon`), the `CMenuSystemData::item_cursor` save field and `_SET_INDEXOBJ_SIZE` (only `_GET_INDEXOBJ_SIZE` is indexed), and the `DATA_HEADER` fixup gate (PS2 only; the host index replaces DATA.HD4).
+
+Verify: `./build.sh ps2-pal` then `verify.py -c` (SCES_511.90: OK); Linux gate; `kazarov shell python3 scripts/port/records.py --build port/build/pc --require-clang`; `ctest -R 'Records|Truncations|Uptr'`.

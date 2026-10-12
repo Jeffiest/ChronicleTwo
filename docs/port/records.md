@@ -1,92 +1,115 @@
 # Records
 
+## Handoff
+
+Done (stream `records`, branch `s/records`):
+
+- 57 records carry `PORT_RECORD_ASSERT(sizeof(T) == N)` beside their `STATIC_ASSERT`; all hold on PC, and `scripts/port/records.py --build port/build/pc --require-clang` (ctest `Records.Check`) proves sizes and the absence of pointer, `uptr`/`sptr` and vtable members.
+- `funcdata::name` is `u32`: it is zero in every disc script and retail never resolves it, and as `char *` it moved `local`/`arg` to 16/20 on PC. This is the one pointer-typed declaration changed, a documented exception to the rule that pointer-typed declarations never change, approved because the field is a 32-bit word on the disc that is always 0 and never resolved.
+- `CVillagerMngr::GetAppearVlgr` (port/src/villagermngr.cpp) indexes `place[alternative][time]` and the output arrays; retail's 4-byte strides are kept in ps2/src because the index form changed MWCC's code.
+- `_GET_INDEXOBJ_SIZE` (port/src/runscript_opcodes.cpp) indexes `entry_object`; retail sums the address into an `int`.
+- `SetEffectScript` (ps2/src/effscript.cpp) sizes its call data by `sizeof(RS_CALLDATA) * 2 / 16`, byte-identical on the PS2.
+- memcard.cpp sizes the save, album and omake images by sizeof; `runscript.cpp`'s stack dump prints strings through `val.s`.
+- The 535 runtime structs were rechecked through their 407 cast sites: no new records.
+
+Left:
+
+- `CMenuItemInfo::ExitEnd` (`ps2/src/menusys.cpp:6860`) reads `MenuCommonInfo->cursor` as a `void *` and truncates it; the plain read is not byte-identical, so it needs an override by the menus' owner. The value is right on little-endian hosts.
+- Save images are host layout on PC; `USER_PICTURE_INFO::image` comes back from the card stale until `CInventUserData::ResetAddress` (`ps2/src/inventmn.cpp:843`, called at 6227 and 7079) runs. A reader before menu init would see a stale host address; none was found.
+- `mgCVisualFixMDT::DataAssignMDT` (`ps2/src/mg_visual.cpp:610`) stores an address in `mgCFace::packet_tag_word` (`u_int`), a runtime packet field for the mesh owner.
+
+Verify: `./build.sh ps2-pal` then `verify.py -c` (SCES_511.90: OK); Linux gate; `kazarov shell python3 scripts/port/records.py --build port/build/pc --require-clang`; `ctest -R 'Records|Truncations|Uptr'`.
+
 A record is a struct whose instances are read from a file in place (disc file, pack entry, memory-card image). Its layout is the disc's on every host, and its pointer-sized fields stay the 32-bit offsets retail wrote: never `uptr`, never a pointer. Each record carries `PORT_RECORD_ASSERT(sizeof(T) == N)` beside its PS2 `STATIC_ASSERT`: a `static_assert` on PC, nothing on PS2. Offsets are resolved on access (`(u_char *) header + header->x_ofs`) or decoded into a host table by the unit's port file.
 
 Every other struct with a `STATIC_ASSERT` is runtime: built by code, its layout may differ on PC, so its `STATIC_ASSERT` stays compiled out there. Its address-holding integer fields are `uptr`. The parenthesised kind in the last column is the inventory's tag (address, offset, VRAM, VU1, IOP, SPU).
 
-This inventory was made by stream `uptr`. Stream `records` verifies each line, adds the `PORT_RECORD_ASSERT`s and the decoders.
+This inventory was made by stream `uptr` and completed by stream `records`. `scripts/port/records.py` checks it against the tree; `--emit` prints the asserts, `--update-lines` refreshes the Declared column after header edits. The PC column says what the PC does: `assert` (disc layout, `PORT_RECORD_ASSERT` beside the `STATIC_ASSERT`), `PS2 only` (never read on PC), `host image` (written and read by the PC in host layout).
 
 ## Summary
 
-- Total: 598 `STATIC_ASSERT` rows: 63 records, 535 runtime.
-- Records by approach: none (no pointers) 50; resolved on access 9; fixup in place 4.
+- Total: 598 `STATIC_ASSERT` rows: 65 records (57 `assert`, 1 `PS2 only`, 7 `host image`), 533 runtime.
 - Runtime with address-holding integer fields: 13 of 535.
 
 ## Records
 
-| Struct | Size | Declared | Reader | Approach | Offset/address fields |
-|---|---|---|---|---|---|
-| DATA_HEADER | 0xC | `ps2/include/dataread.hpp:77` | dataread.cpp:InitCDFile (fixup loop, line 538); SearchFile (line 220) | fixup in place -> decode into host table or resolve on access (records stream) | name_offset(int, offset) |
-| PACK_ENTRY | 0x4C | `ps2/include/dataread.hpp:133` | ps2/src/dataread.cpp:GetPackFile (name and index overloads) | resolved on access | offset(int, offset); next(int, offset) |
-| EditDataParts | 0x24 | `ps2/include/editdata.hpp:190` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | - |
-| EditDataGrid | 0x18 | `ps2/include/editdata.hpp:205` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | - |
-| EditDataHouse | 0x10 | `ps2/include/editdata.hpp:226` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | - |
-| EditDataAnalyze | 0xD0 | `ps2/include/editdata.hpp:250` | memcard.cpp:CMemoryCardManager::LoadFromMc (memcpy of CSaveData; CEditData.analyze member) | none (no pointers) | - |
-| EditPlaceLog | 0x4 | `ps2/include/editdata.hpp:262` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | - |
-| CEditData | 0x5510 | `ps2/include/editdata.hpp:441` | memcard.cpp:CMemoryCardManager::LoadFromMc (memcpy of CSaveData.edit_data[]) | none (no pointers) | - |
-| FONT_TBL_BIN | FONT_TBL_BIN_SIZE | `ps2/include/font.hpp:158` | font.cpp:LoadFontTblBin (LoadFile into FontTblBinBuff, read in place by font.cpp:154-183) | none (no pointers) | - |
-| PAD_CAPTURE_FRAME | 0x6 | `ps2/include/gamepad.hpp:175` | gamepad.cpp:CGamePad::LoadCapture (LoadFile2 of key_cap.bin into PAD_CAPTURE_BUFFER) | none (no pointers) | - |
-| FRAME_VECTOR_EX_DATA | 0x20 | `ps2/include/gameutil.hpp:72` | gameutil.cpp:CreateAnimeDataEX (info[1].data motion file), gameutil.cpp:ChangeWeight | none (no pointers) | - |
-| Mot_File_List | 0x20 | `ps2/include/gameutil.hpp:89` | gameutil.cpp:CreateAnimeDataEX (info[1].data motion file header), gameutil.cpp:ChangeWeight | none (no pointers) | - |
-| CMapFlagData | 0x10 | `ps2/include/map.hpp:84` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of SAVEDATA_FORMAT::save_data) | none (no pointers) | - |
-| SAVEDATA_FORMAT | 0x659C0 | `ps2/include/memcard.hpp:258` | memcard.cpp:CMemoryCardManager::LoadFromMc | none (no pointers) | - |
-| MENU_SYSTEM_LIST_CURSOR | 0x4 | `ps2/include/menusystemdata.hpp:21` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CMenuSystemData) | none (no pointers) | - |
-| MENU_SYSTEM_GHOBI | 0x4 | `ps2/include/menusystemdata.hpp:33` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CMenuSystemData) | none (no pointers) | - |
-| CMenuSystemData | 0x308 | `ps2/include/menusystemdata.hpp:108` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CSaveData) | none (no pointers) | - |
-| MDS_HEADER | 0x10 | `ps2/include/mg_dataset.hpp:71` | mg_dataset.cpp:mgLoadMDSFile (buffers from GetPackFile casts) | resolved on access | object_ofs(int, offset) |
-| MDTOBJ_HEADER | 0x70 | `ps2/include/mg_dataset.hpp:87` | mg_dataset.cpp:mgLoadMDSFile (object walk, line 695); collision.cpp:LoadCollisionFile | resolved on access | mdt_ofs(int, offset) |
-| mgIMG_FILE_HEADER | 0x10 | `ps2/include/mg_texture.hpp:144` | mg_texture.cpp:mgCTextureManager::EnterIMGFile (img buffer from archive file) | none (no pointers) | - |
-| mgIMG1_HEADER | 0x30 | `ps2/include/mg_texture.hpp:157` | mg_texture.cpp:mgCTextureManager::EnterIMGFile | resolved on access | offset(int, offset) |
-| mgIMG_HEADER | 0x40 | `ps2/include/mg_texture.hpp:193` | mg_texture.cpp:mgCTextureManager::EnterIMGFile; character.cpp:CCharacter2::DeleteImage | resolved on access | offset(int, offset) |
-| MDT_HEADER | 0x40 | `ps2/include/mg_visual.hpp:69` | ps2/src/mg_dataset.cpp:mgLoadMDSFile | resolved on access | vertex_ofs(int, offset); normal_ofs(int, offset); colour_ofs(int, offset); faces_ofs(int, offset); uv_ofs(int, offset); material_ofs(int, offset) |
-| MDT_MATERIAL_ | 0x60 | `ps2/include/mg_visual.hpp:86` | ps2/src/mg_visual.cpp:mgCVisualMDT::CopyMDTData | none (no pointers) | - |
-| MDT_FACES | 0x10 | `ps2/include/mg_visual.hpp:100` | ps2/src/mg_visual.cpp:mgCVisualMDT::DataAssignMDT | none (no pointers) | - |
-| QUEST_PLAY_DATA | 0x10 | `ps2/include/quest.hpp:113` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData, memcpy from save_buffer) | none (no pointers) | - |
-| CQuestData | 0x480 | `ps2/include/quest.hpp:173` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | - |
-| MONSTER_BOOK_ENTRY | 0xC | `ps2/include/quest.hpp:186` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CMonsterBook in CSaveData) | none (no pointers) | - |
-| CMonsterBook | 0x1200 | `ps2/include/quest.hpp:208` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | - |
-| vmcode_t | 0xC | `ps2/include/runscript.hpp:166` | runscript.cpp:CRunScript::exe (jump/call targets); loaded by 5 script units | resolved on access (arg1 jump and arg2 call targets are offsets added to code at use) | arg1(int, offset), arg2(int, offset) |
-| funcdata | 0x10 | `ps2/include/runscript.hpp:181` | runscript.cpp:CRunScript::run (func = prog + prog->main / header + entry->func) | resolved on access (addr is an offset from the code section; name is a char* that CRunScript::load does not fix up, so the file contents of name are unverified) | addr(u32, offset) |
-| RS_PROGDATA | 0x8 | `ps2/include/runscript.hpp:206` | runscript.cpp:CRunScript::run (entry = header + header->prog) | resolved on access | func(int, offset) |
-| SV_CONFIG_OPTION | 0x40 | `ps2/include/savedata.hpp:188` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | - |
-| SAVE_TOUR_INFO | 0x1C | `ps2/include/savedata.hpp:205` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | - |
-| CSaveData | 0x65930 | `ps2/include/savedata.hpp:502` | memcard.cpp:CMemoryCardManager::LoadFromMc (line 1333); SaveToMc (writer, line 1078) | none (no pointers) | - |
-| SPHIDA_PLAYER_DATA | 0x50 | `ps2/include/savedata.hpp:521` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CSphidaData in CSubGameData) | none (no pointers) | - |
-| CSphidaData | 0x1848 | `ps2/include/savedata.hpp:639` | mainloop.cpp:MainLoop; memcard.cpp:CMemoryCardManager::LoadOmakeFile | none (no pointers) | - |
-| GYORACE_DATA | 0xA0 | `ps2/include/savedata.hpp:671` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CGyoRaceData in CSubGameData) | none (no pointers) | - |
-| CGyoRaceData | 0x2C28 | `ps2/include/savedata.hpp:734` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CSubGameData) | none (no pointers) | - |
-| CSubGameData | 0x5470 | `ps2/include/savedata.hpp:802` | mainloop.cpp:MainLoop; memcard.cpp:CMemoryCardManager::LoadOmakeFile | none (no pointers) | - |
-| DNG_FLOOR_SAVE | 0x14 | `ps2/include/savedatadungeon.hpp:56` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveDataDungeon in CSaveData) | none (no pointers) | - |
-| CSaveDataDungeon | 0xCE4 | `ps2/include/savedatadungeon.hpp:103` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | - |
-| sceMcColor | 0x10 | `ps2/include/sce/libmc.h:57` | memcard.cpp:CMemoryCardManager::SetIconData (member of sceMcIconSys, written to the card) | none (no pointers) | - |
-| sceMcIconSys | 0x3C4 | `ps2/include/sce/libmc.h:89` | memcard.cpp:CMemoryCardManager::SetIconData (writer only) | none (no pointers) | - |
-| sceMcStDateTime | 0x8 | `ps2/include/sce/libmc.h:104` | convviewlp.cpp:SaveDataConvertLoop (member of sceMcTblGetDir) | none (no pointers) | - |
-| sceMcTblGetDir | 0x40 | `ps2/include/sce/libmc.h:120` | convviewlp.cpp:SaveDataConvertLoop (sceMcGetDir fills dir_entries, memcpy at line 360) | none (no pointers) | - |
-| SND_REV_INFO | 0x8 | `ps2/include/scenesnd.hpp:254` | scenesnd.cpp:CScene::LoadSndRevInfo (memcpy of rev.bin buffer) | none (no pointers) | - |
-| CHARA_DATA | 0x38C | `ps2/include/userdata.hpp:252` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| ROBO_DATA | 0x220 | `ps2/include/userdata.hpp:306` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| MOS_CHANGE_PARAM | 0xBC | `ps2/include/userdata.hpp:396` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| CMonsterBox | 0x2F00 | `ps2/include/userdata.hpp:468` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| CFishAquarium | 0x530 | `ps2/include/userdata.hpp:577` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| FISH_RECORD | 0x20 | `ps2/include/userdata.hpp:593` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| CFishingRecord | 0x340 | `ps2/include/userdata.hpp:636` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| FISH_TOURNAMENT_ENTRY | 0x8 | `ps2/include/userdata.hpp:650` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| CFishingTournament | 0x70 | `ps2/include/userdata.hpp:752` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| PARTY_CHARA_INFO | 0xC | `ps2/include/userdata.hpp:766` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| USER_PICTURE_INFO | 0x18 | `ps2/include/userdata.hpp:785` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | fixup in place -> decode into host table or resolve on access (records stream) | - |
-| INVENT_CREATED_ITEM | 0x4 | `ps2/include/userdata.hpp:797` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| SCOOP_INFO | 0x4 | `ps2/include/userdata.hpp:810` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | - |
-| CInventUserData | 0x3CE60 | `ps2/include/userdata.hpp:1131` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | fixup in place -> decode into host table or resolve on access (records stream) | - |
-| CUserDataManager | 0x457A0 | `ps2/include/userdata.hpp:2168` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | fixup in place -> decode into host table or resolve on access (records stream) | - |
-| INVENT_CREATED_ITEM_OLD | 0xC | `ps2/src/inventmn.cpp:1185` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:TranslateInventUserData | none (no pointers) | - |
+| Struct | Size | Declared | Reader | Approach | PC | Offset/address fields |
+|---|---|---|---|---|---|---|
+| DATA_HEADER | 0xC | `ps2/include/dataread.hpp:77` | dataread.cpp:InitCDFile (fixup loop, line 538); SearchFile (line 220) | PS2 only: `InitCDFile` writes `name` pointers into the loaded index; on PC `InitCDFile`, `LoadFileBG` and `LoadFile2` are overridden and the host index replaces DATA.HD4, so no linked code reads it (records.py gate) | PS2 only | name_offset(int, offset) |
+| PACK_ENTRY | 0x4C | `ps2/include/dataread.hpp:133` | ps2/src/dataread.cpp:GetPackFile (name and index overloads) | resolved on access | assert | offset(int, offset); next(int, offset) |
+| EditDataParts | 0x24 | `ps2/include/editdata.hpp:190` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | assert | - |
+| EditDataGrid | 0x18 | `ps2/include/editdata.hpp:206` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | assert | - |
+| EditDataHouse | 0x10 | `ps2/include/editdata.hpp:228` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | assert | - |
+| EditDataAnalyze | 0xD0 | `ps2/include/editdata.hpp:253` | memcard.cpp:CMemoryCardManager::LoadFromMc (memcpy of CSaveData; CEditData.analyze member) | none (no pointers) | assert | - |
+| EditPlaceLog | 0x4 | `ps2/include/editdata.hpp:266` | memcard.cpp:CMemoryCardManager::LoadFromMc; editdata.cpp:CEditMap::LoadData | none (no pointers) | assert | - |
+| CEditData | 0x5510 | `ps2/include/editdata.hpp:446` | memcard.cpp:CMemoryCardManager::LoadFromMc (memcpy of CSaveData.edit_data[]) | none (no pointers) | assert | - |
+| FONT_TBL_BIN | FONT_TBL_BIN_SIZE | `ps2/include/font.hpp:158` | font.cpp:LoadFontTblBin (LoadFile into FontTblBinBuff, read in place by font.cpp:154-183) | none (no pointers) | assert | - |
+| PAD_CAPTURE_FRAME | 0x6 | `ps2/include/gamepad.hpp:175` | gamepad.cpp:CGamePad::LoadCapture (LoadFile2 of key_cap.bin into PAD_CAPTURE_BUFFER) | none (no pointers) | assert | - |
+| FRAME_VECTOR_EX_DATA | 0x20 | `ps2/include/gameutil.hpp:72` | gameutil.cpp:CreateAnimeDataEX (info[1].data motion file), gameutil.cpp:ChangeWeight | none (no pointers) | assert | - |
+| Mot_File_List | 0x20 | `ps2/include/gameutil.hpp:90` | gameutil.cpp:CreateAnimeDataEX (info[1].data motion file header), gameutil.cpp:ChangeWeight | none (no pointers) | assert | - |
+| CMapFlagData | 0x10 | `ps2/include/map.hpp:84` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of SAVEDATA_FORMAT::save_data) | none (no pointers) | assert | - |
+| SAVEDATA_FORMAT | 0x659C0 | `ps2/include/memcard.hpp:258` | memcard.cpp:CMemoryCardManager::LoadFromMc | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| MENU_SYSTEM_LIST_CURSOR | 0x4 | `ps2/include/menusystemdata.hpp:21` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CMenuSystemData) | none (no pointers) | assert | - |
+| MENU_SYSTEM_GHOBI | 0x4 | `ps2/include/menusystemdata.hpp:34` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CMenuSystemData) | none (no pointers) | assert | - |
+| CMenuSystemData | 0x308 | `ps2/include/menusystemdata.hpp:110` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, member of CSaveData) | none (no pointers) | assert | - |
+| MDS_HEADER | 0x10 | `ps2/include/mg_dataset.hpp:71` | mg_dataset.cpp:mgLoadMDSFile (buffers from GetPackFile casts) | resolved on access | assert | object_ofs(int, offset) |
+| MDTOBJ_HEADER | 0x70 | `ps2/include/mg_dataset.hpp:88` | mg_dataset.cpp:mgLoadMDSFile (object walk, line 695); collision.cpp:LoadCollisionFile | resolved on access | assert | mdt_ofs(int, offset) |
+| mgIMG_FILE_HEADER | 0x10 | `ps2/include/mg_texture.hpp:144` | mg_texture.cpp:mgCTextureManager::EnterIMGFile (img buffer from archive file) | none (no pointers) | assert | - |
+| mgIMG1_HEADER | 0x30 | `ps2/include/mg_texture.hpp:158` | mg_texture.cpp:mgCTextureManager::EnterIMGFile | resolved on access | assert | offset(int, offset) |
+| mgIMG_HEADER | 0x40 | `ps2/include/mg_texture.hpp:195` | mg_texture.cpp:mgCTextureManager::EnterIMGFile; character.cpp:CCharacter2::DeleteImage | resolved on access | assert | offset(int, offset) |
+| MDT_HEADER | 0x40 | `ps2/include/mg_visual.hpp:69` | ps2/src/mg_dataset.cpp:mgLoadMDSFile | resolved on access | assert | vertex_ofs(int, offset); normal_ofs(int, offset); colour_ofs(int, offset); faces_ofs(int, offset); uv_ofs(int, offset); material_ofs(int, offset) |
+| MDT_MATERIAL_ | 0x60 | `ps2/include/mg_visual.hpp:87` | ps2/src/mg_visual.cpp:mgCVisualMDT::CopyMDTData | none (no pointers) | assert | - |
+| MDT_FACES | 0x10 | `ps2/include/mg_visual.hpp:102` | ps2/src/mg_visual.cpp:mgCVisualMDT::DataAssignMDT | none (no pointers) | assert | - |
+| QUEST_PLAY_DATA | 0x10 | `ps2/include/quest.hpp:113` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData, memcpy from save_buffer) | none (no pointers) | assert | - |
+| CQuestData | 0x480 | `ps2/include/quest.hpp:174` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| MONSTER_BOOK_ENTRY | 0xC | `ps2/include/quest.hpp:188` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CMonsterBook in CSaveData) | none (no pointers) | assert | - |
+| CMonsterBook | 0x1200 | `ps2/include/quest.hpp:211` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| vmcode_t | 0xC | `ps2/include/runscript.hpp:166` | runscript.cpp:CRunScript::exe (jump/call targets); loaded by 5 script units | resolved on access (arg1 jump and arg2 call targets are offsets added to code at use) | assert | arg1(int, offset), arg2(int, offset) |
+| funcdata | 0x10 | `ps2/include/runscript.hpp:182` | runscript.cpp:CRunScript::run (func = prog + prog->main / header + entry->func) | resolved on access; `name` is the script compiler's word, zero on every disc script, held as `u32` so `local`/`arg` sit at 8/12 on PC | assert | addr(u32, offset) |
+| RS_PROGDATA | 0x8 | `ps2/include/runscript.hpp:208` | runscript.cpp:CRunScript::run (entry = header + header->prog) | resolved on access | assert | func(int, offset) |
+| SV_CONFIG_OPTION | 0x40 | `ps2/include/savedata.hpp:188` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| SAVE_TOUR_INFO | 0x1C | `ps2/include/savedata.hpp:206` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| CSaveData | 0x65930 | `ps2/include/savedata.hpp:504` | memcard.cpp:CMemoryCardManager::LoadFromMc (line 1333); SaveToMc (writer, line 1078) | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| SPHIDA_PLAYER_DATA | 0x50 | `ps2/include/savedata.hpp:523` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CSphidaData in CSubGameData) | none (no pointers) | assert | - |
+| CSphidaData | 0x1848 | `ps2/include/savedata.hpp:642` | mainloop.cpp:MainLoop; memcard.cpp:CMemoryCardManager::LoadOmakeFile | none (no pointers) | assert | - |
+| GYORACE_DATA | 0xA0 | `ps2/include/savedata.hpp:675` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CGyoRaceData in CSubGameData) | none (no pointers) | assert | - |
+| CGyoRaceData | 0x2C28 | `ps2/include/savedata.hpp:739` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CSubGameData) | none (no pointers) | assert | - |
+| CSubGameData | 0x5470 | `ps2/include/savedata.hpp:808` | mainloop.cpp:MainLoop; memcard.cpp:CMemoryCardManager::LoadOmakeFile | none (no pointers) | assert | - |
+| DNG_FLOOR_SAVE | 0x14 | `ps2/include/savedatadungeon.hpp:56` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveDataDungeon in CSaveData) | none (no pointers) | assert | - |
+| CSaveDataDungeon | 0xCE4 | `ps2/include/savedatadungeon.hpp:104` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| sceMcColor | 0x10 | `ps2/include/sce/libmc.h:57` | memcard.cpp:CMemoryCardManager::SetIconData (member of sceMcIconSys, written to the card) | none (no pointers) | assert | - |
+| sceMcIconSys | 0x3C4 | `ps2/include/sce/libmc.h:90` | memcard.cpp:CMemoryCardManager::SetIconData (writer only) | none (no pointers) | assert | - |
+| sceMcStDateTime | 0x8 | `ps2/include/sce/libmc.h:106` | convviewlp.cpp:SaveDataConvertLoop (member of sceMcTblGetDir) | none (no pointers) | assert | - |
+| sceMcTblGetDir | 0x40 | `ps2/include/sce/libmc.h:123` | convviewlp.cpp:SaveDataConvertLoop (sceMcGetDir fills dir_entries, memcpy at line 360) | none (no pointers) | assert | - |
+| SND_REV_INFO | 0x8 | `ps2/include/scenesnd.hpp:254` | scenesnd.cpp:CScene::LoadSndRevInfo (memcpy of rev.bin buffer) | none (no pointers) | assert | - |
+| CHARA_DATA | 0x38C | `ps2/include/userdata.hpp:252` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| ROBO_DATA | 0x220 | `ps2/include/userdata.hpp:307` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| MOS_CHANGE_PARAM | 0xBC | `ps2/include/userdata.hpp:398` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| CMonsterBox | 0x2F00 | `ps2/include/userdata.hpp:471` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| CFishAquarium | 0x530 | `ps2/include/userdata.hpp:581` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| FISH_RECORD | 0x20 | `ps2/include/userdata.hpp:598` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| CFishingRecord | 0x340 | `ps2/include/userdata.hpp:642` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| FISH_TOURNAMENT_ENTRY | 0x8 | `ps2/include/userdata.hpp:657` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| CFishingTournament | 0x70 | `ps2/include/userdata.hpp:760` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| PARTY_CHARA_INFO | 0xC | `ps2/include/userdata.hpp:775` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| USER_PICTURE_INFO | 0x18 | `ps2/include/userdata.hpp:795` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| INVENT_CREATED_ITEM | 0x4 | `ps2/include/userdata.hpp:807` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| SCOOP_INFO | 0x4 | `ps2/include/userdata.hpp:821` | memcard.cpp:CMemoryCardManager::LoadFromMc (CSaveData memcpy, memcard.cpp:1333) | none (no pointers) | assert | - |
+| CInventUserData | 0x3CE60 | `ps2/include/userdata.hpp:1143` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| CUserDataManager | 0x457A0 | `ps2/include/userdata.hpp:2180` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:CInventUserData::ResetAddress | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| CDC2AlbumData | 0x64CB0 | `ps2/include/inventmn.hpp:556` | memcard.cpp album save/load | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| SAVE_CONVERT_WORK | 0x659C0 | `ps2/include/convviewlp.hpp:83` | convviewlp.cpp:SaveDataConvertLoop | host image: the PC writes and reads its own card files in host layout; `USER_PICTURE_INFO::image` is a pointer into `photo_work`, rebound by `CInventUserData::ResetAddress` before use; memcard.cpp sizes everything by sizeof | host image | - |
+| INVENT_CREATED_ITEM_OLD | 0xC | `ps2/src/inventmn.cpp:1185` | memcard.cpp:CMemoryCardManager::LoadFromMc; inventmn.cpp:TranslateInventUserData | none (no pointers) | assert | - |
 
-## Records needing work
+## Notes per format
 
-- `DATA_HEADER` `ps2/include/dataread.hpp:77`: fixup in place. `InitCDFile` rewrites the loaded buffer (fixup loop, dataread.cpp:538) and `SearchFile` reads it (dataread.cpp:220). The decoder or on-access resolution is still open.
-- `USER_PICTURE_INFO` `ps2/include/userdata.hpp:785`, `CInventUserData` `ps2/include/userdata.hpp:1131`, `CUserDataManager` `ps2/include/userdata.hpp:2168`: fixup in place. `inventmn.cpp:CInventUserData::ResetAddress` sets `image` (inventmn.cpp:843), but address_fields is `-`, so the field is not in the inventory. Confirm it is an offset, not a pointer, before the decoder is written.
-- `funcdata` `ps2/include/runscript.hpp:181`: `name` is a `char *` in a file record. `CRunScript::load` does not fix it up and the file contents of `name` are unverified. address_fields lists only `addr`.
-- `FONT_TBL_BIN` `ps2/include/font.hpp:158`: size is the symbol `FONT_TBL_BIN_SIZE`, not a literal N; the `PORT_RECORD_ASSERT` must use the symbol.
-- `sceMcIconSys` `ps2/include/sce/libmc.h:89` and `sceMcColor` `ps2/include/sce/libmc.h:57`: writer only (`SetIconData` builds the icon.sys image and writes it). Never read in place, so not a record under this definition.
+- `DATA_HEADER`: PS2 only (see its row). `records.py` fails if any ps2/src or port/src file other than `ps2/src/dataread.cpp` names it, or if `InitCDFile`, `SearchFile`, `LoadFileBG`, `LoadFile2` or `CDRead` is linked and not overridden.
+- `funcdata`: retail declares `name` as `char *`; every `SB2` script under `data/` (dungeon/act_script/*.stb and the rest) stores 0 there and retail never fixes it up, so the field is a 32-bit word. The error messages in `runscript.cpp` print it through `(char *) (uptr)`, as retail did.
+- `RS_CALLDATA` (runtime): `SetEffectScript` allocates `sizeof(RS_CALLDATA) * 2 / 16` quadwords, which is retail's one quadword on the PS2 and the three that two 24-byte frames fill on PC.
+- Save images (`host image`): the album's check-digit run is `sizeof(USER_PICTURE_INFO) * INVENT_ALBUM_PHOTO_NUM` and the save's half check digit `sizeof(CSaveData) / 2`, so on PC they cover the host arrays and no longer land inside `photo[]`. PS2 card images do not load on PC (the short-read check in `LoadFromMc` rejects them), and PC card files do not load on the PS2.
+- MDS/MDT/MOT: no code stores a pointer into a record. `mgCShadowMDT::DataAssignMDT` (`ps2/src/mg_shadow.cpp:270-271`) zeroes `uv_num`/`normal_num` in the loaded `MDT_HEADER`, an in-place integer write retail relies on; `LoadCollisionFile` (`ps2/src/collision.cpp:493`) keeps a pointer to `MDTOBJ_HEADER::name` in a runtime frame.
+- `FONT_TBL_BIN` asserts against the symbol `FONT_TBL_BIN_SIZE`. `sceMcIconSys`/`sceMcColor` are written to the card, not read in place; they keep the assert because the card format fixes their layout.
+- The runtime list was rechecked by following every cast to each runtime struct (407 sites, 109 structs) to its source buffer: none is a file view.
 
 ## Runtime structs
 
@@ -137,7 +160,6 @@ This inventory was made by stream `uptr`. Stream `records` verifies each line, a
 | DAMAGE_PARAM | 0x48 | `ps2/include/colprim.hpp:153` | - |
 | CColPrim | 0x110 | `ps2/include/colprim.hpp:318` | - |
 | CColPrimMan | 0x4410 | `ps2/include/colprim.hpp:412` | - |
-| SAVE_CONVERT_WORK | 0x659C0 | `ps2/include/convviewlp.hpp:83` | - |
 | CRandom | 0x4 | `ps2/include/crandom.hpp:33` | - |
 | BG_READ_INFO | 0x120 | `ps2/include/dataread.hpp:102` | - |
 | FILE_CACHE | 0x40 | `ps2/include/dataread.hpp:118` | - |
@@ -325,7 +347,6 @@ This inventory was made by stream `uptr`. Stream `records` verifies each line, a
 | INVENT_MATERIAL_LIST | 0x8 | `ps2/include/inventmn.hpp:454` | - |
 | MakeItemNeeds | 0x24 | `ps2/include/inventmn.hpp:476` | - |
 | INVENT_DATA_INFO | 0x24 | `ps2/include/inventmn.hpp:495` | - |
-| CDC2AlbumData | 0x64CB0 | `ps2/include/inventmn.hpp:556` | - |
 | CInventDataManage | 0x8 | `ps2/include/inventmn.hpp:639` | - |
 | CMenuInvent | 0xF30 | `ps2/include/inventmn.hpp:1154` | - |
 | INIT_LOOP_ARG | 0x50 | `ps2/include/mainloop.hpp:223` | - |

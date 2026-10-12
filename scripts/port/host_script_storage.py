@@ -23,7 +23,7 @@ def replace(pattern, replacement, count, text, key):
 
 RULES = {
     "src/effscript.cpp": [
-        (r"^(\s*)RS_CALLDATA  \*call_data = \(RS_CALLDATA \*\) memory->Alloc\(1\);$",
+        (r"^(\s*)RS_CALLDATA\s+\*call_data\s*=\s*\(RS_CALLDATA \*\)\s*memory->Alloc\([^;]+\);$",
          r'\1RS_CALLDATA  *call_data = port_script_storage::allocate<RS_CALLDATA>(memory, 2, "SetEffectScript");', 1),
     ],
 }

@@ -69,6 +69,7 @@ struct MDS_HEADER {
 };
 
 STATIC_ASSERT(sizeof(MDS_HEADER) == 0x10);
+PORT_RECORD_ASSERT(sizeof(MDS_HEADER) == 0x10);
 
 /**
  *
@@ -85,6 +86,7 @@ struct MDTOBJ_HEADER {
 };
 
 STATIC_ASSERT(sizeof(MDTOBJ_HEADER) == 0x70);
+PORT_RECORD_ASSERT(sizeof(MDTOBJ_HEADER) == 0x70);
 
 /**
  *

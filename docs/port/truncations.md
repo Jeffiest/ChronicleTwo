@@ -207,7 +207,7 @@ A pointer cast to a narrow integer, or a `uptr`/`sptr` value that a conversion n
 | ps2/src/movie.cpp | 12 |
 | ps2/src/visualmotion.cpp | 1 |
 
-- `ps2/src/menusys.cpp:6860 CMenuItemInfo::ExitEnd field CMenuSystemData::item_cursor (ps2/include/menusystemdata.hpp:53)`: records: stored into the save record CMenuSystemData::item_cursor
+- `ps2/src/menusys.cpp:6860 CMenuItemInfo::ExitEnd field CMenuSystemData::item_cursor (ps2/include/menusystemdata.hpp:55)`: records: stored into the save record CMenuSystemData::item_cursor
 - `ps2/src/mg_visual.cpp:610 mgCVisualFixMDT::DataAssignMDT other (memory)`: prog0: DMA tag words / packet build (CreatePacket, Draw, DataAssignMDT)
 - `ps2/src/movie.cpp:984 viBufRestartDMA local qwc`: movies: DMA/IPU/IOP addresses (unit replaced whole)
 - `ps2/src/movie.cpp:998 viBufRestartDMA local qwc`: movies: DMA/IPU/IOP addresses (unit replaced whole)
@@ -278,8 +278,8 @@ Narrowed expression is an address-alias mask (`& K`, `K` a non-negative 32-bit c
 - `ps2/src/mg_memory.cpp:252 mgCMemory::Align64 local misalign`: benign:low-bits (replaced)
 - `ps2/src/mg_shadow.cpp:258 mgCShadowMDT::CreatePacket arg mgCMemory::Alloc#0 (int)`: benign:difference (replaced)
 - `ps2/src/mg_sprite.cpp:524 mgCSprite::CreatePacket arg mgCMemory::Alloc#0 (int)`: benign:difference (replaced)
-- `ps2/src/mg_visual.cpp:733 mgCVisualMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:161)`: benign:difference (replaced)
-- `ps2/src/mg_visual.cpp:799 mgCVisualFixMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:161)`: benign:difference (replaced)
+- `ps2/src/mg_visual.cpp:733 mgCVisualMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:164)`: benign:difference (replaced)
+- `ps2/src/mg_visual.cpp:799 mgCVisualFixMDT::CreatePacket field mgFACE_GROUP::packet_size (ps2/include/mg_visual.hpp:164)`: benign:difference (replaced)
 - `ps2/src/mglib.cpp:563 mgInitVif1Packet local misalign`: benign:residue (replaced)
 - `ps2/src/mglib.cpp:569 mgInitVif1Packet local misalign`: benign:residue (replaced)
 - `ps2/src/movie.cpp:763 getFIFOindex return getFIFOindex (u32)`: benign:difference (open)

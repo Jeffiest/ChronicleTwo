@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-// Synthetic disc fixtures for the data tests: a DATA.DAT/DATA.HD2 pair laid out as the disc's,
+// Synthetic disc fixtures for the data tests: a DATA.DAT/DATA.HD4 pair laid out as the disc's,
 // packs in the game's 76-byte entry format, and a minimal ISO 9660 image holding the pair.
 
 #include <cstdint>
@@ -30,7 +30,7 @@ struct File {
 
 struct Disc {
     Bytes             dat;
-    Bytes             hd2;
+    Bytes             hd4;
     std::vector<File> files;
 };
 
@@ -98,26 +98,23 @@ inline Disc MakeDisc(std::vector<File> files) {
     // The retail index counts one all-zero record after the last file, whose name offset
     // lands on the NUL that ends the name block.
     std::size_t count = disc.files.size();
-    disc.hd2.assign(32 * (count + 1), 0);
+    disc.hd4.assign(12 * (count + 1), 0);
     disc.dat.assign(dcdata::kSector, 0xCD);
     for (std::size_t i = 0; i < count; i++) {
         const File   &file = disc.files[i];
         std::uint32_t sector = static_cast<std::uint32_t>(disc.dat.size() / dcdata::kSector);
-        std::uint32_t name = static_cast<std::uint32_t>(disc.hd2.size());
-        disc.hd2.insert(disc.hd2.end(), file.name.begin(), file.name.end());
-        disc.hd2.push_back(0);
+        std::uint32_t name = static_cast<std::uint32_t>(disc.hd4.size());
+        disc.hd4.insert(disc.hd4.end(), file.name.begin(), file.name.end());
+        disc.hd4.push_back(0);
         disc.dat.insert(disc.dat.end(), file.data.begin(), file.data.end());
         const std::size_t sectors = (disc.dat.size() + dcdata::kSector - 1) / dcdata::kSector;
         disc.dat.resize(sectors * dcdata::kSector, 0xCD);
-        Put32(disc.hd2, 32 * i, name);
-        Put32(disc.hd2, 32 * i + 4, 0xDEADBEEF);
-        Put32(disc.hd2, 32 * i + 16, sector * dcdata::kSector);
-        Put32(disc.hd2, 32 * i + 20, static_cast<std::uint32_t>(file.data.size()));
-        Put32(disc.hd2, 32 * i + 24, sector);
-        Put32(disc.hd2, 32 * i + 28,
-              static_cast<std::uint32_t>((file.data.size() + dcdata::kSector - 1) / dcdata::kSector));
+        Put32(disc.hd4, 12 * i, name);
+        Put32(disc.hd4, 12 * i + 4, static_cast<std::uint32_t>(file.data.size()));
+        Put32(disc.hd4, 12 * i + 8, sector);
     }
-    Put32(disc.hd2, 32 * count, static_cast<std::uint32_t>(disc.hd2.size() - 1));
+    Put32(disc.hd4, 12 * count, static_cast<std::uint32_t>(disc.hd4.size()));
+    disc.hd4.push_back(0);
     return disc;
 }
 
@@ -187,7 +184,7 @@ inline File PackFile() {
     };
 }
 
-// The game's own paths, as DATA.HD2 spells them: backslashes, mixed case, one with a leading
+// The game's own paths, as DATA.HD4 spells them: backslashes, mixed case, one with a leading
 // separator, a later duplicate of the first, sizes on both sides of a sector, and an empty file.
 inline Disc StandardDisc() {
     return MakeDisc({

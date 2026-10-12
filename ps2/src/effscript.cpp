@@ -5561,7 +5561,8 @@ int _GET_EOH_POS(RS_STACKDATA *stack, int argc) {
  */
 int SetEffectScript(CRunScript *script, char *program, mgCMemory *memory) {
     RS_STACKDATA *stack = (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) * 0x40 + 15) / 16);
-    RS_CALLDATA  *call_data = (RS_CALLDATA *) memory->Alloc(1);
+    // Retail's one quadword for two 12-byte frames is the floor of the pair's size; with 8-byte pointers the pair fills 3 exactly.
+    RS_CALLDATA  *call_data = (RS_CALLDATA *) memory->Alloc(sizeof(RS_CALLDATA) * 2 / 16);
     script->load((RS_PROG_HEADER *) program, stack, 0x40, call_data, 2);
     script->ext_func(ext_func, 0x100);
     return 1;
