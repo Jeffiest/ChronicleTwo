@@ -37,6 +37,23 @@ void CheckBindPose(mgCFrame *root, const char *name) {
                 if (!std::isfinite(actual) || std::fabs(expected - actual) > 0.002f * (1 + std::fabs(expected))) {
                     std::fprintf(stderr, "bind pose mismatch: %s frame %d vertex %d lane %d expected %g actual %g\n",
                                  name, model.visual->frame_id, i, lane, expected, actual);
+                    std::fprintf(stderr,
+                                 "visual=%p vertex=%p weights=%p counts=%d/%d frame=%p base=%p basevertex=[%g,%g,%g,%g] current=[%g,%g,%g,%g]\n",
+                                 (void *) model.visual, (void *) model.visual->vertex, (void *) model.visual->weight,
+                                 model.visual->vertex_num, model.visual->weight_num, (void *) model.visual->frame,
+                                 (void *) model.visual->base_matrix, model.base[i * 4], model.base[i * 4 + 1],
+                                 model.base[i * 4 + 2], model.base[i * 4 + 3], model.visual->vertex[i][0],
+                                 model.visual->vertex[i][1], model.visual->vertex[i][2], model.visual->vertex[i][3]);
+                    if (i < model.visual->weight_num) {
+                        const mgVertexWeight &weight = model.visual->weight[i];
+                        std::fprintf(stderr, "influences: (%d,%g) (%d,%g) (%d,%g) (%d,%g); bones:",
+                                     weight.matrix[0], weight.weight[0], weight.matrix[1], weight.weight[1],
+                                     weight.matrix[2], weight.weight[2], weight.matrix[3], weight.weight[3]);
+                        for (int slot = 0; slot < 32 && model.visual->bone[slot] >= 0; ++slot) {
+                            std::fprintf(stderr, " %d", model.visual->bone[slot]);
+                        }
+                        std::fputc('\n', stderr);
+                    }
                     std::exit(1);
                 }
             }

@@ -1246,3 +1246,15 @@ index f006fb2d..073351db 100644
  }
  
  void CWaterFrame::SetTexture(mgCTexture *texture) {
+
+diff --git a/ps2/src/visualmotion.cpp b/ps2/src/visualmotion.cpp
+index de8974548384742ee1be680ebd20cdd8f2306e4e..e5aa1b1348591c94145ebb6af1a80d2462d8aa22 100644
+--- a/ps2/src/visualmotion.cpp
++++ b/ps2/src/visualmotion.cpp
+@@ -218,5 +218,5 @@ int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data,
+     frame = data->frame;
+     base_matrix = data->base_matrix;
+     frame_id = data->frame_id;
+-    CreateVertexWeight(data->weight_data, data->frame_id, work);
++    CreateVertexWeight(data->weight_data, data->frame_id, memory);
+     count = 0;

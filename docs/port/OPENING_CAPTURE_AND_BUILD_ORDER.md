@@ -21,3 +21,7 @@ The pasted Linux failure runs `ct_active_contract_check` before `port_overrides.
 Logs under `E:/Chronicle-Two/logs`: `opening-capture-{build,test}.log`, `clean-order-{configure,build}.log`, `opening-model-{build,test}.log`, `opening-final-{build,ctest}.log`.
 
 Character deformation remains unresolved. Next coverage needs the real motion/character setup and simultaneous live copies through scene transitions, beyond loading and static bind-pose fixtures. User gameplay acceptance of the capture repair is pending. Retail sources and Kazarov submodule are untouched. Root PORT_STATE.md records publication status.
+
+## Weighted model storage follow-up (2026-10-12)
+
+The expanded real-asset bind-pose check found that `CreateVertexWeight` stored the CPU weights in the reusable work arena. Host skinning reads those weights after model loading, when later visuals may already have reused that arena. The generated host mirror now passes the persistent model arena to that allocation; `ps2/src/visualmotion.cpp` and upstream names stay unchanged. The host-mirror test verifies this rewrite, and the Windows game/GTest build plus `RuntimeContract.12_weighted_models` pass with the 56 actual weighted MDT, reload, bind-pose, and translated-copy checks. The full CTest run before this fix had seven failures; this model failure is repaired, while sound-asset, texture-table, character-vector, water-render, and font-test failures still need separate review. No game was launched, so circus visibility and cutscene acceptance remain unverified.

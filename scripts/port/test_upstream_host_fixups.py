@@ -58,6 +58,9 @@ class HostMirrorTests(unittest.TestCase):
                                     "static void InitPadTable(int language)",
                                     "static void VSyncCallBack(int unused)"):
                     self.assertNotIn(declaration, mainloop)
+                visualmotion = (mirror / "visualmotion.cpp").read_text(encoding="latin-1")
+                self.assertIn("CreateVertexWeight(data->weight_data, data->frame_id, memory);", visualmotion)
+                self.assertNotIn("CreateVertexWeight(data->weight_data, data->frame_id, work);", visualmotion)
                 for filename in patched:
                     self.assertNotEqual(actual[filename], original[filename], filename)
                 if expected is not None:
