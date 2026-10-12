@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <new>
 #include <span>
 #include <vector>
 
@@ -94,6 +97,21 @@ std::array<uint8_t, 4> Rgba(const gfx::Vertex2D &v) {
 }
 
 } // namespace
+
+TEST(MgDrawEnv, AssignmentSupportsEightByteAlignedDestination) {
+    mgCDrawEnv source;
+    source.Initialize(1);
+    source.SetAlpha(MG_ALPHA_MACRO_ADD);
+    source.SetZBuf(MG_ZBUF_NO_WRITE);
+
+    alignas(16) std::array<std::byte, sizeof(mgCDrawEnv) + 16> storage{};
+    auto *destination = new (storage.data() + 8) mgCDrawEnv;
+    ASSERT_EQ(reinterpret_cast<std::uintptr_t>(destination) & 0xF, 8u);
+
+    *destination = source;
+
+    EXPECT_EQ(std::memcmp(destination, &source, sizeof(source)), 0);
+}
 
 TEST(MgSprite, UntexturedSpriteSubmitsOneQuad) {
     const int offset = 0x800;

@@ -20,7 +20,10 @@ int main() {
                     {manager.texture_stack, count * sizeof(mgCTexture *)},
                     {manager.hash_buf, count * sizeof(mgTEXTURE_HASH)},
                     {manager.hash_stack, count * sizeof(mgTEXTURE_HASH *)}};
-    const auto begin = reinterpret_cast<std::uintptr_t>(storage.data());
+    // stSetBuffer promotes external storage into an arena-owned root so that
+    // allocations remain valid for the full port lifetime. Check the buffer
+    // actually used by mgCMemory, not the caller's seed vector.
+    const auto begin = reinterpret_cast<std::uintptr_t>(memory.stack);
     const auto end = begin + memory.stack_used * 16;
     for (int i = 0; i < 5; ++i) {
         const auto lo = reinterpret_cast<std::uintptr_t>(spans[i].base), hi = lo + spans[i].size;

@@ -1,10 +1,11 @@
 # PC port plan
 
-Current native integration status (2026-10-11): upstream Phase 2 at `1553ee88`
-has been integrated and validated in the existing Windows gameplay branch. Upstream baseline
-boot/stub statements below describe upstream, not a rollback of the native port.
-See `port/UPSTREAM_SYNC_1553ee88.md` for adopted changes, retained native contracts
-and validation. Current menu transfer, combat and HUD acceptance remain open.
+Current native integration status (2026-10-12): upstream master through `79e5d841`
+is integrated on the Windows gameplay branch. Upstream baseline boot/stub statements
+below describe upstream, not a rollback of the native port. The Windows build, full
+CTest suite, native-VU gate, headless costume gate and fresh-config windowed launch pass.
+The opening reaches its first battle tutorial; first town and dungeon coverage remains
+open. See `docs/port/HANDOFF.md` for current runtime evidence and remaining work.
 
 This is the working plan for the native PC port of Dark Chronicle (PAL,
 `SCES_511.90`). It follows the shape of Chronicle's `docs/PC_PORT_PLAN.md`
@@ -85,8 +86,9 @@ and its attract loop (title and opening movie), New Game, and the costume
 screen up to "Confirm Max's costume?". Every game frame is a recorded display
 list rendered canonically, with interpolated display frames (bone palettes
 included) between ticks; HUD pieces anchor to the window's corners.
-Confirming the costume loads the opening event, which stops on a loop in
-the frame tree (`mgCFrame::SearchFrame`): that is where Phase 7 resumes.
+Confirming the costume loads the opening event, and the repaired frame-tree traversal
+reaches the first battle tutorial. Phase 7 resumes with the first-town and first-dungeon
+sweep; the current acceptance boundary is recorded in `docs/port/HANDOFF.md`.
 The PS2 build still matches, and `docs/PC.md` describes the port;
 `docs/port/HANDOFF.md` is the working state and `docs/port/process/` the
 schedule and wave records.

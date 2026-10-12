@@ -161,10 +161,15 @@ PORT_OVERRIDE mgCDrawEnv::mgCDrawEnv() {
 }
 
 PORT_OVERRIDE mgCDrawEnv &mgCDrawEnv::operator=(mgCDrawEnv &source) {
-    ((u_long128 *) this)[0] = ((u_long128 *) &source)[0];
-    ((u_long128 *) this)[1] = ((u_long128 *) &source)[1];
-    ((u_long128 *) this)[2] = ((u_long128 *) &source)[2];
-    ((u_long128 *) this)[3] = ((u_long128 *) &source)[3];
+    // mgCDrawEnv is eight-byte aligned, so quadword casts can emit aligned SIMD
+    // stores to an ordinary stack instance and fault in effects such as fire.
+    giftag = source.giftag;
+    test = source.test;
+    test_addr = source.test_addr;
+    zbuf = source.zbuf;
+    zbuf_addr = source.zbuf_addr;
+    alpha = source.alpha;
+    alpha_addr = source.alpha_addr;
     return *this;
 }
 

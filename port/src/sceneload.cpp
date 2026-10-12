@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 
@@ -20,6 +21,10 @@ namespace {
 
 constexpr double kHblanksPerField = 262.0;
 
+bool TraceMapLoads() {
+    return std::getenv("DC2_TRACE_TEXTURES") != nullptr;
+}
+
 // Only differences of the count are used, so the anchor is arbitrary. The count is truncated to
 // 32 bits like the hardware register, so a difference wraps the same way.
 u_int HostTimer0Count() {
@@ -33,6 +38,11 @@ u_int HostTimer0Count() {
 PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_INFO2 *info) {
     mgCMemory *stack = info->stack;
     int        tex_block = info->tex_block;
+    const bool trace = TraceMapLoads();
+
+    if (trace) {
+        std::fprintf(stderr, "scene-load: map=%d step=%d enter\n", map_no, step);
+    }
 
     if (step == SCN_LOADMAP_STEP_CREATE) {
         CEditMap *edit_map;
@@ -72,6 +82,10 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
             map->map_info.AddMapInfo(add_files->map_data, add_files->map_size, stack);
         }
 
+        if (trace) {
+            std::fprintf(stderr, "scene-load: map info complete add=%d\n", add_files != NULL);
+        }
+
         return SCN_LOADMAP_STEP_DATA;
     }
 
@@ -98,6 +112,9 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
         map->LoadData(files->mpk_data, files->ipk_data, &block, stack);
         add_block_num += block;
         info->tex_block_num = add_block_num;
+        if (trace) {
+            std::fprintf(stderr, "scene-load: data complete blocks=%d\n", add_block_num);
+        }
         return SCN_LOADMAP_STEP_EFFECT;
     }
 
@@ -107,7 +124,13 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
         unsigned int                *efp_data = files->efp_data;
 
         if (efp_data != NULL) {
+            if (trace) {
+                std::fprintf(stderr, "scene-load: effects begin\n");
+            }
             map->CreateEffect(efp_data, info->efp_tex_block, stack);
+            if (trace) {
+                std::fprintf(stderr, "scene-load: effects complete\n");
+            }
         }
 
         strcpy(mgTexManager.name_suffix, "1");
@@ -121,6 +144,9 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
                 sky->Initialize();
                 sky->LoadPack(files->sky_data, info->sky_tex_block, stack);
                 AssignSky(0, sky, NULL);
+            }
+            if (trace) {
+                std::fprintf(stderr, "scene-load: sky complete\n");
             }
         }
 
@@ -138,13 +164,25 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
             map->SetPlacePartsBuff(stack, info->place_parts_max);
         }
 
+        if (trace) {
+            std::fprintf(stderr, "scene-load: create map begin parts=%d\n", info->place_parts_max);
+        }
         map->CreateMap(&mds_list_set, stack);
+        if (trace) {
+            std::fprintf(stderr, "scene-load: create map complete\n");
+        }
         printf("5:%d\n", HostTimer0Count() - start_count);
         return SCN_LOADMAP_STEP_FUNC_POINT;
     }
 
     if (step == SCN_LOADMAP_STEP_FUNC_POINT) {
+        if (trace) {
+            std::fprintf(stderr, "scene-load: function points begin\n");
+        }
         GetMap(map_no)->AssignFuncPoint(stack);
+        if (trace) {
+            std::fprintf(stderr, "scene-load: function points complete\n");
+        }
         return SCN_LOADMAP_STEP_CFG;
     }
 
@@ -154,7 +192,13 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
         CSceneMap                   *slot = GetSceneMap(map_no);
 
         if (files->cfg_size > 0) {
+            if (trace) {
+                std::fprintf(stderr, "scene-load: cfg begin size=%d\n", files->cfg_size);
+            }
             map->LoadCfgFile(files->cfg_data, files->cfg_size, stack);
+            if (trace) {
+                std::fprintf(stderr, "scene-load: cfg complete\n");
+            }
         }
 
         int num = info->tex_block_num;
@@ -162,7 +206,13 @@ PORT_OVERRIDE int CScene::LoadMapFromMemory(int map_no, int step, SCN_LOADMAP_IN
         slot->tex_block_num = num;
         slot->stack = stack;
         slot->status |= SCENE_DATA_LOADED;
+        if (trace) {
+            std::fprintf(stderr, "scene-load: place-parts finalization begin\n");
+        }
         map->PlacePartsEnd();
+        if (trace) {
+            std::fprintf(stderr, "scene-load: place-parts finalization complete\n");
+        }
         printf("remain %dkByte\n", stack->stGetRest() * 16 / 1024);
         return SCN_LOADMAP_STEP_CFG;
     }

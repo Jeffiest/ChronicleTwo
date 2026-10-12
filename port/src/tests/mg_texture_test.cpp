@@ -997,6 +997,18 @@ TEST_F(MgTextureGpu, ReloadTextureUploadsSwappedPixels) {
     EXPECT_EQ(TexelOf(second, 3, 3), (Texel4{0x77, 0x33, 0x11, 0xFF}));
 }
 
+TEST_F(MgTextureGpu, ReloadTextureStopsAtCyclicBlockList) {
+    Quads pixels = Pack(Ct32Pixels(4, 4));
+    mgCTexture *texture = Enter(h_, 1, "cyclic_block", 4, 4, 32, {pixels.data()});
+    ASSERT_NE(texture, nullptr);
+
+    texture->next = texture;
+    h_.manager.ReloadTexture(1, static_cast<sceVif1Packet *>(nullptr));
+    texture->next = nullptr;
+
+    EXPECT_EQ(h_.manager.GetTextureBlock(1)->texture, texture);
+}
+
 TEST_F(MgTextureGpu, Tex0LookupTakesPaletteByCbp) {
     Quads indices = Pack(std::vector<uint8_t>(16, 1));
     Quads clut_a = Pack(Clut8());

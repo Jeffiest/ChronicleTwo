@@ -10,6 +10,7 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <optional>
@@ -55,6 +56,10 @@ struct TextureRegistry {
 TextureRegistry &Registry() {
     static TextureRegistry registry;
     return registry;
+}
+
+bool TraceTextureLoads() {
+    return std::getenv("DC2_TRACE_TEXTURES") != nullptr;
 }
 
 uint32_t AllocateKey() {
@@ -308,8 +313,27 @@ void ResolveTexture(const mgCTexture *texture, bool palette_changed) {
 }
 
 void ResolveBlock(const mgCTextureBlock &block) {
-    for (const mgCTexture *texture = block.texture; texture != nullptr; texture = texture->next) {
+    const mgCTexture *texture = block.texture;
+    const mgCTexture *slow = block.texture;
+    const mgCTexture *fast = block.texture;
+    std::size_t       visited = 0;
+
+    while (texture != nullptr) {
         ResolveTexture(texture, false);
+        ++visited;
+        texture = texture->next;
+
+        // Retail block lists are acyclic. A repeated next link can otherwise
+        // trap the host forever while a newly loaded map refreshes its textures.
+        slow = slow != nullptr ? slow->next : nullptr;
+        fast = fast != nullptr && fast->next != nullptr ? fast->next->next : nullptr;
+        if (slow != nullptr && slow == fast) {
+            if (TraceTextureLoads()) {
+                std::fprintf(stderr, "mg-texture: cyclic block list stopped after %zu entries at %p\n", visited,
+                             static_cast<const void *>(slow));
+            }
+            break;
+        }
     }
 }
 
@@ -476,6 +500,11 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int block, char *name,
         return nullptr;
     }
 
+    if (TraceTextureLoads()) {
+        std::fprintf(stderr, "mg-texture: enter %s block=%d %dx%d bpp=%d swizzled=%d\n", full_name, block, width,
+                     height, bpp, swizzled);
+    }
+
     mgCTextureBlock *texture_block = GetTextureBlock(block);
 
     if (texture_block == nullptr) {
@@ -559,7 +588,14 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int block, char *name,
     texture_block->Add(texture);
     AddHash(texture);
 
+    if (TraceTextureLoads()) {
+        std::fprintf(stderr, "mg-texture: resolve %s levels=%d\n", full_name, levels);
+    }
     Resolve(texture, Register(this, texture), false);
+
+    if (TraceTextureLoads()) {
+        std::fprintf(stderr, "mg-texture: ready %s\n", full_name);
+    }
 
     if (mgGetPerformanceMeterFlag()) {
         std::printf("b = %d,%s vram = %d\n", block, texture->name, texture->vram_size);
@@ -570,6 +606,11 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int block, char *name,
 
 PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM2_head *head, int reload,
                                                           int no_image) {
+    if (TraceTextureLoads()) {
+        std::fprintf(stderr, "mg-texture: TIM2 begin %s id=%d head=%p\n", name != nullptr ? name : "<null>", id,
+                     static_cast<void *>(head));
+    }
+
     int bpp;
 
     switch (head->picture.image_type) {
@@ -589,6 +630,10 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM
             bpp = 8;
             break;
         default:
+            if (TraceTextureLoads()) {
+                std::fprintf(stderr, "mg-texture: TIM2 unsupported %s image_type=%u\n",
+                             name != nullptr ? name : "<null>", head->picture.image_type);
+            }
             return nullptr;
     }
 
@@ -601,7 +646,20 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM
         const std::optional<gfx::tim2::Picture> picture = gfx::tim2::ParsePicture(bytes);
 
         if (!picture) {
+            if (TraceTextureLoads()) {
+                std::fprintf(stderr,
+                             "mg-texture: TIM2 rejected %s total=%u image=%u size=%u %ux%u mips=%u\n",
+                             name != nullptr ? name : "<null>", head->picture.total_size, head->picture.image_size,
+                             head->picture.clut_size, head->picture.width, head->picture.height,
+                             head->picture.mipmap_count);
+            }
             return nullptr;
+        }
+
+        if (TraceTextureLoads()) {
+            std::fprintf(stderr, "mg-texture: TIM2 parsed %s levels=%u %ux%u\n",
+                         name != nullptr ? name : "<null>", picture->level_count, head->picture.width,
+                         head->picture.height);
         }
 
         for (uint32_t level = 0; level < picture->level_count; level++) {
@@ -611,8 +669,13 @@ PORT_OVERRIDE mgCTexture *mgCTextureManager::EnterTexture(int id, char *name, TM
         clut = AsQuadwords(picture->clut);
     }
 
-    return EnterTexture(id, name, images, head->picture.width, head->picture.height, bpp, clut,
-                        head->picture.tex1, reload);
+    mgCTexture *texture = EnterTexture(id, name, images, head->picture.width, head->picture.height, bpp, clut,
+                                       head->picture.tex1, reload);
+    if (TraceTextureLoads()) {
+        std::fprintf(stderr, "mg-texture: TIM2 done %s result=%p\n", name != nullptr ? name : "<null>",
+                     static_cast<void *>(texture));
+    }
+    return texture;
 }
 
 PORT_OVERRIDE int mgCTextureManager::GetRemainVRAM(int block) {

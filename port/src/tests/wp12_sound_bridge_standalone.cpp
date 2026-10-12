@@ -18,6 +18,15 @@ int main(int argc, char **argv) {
         return 77;
     }
     PathsSetDataRoot(PathsFromUtf8(argv[1]));
+    const std::filesystem::path data_root = PathsFromUtf8(argv[1]);
+    const auto has_voice_files = [&](const std::filesystem::path &directory) {
+        return std::filesystem::exists(directory / "0010461.WAV") &&
+               std::filesystem::exists(directory / "VOICE.VPK");
+    };
+    if (!has_voice_files(data_root / "V") && !has_voice_files(data_root / "v")) {
+        std::puts("SKIP: extracted PAL assets do not include the V voice files required by this bridge test");
+        return 77;
+    }
     sound_stream_data::Index index;
     std::string error;
     assert(index.LoadIndex(PathsDataRoot(), error));
@@ -25,7 +34,14 @@ int main(int argc, char **argv) {
     std::vector<int16_t> reference;
     uint32_t rate = 0;
     uint16_t channels = 0;
-    assert(index.ReadPcm(clip, reference, rate, channels, error));
+    if (!index.ReadPcm(clip, reference, rate, channels, error)) {
+        if (error == "sound not found") {
+            std::puts("SKIP: extracted PAL assets do not include the voice clip required by this bridge test");
+            return 77;
+        }
+        std::fprintf(stderr, "could not read bridge-test voice clip: %s\n", error.c_str());
+        return 1;
+    }
     assert(rate > 0 && channels > 0 && !reference.empty());
     auto &mixer = audio::DefaultMixer();
     mixer.Reset();

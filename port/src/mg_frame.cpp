@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include <vector>
+
 #include <libvu0.h>
 
 #include "mg_drawenv.hpp"
@@ -10,6 +12,46 @@
 #include "mglib.hpp"
 #include "mglib_port.hpp"
 #include "stubs/mg_frame.hpp"
+
+PORT_OVERRIDE mgCFrame *mgCFrame::SearchFrame(char *name) {
+    if (mgFrameNameComp(this->name, name) != 0) {
+        return this;
+    }
+
+    // CHR attachment can leave a child/brother cycle on the PC. Keep retail's
+    // child-before-sibling search order while bounding visits by the model's
+    // frame count (or a conservative cap when this is a detached subframe).
+    std::vector<mgCFrame *> pending;
+    if (child != NULL) {
+        pending.push_back(child);
+    }
+
+    const std::size_t visit_limit = frame_num > 0 ? static_cast<std::size_t>(frame_num) : 4096;
+    std::size_t       visited = 0;
+    while (!pending.empty() && visited < visit_limit) {
+        mgCFrame *node = pending.back();
+        pending.pop_back();
+        if (node == NULL) {
+            continue;
+        }
+
+        if (mgFrameNameComp(node->name, name) != 0) {
+            return node;
+        }
+        ++visited;
+
+        // The stack is LIFO: enqueue the sibling first to visit this node's
+        // descendants before moving to the next sibling, as the retail loop does.
+        if (node->brother != NULL) {
+            pending.push_back(node->brother);
+        }
+        if (node->child != NULL) {
+            pending.push_back(node->child);
+        }
+    }
+
+    return NULL;
+}
 
 PORT_OVERRIDE int mgCFrame::Draw(unsigned int *packet) {
     mgRENDER_INFO *info = &mgRenderInfo;
