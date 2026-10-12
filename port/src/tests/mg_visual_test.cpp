@@ -504,3 +504,24 @@ TEST(MgVisual, VisibleExtentCullsBoxAtFourThree) {
 
     EXPECT_EQ(DrawBoxRecords(), 0u);
 }
+
+TEST(MgVisual, GetScrPadProvidesAlignedPingPongBanks) {
+    const int saved_bank = buff_id;
+    buff_id = 0;
+    u_int *first = GetScrPad();
+    ASSERT_NE(first, nullptr);
+    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(first) % 16, 0u);
+    first[0x2000 / sizeof(u_int) - 1] = 0x12345678u;
+
+    buff_id = 1;
+    u_int *second = GetScrPad();
+    ASSERT_NE(second, nullptr);
+    EXPECT_NE(second, first);
+    EXPECT_EQ(reinterpret_cast<std::uintptr_t>(second) % 16, 0u);
+    second[0x2000 / sizeof(u_int) - 1] = 0x87654321u;
+    EXPECT_EQ(first[0x2000 / sizeof(u_int) - 1], 0x12345678u);
+
+    buff_id = 0;
+    EXPECT_EQ(GetScrPad(), first);
+    buff_id = saved_bank;
+}

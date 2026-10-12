@@ -234,7 +234,10 @@ void mgVisualPortSweep() {
 }
 
 PORT_OVERRIDE u_int *GetScrPad() {
-    PS2_UNIMPLEMENTED();
+    constexpr std::size_t kBankBytes = 0x2000;
+    constexpr std::size_t kBankWords = kBankBytes / sizeof(u_int);
+    alignas(16) thread_local std::array<u_int, 2 * kBankWords> scratchpad{};
+    return scratchpad.data() + (static_cast<unsigned>(buff_id) & 1u) * kBankWords;
 }
 
 PORT_OVERRIDE int mgCVisualMDT::CreateFacePacket(u_int *packet, mgCFace *face) {

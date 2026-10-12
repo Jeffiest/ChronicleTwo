@@ -1247,6 +1247,18 @@ index f006fb2d..073351db 100644
  
  void CWaterFrame::SetTexture(mgCTexture *texture) {
 
+diff --git a/ps2/src/mg_frame.cpp b/ps2/src/mg_frame.cpp
+--- a/ps2/src/mg_frame.cpp
++++ b/ps2/src/mg_frame.cpp
+@@ -1190,7 +1190,7 @@ void mgCFrame::GetWorldPosition0(float *out_position) {
+     sceVu0FMATRIX lw;
+ 
+     GetLWMatrix(lw);
+-    *(u_long128 *) out_position = *(u_long128 *) lw[3];
++    std::memcpy(out_position, lw[3], sizeof(lw[3]));
+ }
+ 
+ void mgCFrame::GetWorldDir(float *out_dir, float *local_dir) {
 diff --git a/ps2/src/visualmotion.cpp b/ps2/src/visualmotion.cpp
 index de8974548384742ee1be680ebd20cdd8f2306e4e..e5aa1b1348591c94145ebb6af1a80d2462d8aa22 100644
 --- a/ps2/src/visualmotion.cpp

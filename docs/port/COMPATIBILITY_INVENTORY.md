@@ -294,15 +294,17 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 97e3fa0db887c141 | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:551 | mgCTextureManager::Initialize | sceGsTex1 | host-source/src/mg_texture.cpp |
 | 546ed5d96048acd9 | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:630 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_texture.cpp |
 | ae8123cc6a5d6d28 | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:667 | mgCTextureManager::ReloadCLUT | sceVif1Packet | host-source/src/mg_texture.cpp |
-| 03b647fbe80de51f | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:437 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
-| 91e09a16ec521a6d | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:438 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
-| f47114a015a398e0 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:463 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 560d5de947e8f5b4 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:464 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
-| d2728d020dbf65d3 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:465 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | host-source/src/mg_visual.cpp |
-| aa886c6bd929e3a4 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:466 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0InversMatrix | host-source/src/mg_visual.cpp |
-| 237ab52126556f84 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:467 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ApplyMatrix | host-source/src/mg_visual.cpp |
-| 910a647c8ed7dac1 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:473 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
-| ed1d1ee2d260a5f9 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:474 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| bd7eceda2f71fffe | hardware:scratchpad | host-source/src/mg_visual.cpp:239 | mgVisualPortSweep | scratchpad | host-source/src/mg_visual.cpp |
+| 24cff9bc6c4fc619 | hardware:scratchpad | host-source/src/mg_visual.cpp:240 | mgVisualPortSweep | scratchpad | host-source/src/mg_visual.cpp |
+| a50ad3ea99ad78a8 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:440 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e767ad7a2fb2ae85 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:441 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e481a3c9435b78a1 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:466 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| e225d2608d67b248 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:467 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e2ea8ba259c30780 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:468 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | host-source/src/mg_visual.cpp |
+| 7cfa0532099fd296 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:469 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0InversMatrix | host-source/src/mg_visual.cpp |
+| 5980f48e1657c4b6 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:470 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ApplyMatrix | host-source/src/mg_visual.cpp |
+| a71f14aadfbb579a | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:476 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| 3ac07faaa78d4959 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:477 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
 | 269459b8ce229b26 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:99 | ToRaw | sceVif1Packet | host-source/src/mglib.cpp |
 | 7d0de9be5b4c9b46 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:227 | BindingFor | sceGsTex0 | host-source/src/mglib.cpp |
 | 488cc88eceaf7b51 | pointer-narrowing | host-source/src/mglib.cpp:283 | WriteTexel | static_cast<uint8_t>((a * | host-source/src/mglib.cpp |

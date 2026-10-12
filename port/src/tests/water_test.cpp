@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <string>
@@ -15,6 +16,7 @@
 #include "mg_drawenv.hpp"
 #include "mg_drawprim.hpp"
 #include "mg_frame.hpp"
+#include "mg_memory.hpp"
 #include "mglib.hpp"
 #include "mglib_port.hpp"
 #include "platform/clock.hpp"
@@ -144,6 +146,9 @@ public:
 
         ClockSetUnbounded(true);
         mgInit(MG_SCREEN_MODE_512X480, 3);
+        packet_pool_a_.stSetBuffer(packet_storage_a_.data(), static_cast<int>(packet_storage_a_.size()));
+        packet_pool_b_.stSetBuffer(packet_storage_b_.data(), static_cast<int>(packet_storage_b_.size()));
+        mgSetDataBuffer(&packet_pool_a_, &packet_pool_b_, 0);
     }
 
     ~PresentRenderer() {
@@ -151,6 +156,12 @@ public:
         WindowShutdown();
         EXPECT_EQ(gfx::ValidationMessageCount(), 0u);
     }
+
+private:
+    std::array<u_long128, 4096> packet_storage_a_{};
+    std::array<u_long128, 4096> packet_storage_b_{};
+    mgCMemory packet_pool_a_{};
+    mgCMemory packet_pool_b_{};
 };
 
 // The plane sits at 100 so the surface's fade is 1: 375 / w - 0.25 reaches 1 at w = 375.

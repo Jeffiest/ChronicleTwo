@@ -61,6 +61,9 @@ class HostMirrorTests(unittest.TestCase):
                 visualmotion = (mirror / "visualmotion.cpp").read_text(encoding="latin-1")
                 self.assertIn("CreateVertexWeight(data->weight_data, data->frame_id, memory);", visualmotion)
                 self.assertNotIn("CreateVertexWeight(data->weight_data, data->frame_id, work);", visualmotion)
+                frame = (mirror / "mg_frame.cpp").read_text(encoding="latin-1")
+                self.assertIn("std::memcpy(out_position, lw[3], sizeof(lw[3]));", frame)
+                self.assertNotIn("*(u_long128 *) out_position = *(u_long128 *) lw[3];", frame)
                 for filename in patched:
                     self.assertNotEqual(actual[filename], original[filename], filename)
                 if expected is not None:
