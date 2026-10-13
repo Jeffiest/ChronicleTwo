@@ -62,7 +62,11 @@ TEST_F(PlatformConfig, DefaultsAreWrittenWhenAbsent) {
     ASSERT_TRUE(fs::exists(Path()));
     ASSERT_TRUE(ConfigParse(Read()) == Config{});
     ASSERT_TRUE(SettingsGet().tick_rate == kConfigTickRateDefault);
+    ASSERT_TRUE(SettingsGet().present_mode == ConfigPresentMode::Mailbox);
+    ASSERT_FALSE(ConfigGet().interpolation);
     ASSERT_TRUE(ConfigGet().debug_mode);
+    ASSERT_TRUE(Read().find("\"present_mode\": \"mailbox\"") != std::string::npos);
+    ASSERT_TRUE(Read().find("\"interpolation\": false") != std::string::npos);
     ASSERT_TRUE(Read().find("\"debug_mode\": true") != std::string::npos);
     ASSERT_TRUE(ConfigLoad());
     ASSERT_TRUE(SettingsGet() == static_cast<const HostSettings &>(Config{}));
@@ -144,7 +148,7 @@ TEST_F(PlatformConfig, UnknownKeysAndSectionsAreIgnored) {
     ASSERT_TRUE(config.window_width == 1280 && config.window_height == 0);
     ASSERT_TRUE(config.master_volume == 0.5f);
     ASSERT_TRUE(config.debug_mode);
-    ASSERT_TRUE(config.present_mode == ConfigPresentMode::Fifo);
+    ASSERT_TRUE(config.present_mode == ConfigPresentMode::Mailbox);
     ASSERT_TRUE(ConfigParse(R"({"game": {"debug_mode": true}, "stray": 1})") == Config{});
 }
 

@@ -16,10 +16,13 @@ enum class ConfigAspect {
 };
 
 struct Config : HostSettings {
-    Config() { tick_rate = kConfigTickRateDefault; }
+    Config() {
+        tick_rate = kConfigTickRateDefault;
+        present_mode = ConfigPresentMode::Mailbox;
+    }
 
     bool         debug_mode = true;
-    bool         interpolation = true;
+    bool         interpolation = false;
     ConfigAspect aspect = ConfigAspect::Auto;
     float        ui_scale = 1.0f;
 
