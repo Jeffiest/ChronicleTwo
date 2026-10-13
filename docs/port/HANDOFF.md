@@ -1,6 +1,6 @@
 # Handoff: Dark Chronicle PC port, Wave 4 (Phase 7) in progress
 
-Written at the W4 push point (13 Oct 2026), when the session stopped at its usage limit. This is the one document to read before resuming. Then `docs/PC.md` (what is built), `docs/PC_PORT_PLAN.md` (plan and phase status) and `docs/port/process/` (the schedule this work followed, its addenda, the NEEDS lists and the wave records).
+Originally written at the W4 push point; refreshed on 13 Oct 2026. Read this first, then `docs/PC.md` (what is built), `docs/PC_PORT_PLAN.md` (plan and phase status) and `docs/port/process/` (the schedule this work followed, its addenda, the NEEDS lists and the wave records).
 
 ## 1. Status
 
@@ -11,19 +11,21 @@ Written at the W4 push point (13 Oct 2026), when the session stopped at its usag
 | W3 follow-ups (`records`, New Game background read, font sampling) | done, pushed (`79e5d84`) |
 | 7 (W4: presentation, sweep, options) | partial; opening reaches the first battle tutorial and Palm Brinks is reachable from the copied user save; the built-in debug route now reaches playable Dungeon 2 Floor 1, with combat and onward-floor progression still under test |
 
-In the game, with real data, headless and windowed: language select, Level-5 logo movie, title over its 3D map with music, the attract loop, New Game, the costume screen, and "Confirm Max's costume?" (`tools/input/sweep-costume.input`, frame 4800). Selecting YES loads the opening event (floor 20, event 1010). The frame-tree search loop and a later draw-environment alignment crash are repaired; a scripted run reaches the first battle tutorial and shows character models at frame 7000. An unattended battle run reaches Game Over by frame 9000. A scratch copy of the user's File 2 save loads Palm Brinks at "A night at the circus"; Max and several NPCs render during a headless camera sweep, including NPCs past the old 4:3 edge. The host omits the retail frame outline when Fill expands the visible extent. Frame 15140 (partial right turn), frame 15400 (full right turn), and a frame-15400 left turn show different town angles without inner 4:3 lines or bright dropped-draw blocks. The earlier capture logged 366 main-target self-sampling warnings; snapshotting the main frame when it is sampled during an open frame reduces them to zero, with no missing-texture warnings in these replays. The reported bench/cutscene disappearance remains unreproduced. A real-data headless startup advances the L5LOGO PSS into the title, and all nine retail PSS assets now pass focused player and `CMovie`/`moviework` audio-render checks. The user's event-level movie freeze is still unverified; opening-to-town progression, first dungeon, full model visibility/deformation, and event movie playback remain open.
+In the game, with real data, headless and windowed: language select, Level-5 logo movie, title over its 3D map with music, the attract loop, New Game, the costume screen, and "Confirm Max's costume?" (`tools/input/sweep-costume.input`, frame 4800). Selecting YES loads the opening event (floor 20, event 1010). The frame-tree search loop and a later draw-environment alignment crash are repaired; a scripted run reaches the first battle tutorial and shows character models at frame 7000. An unattended battle run reaches Game Over by frame 9000. A scratch copy of the user's File 2 save loads Palm Brinks at "A night at the circus"; Max and several NPCs render during a headless camera sweep, including NPCs past the old 4:3 edge. The host omits the retail frame outline when Fill expands the visible extent. Frame 15140 (partial right turn), frame 15400 (full right turn), and a frame-15400 left turn show different town angles without inner 4:3 lines or bright dropped-draw blocks. The earlier capture logged 366 main-target self-sampling warnings; snapshotting the main frame when it is sampled during an open frame reduces them to zero, with no missing-texture warnings in these replays. The reported bench/cutscene disappearance remains unreproduced. A real-data headless startup advances the L5LOGO PSS into the title, and all nine retail PSS assets pass focused player checks plus the game's `CMovie` event-loop sequence (`ReloadTexture`, `mgCDrawPrim`, audio start/stop, and `moviework` image changes). The user's event-level movie freeze is still unverified; opening-to-town progression, first dungeon, full model visibility/deformation, and event movie playback remain open.
 
 Correction: the W3 records (`docs/port/process/wave3-report.md`, the old version of this file) said the attract demo at frame 4500 shows the opening event with skinned characters. It does not: the attract loop is only the title and the opening movie (2D, no meshes). The later scripted opening run does show Monica and enemies at frame 7000; this confirms model draws in that scene, not correct placement or visibility throughout the game.
 
 ## 2. Repositories and shas
 
-| Repository | Branch | Pushed tip | Notes |
+| Repository | Branch | Current ref | Notes |
 |---|---|---|---|
-| ChronicleTwo (`C:\Users\Adubbz\Development\PS2\Projects\ChronicleTwo`) | `port/pc`, pushed as `origin/master` | the `Docs:` commit on top of `e0defd4` | `master` is kept equal to `port/pc` |
-| Kazarov (`...\Kazarov`) | `main` | `a0a5ff8` | TheMoonPeople/Kazarov `main` |
-| Chronicle (`...\Chronicle-phase0`, worktree of `Chronicle` on `master`) | `master` | `Kazarov: pin main@a0a5ff8` on `d4bae80b` (pin `5bec132`) on `c6a8c918` | upstream unchanged since `109c6eff` |
+| ChronicleTwo working tree (`E:\Chronicle-Two\win\ChronicleTwo-render-fix`) | `port/repair-inventory-icons-2026-10-12` | local `008db72f9` plus current work | Based on TheMoonPeople/ChronicleTwo `master` at `110f13c2`; target PR branch is nine commits behind this tree and has no divergence. |
+| Jeffiest/ChronicleTwo PR target | `port/upstream-1553ee88-playtest-2026-10-11` | `fd523998` | Last push attempt stalled in Git Credential Manager; anonymous remote read confirms this ref is unchanged. |
+| TheMoonPeople/ChronicleTwo | `master` | `110f13c2` | Public upstream ref unchanged on 13 Oct 2026. |
+| carrdylan52/ChronicleTwo | `w4/integration` | `a88a744` | Advanced from `79cfa41`; diff from the common `110f13c2` base touches 323 files. Its `tools/kazarov` gitlink points at `3222e7b`, not advertised by official Kazarov `main`. |
+| TheMoonPeople/Kazarov | `main` | `a0a5ff8` | Official shared renderer/audio/platform ref; retain this pin unless a required change lands on this main branch. |
 
-Both games pin Kazarov `a0a5ff8`. `C:\Users\Adubbz\Development\PS2\Projects\Chronicle` (branch `shared-port`) holds the user's own uncommitted work: never open, build or run git there. Chronicle is built and gated only in `Chronicle-phase0` (pull it to `origin/master` first).
+Dylan's recent outline-camera change uses `gfx::Presentation2D` from the unadvertised Kazarov pin, so the branch cannot be adopted wholesale under the shared-main rule. Review and port independent DC2 changes selectively after verifying their shared-code requirements. The separate local Kazarov worktree at `win/ChronicleTwo/tools/kazarov` remains on `fix/camera-interpolation-matching` at `743e087` with a modified test file; the ChronicleTwo superproject still pins official `main@a0a5ff8`.
 
 ### What W4 merged (ChronicleTwo `79e5d84..master`, Kazarov `f1b8e80..a0a5ff8`)
 
@@ -91,7 +93,8 @@ Implementation: `game.debug_mode` defaults to true and is parsed and serialized 
 
 Movie pipeline check (13 Oct): each of the nine retail PSS files advances to a different
 decoded frame and exposes its soundtrack through `MoviePlayer`; each also advances and
-renders into `moviework` through `CMovie`, starting and stopping the movie audio port.
+renders into `moviework` through the event loop's `ReloadTexture` + `mgCDrawPrim` path,
+starting and stopping the movie audio port.
 The real-data headless startup reaches the title after the L5LOGO movie. These checks
 verify media decoding and the host movie texture path, but do not reproduce the user's
 event-level frozen movie or verify that event sequence windowed.

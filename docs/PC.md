@@ -347,7 +347,7 @@ Tests:
 
 - `video_mpeg2_test`: MPEG-1 and header-less streams are rejected; `L5LOGO.PSS`'s first picture is a 512x416 I-picture at PTS 4758, the black frame the logo fades in from; all 150 pictures decode in increasing PTS order.
 - `video_yuv_test`: hand-computed pixels, limited range, chroma siting, strides.
-- `movie_test`: PCM layout, the player against the clock, all nine retail PSS files advancing with their soundtracks and rendering through `CMovie`'s `"moviework"` texture, plus a 30-frame `L5LOGO.PSS` image comparison against the decoded picture.
+- `movie_test`: PCM layout, the player against the clock, all nine retail PSS files advancing with their soundtracks through the game's `CMovie` event loop (`ReloadTexture` plus `mgCDrawPrim` into `"moviework"`), plus a 30-frame `L5LOGO.PSS` image comparison against the decoded picture.
 
 Real-data movie cases skip when their required files under `data/movie/` are absent; on Linux they run only when that data tree is available in the main checkout.
 

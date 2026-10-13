@@ -18,6 +18,7 @@
 #include "common.h"
 #include "gfx/gfx.hpp"
 #include "gfx_fixture.hpp"
+#include "mg_drawprim.hpp"
 #include "mg_memory.hpp"
 #include "mg_texture.hpp"
 #include "mglib.hpp"
@@ -592,8 +593,9 @@ TEST(MovieGlue, EveryRetailMovieAdvancesThroughMoviework) {
 
     auto movie = std::make_unique<CMovie>();
     MovieTermOnExit term_on_exit{movie.get()};
-    const gfx::DrawState state = mgPortDrawState();
     const uint64_t frame_start = mgPortFrameCount();
+    mgCTexture *movie_texture = mgTexManager.GetTexture(texture_name, 0x43);
+    ASSERT_NE(movie_texture, nullptr);
 
     for (const char *movie_name : kRetailMovies) {
         SCOPED_TRACE(movie_name);
@@ -604,22 +606,33 @@ TEST(MovieGlue, EveryRetailMovieAdvancesThroughMoviework) {
         movie->Play(texture_name);
         ASSERT_EQ(movie->IsStarted(), 1);
         ASSERT_TRUE(audio::DefaultMixer().IsPlaying(kMoviePortAudioPort));
+        movie->SwitchThread();
+        movie->SwitchThread();
 
         std::vector<uint8_t> first_pixels;
         std::vector<uint8_t> last_pixels;
         constexpr int kFrames = 30;
         for (int frame = 0; frame < kFrames; frame++) {
             mgBeginFrame(nullptr);
+            ASSERT_EQ(movie->EndCheck(), 0);
+            mgTexManager.ReloadTexture(0x43, static_cast<sceVif1Packet *>(nullptr));
             movie->SwitchThread();
 
-            mgCTexture *texture = mgTexManager.GetTexture(texture_name, -1);
-            ASSERT_NE(texture, nullptr);
-            gfx::TextureBinding binding = mgPortBinding(texture);
-            ASSERT_NE(binding.texture, gfx::kNullTexture);
-            binding.filter = gfx::Filter::Nearest;
-            const auto quad = dc::test::Quad(0.0f, 0.0f, 512.0f, 416.0f, {0x80, 0x80, 0x80, 0x80}, 0.0f, 0.0f,
-                                             512.0f, 416.0f);
-            mgPortDraw2D(gfx::Primitive::Quads, quad, binding, state);
+            mgCDrawPrim frame_draw;
+            frame_draw.Initialize(nullptr, nullptr);
+            frame_draw.AlphaTestEnable(0);
+            frame_draw.TextureMapEnable(1);
+            frame_draw.Begin(MG_PRIM_SPRITE);
+            frame_draw.Color(0, 0, 0, 0x80);
+            frame_draw.Vertex(0, 0, 0);
+            frame_draw.Vertex(mgScreenWidth, mgScreenHeight, 0);
+            frame_draw.Texture(movie_texture);
+            frame_draw.Color(0x80, 0x80, 0x80, 0x80);
+            frame_draw.TextureCrd(1, 1);
+            frame_draw.Vertex(0, 0, 0);
+            frame_draw.TextureCrd(0x1FE, 0x19E);
+            frame_draw.Vertex(mgScreenWidth, mgScreenHeight, 0);
+            frame_draw.End();
             mgEndFrame(nullptr);
 
             if (frame == 0 || frame == kFrames - 1) {
@@ -630,8 +643,6 @@ TEST(MovieGlue, EveryRetailMovieAdvancesThroughMoviework) {
                 ASSERT_GT(width, 0u);
                 ASSERT_GT(height, 0u);
             }
-            ClockPump();
-            ClockPump();
         }
 
         EXPECT_NE(first_pixels, last_pixels);

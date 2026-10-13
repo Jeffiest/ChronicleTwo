@@ -650,6 +650,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 81b0abb620de7b2c | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:104 | UnboundedVSyncClock | StartThread | host-source/src/tests/mglib_time_test.cpp |
 | fee1449375813f0a | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:112 | UnboundedVSyncClock | TerminateThread | host-source/src/tests/mglib_time_test.cpp |
 | 1348ad9a1f7eeb00 | hardware:ps2_sdk_or_thread | host-source/src/tests/model_storage_standalone.cpp:16 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/model_storage_standalone.cpp |
+| 45ed3cc4369ee550 | hardware:ps2_sdk_or_thread | host-source/src/tests/movie_test.cpp:618 | <file-scope> | sceVif1Packet | host-source/src/tests/movie_test.cpp |
 | e9ab8e6617cf759d | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:20 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
 | d69879ea56594272 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:21 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
 | f5a06dedeafdfeb5 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:23 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
