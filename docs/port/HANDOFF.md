@@ -11,7 +11,7 @@ Written at the W4 push point (13 Oct 2026), when the session stopped at its usag
 | W3 follow-ups (`records`, New Game background read, font sampling) | done, pushed (`79e5d84`) |
 | 7 (W4: presentation, sweep, options) | partial; opening reaches the first battle tutorial and Palm Brinks is reachable from the copied user save; the built-in debug route now reaches playable Dungeon 2 Floor 1, with combat and onward-floor progression still under test |
 
-In the game, with real data, headless and windowed: language select, Level-5 logo movie, title over its 3D map with music, the attract loop, New Game, the costume screen, and "Confirm Max's costume?" (`tools/input/sweep-costume.input`, frame 4800). Selecting YES loads the opening event (floor 20, event 1010). The frame-tree search loop and a later draw-environment alignment crash are repaired; a scripted run reaches the first battle tutorial and shows character models at frame 7000. An unattended battle run reaches Game Over by frame 9000. A scratch copy of the user's File 2 save loads Palm Brinks at "A night at the circus"; Max and several NPCs render during a headless camera sweep, including NPCs past the old 4:3 edge. The host omits the retail frame outline when Fill expands the visible extent. Frame 15140 (partial right turn), frame 15400 (full right turn), and a frame-15400 left turn show different town angles without inner 4:3 lines or bright dropped-draw blocks. The earlier capture logged 366 main-target self-sampling warnings; snapshotting the main frame when it is sampled during an open frame reduces them to zero, with no missing-texture warnings in these replays. The reported bench/cutscene disappearance remains un-reproduced. The opening-to-town progression, first dungeon, full model visibility/deformation, and movie playback remain open.
+In the game, with real data, headless and windowed: language select, Level-5 logo movie, title over its 3D map with music, the attract loop, New Game, the costume screen, and "Confirm Max's costume?" (`tools/input/sweep-costume.input`, frame 4800). Selecting YES loads the opening event (floor 20, event 1010). The frame-tree search loop and a later draw-environment alignment crash are repaired; a scripted run reaches the first battle tutorial and shows character models at frame 7000. An unattended battle run reaches Game Over by frame 9000. A scratch copy of the user's File 2 save loads Palm Brinks at "A night at the circus"; Max and several NPCs render during a headless camera sweep, including NPCs past the old 4:3 edge. The host omits the retail frame outline when Fill expands the visible extent. Frame 15140 (partial right turn), frame 15400 (full right turn), and a frame-15400 left turn show different town angles without inner 4:3 lines or bright dropped-draw blocks. The earlier capture logged 366 main-target self-sampling warnings; snapshotting the main frame when it is sampled during an open frame reduces them to zero, with no missing-texture warnings in these replays. The reported bench/cutscene disappearance remains unreproduced. A real-data headless startup advances the L5LOGO PSS into the title, and all nine retail PSS assets now pass focused player and `CMovie`/`moviework` audio-render checks. The user's event-level movie freeze is still unverified; opening-to-town progression, first dungeon, full model visibility/deformation, and event movie playback remain open.
 
 Correction: the W3 records (`docs/port/process/wave3-report.md`, the old version of this file) said the attract demo at frame 4500 shows the opening event with skinned characters. It does not: the attract loop is only the title and the opening movie (2D, no meshes). The later scripted opening run does show Monica and enemies at frame 7000; this confirms model draws in that scene, not correct placement or visibility throughout the game.
 
@@ -89,10 +89,27 @@ Implementation: `game.debug_mode` defaults to true and is parsed and serialized 
 
 ### 4.3 Sweep path still ahead
 
-The direct Dungeon 2 movement probe is repeatable with `--jump dungeon:1:1` and
-`tools/input/jump-rainbow-butterfly-floor1.input`. It waits through the floor-entry event, then
-moves Max into the first encounter; the frame-3300 Windows headless capture shows the player, HUD
-and minimap. This verifies movement after entry, but not attack success or floor-exit progression.
+Movie pipeline check (13 Oct): each of the nine retail PSS files advances to a different
+decoded frame and exposes its soundtrack through `MoviePlayer`; each also advances and
+renders into `moviework` through `CMovie`, starting and stopping the movie audio port.
+The real-data headless startup reaches the title after the L5LOGO movie. These checks
+verify media decoding and the host movie texture path, but do not reproduce the user's
+event-level frozen movie or verify that event sequence windowed.
+
+The repeatable direct Dungeon 2 route is `tools/input/sweep-debug-dungeon.input`, run from a fresh
+save through frame 4900. The current executable does not accept the previously documented
+`--jump dungeon:1:1` option. The verified 512x480 and 1280x720 headless captures show Max, the
+Man-Eating Grass, HUD and minimap in playable Floor 1; they do not yet verify movement, attack
+damage, or floor-exit progression. The 1280x720 frame has continuous ground and no inner 4:3
+border, but it is a static debug capture and does not resolve the user's moving-camera report.
+
+Input isolation on the same fresh D02 route: Max-only movement into the encounter, right-stick-only
+camera rotation, and both together all exit 0 at frame 5200. Max stays intact; moving Max alone
+shows a coherent open area, while camera-only and combined movement rotate the view into nearby
+foliage and occlude part of the scene. This does not reproduce the circus object's deformation or
+the distant bench disappearance. The top HUD icon slots differ between the stationary, moving and
+combat frames (including blank white placeholders), so HUD icon state remains an open rendering
+issue even though the inventory grid is fixed.
 
 The user confirms Max and the camera were moving together when the circus scenery became disordered; their screenshots show Max intact while nearby machinery and props cross the view. The latest matched real-data A/B drives the copied File 2 save through frame 26000 at 1280x720 Fill with interpolation enabled: the baseline and patched builds have byte-identical canonical frames, but their eight interpolated display samples average 9.022 versus 0.179 RGB MAE from that frame. Max remains intact during the close tent approach, and the logs show zero missing-texture/self-sampling warnings. This confirms a camera-record pairing artifact in the interpolation path; the route remains outside the dark backstage scene, so the exact missing-character case is still open. The global config on disk reads `video.present_mode=mailbox`, `video.interpolation=false`, `video.aspect=auto`; the ordinary `darkchronicle.exe` is the baseline. The patched `darkchronicle_camera.exe` uses local Kazarov commit `743e087`, with interpolation enabled in `win/build-rel/diag-camera-match-patched/config.json`. The change is not published: TheMoonPeople/Kazarov `main` remains `a0a5ff8`, and the push returned HTTP 403; ChronicleTwo's PR branch remains `300fd2a7`. See `docs/port/WIDESCREEN_MODEL_CULLING.md`; visible acceptance of the user's exact scene remains pending.
 

@@ -288,6 +288,34 @@ TEST(MoviePlayer, CatchUpSkipsWithoutConverting) {
     EXPECT_EQ(player.PicturesShown(), 2);
 }
 
+TEST(MoviePlayer, EveryRetailMovieAdvancesAndHasItsSoundtrack) {
+    constexpr const char *kRetailMovies[] = {"e54001.pss", "e54002.pss", "e54003.pss", "e54004.pss",
+                                               "end1.pss",   "end2.pss",   "l5logo.pss",  "open1.pss",
+                                               "rush.pss"};
+    std::vector<fs::path> paths;
+    paths.reserve(std::size(kRetailMovies));
+    for (const char *name : kRetailMovies) {
+        const std::optional<fs::path> path = MovieFile(name);
+        if (!path) {
+            GTEST_SKIP() << "the complete extracted data/movie set is required; missing " << name;
+        }
+        paths.push_back(*path);
+    }
+
+    for (size_t i = 0; i < std::size(kRetailMovies); i++) {
+        SCOPED_TRACE(kRetailMovies[i]);
+        video::MoviePlayer player;
+        ASSERT_TRUE(player.Open(paths[i], true));
+        ASSERT_TRUE(player.HasPicture());
+        ASSERT_NE(player.Audio(), nullptr);
+
+        const Bytes first_picture = player.Rgba();
+        ASSERT_TRUE(player.Advance(2 * 90000));
+        EXPECT_GT(player.PicturesShown(), 1);
+        EXPECT_NE(player.Rgba(), first_picture);
+    }
+}
+
 namespace {
 
 struct RestoreDataRoot {
@@ -529,4 +557,88 @@ TEST(MovieGlue, ThirtyFramesOfL5LogoThroughTheMovieTexture) {
     std::printf("L5 logo frame %d: readback mean RGB %.2f, picture mean RGB %.2f at %lld ticks\n", kFrames,
                 readback_mean, picture_mean, static_cast<long long>(picture_elapsed));
     EXPECT_NEAR(readback_mean, picture_mean, 3.0);
+}
+
+TEST(MovieGlue, EveryRetailMovieAdvancesThroughMoviework) {
+    RestoreDataRoot restore_data{PathsDataRoot()};
+    constexpr const char *kRetailMovies[] = {"E54001.PSS", "E54002.PSS", "E54003.PSS", "E54004.PSS",
+                                               "END1.PSS",   "END2.PSS",   "L5LOGO.PSS",  "OPEN1.PSS",
+                                               "RUSH.PSS"};
+    const std::optional<fs::path> found = MovieFile("l5logo.pss");
+    if (!found) {
+        GTEST_SKIP() << "no extracted data/movie directory within 6 levels above the test executable";
+    }
+    PathsSetDataRoot(found->parent_path().parent_path());
+
+    for (const char *movie_name : kRetailMovies) {
+        if (!fs::is_regular_file(MoviePortPath(movie_name))) {
+            GTEST_SKIP() << "the complete extracted data/movie set is required; missing " << movie_name;
+        }
+    }
+
+    RestoreClock restore_clock{ClockTickRate(), ClockUnbounded()};
+    OffscreenRenderer renderer;
+    GlobalTextureTable texture_table;
+
+    ClockSetUnbounded(true);
+    ClockSetTickRate(50.0);
+    ClockReset();
+
+    char texture_name[] = "moviework";
+    mgTexManager.DeleteBlock(0x43);
+    ASSERT_NE(mgTexManager.EnterTexture(0x43, texture_name, nullptr, mgScreenWidth, mgScreenHeight, mgScreenDepth,
+                                        nullptr, 0, 0),
+              nullptr);
+
+    auto movie = std::make_unique<CMovie>();
+    MovieTermOnExit term_on_exit{movie.get()};
+    const gfx::DrawState state = mgPortDrawState();
+    const uint64_t frame_start = mgPortFrameCount();
+
+    for (const char *movie_name : kRetailMovies) {
+        SCOPED_TRACE(movie_name);
+        ASSERT_TRUE(fs::is_regular_file(MoviePortPath(movie_name)));
+
+        std::string name = movie_name;
+        movie->Load(name.data(), static_cast<mgCMemory **>(nullptr), 512, 416, true, false, true);
+        movie->Play(texture_name);
+        ASSERT_EQ(movie->IsStarted(), 1);
+        ASSERT_TRUE(audio::DefaultMixer().IsPlaying(kMoviePortAudioPort));
+
+        std::vector<uint8_t> first_pixels;
+        std::vector<uint8_t> last_pixels;
+        constexpr int kFrames = 30;
+        for (int frame = 0; frame < kFrames; frame++) {
+            mgBeginFrame(nullptr);
+            movie->SwitchThread();
+
+            mgCTexture *texture = mgTexManager.GetTexture(texture_name, -1);
+            ASSERT_NE(texture, nullptr);
+            gfx::TextureBinding binding = mgPortBinding(texture);
+            ASSERT_NE(binding.texture, gfx::kNullTexture);
+            binding.filter = gfx::Filter::Nearest;
+            const auto quad = dc::test::Quad(0.0f, 0.0f, 512.0f, 416.0f, {0x80, 0x80, 0x80, 0x80}, 0.0f, 0.0f,
+                                             512.0f, 416.0f);
+            mgPortDraw2D(gfx::Primitive::Quads, quad, binding, state);
+            mgEndFrame(nullptr);
+
+            if (frame == 0 || frame == kFrames - 1) {
+                std::vector<uint8_t> &pixels = frame == 0 ? first_pixels : last_pixels;
+                uint32_t width = 0;
+                uint32_t height = 0;
+                ASSERT_TRUE(mgPortReadColor(gfx::kMainTarget, pixels, width, height));
+                ASSERT_GT(width, 0u);
+                ASSERT_GT(height, 0u);
+            }
+            ClockPump();
+            ClockPump();
+        }
+
+        EXPECT_NE(first_pixels, last_pixels);
+        movie->Term();
+        EXPECT_FALSE(audio::DefaultMixer().IsPlaying(kMoviePortAudioPort));
+        EXPECT_FALSE(movie->is_playing);
+    }
+
+    EXPECT_EQ(mgPortFrameCount() - frame_start, 30u * std::size(kRetailMovies));
 }
