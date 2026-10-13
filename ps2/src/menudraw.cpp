@@ -2905,6 +2905,25 @@ void MenuMainFrameImgDraw(int &loaded_tex_no) {
     DrawMenuMainFrmImg(loaded_tex_no, dest, source, 0x80, 0x80, 0x80, alpha, 0);
 }
 
+#ifdef PORT
+void MenuMainFrameWorldDraw(int &loaded_tex_no) {
+    if (MenuFrameTex == NULL) {
+        return;
+    }
+
+    MenuReloadTexture(loaded_tex_no, MenuFrameTex->block);
+    mgCDrawPrim *prim = GetMenuPrim();
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_OPAQUE);
+    prim->Begin(MG_PRIM_SPRITE);
+    prim->Texture(MenuFrameTex);
+    prim->Color(0x80, 0x80, 0x80, 0x80);
+    mgRect<int> screen(0, 0, mgScreenWidth, mgScreenHeight);
+    mgRect<int> source(0, 0, mgScreenWidth / 2, mgScreenHeight / 2);
+    PrimQuad(prim, screen, source);
+    prim->End();
+}
+#endif
+
 void DrawMenuWakuStep() {
     float move[6] = {-0.2f, 0.0f, 18.0f, 0.2f, 18.0f, 0.0f};
     int   i;

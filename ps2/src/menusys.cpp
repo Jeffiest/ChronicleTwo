@@ -1,6 +1,10 @@
 #include "common.h"
 #include "mw_runtime.h"
 
+#ifdef PORT
+#include "gfx/gfx.hpp"
+#endif
+
 #include <libvu0.h>
 
 #include <cmath>
@@ -777,6 +781,12 @@ static s8 menu_camera_reference_id = -1;
  *
  */
 static s8 menu_camera_reference_no = -1;
+
+#ifdef PORT
+static CActionChara *menu_inventory_preview_chara = NULL;
+static int menu_inventory_preview_view_mode = -1;
+static bool menu_inventory_preview_active = false;
+#endif
 
 /**
  *
@@ -7621,6 +7631,11 @@ void CBaseMenuClass::EffectDrawCheck(CMenuPosDataForm *form) {
 }
 
 int MenuItemInit(mgCMemory *stack, int *tex_block, int mode) {
+#ifdef PORT
+    menu_inventory_preview_chara = NULL;
+    menu_inventory_preview_view_mode = -1;
+    menu_inventory_preview_active = false;
+#endif
     FxScriptManPauseFlag = false;
     u_long128 *buffer = stack->stack;
     stack->Alloc(0x80);
@@ -12127,14 +12142,82 @@ int MenuItemKey() {
     }
 }
 
+#ifdef PORT
+bool MenuItemUsesWorldBackdrop() {
+    return MenuFrameTex != NULL && MenuCommonInfo != NULL && MenuCommonInfo->now_mode == MENU_MODE_ITEM &&
+           CMenuItemInfoPt != NULL && CMenuItemInfoPt->sub_menu == MENU_ITEM_SUB_MENU_NONE &&
+           CMenuItemInfoPt->key_arg_no == ITEM_MENU_PANEL_BAG;
+}
+#endif
+
 void MenuItemDraw() {
+#ifdef PORT
+    const bool        world_backdrop = MenuItemUsesWorldBackdrop();
+    CMenuPosDataForm *main_frame = world_backdrop && MenuPosData != NULL ? MenuPosData->GetFormInfo("main_bg_img") : NULL;
+    CMenuPosDataForm *menu_fill = world_backdrop && MenuPosData != NULL ? MenuPosData->GetFormInfo("mainform_fill") : NULL;
+    CMenuPosDataForm *character_fill = world_backdrop ? CMenuItemInfoPt->fill_form : NULL;
+    const bool        main_frame_was_drawn = main_frame != NULL && main_frame->draw_flag;
+    const bool        menu_fill_was_drawn = menu_fill != NULL && menu_fill->draw_flag;
+    const bool        character_fill_was_drawn = character_fill != NULL && character_fill->draw_flag;
+
+    if (world_backdrop) {
+        if (main_frame != NULL) {
+            main_frame->draw_flag = false;
+        }
+
+        if (menu_fill != NULL) {
+            menu_fill->draw_flag = false;
+        }
+
+        if (character_fill != NULL) {
+            character_fill->draw_flag = false;
+        }
+
+        CActionChara *preview = MenuActionChara[0];
+        if (preview != NULL && (!menu_inventory_preview_active || preview != menu_inventory_preview_chara ||
+                                CMenuItemInfoPt->view_mode != menu_inventory_preview_view_mode)) {
+            preview->SetRotation(0.0f, 0.0f, 0.0f);
+            menu_inventory_preview_chara = preview;
+            menu_inventory_preview_view_mode = CMenuItemInfoPt->view_mode;
+        }
+
+        menu_inventory_preview_active = true;
+        int loaded_tex_no = -1;
+        MenuMainFrameWorldDraw(loaded_tex_no);
+    } else {
+        menu_inventory_preview_chara = NULL;
+        menu_inventory_preview_view_mode = -1;
+        menu_inventory_preview_active = false;
+    }
+
+    // Keep the scene full-width; move only the bag panels into the extra space.
+    gfx::UiAnchor wide_menu_anchor{};
+    if (world_backdrop) {
+        wide_menu_anchor = gfx::UiAnchor{240.0f, 240.0f};
+    }
+    wide_menu_anchor.scissor = true;
+    gfx::UiAnchorScope wide_layout(wide_menu_anchor);
+
+    if (!world_backdrop) {
+        DrawMenuFillBox(0x80, 0, 0, 0);
+    }
+#else
     DrawMenuFillBox(0x80, 0, 0, 0);
+#endif
 
     switch (CMenuItemInfoPt->sub_menu) {
         case MENU_ITEM_SUB_MENU_NONE: {
             if (CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_WEAPON || CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_FISHING_ROD) {
                 MenuDrawEnv->camera.SetRef(CMenuItemInfoPt->camera_ref);
                 MenuDrawEnv->camera.SetPos(CMenuItemInfoPt->camera_pos);
+#ifdef PORT
+            } else if (world_backdrop && CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_MAX) {
+                // The item-data camera offsets for R_foot frame Max at the center of the portrait.
+                // MenuWorldTrans eases to this target using the regular menu camera transition.
+                MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, 0, 3);
+            } else if (world_backdrop && CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_MONICA) {
+                MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, 1, 3);
+#endif
             } else {
                 MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, menu_camera_reference_id,
                                       menu_camera_reference_no);
@@ -12159,6 +12242,22 @@ void MenuItemDraw() {
                     break;
                 }
             }
+
+#ifdef PORT
+            if (world_backdrop) {
+                if (main_frame != NULL) {
+                    main_frame->draw_flag = main_frame_was_drawn;
+                }
+
+                if (menu_fill != NULL) {
+                    menu_fill->draw_flag = menu_fill_was_drawn;
+                }
+
+                if (character_fill != NULL) {
+                    character_fill->draw_flag = character_fill_was_drawn;
+                }
+            }
+#endif
 
             MenuEffect[0]->Draw();
             MenuEffect[1]->Draw();

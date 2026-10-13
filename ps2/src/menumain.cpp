@@ -1515,7 +1515,13 @@ void MenuMainDraw() {
         prim = GetMenuPrim();
         prim->offset_x = 0;
         prim->offset_y = 0;
+#ifdef PORT
+        if (!MenuItemUsesWorldBackdrop()) {
+            DrawMenuFillBox(0x80, 0, 0, 0);
+        }
+#else
         DrawMenuFillBox(0x80, 0, 0, 0);
+#endif
         prim->offset_x = 0;
         prim->offset_y = 0;
         menu_drawfunctbl[MenuCommonInfo->now_mode]();
