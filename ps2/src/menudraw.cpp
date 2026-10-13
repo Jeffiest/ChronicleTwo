@@ -2911,6 +2911,13 @@ void MenuMainFrameWorldDraw(int &loaded_tex_no) {
         return;
     }
 
+    // The window-resolution picture of the paused world when the grab took one; the retail half-size grab
+    // otherwise.
+    extern bool MenuPortDrawWorldCopy();
+    if (MenuPortDrawWorldCopy()) {
+        return;
+    }
+
     MenuReloadTexture(loaded_tex_no, MenuFrameTex->block);
     mgCDrawPrim *prim = GetMenuPrim();
     SetSpriteEnv(prim, MENU_SPRITE_ENV_OPAQUE);

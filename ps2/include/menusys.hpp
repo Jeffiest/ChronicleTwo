@@ -2156,6 +2156,7 @@ int MenuItemKey();
 void MenuItemDraw();
 #ifdef PORT
 bool MenuItemUsesWorldBackdrop();
+bool MenuItemWorldView();
 #endif
 
 /**

@@ -12151,8 +12151,76 @@ int MenuItemKey() {
 #ifdef PORT
 bool MenuItemUsesWorldBackdrop() {
     return MenuFrameTex != NULL && MenuCommonInfo != NULL && MenuCommonInfo->now_mode == MENU_MODE_ITEM &&
-           CMenuItemInfoPt != NULL && CMenuItemInfoPt->sub_menu == MENU_ITEM_SUB_MENU_NONE &&
-           CMenuItemInfoPt->key_arg_no == ITEM_MENU_PANEL_BAG;
+           CMenuItemInfoPt != NULL && CMenuItemInfoPt->sub_menu == MENU_ITEM_SUB_MENU_NONE;
+}
+
+// Over the paused world, view the menu character through the world camera and stand it where the player
+// stands, so the live inventory character replaces the player in the snapshot.
+// The character the inventory last showed (0 Max, 1 Monica), or -1; menu exit makes it the world character.
+int MenuItemViewedChara = -1;
+
+bool MenuItemWorldView() {
+    if (!MenuItemUsesWorldBackdrop()) {
+        return false;
+    }
+
+    // The ridepod is Max's and the monster is Monica's, so leaving on those views returns as their owner.
+    const int view_mode = CMenuItemInfoPt->view_mode;
+    if (view_mode == MENU_ITEM_VIEW_MAX || view_mode == MENU_ITEM_VIEW_ROBO) {
+        MenuItemViewedChara = 0;
+    } else if (view_mode == MENU_ITEM_VIEW_MONICA || view_mode == MENU_ITEM_VIEW_MONSTER) {
+        MenuItemViewedChara = 1;
+    }
+
+    // The scene the snapshot was taken in (the dungeon's in a dungeon).
+    extern CScene *MenuSnapshotScene();
+    CScene        *scene = MenuSnapshotScene();
+    if (scene == NULL) {
+        return false;
+    }
+
+    mgCCamera    *camera = scene->GetCamera(scene->active_camera);
+    CCharacter2  *player = scene->GetCharacter(scene->player_chara);
+    CActionChara *preview = MenuActionChara[0];
+    if (camera == NULL || player == NULL || preview == NULL) {
+        return false;
+    }
+
+    float view_matrix[4][4];
+    float identity[4][4];
+    float world_matrix[4][4];
+    float camera_pos[4];
+    float position[4];
+    float rotation[4];
+
+    camera->GetCameraMatrix(view_matrix);
+    camera->GetPos(camera_pos);
+    sceVu0UnitMatrix(identity);
+    sceVu0MulMatrix(world_matrix, identity, view_matrix);
+    player->GetPosition(position);
+
+    // The snapshot was taken through this framed camera, so the live character is drawn through it as is.
+    mgSetProjection(MenuDrawEnv->old_projection);
+    mgSetViewMatrix(world_matrix, camera_pos);
+    player->GetRotation(rotation);
+    // Face the camera itself; the camera is panned sideways, so the player's own heading reads as turned.
+    rotation[1] = std::atan2(camera_pos[0] - position[0], camera_pos[2] - position[2]);
+    preview->SetPosition(position);
+    preview->SetRotation(rotation);
+
+    // Bigger bodies are shrunk about their feet so they still fit between the circles and the status bars.
+    static bool scaled = false;
+    float       scale = 1.0f;
+    if (view_mode == MENU_ITEM_VIEW_ROBO) {
+        scale = 0.6f;
+    } else if (view_mode == MENU_ITEM_VIEW_MONSTER) {
+        scale = 0.8f;
+    }
+    if (scale != 1.0f || scaled) {
+        preview->SetScale(scale, scale, scale);
+        scaled = scale != 1.0f;
+    }
+    return true;
 }
 #endif
 
@@ -12182,7 +12250,6 @@ void MenuItemDraw() {
         CActionChara *preview = MenuActionChara[0];
         if (preview != NULL && (!menu_inventory_preview_active || preview != menu_inventory_preview_chara ||
                                 CMenuItemInfoPt->view_mode != menu_inventory_preview_view_mode)) {
-            preview->SetRotation(0.0f, 0.0f, 0.0f);
             menu_inventory_preview_chara = preview;
             menu_inventory_preview_view_mode = CMenuItemInfoPt->view_mode;
         }
@@ -12200,6 +12267,8 @@ void MenuItemDraw() {
     gfx::UiAnchor wide_menu_anchor{};
     if (world_backdrop) {
         wide_menu_anchor = gfx::UiAnchor{240.0f, 240.0f};
+        // Wider windows keep the 16:9 layout, centred.
+        wide_menu_anchor.max_aspect = 16.0f / 9.0f;
     }
     wide_menu_anchor.scissor = true;
     gfx::UiAnchorScope wide_layout(wide_menu_anchor);
@@ -12216,14 +12285,6 @@ void MenuItemDraw() {
             if (CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_WEAPON || CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_FISHING_ROD) {
                 MenuDrawEnv->camera.SetRef(CMenuItemInfoPt->camera_ref);
                 MenuDrawEnv->camera.SetPos(CMenuItemInfoPt->camera_pos);
-#ifdef PORT
-            } else if (world_backdrop && CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_MAX) {
-                // The item-data camera offsets for R_foot frame Max at the center of the portrait.
-                // MenuWorldTrans eases to this target using the regular menu camera transition.
-                MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, 0, 3);
-            } else if (world_backdrop && CMenuItemInfoPt->view_mode == MENU_ITEM_VIEW_MONICA) {
-                MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, 1, 3);
-#endif
             } else {
                 MenuEquipCameraSetEnv(MenuActionChara[0], &MenuDrawEnv->camera, menu_camera_reference_id,
                                       menu_camera_reference_no);
@@ -12234,12 +12295,16 @@ void MenuItemDraw() {
             int               effect_drawn = 0;
 
             while (form != NULL) {
+#ifdef PORT
                 const bool retail_backdrop = world_backdrop &&
                                              (form->dtype == MENUFORM_DTYPE_MAINFRM ||
                                               form->dtype == MENUFORM_DTYPE_MAINIMG);
                 if (!retail_backdrop) {
                     form->MenuFormDraw(loaded_tex_no);
                 }
+#else
+                form->MenuFormDraw(loaded_tex_no);
+#endif
 
                 if (!effect_drawn && strcmp(form->name, "poly_chr0") == 0) {
                     DrawBuildUpInfoEffect();

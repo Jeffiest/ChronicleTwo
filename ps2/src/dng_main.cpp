@@ -1032,6 +1032,30 @@ int LoopDungeonMain() {
         case DNG_STATUS_EVENT_EDIT:
             DngMainDraw();
 
+#ifdef PORT
+            {
+                // As in town: frame the player first and let the world run until the snapshot is framed,
+                // then open the menu.
+                extern bool MenuFrameCameraForSnapshot(CScene *field_scene);
+                extern bool MenuSnapshotStep();
+                static int  snapshot_pending = 0;
+
+                if (snapshot_pending != 0) {
+                    DngStatus.mode = DNG_STATUS_FIELD;
+                    if (MenuSnapshotStep()) {
+                        snapshot_pending = 0;
+                        DngStatus.mode = DNG_STATUS_MENU;
+                    }
+                } else if (DngStatus.mode == DNG_STATUS_MENU && MenuArg.open_type == MENU_OPEN_MAIN_DUNGEON &&
+                           MenuFrameCameraForSnapshot(DngMainScene)) {
+                    // The dungeon asks for the menu while the button is held, so every tick of the wait must
+                    // put it back to the field.
+                    snapshot_pending = 1;
+                    DngStatus.mode = DNG_STATUS_FIELD;
+                }
+            }
+#endif
+
             if (DngStatus.mode == DNG_STATUS_MENU || DngStatus.mode == DNG_STATUS_EVENT_MENU) {
                 static mgCMemory stack;
 

@@ -16,6 +16,7 @@
 #include "mg_texture_port.hpp"
 #include "mglib.hpp"
 #include "mglib_port.hpp"
+#include "present.hpp"
 
 PORT_OVERRIDE void MenuReloadCLUT(int index) {
     MgTextureSetDrawVariant(MenuCharaChangeBase_Tex, index == 0 ? MenuCharaChangeCLUT_Tex : nullptr);
@@ -85,6 +86,63 @@ PORT_OVERRIDE void DrawMenuWakuRect(mgCTexture *texture, mgRect<float> rect, mgR
     ResetMenuScissor();
 }
 
+// Left edge of what the window shows, in logical pixels (negative when wider than 4:3).
+float MenuPortVisibleLeft() {
+    // The inventory layout stops at a centred 16:9 area (see its UiAnchor::max_aspect); logical frames are
+    // shown at 4:3, so 16:9 spans 4/3 of the logical width.
+    const float sixteen_nine_left = mgScreenWidth * 0.5f - mgScreenWidth * (16.0f / 9.0f) / (4.0f / 3.0f) * 0.5f;
+    return std::max(mgPortVisibleExtent().left, sixteen_nine_left);
+}
+
+// The window-resolution picture taken at the menu's grab, kept in a texture of its own: the game reuses
+// the grab texture's slot while the menus load, which drops the GPU copy behind it.
+static gfx::TextureHandle menu_display_copy = gfx::kNullTexture;
+static uint32_t           menu_display_w = 0;
+static uint32_t           menu_display_h = 0;
+
+// Paints that picture over everything the window shows; false when there is none.
+bool MenuPortDrawWorldCopy() {
+    if (menu_display_copy == gfx::kNullTexture || menu_display_w == 0 || menu_display_h == 0) {
+        return false;
+    }
+
+    const mgPortExtent extent = mgPortVisibleExtent();
+    const float        u_right = static_cast<float>(menu_display_w);
+    const float        v_bottom = static_cast<float>(menu_display_h);
+    const float        xy[4][4] = {
+        {extent.left,  extent.top,    0.0f,    0.0f    },
+        {extent.right, extent.top,    u_right, 0.0f    },
+        {extent.left,  extent.bottom, 0.0f,    v_bottom},
+        {extent.right, extent.bottom, u_right, v_bottom},
+    };
+    std::vector<gfx::Vertex2D> strip;
+    for (const auto &corner : xy) {
+        gfx::Vertex2D vertex{};
+        vertex.x = corner[0];
+        vertex.y = corner[1];
+        vertex.u = corner[2];
+        vertex.v = corner[3];
+        vertex.color[0] = 0x80;
+        vertex.color[1] = 0x80;
+        vertex.color[2] = 0x80;
+        vertex.color[3] = 0x80;
+        strip.push_back(vertex);
+    }
+
+    gfx::DrawState state = mgPortDrawState();
+    state.blend = false;
+    state.depth_test = gfx::DepthTest::Always;
+    state.depth_write = false;
+    state.screen_space = true;
+    state.alpha_test = false;
+    state.cull = gfx::CullMode::None;
+    gfx::TextureBinding binding;
+    binding.texture = menu_display_copy;
+    binding.ignore_alpha = true;
+    mgPortDraw2D(gfx::Primitive::TriangleStrip, strip, binding, state);
+    return true;
+}
+
 PORT_OVERRIDE int MenuCapture(int block, mgCMemory *stack, int draw) {
     u8                *dst;
     mgCTextureManager *tex_manager;
@@ -127,15 +185,81 @@ PORT_OVERRIDE int MenuCapture(int block, mgCMemory *stack, int draw) {
 
     // The grab costs a frame on PS2 too: the tick that just ended is gfx::kPreviousFrame in the next one.
     mgEndFrame(NULL);
+
+    // The tick's own image is the PS2's resolution; the picture on screen is drawn again at the window's.
+    // Take that display picture so the paused world behind the menus matches the current resolution.
+    std::vector<uint8_t> display_rgba;
+    uint32_t             display_w = 0;
+    uint32_t             display_h = 0;
+    const bool           have_display = MenuFrameTex != NULL &&
+                                        PresentScreenshotDisplay(1.0f, display_rgba, display_w, display_h) &&
+                                        display_w > 0 && display_h > 0 &&
+                                        display_rgba.size() >= static_cast<size_t>(display_w) * display_h * 4;
+
+    if (MenuFrameTex != NULL) {
+        // Reloads upload the stack image whenever the GPU target is not bound, so it must hold the frame too.
+        // Outside a frame the read is synchronous; the 2x2 box filter matches retail.
+        std::vector<uint8_t> rgba;
+        uint32_t             src_w = 0;
+        uint32_t             src_h = 0;
+        const bool read = mgPortReadColor(gfx::kMainTarget, rgba, src_w, src_h) && src_w > 0 && src_h > 0 &&
+                          rgba.size() >= static_cast<size_t>(src_w) * src_h * 4;
+
+        for (int y = 0; y < half_h; ++y) {
+            for (int x = 0; x < half_w; ++x) {
+                u8 *out = dst + (static_cast<size_t>(y) * half_w + x) * 4;
+                if (!read) {
+                    out[0] = out[1] = out[2] = 0;
+                    out[3] = 0x80;
+                    continue;
+                }
+                int sum[3] = {0, 0, 0};
+                for (int k = 0; k < 4; ++k) {
+                    const uint32_t sx = ((2u * x + (k & 1)) * src_w) / (2u * half_w);
+                    const uint32_t sy = ((2u * y + (k >> 1)) * src_h) / (2u * half_h);
+                    const uint8_t *p = &rgba[(static_cast<size_t>(sy) * src_w + sx) * 4];
+                    sum[0] += p[0];
+                    sum[1] += p[1];
+                    sum[2] += p[2];
+                }
+                out[0] = static_cast<u8>(sum[0] >> 2);
+                out[1] = static_cast<u8>(sum[1] >> 2);
+                out[2] = static_cast<u8>(sum[2] >> 2);
+                out[3] = 0x80;
+            }
+        }
+    }
+
     mgBeginFrame(NULL);
 
     if (MenuFrameTex != NULL) {
         // Frame target: the window's sides past the logical frame are copied in and carried by the full-frame draw.
-        const gfx::TextureHandle target = mgPortRenderTarget(MenuFrameTex, true);
         // Registered before the copy: until a target exists under its TBP0 the texture binds its stack image.
         // Linear at 2:1 samples each 2x2 block's midpoint, which is the box filter retail ran on the CPU.
+        const gfx::TextureHandle target = mgPortRenderTarget(MenuFrameTex, true);
         gfx::BlitTexture(gfx::kPreviousFrame, gfx::Rect{0, 0, mgScreenWidth, mgScreenHeight}, target,
                          gfx::Rect{0, 0, half_w, half_h}, gfx::Filter::Linear);
+
+        // The window-resolution picture, in a texture of its own, for the Item page's paused world
+        // (MenuPortDrawWorldCopy).
+        if (menu_display_copy != gfx::kNullTexture) {
+            gfx::DestroyTexture(menu_display_copy);
+            menu_display_copy = gfx::kNullTexture;
+        }
+        menu_display_w = 0;
+        menu_display_h = 0;
+        if (have_display) {
+            gfx::TextureDesc desc;
+            desc.width = display_w;
+            desc.height = display_h;
+            desc.has_alpha = false;
+            menu_display_copy = gfx::CreateTexture(desc);
+            if (menu_display_copy != gfx::kNullTexture &&
+                gfx::UpdateTextureNow(menu_display_copy, 0, 0, 0, display_w, display_h, display_rgba.data())) {
+                menu_display_w = display_w;
+                menu_display_h = display_h;
+            }
+        }
     }
 
     if (draw != 0 && MenuFrameTex != NULL) {
