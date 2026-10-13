@@ -748,7 +748,25 @@ _EFF_SCRIPT *CEffectScriptMan::CreateEffSpt(int base_no, int group, int register
         }
     }
 
+#ifdef PORT
+    int work_size = base->work_size;
+    // work_size's fixed 0x7D + 0x24 allowance was measured with retail's 32-bit
+    // records. The host script and character records contain full-width pointers,
+    // and both interpreter arrays are sized from their host record widths. Reserve
+    // that growth before selecting a gap so the arena can reject an undersized gap
+    // here instead of aborting partway through effect creation.
+    work_size += align16_blocks(sizeof(_EFF_SCRIPT)) - align16_blocks(0x150);
+
+    if (base->chara != NULL) {
+        work_size += align16_blocks(sizeof(CCharacter2)) - align16_blocks(0x660);
+    }
+
+    work_size += (sizeof(RS_STACKDATA) * 0x40 + 15) / 16 - (0x8 * 0x40 + 15) / 16;
+    work_size += (sizeof(RS_CALLDATA) * 2 + 15) / 16 - (0xC * 2 / 16);
+    token = work_memory->StartStackMode(MG_STACK_MODE_FIT, work_size);
+#else
     token = work_memory->StartStackMode(MG_STACK_MODE_FIT, base->work_size);
+#endif
 
     if (token == NULL) {
         printf("--- effect script work max[%d]!!! ---\n", work_memory->stack_size - work_memory->stack_used);

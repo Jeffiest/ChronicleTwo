@@ -2738,81 +2738,81 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 49681b5d8f5e1e12 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:385 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
 | cf36921d7b979175 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:438 | CFadeInOut::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 8e17a3e7e901c550 | raw-member-offset | retail/src/effscript.cpp:628 | CEffectScriptMan::BuildBase | (char *) memory->stAlloc64(script_size / 16 + 1 | none detected |
-| 891cc7d511cf5daf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1043 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ec8808d23d84072b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1044 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 2bec0fa3a04680fd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1053 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| c8d5e11241197381 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1054 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 5efd69aebcac2e6d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1111 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| fdbfee82b86ccef3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1117 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 51e564fa04c523fa | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1127 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 4553827f228669d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1148 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 3966e305869d9c38 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1150 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| a998fc38a2dbe95c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1151 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 1f69bdf9fc440445 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1153 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| e7a448cd1df8b324 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1157 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| a24c4234deb8a96e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1163 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 3ef41b781dc4527f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1165 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 49c5770c09c9d6e3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1169 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| ba531777d29ea352 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1190 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| ffaaaa362168d80e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1196 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 4f13eb514aa0bd42 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1206 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 6e070c835b9c6a7e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1227 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 5becc17788ce51ad | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1229 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| e6a41f63ca69ad07 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1237 | CEffectScriptMan::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| e51d6d5d1356aec3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1772 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| d39b4554246116e2 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1777 | DrawEffSptSprite | sceGsTest | none detected |
+| 2c9c6e21cec1c052 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1061 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| df5d9000cbe3030d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1062 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| beb49c95fbfd27f0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1071 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 6a06b49413dddb01 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1072 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 61aa0faf1e813caf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1129 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a6fbe4e36481e885 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1135 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e9db7642eec45ab7 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1145 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 6b12c21694786ba8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1166 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e12dc8700b789429 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1168 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d8f7b589105f08e5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1169 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f87752b6b7b35575 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1171 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a2af6024ee9ca4ee | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1175 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 4a14434d422847e8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1181 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 66239e06bb760b3d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1183 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0744369aed4d9e02 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1187 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 19cb489de0a485be | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1208 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f04f4be24bc53cfb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1214 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 9971dcc69c963f14 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1224 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| c57c3e88d9e52712 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1245 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 301face9d4b14d57 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1247 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0094d7c06e36d52f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1255 | CEffectScriptMan::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 04443a689f081f1c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1790 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
 | 2ba99a7078c331d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1795 | DrawEffSptSprite | sceGsTest | none detected |
-| 0333dc32cac0503e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1805 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 013374566c39c024 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1806 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 202f65be29a1ea46 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1807 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 95e0081b73f85705 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1810 | DrawEffSptSprite | sceVu0AddVector | none detected |
-| 8d0bea211475d59d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1842 | DrawEffSptSprite | sceVu0FMATRIX | none detected |
-| 64edd88e0d0897e4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1843 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 393a0c7ea912408f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1979 | _NORMAL_VECTOR | sceVu0Normalize | none detected |
-| 9554b8c9fb4ea12a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2230 | _GET_REF_ROT | sceVu0SubVector | none detected |
-| ef963dcde46c85bd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2231 | _GET_REF_ROT | sceVu0Normalize | none detected |
-| 53250b9814174188 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2272 | _GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
-| d9aa4ad1cdee5828 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2273 | _GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
-| 156a50aac7ebc89c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2274 | _GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
-| ad5c904ae0bac0f0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2275 | _GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
-| 352d53d7baa38a03 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2586 | _CHR_SET_ROT | sceVu0SubVector | none detected |
-| 58ca59123f4ae9e6 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2592 | _CHR_SET_ROT | sceVu0DivVector | none detected |
-| 3e53c6eab755d1bb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2593 | _CHR_SET_ROT | sceVu0AddVector | none detected |
-| d37c678eeccdecd9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2744 | _CHR_GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
-| 4c2c97d465f4dde8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2746 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
-| 8acfa0040f15f1dc | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2747 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
-| f48c7f214615aafa | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2748 | _CHR_GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
-| 8e554eea8a850e18 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2774 | _CHR_GET_REF_ROT | sceVu0SubVector | none detected |
-| de38714c481a42a1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2775 | _CHR_GET_REF_ROT | sceVu0Normalize | none detected |
-| c1c9f949858b09ce | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2810 | _CHR_ADD_POS | sceVu0AddVector | none detected |
-| fbc0081a1b135813 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2829 | _CHR_ADD_ROT | sceVu0AddVector | none detected |
-| 8777f48a65b3bdd0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2854 | _CHR_ADD_SCALE | sceVu0AddVector | none detected |
-| 94ba4535b53ea5d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2976 | _CHR_ADD_POS2 | sceVu0AddVector | none detected |
-| 2fa3e86dad20fb74 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2999 | _CHR_ADD_ROT2 | sceVu0AddVector | none detected |
-| 206207ccdcb849e1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3026 | _CHR_ADD_SCALE2 | sceVu0AddVector | none detected |
-| a3ba7fb89fe06734 | raw-member-offset | retail/src/effscript.cpp:3746 | _SPT_VAN_SET_POS | (u8 *) stack + 9 | none detected |
-| 8eb5bec6636070c1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3760 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
-| e2461d38fc010efe | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3762 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
-| 603166f8e1821558 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3850 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
-| 2a4932aee5aff7bb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3851 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
-| ef711b971c64b49e | raw-member-offset | retail/src/effscript.cpp:3920 | _SPT_ADD_POS | (u8 *) stack + 3 | none detected |
-| 11b0dc71e14f576e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3933 | _SPT_ADD_POS | sceVu0AddVector | none detected |
-| bfd8e6509ed9e55c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4003 | _SPT_ADD_COLOR | sceVu0AddVector | none detected |
-| 09aab562f7099e24 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4054 | _SPT_WORLD_ROT | sceVu0UnitMatrix | none detected |
-| a955638a07f01fe1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4064 | _SPT_WORLD_ROT | sceVu0ApplyMatrix | none detected |
-| 51be63060782bf82 | raw-member-offset | retail/src/effscript.cpp:4095 | _SPT_SET_VELO_POS | (u8 *) stack + 3 | none detected |
-| 8a92a7af5651b327 | raw-member-offset | retail/src/effscript.cpp:4130 | _SPT_SET_ACC_POS | (u8 *) stack + 3 | none detected |
-| a57fb0a6f8780ca4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4663 | _SCN_GET_CHR_FRM_ROT | sceVu0SubVector | none detected |
-| 7f651dfdcf85acd1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4664 | _SCN_GET_CHR_FRM_ROT | sceVu0Normalize | none detected |
-| b30b62edbed4e67c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4713 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 9210f912ec2e8723 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4714 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 8cf1aea585428875 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4715 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| e99782eb4546accd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4716 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| b381bc247aa98170 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4719 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 12c2fbde2967c21d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4752 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
-| 683dbe334df6208b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4754 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
-| 395dcd3e632af555 | raw-allocation | retail/src/effscript.cpp:5563 | SetEffectScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
-| 0cf12317a7ef1313 | raw-allocation | retail/src/effscript.cpp:5565 | SetEffectScript | (RS_CALLDATA *) memory->Alloc(sizeof(RS_CALLDATA) | none detected |
+| 3fa04c00b824e9e3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1813 | DrawEffSptSprite | sceGsTest | none detected |
+| aeaa671987aa6d9d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1823 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| 2b717d47dffbef6e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1824 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| d57fa80d66ecef14 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1825 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| ba5876c7cc0a54b5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1828 | DrawEffSptSprite | sceVu0AddVector | none detected |
+| 218a8530e43a269a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1860 | DrawEffSptSprite | sceVu0FMATRIX | none detected |
+| daf48cdc67696844 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1861 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| cd8ca44ddd62ad50 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1997 | _NORMAL_VECTOR | sceVu0Normalize | none detected |
+| 4279d17272dca9ca | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2248 | _GET_REF_ROT | sceVu0SubVector | none detected |
+| 4718f19dd47bd8c8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2249 | _GET_REF_ROT | sceVu0Normalize | none detected |
+| f266aaefbd9b4e47 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2290 | _GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
+| 605e59de13b5502d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2291 | _GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
+| 357e1ddaf3e0812f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2292 | _GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
+| d33ad49a82feac84 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2293 | _GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
+| a2d010e9e0ff7ebf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2604 | _CHR_SET_ROT | sceVu0SubVector | none detected |
+| 89098b532047e93c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2610 | _CHR_SET_ROT | sceVu0DivVector | none detected |
+| e7c560e6e1a3aea0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2611 | _CHR_SET_ROT | sceVu0AddVector | none detected |
+| 95e665f823a5c573 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2762 | _CHR_GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
+| f3ec601c57740ce4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2764 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
+| 874862fe072fc552 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2765 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
+| 914c5fa283889dc5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2766 | _CHR_GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
+| 8adba442b983ba72 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2792 | _CHR_GET_REF_ROT | sceVu0SubVector | none detected |
+| c97135de0408b6d9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2793 | _CHR_GET_REF_ROT | sceVu0Normalize | none detected |
+| 884b8b23ae43e30b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2828 | _CHR_ADD_POS | sceVu0AddVector | none detected |
+| 3450dc2d2eeb4c30 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2847 | _CHR_ADD_ROT | sceVu0AddVector | none detected |
+| f9ab21a8c09497a0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2872 | _CHR_ADD_SCALE | sceVu0AddVector | none detected |
+| bd4766ba583cd9bc | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2994 | _CHR_ADD_POS2 | sceVu0AddVector | none detected |
+| 382b3385217cad9a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3017 | _CHR_ADD_ROT2 | sceVu0AddVector | none detected |
+| e3acad9a505739ab | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3044 | _CHR_ADD_SCALE2 | sceVu0AddVector | none detected |
+| c38720c565a951d2 | raw-member-offset | retail/src/effscript.cpp:3764 | _SPT_VAN_SET_POS | (u8 *) stack + 9 | none detected |
+| f3a1141e2219301e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3778 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
+| 1210b0fc5f0565a9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3780 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
+| 9c134a93e0ae87b5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3868 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
+| 764477dfa651ee8a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3869 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
+| b9112334ed1924fd | raw-member-offset | retail/src/effscript.cpp:3938 | _SPT_ADD_POS | (u8 *) stack + 3 | none detected |
+| 5407200842457195 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3951 | _SPT_ADD_POS | sceVu0AddVector | none detected |
+| 1c237641ac9d1436 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4021 | _SPT_ADD_COLOR | sceVu0AddVector | none detected |
+| 8268e95f7fbf71b1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4072 | _SPT_WORLD_ROT | sceVu0UnitMatrix | none detected |
+| efe24508182735c0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4082 | _SPT_WORLD_ROT | sceVu0ApplyMatrix | none detected |
+| 9897b0bb2aaf389c | raw-member-offset | retail/src/effscript.cpp:4113 | _SPT_SET_VELO_POS | (u8 *) stack + 3 | none detected |
+| 793ec6fa1e98a4c2 | raw-member-offset | retail/src/effscript.cpp:4148 | _SPT_SET_ACC_POS | (u8 *) stack + 3 | none detected |
+| c4b0dac1c95a2d18 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4681 | _SCN_GET_CHR_FRM_ROT | sceVu0SubVector | none detected |
+| 563f3527535553e4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4682 | _SCN_GET_CHR_FRM_ROT | sceVu0Normalize | none detected |
+| 924bf1a172c674e2 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4731 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| ef813c2400456264 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4732 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 628482cddec73241 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4733 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 3978f68145d562e0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4734 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 7004d920945e447a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4737 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| c4e1e09d433f99d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4770 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
+| 67835fb35e6ad4ce | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4772 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
+| 4140f668cfa4f471 | raw-allocation | retail/src/effscript.cpp:5581 | SetEffectScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
+| 934a1e34d9e9cac6 | raw-allocation | retail/src/effscript.cpp:5583 | SetEffectScript | (RS_CALLDATA *) memory->Alloc(sizeof(RS_CALLDATA) | none detected |
 | 471c2b824fb2ec49 | raw-allocation | retail/src/event.cpp:112 | SetEventScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
 | 5394e4371c3dbc85 | raw-allocation | retail/src/event.cpp:113 | SetEventScript | (RS_CALLDATA *) memory->Alloc((sizeof(RS_CALLDATA) | none detected |
 | 16fb45447c213575 | hardware:ps2_sdk_or_thread | retail/src/event.cpp:139 | EventDoorLoop | sceVu0FMATRIX | none detected |

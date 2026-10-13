@@ -561,7 +561,7 @@ A hand-written stride is rewritten as indexing only where `verify.py` stays iden
 | `CVillagerMngr::GetAppearVlgr` (`time * sizeof(void *) + schedule + offset + 8`) | - | stride fix; owner records |
 | `mgCMemory::SetHeapMem`, `mgCMemory::StartStackMode` | - | stride fix; owner arena; kept |
 
-Hand-counted allocation sizes are rewritten with `sizeof` and are byte-identical: the script stacks in `SetActionScript`, `SetEffectScript` (stack), `SetEventScript` and `SetMonsterScript` (`(sizeof(RS_STACKDATA) * N + 15) / 16` and `(sizeof(RS_CALLDATA) * N + 15) / 16`), and `mgCDrawManager::AddPacket` (`(sizeof(mgSORT_PACKET) + 15) / 16`). The former `mgCVisualMDT::CopyMDTDataPointer` host allocation is superseded by the upstream GPU-mesh path in `port/src/mg_visual.cpp`, with face-mesh behavior covered by `mg_visual_test.cpp`.
+Hand-counted allocation sizes are rewritten with `sizeof` and preserve retail behavior: the script stacks in `SetActionScript`, `SetEffectScript` (stack), `SetEventScript` and `SetMonsterScript`, plus `mgCDrawManager::AddPacket`. For effect call frames, the retail `SetEffectScript` allocation remains one quadword in the PS2 build; the host mirror uses `port_script_storage::allocate` to reserve three quadwords for its two 24-byte pointer-bearing frames. `CreateEffSpt` adds the host-only difference between retail and host record sizes before choosing the effect arena gap. The former `mgCVisualMDT::CopyMDTDataPointer` host allocation is superseded by the upstream GPU-mesh path in `port/src/mg_visual.cpp`, with face-mesh behavior covered by `mg_visual_test.cpp`.
 
 ### Override pairs
 
@@ -591,7 +591,7 @@ An address passed through an `int` parameter is fixed by replacing the callee an
 - 18 more are benign: low bits (`& K`), residues (`% K`) and differences of two addresses.
 - 13 sit in replaced functions.
 - 65 literal placement-new runs stay with arena, which grows them at run time.
-- `effscript.cpp`, `SetEffectScript`: the `RS_CALLDATA` `Alloc(1)` is undersized for a call depth of 2, in retail too. The correct value, 2, is not byte-identical.
+- `effscript.cpp`, `SetEffectScript`: retail reserves one quadword for two 12-byte call frames, which is undersized for depth 2. The host mirror reserves three quadwords for its two 24-byte frames. `CreateEffSpt` also reserves the host record-width growth (96 quadwords for character effects, 42 for effects without a character) while selecting a stack gap. Both changes are host-only; with `PORT` undefined, the PS2 source preprocesses exactly as before.
 - Open round trips in linked code: 0. All eight that were open are closed by the conversion, and so is `MenuCalcBufAlignment`'s, which crashed `LoadGameDataAnalyze`.
 
 ### The check
