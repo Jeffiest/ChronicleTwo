@@ -188,7 +188,9 @@ TEST_F(DataRead, DatapacksOverrideIndexedFilesWithReplacementSizesAndSparseFallb
     EXPECT_EQ(size, 177);
     const auto replacement = MakeBytes(177, 19);
     EXPECT_EQ(std::memcmp(Buffer(), replacement.data(), replacement.size()), 0);
-    EXPECT_EQ(DataReadFind(name), last / "DIR" / "Sub" / "File.BIN");
+    const std::optional<fs::path> found = DataReadFind(name);
+    ASSERT_TRUE(found.has_value());
+    EXPECT_TRUE(fs::equivalent(*found, last / "DIR" / "Sub" / "File.BIN"));
 
     ASSERT_EQ(Load("small.txt", Buffer(), &size), 1);
     EXPECT_EQ(size, 27);
