@@ -3,7 +3,7 @@
 #include "dng_main.hpp"
 #include "mglib_port.hpp"
 
-void PortRetailResetEyeView(CActionChara *) asm("DngMain_ResetEyeView");
+void PortRetailResetEyeView(CActionChara *);
 
 PORT_OVERRIDE void ResetEyeView(CActionChara *chara) {
     const bool eye_view = DngStatus.eye_view;
