@@ -70,11 +70,14 @@ These work with the pad-2 Circle toggle. Pad 2 is locked unless the boot unlock 
 
 See [PC test hooks](PC.md#test-hooks) for launch arguments. With `--fast-load`,
 `town:10` shows controllable Max outdoors in Palm Brinks by frame 120;
-`dungeon:0:1` shows Underground Channel's floor list by frame 250. Its floor
-argument selects the floor in the retail list rather than bypassing the list.
-`tools/input/jump-dungeon-floor1.input` confirms entry and skips the first
-communication scene: by frame 2100 Max is on floor 1 with the dungeon HUD and
-minimap; its frame-2200 movement changes his position by frame 2300.
+`dungeon:0:1` shows Underground Channel's floor list by frame 250, and
+`dungeon:1:1` shows Rainbow Butterfly Wood's floor list. The floor argument
+selects the floor in the retail list rather than bypassing the list.
+`tools/input/jump-rainbow-butterfly-floor1.input` confirms the selected floor
+and waits through its entry event before moving Max forward. Run it through
+frame 3300: the log loads `map/d/d02/d02_1.stb`, and the screenshot shows Max,
+the floor HUD/minimap and the first encounter. The movement starts at frame
+2700 because earlier input falls inside the scripted entry sequence.
 
 `event:26010` enters the Rainbow Butterfly Wood boss-event arena by frame 250;
 the boss encounter itself still depends on its event logic. `opening` shows

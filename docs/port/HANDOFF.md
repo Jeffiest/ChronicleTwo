@@ -94,7 +94,7 @@ Plan (modelled on Chronicle's `game.debug_mode`):
 
 ### 4.3 Sweep path still ahead
 
-Opening event (4.1) -> first town (Palm Brinks) -> first dungeon, by `--input`, fixing each stop. Known stubs on that path: GyoRace (`sgEffectDrawGyoRace` + `sgLoopGyoRace`, `port/src/gyorace.cpp`), `MenuChapterInit`, `CMenuItemUse::UseItem`, the four `CGamePad` capture functions; SDK `sceCdSearchFile`, `sceCdSeek`, `sceMcRename`, `scePadEnd`, `scePadPortClose`. `event_func` `_SWE_SET_COLOR`/`_SWE_SET_TEXTURE`/`_SWE_START_EFFECT` `(slot << 2)` strides. `effscript.cpp:5564` `RS_CALLDATA` is one quadword for call depth 2 (undersized in retail too).
+Opening event (4.1) -> first town (Palm Brinks) -> first dungeon, by `--input`, fixing each stop. For a repeatable direct Dungeon 2 control probe, `tools/input/jump-rainbow-butterfly-floor1.input` selects Rainbow Butterfly Wood Floor 1, waits through its entry event, then moves Max forward; the Windows headless run reaches the first encounter at frame 3300 with the player and HUD rendered. The older `jump-dungeon-floor1.input` remains the Underground Channel route. Known stubs on the main path: GyoRace (`sgEffectDrawGyoRace` + `sgLoopGyoRace`, `port/src/gyorace.cpp`), `MenuChapterInit`, `CMenuItemUse::UseItem`, the four `CGamePad` capture functions; SDK `sceCdSearchFile`, `sceCdSeek`, `sceMcRename`, `scePadEnd`, `scePadPortClose`. `event_func` `_SWE_SET_COLOR`/`_SWE_SET_TEXTURE`/`_SWE_START_EFFECT` `(slot << 2)` strides. `effscript.cpp:5564` `RS_CALLDATA` is one quadword for call depth 2 (undersized in retail too).
 
 ### 4.4 `present` leftovers
 

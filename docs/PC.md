@@ -178,10 +178,12 @@ items, and targets absent from the loaded map or event tables exit with status 2
   IDs through `CUserDataManager::GetItem` each time a town or dungeon starts.
   Items already held are skipped. See `ITEM_ID` in `ps2/include/gamedata.hpp`.
 
-For example, `darkchronicle --jump dungeon:0:1 --fast-load --headless --offscreen
---input tools/input/jump-dungeon-floor1.input --frames 2300 --screenshot floor.png`
-reaches the first Underground Channel floor with movement and the HUD. See
-[Debug mode](DEBUG.md#jump-replays) for other rendered checkpoints and controls.
+For example, `darkchronicle --jump dungeon:1:1 --fast-load --headless --offscreen
+--input tools/input/jump-rainbow-butterfly-floor1.input --frames 3300
+--screenshot rainbow-floor.png` reaches Rainbow Butterfly Wood Floor 1 and
+moves Max into its first encounter with the HUD/minimap visible. The script
+waits until after the entry event before moving. See [Debug mode](DEBUG.md#jump-replays)
+for other rendered checkpoints and controls.
 
 To replay a milestone save without changing its source, use:
 
