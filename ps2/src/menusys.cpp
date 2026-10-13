@@ -2,6 +2,12 @@
 #include "mw_runtime.h"
 
 #ifdef PORT
+// The game-wide texture-copy shim defines memcpy as a macro in the forced port header. Load the
+// graphics header's standard-library dependencies before that macro can rewrite std::memcpy.
+#pragma push_macro("memcpy")
+#undef memcpy
+#include <filesystem>
+#pragma pop_macro("memcpy")
 #include "gfx/gfx.hpp"
 #endif
 
@@ -12228,7 +12234,12 @@ void MenuItemDraw() {
             int               effect_drawn = 0;
 
             while (form != NULL) {
-                form->MenuFormDraw(loaded_tex_no);
+                const bool retail_backdrop = world_backdrop &&
+                                             (form->dtype == MENUFORM_DTYPE_MAINFRM ||
+                                              form->dtype == MENUFORM_DTYPE_MAINIMG);
+                if (!retail_backdrop) {
+                    form->MenuFormDraw(loaded_tex_no);
+                }
 
                 if (!effect_drawn && strcmp(form->name, "poly_chr0") == 0) {
                     DrawBuildUpInfoEffect();
