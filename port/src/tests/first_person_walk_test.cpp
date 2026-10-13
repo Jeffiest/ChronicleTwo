@@ -13,6 +13,7 @@
 #include "mainloop.hpp"
 #include "mainloop_port.hpp"
 #include "map.hpp"
+#include "mglib_port.hpp"
 #include "photo.hpp"
 #include "platform/input_script.hpp"
 #include "stubs/photo.hpp"
@@ -84,6 +85,7 @@ TEST(FirstPersonWalk, AcceptedDisplacementRestoresThirdPersonEyeAtNewPlayerPosit
         FirstPersonShiftSavedEye(saved, before, after);
         camera.SetPos(after[0], after[1], after[2]);
         camera.FollowOff();
+        const auto camera_generation = mgPortCameraGeneration();
         if (dungeon) {
             DngMainScene = &scene;
             BattleAreaScene = &scene.battle_area;
@@ -92,6 +94,7 @@ TEST(FirstPersonWalk, AcceptedDisplacementRestoresThirdPersonEyeAtNewPlayerPosit
             PortDungeonEyeInitialized = 1;
             TakePhotoMode = TAKE_PHOTO_OFF;
             ResetEyeView(&chara);
+            EXPECT_GT(mgPortCameraGeneration(), camera_generation);
         } else {
             PortTownEyeInitialized = 1;
             ResetViewMode(&scene);

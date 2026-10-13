@@ -12,6 +12,9 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
+add_test(NAME Port.UnitCopyRetailBridges
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/test_unit_copy.py)
+
 add_test(NAME PalettePaths.Check
     COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/port/check_palette_paths.py
         ${CMAKE_BINARY_DIR}/ps2_src ${CMAKE_SOURCE_DIR}/port/src)
