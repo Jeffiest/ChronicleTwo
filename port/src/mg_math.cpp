@@ -1,55 +1,94 @@
+#include "common.h"
+
+#include <libvu0.h>
+
 #include "mg_math.hpp"
+#include "stubs/mg_math.hpp"
+#include "vu0_lanes.hpp"
 
-#include "vu0_ops.hpp"
+namespace {
 
-// The vector unit's routines as C++. ps2/src writes these in assembly, which PORT
-// leaves out; the rest of mg_math.cpp is C++ already. Where the unit's arithmetic
-// differs from the host's the difference shows through: vmax and vmini order by
-// sign and magnitude, a zero divisor gives the largest float rather than an
-// infinity, and the box tests answer with the status register's sticky sign bit.
+// Retail adds vf0.x (+0) to every lane it copies, which turns -0 into +0.
+float add_vf0x(float v) { return v + 0.0f; }
 
-// The unit multiplies a matrix by two others in place, carrying the first product
-// in registers across both passes, so the output may be one of the inputs.
-void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]) {
+const int kLanesXYZ[3] = {0, 1, 2};
+const int kLanesXYW[3] = {0, 1, 3};
+
+int clip_box_overlap(const int *lanes, float *max0, float *min0, float *max1, float *min1) {
+    for (int i = 0; i < 3; i++) {
+        const int l = lanes[i];
+        if (vu0::SignSet(max0[l] - min1[l]) || vu0::SignSet(max1[l] - min0[l])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int clip_box_inside(const int *lanes, float *max0, float *min0, float *max1, float *min1) {
+    for (int i = 0; i < 3; i++) {
+        const int l = lanes[i];
+        if (vu0::SignSet(max1[l] - max0[l]) || vu0::SignSet(min0[l] - min1[l])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Accumulated in j order: the VU MAC chain's rounding depends on it.
+void mat_mul(float out[4][4], const float a[4][4], const float b[4][4]) {
     float r[4][4];
-    float s[4][4];
-
     for (int i = 0; i < 4; i++) {
-        vu0::Apply(r[i], matrix, second[i]);
+        for (int k = 0; k < 4; k++) {
+            float acc = a[i][0] * b[0][k];
+            for (int j = 1; j < 4; j++) {
+                acc = acc + a[i][j] * b[j][k];
+            }
+            r[i][k] = acc;
+        }
     }
     for (int i = 0; i < 4; i++) {
-        vu0::Apply(s[i], r, third[i]);
-    }
-    for (int i = 0; i < 4; i++) {
-        vu0::Copy(matrix[i], s[i]);
+        for (int k = 0; k < 4; k++) {
+            out[i][k] = r[i][k];
+        }
     }
 }
 
-// vftoi4.xyzw: four 12.4 fixed-point lanes.
+void copy_matrix(float dst[4][4], float (*src)[4]) {
+    for (int r = 0; r < 4; r++) {
+        for (int k = 0; k < 4; k++) {
+            dst[r][k] = src[r][k];
+        }
+    }
+}
+
+float squared_sum3(float x, float y, float z) { return (x * x + y * y) + z * z; }
+
+} // namespace
+
 void mgFotI4(int *out, float *in) {
     for (int i = 0; i < 4; i++) {
-        out[i] = vu0::Ftoi(in[i], 16.0f);
+        out[i] = vu0::Ftoi4(in[i]);
     }
 }
 
-// The unit builds each corner from a copy of the min or the max with one lane
-// overwritten, so a corner carries its w from whichever of the two it copied.
 void mgCreateBox8(float (*corners)[4], float *max, float *min) {
-    vu0::Copy(corners[0], min);
-    vu0::Copy(corners[7], max);
-
-    vu0::Copy(corners[1], min);
-    corners[1][0] = max[0];
-    vu0::Copy(corners[2], min);
-    corners[2][1] = max[1];
-    vu0::Copy(corners[4], min);
-    corners[4][2] = max[2];
-    vu0::Copy(corners[6], max);
-    corners[6][0] = min[0];
-    vu0::Copy(corners[5], max);
-    corners[5][1] = min[1];
-    vu0::Copy(corners[3], max);
-    corners[3][2] = min[2];
+    const float mx[4] = {max[0], max[1], max[2], max[3]};
+    const float mn[4] = {min[0], min[1], min[2], min[3]};
+    const float out[8][4] = {
+        {mn[0], mn[1], mn[2], mn[3]},
+        {add_vf0x(mx[0]), add_vf0x(mn[1]), add_vf0x(mn[2]), add_vf0x(mn[3])},
+        {add_vf0x(mn[0]), add_vf0x(mx[1]), add_vf0x(mn[2]), add_vf0x(mn[3])},
+        {add_vf0x(mx[0]), add_vf0x(mx[1]), add_vf0x(mn[2]), add_vf0x(mx[3])},
+        {add_vf0x(mn[0]), add_vf0x(mn[1]), add_vf0x(mx[2]), add_vf0x(mn[3])},
+        {add_vf0x(mx[0]), add_vf0x(mn[1]), add_vf0x(mx[2]), add_vf0x(mx[3])},
+        {add_vf0x(mn[0]), add_vf0x(mx[1]), add_vf0x(mx[2]), add_vf0x(mx[3])},
+        {mx[0], mx[1], mx[2], mx[3]},
+    };
+    for (int c = 0; c < 8; c++) {
+        for (int k = 0; k < 4; k++) {
+            corners[c][k] = out[c][k];
+        }
+    }
 }
 
 void mgZeroVectorW(float *vector) {
@@ -59,335 +98,329 @@ void mgZeroVectorW(float *vector) {
     vector[3] = 1.0f;
 }
 
-// The box tests subtract the corners pairwise on x, y and z and read the status
-// register's sticky sign bit: the first negative result - a negative zero counts
-// - keeps it set, and the function answers zero once it is.
 int mgClipBoxVertex(float *point, float *max, float *min) {
-    int status = 0;
-
     for (int i = 0; i < 3; i++) {
-        status |= vu0::StatusFlags(max[i] - point[i]);
-        status |= vu0::StatusFlags(point[i] - min[i]);
+        if (vu0::SignSet(max[i] - point[i]) || vu0::SignSet(point[i] - min[i])) {
+            return 0;
+        }
     }
-
-    return (status & vu0::kStickySign) == 0;
+    return 1;
 }
 
 int mgClipBox(float *max0, float *min0, float *max1, float *min1) {
-    int status = 0;
-
-    for (int i = 0; i < 3; i++) {
-        status |= vu0::StatusFlags(max0[i] - min1[i]);
-        status |= vu0::StatusFlags(max1[i] - min0[i]);
-    }
-
-    return (status & vu0::kStickySign) == 0;
+    return clip_box_overlap(kLanesXYZ, max0, min0, max1, min1);
 }
 
 int mgClipBoxW(float *max0, float *min0, float *max1, float *min1) {
-    static const int lanes[3] = {0, 1, 3};
-    int status = 0;
-
-    for (int i = 0; i < 3; i++) {
-        status |= vu0::StatusFlags(max0[lanes[i]] - min1[lanes[i]]);
-        status |= vu0::StatusFlags(max1[lanes[i]] - min0[lanes[i]]);
-    }
-
-    return (status & vu0::kStickySign) == 0;
+    return clip_box_overlap(kLanesXYW, max0, min0, max1, min1);
 }
 
 int mgClipInBox(float *max0, float *min0, float *max1, float *min1) {
-    int status = 0;
-
-    for (int i = 0; i < 3; i++) {
-        status |= vu0::StatusFlags(max1[i] - max0[i]);
-        status |= vu0::StatusFlags(min0[i] - min1[i]);
-    }
-
-    return (status & vu0::kStickySign) == 0;
+    return clip_box_inside(kLanesXYZ, max0, min0, max1, min1);
 }
 
 int mgClipInBoxW(float *max0, float *min0, float *max1, float *min1) {
-    static const int lanes[3] = {0, 1, 3};
-    int status = 0;
-
-    for (int i = 0; i < 3; i++) {
-        status |= vu0::StatusFlags(max1[lanes[i]] - max0[lanes[i]]);
-        status |= vu0::StatusFlags(min0[lanes[i]] - min1[lanes[i]]);
-    }
-
-    return (status & vu0::kStickySign) == 0;
+    return clip_box_inside(kLanesXYW, max0, min0, max1, min1);
 }
 
 void mgAddVector(float *vector, float *add) {
     for (int i = 0; i < 4; i++) {
-        vector[i] += add[i];
+        vector[i] = vector[i] + add[i];
     }
 }
 
 void mgSubVector(float *vector, float *sub) {
     for (int i = 0; i < 4; i++) {
-        vector[i] -= sub[i];
+        vector[i] = vector[i] - sub[i];
     }
 }
 
+void mgNormalizeVector(float *out, float *in, float length) {
+    sceVu0FVECTOR unit;
+
+    sceVu0Normalize(unit, in);
+    sceVu0ScaleVector(out, unit, length);
+}
+
 void mgVectorMin(float *min, float *a, float *b) {
-    vu0::Min(min, a, b);
+    float r[4];
+    for (int i = 0; i < 4; i++) {
+        r[i] = vu0::Min(a[i], b[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        min[i] = r[i];
+    }
 }
 
 void mgVectorMin(float *min, float *a, float *b, float *c, float *d) {
     float r[4];
-
-    vu0::Min(r, a, b);
-    vu0::Min(r, r, c);
-    vu0::Min(min, r, d);
+    for (int i = 0; i < 4; i++) {
+        r[i] = vu0::Min(vu0::Min(vu0::Min(a[i], b[i]), c[i]), d[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        min[i] = r[i];
+    }
 }
 
 void mgVectorMaxMin(float *max, float *min, float *a, float *b) {
     float hi[4];
     float lo[4];
-
-    vu0::Max(hi, a, b);
-    vu0::Min(lo, a, b);
-    vu0::Copy(max, hi);
-    vu0::Copy(min, lo);
+    for (int i = 0; i < 4; i++) {
+        hi[i] = vu0::Max(a[i], b[i]);
+        lo[i] = vu0::Min(a[i], b[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        max[i] = hi[i];
+        min[i] = lo[i];
+    }
 }
 
 void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c) {
     float hi[4];
     float lo[4];
-
-    vu0::Max(hi, a, b);
-    vu0::Min(lo, a, b);
-    vu0::Max(hi, hi, c);
-    vu0::Min(lo, lo, c);
-    vu0::Copy(max, hi);
-    vu0::Copy(min, lo);
+    for (int i = 0; i < 4; i++) {
+        hi[i] = vu0::Max(vu0::Max(a[i], b[i]), c[i]);
+        lo[i] = vu0::Min(vu0::Min(a[i], b[i]), c[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        max[i] = hi[i];
+        min[i] = lo[i];
+    }
 }
 
 void mgVectorMaxMin(float *max, float *min, float *a, float *b, float *c, float *d) {
     float hi[4];
     float lo[4];
-
-    vu0::Max(hi, a, b);
-    vu0::Min(lo, a, b);
-    vu0::Max(hi, hi, c);
-    vu0::Min(lo, lo, c);
-    vu0::Max(hi, hi, d);
-    vu0::Min(lo, lo, d);
-    vu0::Copy(max, hi);
-    vu0::Copy(min, lo);
+    for (int i = 0; i < 4; i++) {
+        hi[i] = vu0::Max(vu0::Max(vu0::Max(a[i], b[i]), c[i]), d[i]);
+        lo[i] = vu0::Min(vu0::Min(vu0::Min(a[i], b[i]), c[i]), d[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        max[i] = hi[i];
+        min[i] = lo[i];
+    }
 }
 
-// Both corners take part in both results, so a box that has grown past its own
-// min still bounds correctly.
 void mgBoxMaxMin(mgVu0FBOX *box, mgVu0FBOX *other) {
     float hi[4];
     float lo[4];
-
-    vu0::Max(hi, box->max, box->min);
-    vu0::Min(lo, box->max, box->min);
-    vu0::Max(hi, hi, other->max);
-    vu0::Min(lo, lo, other->max);
-    vu0::Max(hi, hi, other->min);
-    vu0::Min(lo, lo, other->min);
-    vu0::Copy(box->max, hi);
-    vu0::Copy(box->min, lo);
+    for (int i = 0; i < 4; i++) {
+        const float a = box->max[i];
+        const float b = box->min[i];
+        hi[i] = vu0::Max(vu0::Max(vu0::Max(a, b), other->max[i]), other->min[i]);
+        lo[i] = vu0::Min(vu0::Min(vu0::Min(a, b), other->max[i]), other->min[i]);
+    }
+    for (int i = 0; i < 4; i++) {
+        box->max[i] = hi[i];
+        box->min[i] = lo[i];
+    }
 }
 
-// Retail stores w from a register vopmsub never writes; nothing reads it, so it is zeroed.
 void mgPlaneNormal(float *normal, float *v0, float *v1, float *v2) {
-    float e0[4] = {v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2], 0.0f};
-    float e1[4] = {v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2], 0.0f};
-    float r[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
-    vu0::Cross(r, e0, e1);
-    vu0::Copy(normal, r);
+    // Retail stores vf12 whole, but only xyz is computed, so its w is whatever the register
+    // held before. That value is not recoverable; normal[3] is left as it was.
+    float a[3];
+    float b[3];
+    for (int i = 0; i < 3; i++) {
+        a[i] = v1[i] - v0[i];
+        b[i] = v2[i] - v0[i];
+    }
+    const float n[3] = {
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    };
+    for (int i = 0; i < 3; i++) {
+        normal[i] = n[i];
+    }
 }
 
 float mgDistVector(float *vector) {
-    return vu0::Sqrt(vu0::LengthSquared(vector));
+    return vu0::Sqrt(squared_sum3(vector[0], vector[1], vector[2]));
 }
 
-// The horizontal length leaves y out: the unit rotates x onto z and adds the
-// two squares, (x*x) + (z*z).
 float mgDistVectorXZ(float *vector) {
     return vu0::Sqrt(vector[0] * vector[0] + vector[2] * vector[2]);
 }
 
 float mgDistVector2(float *vector) {
-    return vu0::LengthSquared(vector);
+    return squared_sum3(vector[0], vector[1], vector[2]);
 }
 
 float mgDistVector(float *a, float *b) {
-    float d[4] = {b[0] - a[0], b[1] - a[1], b[2] - a[2], 0.0f};
-
-    return vu0::Sqrt(vu0::LengthSquared(d));
+    return vu0::Sqrt(squared_sum3(b[0] - a[0], b[1] - a[1], b[2] - a[2]));
 }
 
 float mgDistVectorXZ(float *a, float *b) {
-    float x = b[0] - a[0];
-    float z = b[2] - a[2];
-
-    return vu0::Sqrt(x * x + z * z);
+    const float dx = b[0] - a[0];
+    const float dz = b[2] - a[2];
+    return vu0::Sqrt(dx * dx + dz * dz);
 }
 
 float mgDistVector2(float *a, float *b) {
-    float d[4] = {b[0] - a[0], b[1] - a[1], b[2] - a[2], 0.0f};
-
-    return vu0::LengthSquared(d);
+    return squared_sum3(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
 }
 
 float mgDistVectorXZ2(float *a, float *b) {
-    float x = b[0] - a[0];
-    float z = b[2] - a[2];
-
-    return x * x + z * z;
+    const float dx = b[0] - a[0];
+    const float dz = b[2] - a[2];
+    return dx * dx + dz * dz;
 }
 
 void mgUnitMatrix(float (*matrix)[4]) {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            matrix[i][j] = i == j ? 1.0f : 0.0f;
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 4; col++) {
+            matrix[row][col] = (row == col) ? 1.0f : 0.0f;
         }
     }
 }
 
 void mgZeroMatrix(float (*matrix)[4]) {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            matrix[i][j] = 0.0f;
+    for (int row = 0; row < 4; row++) {
+        for (int col = 0; col < 4; col++) {
+            matrix[row][col] = 0.0f;
         }
     }
 }
 
-// product[i][j] = sum over k of left[i][k] * right[k][j]: right's columns are
-// each transformed by left, and the product may alias either input.
+void MulMatrix3(float (*matrix)[4], float (*second)[4], float (*third)[4]) {
+    float m[4][4];
+    float t[4][4];
+    copy_matrix(m, matrix);
+    mat_mul(t, second, m);
+    mat_mul(m, third, t);
+    copy_matrix(matrix, m);
+}
+
 void mgMulMatrix(float (*product)[4], float (*left_matrix)[4], float (*right_matrix)[4]) {
+    // Product is right * left: callers such as mg_drawenv and mg_frame depend on this order.
+    float l[4][4];
     float r[4][4];
-
-    for (int i = 0; i < 4; i++) {
-        vu0::Apply(r[i], left_matrix, right_matrix[i]);
-    }
-    for (int i = 0; i < 4; i++) {
-        vu0::Copy(product[i], r[i]);
-    }
+    copy_matrix(l, left_matrix);
+    copy_matrix(r, right_matrix);
+    float p[4][4];
+    mat_mul(p, r, l);
+    copy_matrix(product, p);
 }
 
-// The unit's inverse: the cofactors of the upper 3x3 over its determinant, then
-// the translation carried back through the result. It is not a rigid-transform
-// inverse, so a scaled or sheared matrix inverts whole. Both the determinant and
-// the cofactors accumulate in the unit's order; a singular matrix divides to the
-// largest float rather than an infinity.
 void mgInversMatrix(float (*inverse)[4], float (*matrix)[4]) {
-    float r[4][4];
-    float det;
-    float q;
+    float m[4][4];
+    copy_matrix(m, matrix);
+    const float *a = m[0];
+    const float *b = m[1];
+    const float *c = m[2];
+    const float *d = m[3];
 
-    r[0][0] = matrix[1][1] * matrix[2][2] - matrix[2][1] * matrix[1][2];
-    r[0][1] = matrix[2][1] * matrix[0][2] - matrix[0][1] * matrix[2][2];
-    r[0][2] = matrix[0][1] * matrix[1][2] - matrix[1][1] * matrix[0][2];
-    r[1][0] = matrix[1][2] * matrix[2][0] - matrix[2][2] * matrix[1][0];
-    r[1][1] = matrix[2][2] * matrix[0][0] - matrix[0][2] * matrix[2][0];
-    r[1][2] = matrix[0][2] * matrix[1][0] - matrix[1][2] * matrix[0][0];
-    r[2][0] = matrix[1][0] * matrix[2][1] - matrix[2][0] * matrix[1][1];
-    r[2][1] = matrix[2][0] * matrix[0][1] - matrix[0][0] * matrix[2][1];
-    r[2][2] = matrix[0][0] * matrix[1][1] - matrix[1][0] * matrix[0][1];
+    // Retail's accumulation order; the determinant's rounding depends on it.
+    float acc = a[0] * b[1] * c[2];
+    acc = acc + c[0] * a[1] * b[2];
+    acc = acc + b[0] * c[1] * a[2];
+    acc = acc - a[0] * c[1] * b[2];
+    acc = acc - b[0] * a[1] * c[2];
+    const float det = acc - c[0] * b[1] * a[2];
+    const float q = vu0::Div(1.0f, det);
 
-    det = matrix[0][0] * matrix[1][1] * matrix[2][2];
-    det = det + matrix[2][0] * matrix[0][1] * matrix[1][2];
-    det = det + matrix[1][0] * matrix[2][1] * matrix[0][2];
-    det = det - matrix[0][0] * matrix[2][1] * matrix[1][2];
-    det = det - matrix[1][0] * matrix[0][1] * matrix[2][2];
-    det = det - matrix[2][0] * matrix[1][1] * matrix[0][2];
+    const float *p[3] = {b, c, a};
+    const float *s[3] = {c, a, b};
+    float rows[3][3];
+    for (int k = 0; k < 3; k++) {
+        rows[0][k] = p[k][1] * s[k][2] - p[k][2] * s[k][1];
+        rows[1][k] = p[k][2] * s[k][0] - p[k][0] * s[k][2];
+        rows[2][k] = p[k][0] * s[k][1] - p[k][1] * s[k][0];
+    }
 
-    q = vu0::Div(1.0f, det);
-
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            r[i][j] = vu0::Mul(r[i][j], q);
+    float out[4][4];
+    for (int r = 0; r < 3; r++) {
+        for (int k = 0; k < 3; k++) {
+            out[r][k] = vu0::Sat((0.0f + rows[r][k]) * q);
         }
-        r[i][3] = 0.0f;
+        out[r][3] = vu0::Sat(0.0f * q);
     }
 
-    for (int i = 0; i < 3; i++) {
-        r[3][i] = -(r[0][i] * matrix[3][0] + r[1][i] * matrix[3][1] + r[2][i] * matrix[3][2]);
+    for (int k = 0; k < 3; k++) {
+        float t = vu0::Sat(out[0][k] * d[0]);
+        t = vu0::Sat(t + vu0::Sat(out[1][k] * d[1]));
+        t = vu0::Sat(t + vu0::Sat(out[2][k] * d[2]));
+        out[3][k] = 0.0f - t;
     }
-    r[3][3] = 1.0f;
+    out[3][3] = 1.0f;
 
-    for (int i = 0; i < 4; i++) {
-        vu0::Copy(inverse[i], r[i]);
-    }
+    copy_matrix(inverse, out);
 }
 
-// The unit composes x, then y, then z: (rotation_z * rotation_y) * rotation_x.
-PORT_OVERRIDE void mgRotMatrixXYZ(float (*matrix)[4], float *rotation) {
-    sceVu0FMATRIX rotate_x;
-    sceVu0FMATRIX rotate_y;
-
-    mgRotMatrixX(rotate_x, rotation[0]);
-    mgRotMatrixY(rotate_y, rotation[1]);
-    mgRotMatrixZ(matrix, rotation[2]);
-    MulMatrix3(matrix, rotate_y, rotate_x);
-}
-
-// The loop is a do-while on count - 1, so a count below one still transforms one
-// vector, as retail does.
 void mgApplyMatrixN(float (*out)[4], float (*matrix)[4], float (*in)[4], int count) {
-    int i = 0;
-
-    do {
-        vu0::Apply(out[i], matrix, in[i]);
-        i++;
-    } while (i < count);
+    // Retail's do-while touches element 0 (and 1 for the bounds variants) even for count < 1; the port touches nothing outside count.
+    if (count < 1) {
+        return;
+    }
+    float m[4][4];
+    copy_matrix(m, matrix);
+    for (int i = 0; i < count; i++) {
+        const float v[4] = {in[i][0], in[i][1], in[i][2], in[i][3]};
+        vu0::Transform(out[i], m, v);
+    }
 }
 
-// The first vector is transformed ahead of the loop and the loop is a do-while on
-// count - 2, so a count below two still transforms two vectors, as retail does.
-void mgApplyMatrixN_MaxMin(float (*out)[4], float (*matrix)[4], float (*in)[4], int count, float *max, float *min) {
+void mgApplyMatrixN_MaxMin(float (*out)[4], float (*matrix)[4], float (*in)[4], int count,
+                           float *max, float *min) {
+    // Retail's do-while touches element 0 (and 1 for the bounds variants) even for count < 1; the port touches nothing outside count.
+    if (count < 1) {
+        return;
+    }
+    float m[4][4];
+    copy_matrix(m, matrix);
+
+    float v0[4];
+    {
+        const float v[4] = {in[0][0], in[0][1], in[0][2], in[0][3]};
+        vu0::Transform(v0, m, v);
+        for (int k = 0; k < 4; k++) {
+            out[0][k] = v0[k];
+        }
+    }
     float hi[4];
     float lo[4];
-    int i;
-    int remaining;
+    for (int k = 0; k < 4; k++) {
+        hi[k] = add_vf0x(v0[k]);
+        lo[k] = add_vf0x(v0[k]);
+    }
 
-    vu0::Apply(out[0], matrix, in[0]);
-    vu0::Copy(hi, out[0]);
-    vu0::Copy(lo, out[0]);
+    for (int i = 1; i < count; i++) {
+        const float v[4] = {in[i][0], in[i][1], in[i][2], in[i][3]};
+        float r[4];
+        vu0::Transform(r, m, v);
+        for (int k = 0; k < 4; k++) {
+            out[i][k] = r[k];
+            hi[k] = vu0::Max(hi[k], r[k]);
+            lo[k] = vu0::Min(lo[k], r[k]);
+        }
+    }
 
-    i = 1;
-    remaining = count - 2;
-    do {
-        vu0::Apply(out[i], matrix, in[i]);
-        vu0::Max(hi, hi, out[i]);
-        vu0::Min(lo, lo, out[i]);
-        i++;
-        remaining--;
-    } while (remaining >= 0);
-
-    vu0::Copy(max, hi);
-    vu0::Copy(min, lo);
+    for (int k = 0; k < 4; k++) {
+        max[k] = hi[k];
+        min[k] = lo[k];
+    }
 }
 
-// The unit loads the second vector into its bounds before the loop tests the run's
-// length, and the loop compares it again on its first pass, so a run shorter than
-// two still bounds the vector after the first.
 void mgVectorMinMaxN(float *max, float *min, float (*vectors)[4], int count) {
+    // Retail's do-while touches element 0 (and 1 for the bounds variants) even for count < 1; the port touches nothing outside count.
+    if (count < 1) {
+        return;
+    }
     float hi[4];
     float lo[4];
-    int last = count - 1;
-
-    if (last < 1) {
-        last = 1;
+    for (int k = 0; k < 4; k++) {
+        hi[k] = vectors[0][k];
+        lo[k] = vectors[0][k];
     }
-
-    vu0::Copy(hi, vectors[0]);
-    vu0::Copy(lo, vectors[0]);
-
-    for (int i = 1; i <= last; i++) {
-        vu0::Max(hi, hi, vectors[i]);
-        vu0::Min(lo, lo, vectors[i]);
+    for (int i = 1; i < count; i++) {
+        for (int k = 0; k < 4; k++) {
+            hi[k] = vu0::Max(hi[k], vectors[i][k]);
+            lo[k] = vu0::Min(lo[k], vectors[i][k]);
+        }
     }
-
-    vu0::Copy(max, hi);
-    vu0::Copy(min, lo);
+    for (int k = 0; k < 4; k++) {
+        max[k] = hi[k];
+        min[k] = lo[k];
+    }
 }

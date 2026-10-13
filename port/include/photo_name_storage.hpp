@@ -22,6 +22,13 @@ inline std::vector<u_long128> &backing_storage() {
     return storage;
 }
 
+inline mgCMemory *&active_arena_slot() {
+    static mgCMemory *arena = nullptr;
+    return arena;
+}
+
+inline mgCMemory *active_arena() { return active_arena_slot(); }
+
 [[noreturn]] inline void fail(const char *message, int count) {
     std::fprintf(stderr, "photo-name storage: %s (record count %d)\n", message, count);
     std::abort();
@@ -65,6 +72,7 @@ inline void prepare(mgCMemory *arena, int count, std::size_t record_size) {
     }
     std::snprintf(arena->name, sizeof(arena->name), "%s", "photo-names");
     arena->stSetBuffer(storage.data(), static_cast<int>(storage.size()));
+    active_arena_slot() = arena;
 }
 
 inline u_long128 *allocate_records(mgCMemory *arena, int blocks, int count) {

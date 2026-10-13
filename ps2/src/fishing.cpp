@@ -725,7 +725,7 @@ int stack_size;
  * Aligned address of the fishing loading thread stack.
  *
  */
-static int ThreadStack;
+static uptr ThreadStack;
 
 /**
  *
@@ -1324,7 +1324,7 @@ int CreateLoadThread(mgCMemory *memory) {
 
     stack_size = 0x40000;
 
-    ThreadStack = (int) memory->Alloc(0x4001);
+    ThreadStack = (uptr) memory->Alloc(0x4001);
     misalignment = ThreadStack & 0x3F;
 
     if (misalignment != 0) {

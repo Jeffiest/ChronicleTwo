@@ -1,10 +1,58 @@
 #include "common.h"
 
+#include <cmath>
+#include <cstring>
+
 #include <libvu0.h>
 
 #include "mg_drawenv.hpp"
 #include "mg_frame.hpp"
 #include "mg_math.hpp"
+#include "vu0_lanes.hpp"
+
+namespace {
+
+float frame_cull_corners[8][4];
+
+void FrameCullBox(const float (*corners)[4], float *out_max, float *out_min) {
+    for (int lane = 0; lane < 4; lane++) {
+        float hi = corners[0][lane];
+        float lo = hi;
+        for (int corner = 1; corner < 8; corner++) {
+            hi = vu0::Max(hi, corners[corner][lane]);
+            lo = vu0::Min(lo, corners[corner][lane]);
+        }
+        out_max[lane] = hi;
+        out_min[lane] = lo;
+    }
+}
+
+} // namespace
+
+void test1(float (*corners)[4], float (*screen)[4], float (*matrix)[4], float *out_max, float *out_min) {
+    float product[4][4];
+    float transformed[8][4];
+    for (int row = 0; row < 4; row++) {
+        vu0::Transform(product[row], screen, matrix[row]);
+    }
+    for (int corner = 0; corner < 8; corner++) {
+        vu0::Transform(transformed[corner], product, corners[corner]);
+    }
+    std::memcpy(frame_cull_corners, transformed, sizeof(transformed));
+    FrameCullBox(frame_cull_corners, out_max, out_min);
+}
+
+void test2(float *out_max, float *out_min) {
+    float divided[8][4];
+    for (int corner = 0; corner < 8; corner++) {
+        const float reciprocal = vu0::Div(1.0f, std::fabs(frame_cull_corners[corner][3]));
+        divided[corner][0] = vu0::Sat(frame_cull_corners[corner][0] * reciprocal);
+        divided[corner][1] = vu0::Sat(frame_cull_corners[corner][1] * reciprocal);
+        divided[corner][2] = frame_cull_corners[corner][2];
+        divided[corner][3] = frame_cull_corners[corner][3];
+    }
+    FrameCullBox(divided, out_max, out_min);
+}
 
 // mgCFrame builds its local and world matrices with VU0 assembly, which PORT leaves out; the
 // port's mg_frame.cpp replacement (test1/test2) did not fill these four in, so below PORT every

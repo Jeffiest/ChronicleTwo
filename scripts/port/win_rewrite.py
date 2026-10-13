@@ -36,7 +36,7 @@ RULES = {
     # COFF reports a duplicate. Left inline, the definitions agree.
     "src/dng_debug.cpp": [
         (r"^#define DNG_DEBUG_SOURCE$", "", 1),
-        (r"^void CTreasureBox::Initialize\(\) \{\n(?:    .*\n)*?\}\n", blank, 1),
+        (r"^(?:inline )?void CTreasureBox::Initialize\(\) \{\n(?:    .*\n)*?\}\n", blank, 1),
     ],
     "src/dngmenu.cpp": [
         (r"^#define MES_WINDOW_OUT_OF_LINE_INIT$", "", 1),
@@ -58,23 +58,8 @@ RULES = {
         (r"%lu", "%llu", 1),
     ],
     "src/userdata.cpp": [(U64, "u64", 2)],
-    # An address stored in a 32-bit field: a pointer does not fit unsigned long here.
-    "src/water.cpp": [(r"\(u_int\) \(unsigned long\) base", "(u_int) (u64) base", 2)],
     "include/crandom.hpp": [(r"^float abs\(float value\);$", "#include <stdlib.h>", 1)],
-    "include/dbg_font.hpp": [(r"\bunsigned long(\s+prev_serno;)", r"u64\1", 1)],
-    "include/menuchr.hpp": [(U64, "u64", 1)],
-    "include/sce/eekernel.h": [
-        # GoogleTest imports Win32 CreateThread; the game SDK entry needs its own COFF symbol.
-        (r"int CreateThread\(struct ThreadParam \*param\);",
-         'int CreateThread(struct ThreadParam *param) __asm__("dc_CreateThread");', 1),
-    ],
-    "include/mg_drawprim.hpp": [(U64, "u64", 2)],
-    "include/movie.hpp": [
-        (r"^(\s+)long(\s+)(pts|dts|total_bytes);", r"\1s64\2\3;", 3),
-        (r"\blong pts, long dts\b", "s64 pts, s64 dts", 1),
-    ],
-    "include/sce/libmpeg.h": [(r"^(\s+)long(\s+)(pts2nd|dts2nd|pts|dts);", r"\1s64\2\3;", 8)],
-    "include/userdata.hpp": [(U64, "u64", 3)],
+
 }
 
 

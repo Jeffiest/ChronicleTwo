@@ -45,6 +45,7 @@ FUNCTION_POINTER = re.compile(r"[^(]*\(\s*\*\s*([A-Za-z_]\w*)\s*(?:\[[^\]]*\]\s*
 BUILTIN = {"int", "char", "short", "long", "float", "double", "void", "bool", "unsigned", "signed", "wchar_t"}
 NOT_A_TYPE = {"const", "volatile", "register", "struct", "class", "union", "enum"}
 INLINE = re.compile(r"\b(?:__)?inline(?:__)?\b")
+LONG = re.compile(r"\blong(?:\s+long)?(?:\s+int)?\b")
 CONDITIONAL = "a preprocessor directive before the definition's body"
 
 
@@ -218,9 +219,7 @@ def parameter_type(parameter):
         (" " if i and re.match(r"\w", word) and re.match(r"\w", words[i - 1][-1]) else "") + word
         for i, word in enumerate(words)
     )
-    # u_long is unsigned long where the PS2 and Linux have it and a 64-bit type on Windows, where
-    # win_rewrite.py rewrites ps2/src's spelling: the port's definition has to be able to use either.
-    return re.sub(r"\bunsigned long\b(?! long)", "u_long", spelled)
+    return spelled
 
 
 def parameter_types(parameters):
@@ -231,6 +230,11 @@ def parameter_types(parameters):
             types.append(parameter_type(parameters[start:i]))
             start = i + 1
     return [] if types in ([""], ["void"]) else types
+
+
+def canonical(name, long_is_64):
+    # A 64-bit port spells the type long long where ps2/src spells long; compare those signatures alike.
+    return LONG.sub("long", name) if long_is_64 else name
 
 
 class Definition:
@@ -351,21 +355,22 @@ def check_compiled(code, found, defined):
                             "the port may not compile")
 
 
-def overridden(text, overrides, renames=None, defined=()):
+def overridden(text, overrides, renames=None, defined=(), long_is_64=False):
     """The (start, definition) of each definition at file scope of a name in overrides, given the
     macros the port defines."""
-    found = list(definitions(text, overrides, renames))
+    found = list(definitions(text, overrides, renames, long_is_64))
     if found:
         check_compiled(mask(text), found, set(defined))
     return found
 
 
-def definitions(text, overrides, renames=None):
+def definitions(text, overrides, renames=None, long_is_64=False):
     """Yields (start, definition) for each definition at file scope of a name in overrides."""
     # A spliced line could join a name the scan below would not see.
     for number, (line, directive) in enumerate(directive_lines(text), 1):
         if directive is None and line.rstrip("\r").endswith("\\"):
             raise Error(f"{number}: a line continued with a backslash outside a preprocessor directive")
+    overrides = {canonical(name, long_is_64) for name in overrides}
     renames = renames or {}
     # The last word of each name finds the places to look at; the definition there decides.
     words = {re.match(r"operator|\w+", name.split("(")[0].split("::")[-1].lstrip("~"))[0] for name in overrides}
@@ -413,7 +418,9 @@ def definitions(text, overrides, renames=None):
             definition = None
         # A function the port gives C linkage is listed by its name alone, whatever ps2/src's own
         # definition spells; its header declares the linkage.
-        if definition is None or definition.static or not {definition.name, definition.spelled} & overrides:
+        keys = set() if definition is None else {canonical(definition.name, long_is_64),
+                                                 canonical(definition.spelled, long_is_64)}
+        if definition is None or definition.static or not keys & overrides:
             # The link fails on a definition left in by mistake, unless it is inline.
             head = "".join(line for line, _ in head)
             # A definition that reads as a function of another name is not the one replaced, whatever
@@ -431,10 +438,10 @@ def definitions(text, overrides, renames=None):
         yield start, definition
 
 
-def strip(text, overrides, renames=None, defined=()):
+def strip(text, overrides, renames=None, defined=(), long_is_64=False):
     """Returns text without its definitions of the names in overrides."""
     out, last = [], 0
-    for start, definition in overridden(text, overrides, renames, defined):
+    for start, definition in overridden(text, overrides, renames, defined, long_is_64):
         end = start + definition.length
         newlines = text.count("\n", start, end) - definition.replacement.count("\n")
         out.append(text[last:start] + definition.replacement + "\n" * newlines)
@@ -462,6 +469,65 @@ def renames(stubs):
     return dict(RENAME.findall(read(stubs))) if stubs and stubs.exists() else {}
 
 
+def override_entries(text):
+    """The entries of an overrides file, in its order, each once."""
+    return list(dict.fromkeys(entry for entry in text.split("\n") if entry))
+
+
+def strip_unit(source, overrides, renames_, defined, long_is_64):
+    """The text strip writes for a ps2/src unit, including its source-location marker."""
+    try:
+        stripped = strip(read(source), overrides, renames_, defined, long_is_64)
+    except Error as error:
+        raise Error(f"{source}:{error}") from None
+    return f'#line 1 "{source.resolve().as_posix()}"\n{stripped}'
+
+
+def analyse(text, overrides, renames_, defined, long_is_64):
+    """Return the override names and per-unit split selected by the normal strip matcher."""
+    try:
+        found = overridden(text, overrides, renames_, defined, long_is_64)
+    except Error as error:
+        return {"error": str(error), "names": [], "spelled": [], "split": []}
+    names = sorted({canonical(definition.name, long_is_64) for _, definition in found})
+    spelled = sorted({canonical(definition.spelled, long_is_64) for _, definition in found})
+    selected = set(names) | set(spelled)
+    return {"error": None, "names": names, "spelled": spelled,
+            "split": [entry for entry in overrides if canonical(entry, long_is_64) in selected]}
+
+
+def unit_key(parts):
+    import hashlib
+
+    digest = hashlib.sha256()
+    for part in parts:
+        digest.update(len(part).to_bytes(8, "big"))
+        digest.update(part)
+    return digest.hexdigest()
+
+
+def load_cache(path):
+    import json
+
+    try:
+        value = json.loads(read(pathlib.Path(path)))
+    except (OSError, ValueError, RecursionError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def cached_result(cache, unit, key):
+    entry = cache.get(unit)
+    if not isinstance(entry, dict) or entry.get("key") != key:
+        return None
+    result = entry.get("result")
+    if (isinstance(result, dict)
+            and all(isinstance(result.get(field), list) for field in ("names", "spelled", "split"))
+            and (result.get("error") is None or isinstance(result.get("error"), str))):
+        return result
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -474,14 +540,18 @@ def main():
     stripper.add_argument("--overrides", type=pathlib.Path, required=True)
     stripper.add_argument("--stubs", type=pathlib.Path, help="the unit's port/include/stubs header, for its renames")
     stripper.add_argument("--define", action="append", default=[], help="a macro the port defines")
+    stripper.add_argument("--long-is-64", action="store_true", help="match the port's long long to ps2/src's long")
     stripper.add_argument("source", type=pathlib.Path)
     stripper.add_argument("output", type=pathlib.Path)
     checker = commands.add_parser("check", help="fail if a listed name is defined by no ps2/src unit")
     checker.add_argument("--overrides", type=pathlib.Path, required=True)
     checker.add_argument("--stubs", type=pathlib.Path, required=True, help="port/include/stubs")
     checker.add_argument("--define", action="append", default=[], help="a macro the port defines")
+    checker.add_argument("--long-is-64", action="store_true", help="match the port's long long to ps2/src's long")
     checker.add_argument("ps2", type=pathlib.Path, help="ps2/src")
     checker.add_argument("-o", "--output", type=pathlib.Path, required=True, help="written when the check passes")
+    checker.add_argument("--split", type=pathlib.Path, help="DIR/<unit>.txt: each unit's own overrides entries")
+    checker.add_argument("--cache", type=pathlib.Path, help="JSON file of per-unit results, reused while unchanged")
     options = parser.parse_args()
     try:
         if options.command == "list":
@@ -497,32 +567,63 @@ def main():
             # Left alone when nothing changed, so that no ps2/src unit is rebuilt for it.
             write(options.output, "".join(name + "\n" for name in sorted(names)), if_changed=True)
             return 0
-        overrides = set(read(options.overrides).split("\n")) - {""}
+        overrides_text = read(options.overrides)
+        overrides = override_entries(overrides_text)
         if options.command == "strip":
-            try:
-                stripped = strip(read(options.source), overrides, renames(options.stubs), options.define)
-            except Error as error:
-                raise Error(f"{options.source}:{error}") from None
             # Left alone when unchanged, so that only the units a change reaches are recompiled.
-            write(options.output, f'#line 1 "{options.source.resolve().as_posix()}"\n{stripped}', if_changed=True)
+            write(options.output, strip_unit(options.source, overrides, renames(options.stubs), options.define,
+                                             options.long_is_64), if_changed=True)
             return 0
-        unmatched = set(overrides)
+        units = {}
         for source in sorted(options.ps2.rglob("*.cpp")):
             # Skips temporary files a build tool leaves beside the sources.
-            if source.name.startswith("tmp"):
-                continue
+            if not source.name.startswith("tmp"):
+                units[source.relative_to(options.ps2).as_posix()] = source
+        old = load_cache(options.cache) if options.cache else {}
+        overrides_bytes = overrides_text.encode("utf-8", errors="surrogateescape")
+        # A parser change invalidates cached results because it may change what a unit means.
+        script = pathlib.Path(__file__).read_bytes() if options.cache else b""
+        results, failure = {}, None
+        for unit, source in units.items():
             stubs = options.stubs / source.relative_to(options.ps2).with_suffix(".hpp")
+            key = None
             try:
-                found = overridden(read(source), overrides, renames(stubs), options.define)
+                data = source.read_bytes()
+                stub_data = stubs.read_bytes() if stubs.exists() else b""
+                if options.cache:
+                    key = unit_key([data, stub_data, overrides_bytes, repr(sorted(options.define)).encode(),
+                                    b"1" if options.long_is_64 else b"0", script])
+                result = cached_result(old, unit, key) if options.cache else None
+                if result is None:
+                    result = analyse(data.decode("utf-8", errors="surrogateescape"), overrides, renames(stubs),
+                                     options.define, options.long_is_64)
             except Error as error:
-                raise Error(f"{source}:{error}") from None
-            for _, definition in found:
-                unmatched -= {definition.name, definition.spelled}
+                result = {"error": str(error), "names": [], "spelled": [], "split": []}
+            results[unit] = {"key": key, "result": result}
+            if result["error"] is not None:
+                failure = Error(f"{source}:{result['error']}")
+                break
+        if options.cache:
+            import json
+
+            kept = {unit: old[unit] for unit in units if unit not in results and unit in old}
+            kept.update(results)
+            write(options.cache, json.dumps(kept, indent=1, sort_keys=True) + "\n", if_changed=True)
+        if failure is not None:
+            raise failure
+        matched = set()
+        for entry in results.values():
+            matched |= set(entry["result"]["names"]) | set(entry["result"]["spelled"])
+        unmatched = {name for name in overrides if canonical(name, options.long_is_64) not in matched}
         if unmatched:
             raise Error("".join(
                 f"{name}: tagged PORT_OVERRIDE in port/src, but no ps2/src unit defines it under that signature\n"
                 for name in sorted(unmatched)).rstrip())
-        write(options.output, "")
+        if options.split is not None:
+            for unit, entry in results.items():
+                write(options.split / f"{unit}.txt", "".join(line + "\n" for line in entry["result"]["split"]),
+                      if_changed=True)
+        write(options.output, "", if_changed=options.split is not None or options.cache is not None)
     except Error as error:
         sys.exit(str(error))
     return 0

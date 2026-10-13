@@ -7,6 +7,7 @@
 #include "gfx/gfx.hpp"
 #include "mg_math.hpp"
 #include "mglib.hpp"
+#include "viewport_extent.hpp"
 
 /**
  * The draw environment and render state on the host.
@@ -160,10 +161,15 @@ PORT_OVERRIDE mgCDrawEnv::mgCDrawEnv() {
 }
 
 PORT_OVERRIDE mgCDrawEnv &mgCDrawEnv::operator=(mgCDrawEnv &source) {
-    ((u_long128 *) this)[0] = ((u_long128 *) &source)[0];
-    ((u_long128 *) this)[1] = ((u_long128 *) &source)[1];
-    ((u_long128 *) this)[2] = ((u_long128 *) &source)[2];
-    ((u_long128 *) this)[3] = ((u_long128 *) &source)[3];
+    // mgCDrawEnv is eight-byte aligned, so quadword casts can emit aligned SIMD
+    // stores to an ordinary stack instance and fault in effects such as fire.
+    giftag = source.giftag;
+    test = source.test;
+    test_addr = source.test_addr;
+    zbuf = source.zbuf;
+    zbuf_addr = source.zbuf_addr;
+    alpha = source.alpha;
+    alpha_addr = source.alpha_addr;
     return *this;
 }
 
@@ -253,6 +259,12 @@ PORT_OVERRIDE void mgRENDER_INFO::Initialize() {
 
 PORT_OVERRIDE void mgRENDER_INFO::SetRenderInfo(float projection, int width, int height, float near_dist,
                                   float far_dist, int zdepth, float aspect_y) {
+    const gfx::LogicalRect visible = gfx::VisibleLogicalRect(gfx::kMainTarget);
+    const mgport::ScreenExtent screen_extent = mgport::ScreenExtentForVisibleRect(
+        width, height, gfx::LogicalWidth(), gfx::LogicalHeight(), visible.w, visible.h);
+    width = screen_extent.width;
+    height = screen_extent.height;
+
     float z_range = 1.67e7f;
 
     switch (zdepth) {

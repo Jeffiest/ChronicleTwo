@@ -23,11 +23,14 @@ int main(int argc, char **argv) {
         LanguageCode = LANG_ENGLISH;
         InitCDFile();
         LoadFilePictureName();
+        auto *arena = port_photo_name_storage::active_arena();
+        if (arena == nullptr || arena->stack == nullptr)
+            return Fail("PAL photo-name loader did not bind its active arena");
         auto &storage = port_photo_name_storage::backing_storage();
         if (storage.size() != 731) return Fail("PAL record capacity differs from measured 294-record layout");
-        const auto begin = reinterpret_cast<std::uintptr_t>(storage.data());
-        const auto end = begin + storage.size() * sizeof(u_long128);
-        auto *records = reinterpret_cast<PIC_NAME_INFO *>(storage.data());
+        const auto begin = reinterpret_cast<std::uintptr_t>(arena->stack);
+        const auto end = begin + static_cast<std::size_t>(arena->stack_size) * sizeof(u_long128);
+        auto *records = reinterpret_cast<PIC_NAME_INFO *>(arena->stack);
         int found = 0;
         for (int i = 0; i < 294; ++i) {
             if (records[i].name == nullptr) continue;
@@ -60,12 +63,14 @@ int main(int argc, char **argv) {
         mgCMemory undersized;
         u_long128 storage[3]{};
         undersized.stSetBuffer(storage, 3);
+        undersized.lock = 1;
         port_photo_name_storage::allocate_records(&undersized, 1, 1);
     }
     if (argc == 2 && std::strcmp(argv[1], "required-name-failure") == 0) {
         mgCMemory undersized;
         u_long128 storage[1]{};
         undersized.stSetBuffer(storage, 1);
+        undersized.lock = 1;
         char name[] = "Name";
         port_photo_name_storage::copy_required_name(name, &undersized, 1);
     }
@@ -73,12 +78,14 @@ int main(int argc, char **argv) {
     mgCMemory arena;
     port_photo_name_storage::prepare(&arena, 294, sizeof(HostPhotoNameInfo));
     auto &storage = port_photo_name_storage::backing_storage();
-    if (arena.stack_size != 584 + ((294 * (sizeof(HostPhotoNameInfo) - 8) + 15) / 16))
+    const int retail_and_host_blocks = 584 + ((294 * (sizeof(HostPhotoNameInfo) - 8) + 15) / 16);
+    if (storage.size() != static_cast<std::size_t>(retail_and_host_blocks) ||
+        arena.stack_size < retail_and_host_blocks)
         return Fail("capacity does not preserve retail budget plus host record growth");
     if (std::strcmp(arena.name, "photo-names") != 0)
         return Fail("arena has no descriptive owner name");
 
-    auto *tail_words = reinterpret_cast<std::uint64_t *>(&storage.back());
+    auto *tail_words = reinterpret_cast<std::uint64_t *>(&arena.stack[arena.stack_size - 1]);
     tail_words[0] = 0xA55AA55AA55AA55AULL;
     const int record_blocks = static_cast<int>((294 * sizeof(HostPhotoNameInfo) + 15) / 16);
     auto *records = reinterpret_cast<HostPhotoNameInfo *>(port_photo_name_storage::allocate_records(
@@ -97,11 +104,11 @@ int main(int argc, char **argv) {
         return Fail("allocation overwrote the tail canary");
 
     auto *old_owner = records[0].name;
-    mgCMemory next_load;
-    port_photo_name_storage::prepare(&next_load, 294, sizeof(HostPhotoNameInfo));
     if (std::strcmp(old_owner, "Name 000") != 0)
         return Fail("backing storage did not remain owned after loader return");
-    if (next_load.stack != storage.data() || next_load.stack_used != 0)
+    mgCMemory next_load;
+    port_photo_name_storage::prepare(&next_load, 294, sizeof(HostPhotoNameInfo));
+    if (next_load.stack != arena.stack || next_load.stack_used != 0)
         return Fail("repeated load did not rebind and reset the arena");
     std::puts("photo-name storage standalone passed");
     return 0;

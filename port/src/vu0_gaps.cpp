@@ -117,13 +117,6 @@ int ClipBoxXZ(float *max_a, float *min_a, float *max_b, float *min_b) {
     return (status & vu0::kStickySign) == 0;
 }
 
-void mgNormalizeVector(float *out, float *in, float length) {
-    sceVu0FVECTOR unit;
-
-    sceVu0Normalize(unit, in);
-    sceVu0ScaleVector(out, unit, length);
-}
-
 int CheckHit(CollisionInfo *collision, float *from, float *to, float *hit, int closest, int mask) {
     float   point[4];
     float   poly_min[4];
@@ -406,12 +399,8 @@ int mgCFrame::GetDrawRect(mgVu0FBOX *rect, mgCDrawManager *manager) {
         // centre, and does not lie behind the near plane; it is then moved to screen coordinates.
         visible = 0;
 
-        float left = 0.5f * -mgScreenWidth;
-        float top = 0.5f * -mgScreenHeight;
-        float right = left + mgScreenWidth;
-        float bottom = top + mgScreenHeight;
-
-        if (rect_min[0] <= right && rect_max[0] >= left && rect_min[1] <= bottom && rect_max[1] >= top &&
+        if (rect_min[0] <= info->screen_box_max[0] && rect_max[0] >= info->screen_box_min[0] &&
+            rect_min[1] <= info->screen_box_max[1] && rect_max[1] >= info->screen_box_min[1] &&
             rect_max[3] >= info->clip_min[2]) {
             visible = 1;
             rect_min[0] += mgScreenWidth / 2;

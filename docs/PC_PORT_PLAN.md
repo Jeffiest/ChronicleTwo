@@ -1,11 +1,11 @@
 # PC port plan
 
-Current integration status (2026-10-11): this document retains the upstream Phase 1
-work-package baseline. The implemented Windows branch has progressed through the prologue
-and menu opening; Items model memory and combat attacks remain unresolved. See `PC.md`
-for current commands, `port/COMPATIBILITY_AUDIT.md` for enforcement coverage and
-`port/UPSTREAM_SYNC.md` for integration evidence. Phase 1 aborts and test counts below
-describe the upstream baseline, not the current executable.
+Current native integration status (2026-10-12): upstream master through `110f13c2`
+is integrated by merge `e96d5e18` on the Windows gameplay branch. Upstream baseline
+boot/stub statements below describe upstream, not a rollback of the native port. The
+Windows build, full CTest suite, native-VU gate, headless costume gate and fresh-config windowed launch pass.
+The opening reaches its first battle tutorial; first town and dungeon coverage remains
+open. See `docs/port/HANDOFF.md` for current runtime evidence and remaining work.
 
 This is the working plan for the native PC port of Dark Chronicle (PAL,
 `SCES_511.90`). It follows the shape of Chronicle's `docs/PC_PORT_PLAN.md`
@@ -14,12 +14,10 @@ two games agree. Keep it current: when a work package lands, record its
 status here and move the architectural facts into `docs/PC.md` (created by
 WP1.11).
 
-The plan is executed by orchestrators that delegate reading and writing to
-smaller agents. Every work package (WP) therefore names its files, its inputs,
-its acceptance commands and whether it may run beside other packages. A WP
-tagged **[mechanical]** is meant to be completed from its brief alone; one
-tagged **[decision]** needs architectural judgement and is written by the
-orchestrator or reviewed by it before and after.
+Each work package (WP) names its files, inputs, acceptance commands and whether
+it may run beside other packages. A WP tagged **[mechanical]** is meant to be
+completed from its brief alone; one tagged **[decision]** needs architectural
+judgement and review before and after implementation.
 
 ## 1. Goals and hard rules
 
@@ -76,19 +74,33 @@ orchestrator or reviewed by it before and after.
 
 ## 2. Where the port stands
 
-Phase 1 is done. `darkchronicle` builds with clang/lld, C++26, SDL3 and
-Vulkan 1.4 on Linux (container) and Windows (llvm-mingw). It opens a window
-or an offscreen surface, builds the shared renderer's 504 pipelines and
-aborts in `mgInit`'s `PS2_UNIMPLEMENTED` stub. The PS2 build still matches,
-and `docs/PC.md` describes the port.
+Phases 0-6 are done and Phase 7 (the sweep through the game) has started.
+`darkchronicle` builds with clang/lld, C++26, SDL3 and
+Vulkan 1.4 on Linux (container) and Windows (llvm-mingw), indexes `data/`
+(8751 files), places the game's memory above 4 GiB, and runs the retail
+`MainLoop` on the shared renderer, mixer and movie decoder through the
+language select, the logo movie, the title over its 3D map with its music
+and its attract loop (title and opening movie), New Game, and the costume
+screen up to "Confirm Max's costume?". Every game frame is a recorded display
+list rendered canonically, with interpolated display frames (bone palettes
+included) between ticks; HUD pieces anchor to the window's corners.
+Confirming the costume loads the opening event, and the repaired frame-tree traversal
+reaches the first battle tutorial. The built-in debug menu is unlocked by default; its
+direct route reaches Dungeon 2 Floor 1 loading, where event-point placement currently
+stalls before gameplay. Phase 7 continues with that dungeon-loading blocker and the
+broader first-town/dungeon sweep; the current acceptance boundary is recorded in
+`docs/port/HANDOFF.md`.
+The PS2 build still matches, and `docs/PC.md` describes the port;
+`docs/port/HANDOFF.md` is the working state and `docs/port/process/` the
+schedule and wave records.
 
-The Kazarov submodule (pinned at `ce459c1`) has `port_override.py`,
+The Kazarov submodule (pinned at `main`) has `port_override.py`,
 `include/kazarov/port.h` (`PORT_INIT/RETURN/FIX`, the empty `PORT_OVERRIDE`
 marker) and a container image with clang/lld 23, SDL3, Vulkan, Mesa
 lavapipe, glslang and GoogleTest. Since Phase 0, Kazarov holds the shared host code in
 `tools/kazarov/port/{gfx,audio,platform,sce,tests}` and
 `cmake/KazarovPort.cmake`, and Chronicle consumes it from there. ChronicleTwo and Chronicle pin Kazarov
-`ce459c1`.
+`main` (see `docs/port/HANDOFF.md` for the sha).
 
 Facts from the four surveys that shape the plan:
 
@@ -126,7 +138,9 @@ Facts from the four surveys that shape the plan:
 - **Depth.** PSMZ24, ZTST GEQUAL, near maps to ~1.67e7 and far to 0:
   reverse-Z, the convention Chronicle's renderer already implements.
 - **Data.** `DATA.HD4` is an array of 12-byte `{name_offset, size, sector}`
-  records (8,753 entries), names relative to the index start, `\` to `/`,
+  records (8,753 records: 8,751 files, one duplicate `wep_t/ws050_item.chr`
+  the game never reaches, and an empty terminator), names relative to the
+  index start, `\` to `/`,
   case-insensitive lookup; `DATA.DAT` is read by sector. Packs are 0x4C-byte
   `PACK_ENTRY` chains. `SOUND.DAT` (970 MB) and `SOUND.HD3` are streamed by
   `EZBGM.IRX` on the IOP; the EE never parses them, so their format is
@@ -889,9 +903,11 @@ behaviour is implemented; nothing from Chronicle is copied.
   spelled as declared (`memcard`, `mg_visual`); `mg_tanime.hpp` declaration
   order.
 - Windows: `--allow-multiple-definition` (header functions inline everywhere
-  but one unit), `-mno-constructor-aliases`, `index()` in `port.h`. Open: the
-  PS2 `CreateThread` stub shadows KERNEL32's import thunk; `mgSetPkTEX0`
-  stores through `unsigned long *`, 32-bit on Windows.
+  but one unit), `-mno-constructor-aliases`, `index()` in `port.h`. Both
+  open items closed in Phase 2: `eekernel.h`'s `CreateThread`,
+  `TerminateThread` and `GetThreadId` get `Ps2*` link names
+  (`header_fixups.py`), and `long64.py` makes `mgSetPkTEX0`'s `unsigned long`
+  64-bit on every host.
 - Verified: linux-x64 ctest 38/38 (5 skipped), including
   `Smoke.LaunchAbortsAtFirstHardwareCall`; windows-x64 builds, and the
   windowed run builds 504 pipelines and aborts in `mgInit`; its tests 45/45;
@@ -904,9 +920,9 @@ Phase 1 parallel groups: G1 = {1.5} (during phase 0); G2 = {1.1, 1.4, 1.7}
 ### Phase 2: native foundations before the first draw
 
 Goal: everything before the first draw is native: data, memory, timing,
-input glue, saves, VU0 math. The abort stays at `mgInit` (now
-`sceDmaReset` from the real sequence through `InitCDFile`, the arena,
-`SaveData`, pads); the unit tests exercise each replacement.
+input glue, saves, VU0 math. The abort stays in `mgInit` itself (its stub),
+reached through the real sequence through `InitCDFile`, the arena,
+`SaveData`, pads; the unit tests exercise each replacement.
 
 **WP2.1 VU0 math: mg_math [mechanical]** Replace the 32 guarded functions in
 `port/src/mg_math.cpp` with C++ reproducing the retail lane behaviour
@@ -985,9 +1001,73 @@ Parallel-safe. Size: ~700.
 cpp` overriding `MainLoop` with the retail sequence minus hardware: arena
 setup with `uintptr_t`, `SaveData.Initialize`, `GamePad__2.Init()`, then
 `mgInit` (still aborts), the per-frame loop with `ClockSyncV` for the debug
-pause spin. Acceptance: `darkchronicle --headless --data data` aborts at
-`sceDmaReset` after `InitCDFile` has indexed `data/` (log line); all phase 2
+pause spin. Acceptance: `darkchronicle --headless --data data` aborts in
+`mgInit` after `InitCDFile` has indexed `data/` (log line); all phase 2
 tests pass; PS2 build matches. Depends: 2.1-2.8. Size: ~400.
+
+**Phase 2 status: done.** Kazarov `main` is `a7674f4`; Chronicle `master`
+and ChronicleTwo `master` both pin it.
+- Kazarov `c5b74bc` (on `0b81463`, `c937490`): the fiber scheduler is the
+  only `eekernel_threads` family (`sce/stubs/eekernel_threads.cpp` removed;
+  `DIntr`/`EIntr` and the interrupt/DMAC handler stubs moved to the real
+  family); `ClockPumping()`; a thread switch inside `ClockPump` aborts;
+  `PathsReset` fixes `PathsXdg` in one process; `sceMcSeek`/`sceMcEnd`
+  declared C-linked for every game. Chronicle does not select the family.
+- Kazarov `a7674f4` (WP4.4a, early): `shaders/mesh_prog0.vert` implements
+  `Vu_prog0` from its spec (four directional lights in model space, unlit,
+  Phong under 0x008, four point lights under 0x010, vertex-colour
+  multiply/add, `__REF_SPHERE` matcap under 0x100, 32-slot skinning with
+  four weights, six-plane clip under the scissor flag, fog). Two mesh
+  families (static, skinned) are precompiled only under
+  `RendererConfig::prog0_meshes`; without it the 504 pipelines, their
+  indices and `mesh.vert`'s SPIR-V are unchanged. Deviation: a new shader
+  file instead of edits to `mesh.vert`, to keep Chronicle's SPIR-V
+  byte-identical. `MeshConstants` grows past its old end by `Prog0Constants`
+  (2,016 bytes).
+- WP2.1/2.2 (`vu0`): every guarded function in `mg_math`, `mg_frame`,
+  `gameutil`, `collision`, `editcoll`, `editmap2`, `mg_drawprim` audited
+  against the retail asm; shared lane rules in `port/src/vu0_lanes.hpp`
+  (game-side; a Kazarov lift is a later decision). Fixes: `mgCDrawPrim`
+  `vftoi` overflow saturates to `INT_MAX`; perspective divides in `test2`,
+  `mgInsideScreen`, `GetDrawRect` and `MotionProc2` stay finite at w = 0;
+  singular `mgInversMatrix` stays finite. No `PS2_UNIMPLEMENTED` remains in
+  these files.
+- WP2.3/2.4 (`data`): `dc2data list` gives 8,753 records = 8,751 files +
+  one duplicate + the terminator; `extract` is idempotent and
+  manifest-checked, `check` verifies `data/` (8,762 files incl. movies and
+  sound); Shift-JIS names are percent-encoded on disk. `dataread` indexes
+  only the `DATA.DAT` files and reads `host0:` back from the save tree.
+  `run.bat` now extracts like `run.sh` (`tools/windows/kazarov.ps1`).
+- WP2.5/2.8/2.9 and Phase 1 open issues (`boot`): config change hook and
+  unreadable-file guard; `mgCMemory` arenas record and log their high-water
+  marks, tested above 4 GiB; `MainLoop` -Wall clean with the retail priority
+  order. Decision: `long64.py` kept (line numbers preserved, literals and
+  `%ld` untouched, retail `mgSetPkTEX0` and `password.cpp` proven 64-bit by
+  test). `header_fixups.py` makes the COFF-duplicate functions inline,
+  blanks MWCC-only pragmas and renames the kernel32 thread names.
+  `docs/port/truncations.md` assigns every open round trip to a phase.
+- WP2.6/2.7 (`time`): Decision: the fiber scheduler is kept (one OS thread;
+  switches only in `RotateThreadReadyQueue`/`WaitSema`/`WaitVSync`-class
+  calls, never inside `ClockPump`); `mgNowFrameRate` reads a wall-clock
+  frame-load clock in T0 units.
+- Verified: linux-x64 ctest 338/338 (5 skipped: mouse capture and TTF font
+  cases), including `DataRead.RealDataIndexesTheDiscFiles` and
+  `Dc2Data.RealDisc*`; windows-x64 tests 345/345 (5 skipped); `ps2-pal`
+  matches; `darkchronicle --headless --offscreen --data data` logs
+  `dataread: indexed 8751 files under .../data` then
+  `mgInit: PlayStation 2 code is not implemented on PC` on Linux (lavapipe)
+  and Windows (RTX 4090); 74 functions call `Ps2Unimplemented` (34 game, 40
+  SDK), as `docs/PC.md` lists. Chronicle on `a7674f4`: linux-x64 ctest
+  303/303, `ps2-pal` 100% matched, its 3-frame headless screenshot
+  byte-identical to the `ce459c1` baseline, windows-x64 builds. Kazarov
+  pytest 76 passed, 14 skipped.
+- Open: `MeshConstants` is now 2,416 bytes for every mesh draw, Chronicle's
+  included (W3 `prog0` moves the prog0/bone constants to a DC2-only
+  buffer); GPU-skinned meshes are not pose-interpolated between ticks;
+  `main.cpp` does not set `prog0_meshes` yet (W3); no Vulkan validation
+  layer is installed on either host, so the gfx tests' "no validation
+  messages" is vacuous; the p2-wip commits keep their `WIP:` subjects
+  (`5db69a0`, Kazarov `0b81463`) because later pins reference them.
 
 Phase 2 parallel groups: {2.1, 2.2, 2.3, 2.4, 2.5} then {2.6, 2.8} then
 {2.7} then {2.9}. Phase 2 runs concurrently with phase 3.
@@ -1153,6 +1233,49 @@ Chronicle's `docs/PC.md` shows no `Ps2Unimplemented` caller in `mg*`,
 `water`, `outline`, `screeneffect`, `font`, `menudraw`; PS2 build matches;
 CI green; Chronicle green on the final Kazarov pin. Size: ~100.
 
+**Phase 4 status: done (W3, pushed with Phases 5 and 6).** ChronicleTwo
+`master` on Kazarov `main` `f1b8e80`.
+- WP4.1/4.2 (W2): the `mglib_port.hpp` seam, the texture registry, TIM2.
+- Ticks as display lists (`present-core`, rule 14): every game frame is
+  recorded and rendered once canonically; display frames between ticks are
+  interpolated at the elapsed fraction; `--display-per-tick N`, `--window WxH`,
+  `--show-fps`, the `video.*` keys; culls from the visible extent; the 3D
+  field of view follows the window (`AspectMode::Fill`), `aspect = 4:3`
+  letterboxes.
+- WP4.3/4.6/4.8 (`draw2d`): `mgCDrawPrim` as a host primitive builder (no GIF
+  register-list decoding), the draw manager replayed from a host table,
+  sprites and 3D sprites in floats, TexAnime through copies and registered
+  targets, the menu frame grab as a frame target, `PrintDirect`.
+- WP4.4b/c, 4.10 (`prog0`): MDT visuals as GPU meshes through Vu_prog0's
+  pipelines, with its constants in a DC2-only set 2 block (`MeshConstants`
+  back to 400 bytes for Chronicle) and a 32-matrix model-space bone palette
+  per draw; `renderer.prog0_meshes` is on.
+- WP4.5/4.7/4.9 (`fx-shadow`): z-fail stencil shadow volumes, water as a
+  screen-UV mesh over a frame grab, outline, depth of field and lens flare;
+  the VU1 packing maths live only as test oracles (`native_gate.py` keeps
+  them out of the runtime, also in CI).
+- Pointers (`uptr`, W2.u): addresses kept in integers are `uptr` in
+  `ps2/src`; `truncations.py --check` clean (0 open round trips in linked
+  code; 15 narrowing sites in compiled `ps2/` code, each with an owner).
+  Stride fixes found at integration: the draw manager's pointer tables,
+  `CScene::ClearStack`, `mgCTextureAnime::NewTexAnimeGroupData`;
+  `CScriptInterpreter::GetArg` indexes at pointer width; `CFuncPoint`'s copy
+  comes from the header mirror.
+- Verified: linux-x64 ctest 774/774 (one real-data case passed on rerun after
+  a load timeout); windows-x64 tests 780/780; `ps2-pal` `SCES_511.90: OK`;
+  14 `Ps2Unimplemented` callers (9 game, 5 SDK), none in `mg*`, `water`,
+  `outline`, `screeneffect`, font or `menudraw`. Real data, headless, Linux
+  and Windows: 300 frames show the language select; with an input script the
+  title over its 3D map, byte-identical with `--display-per-tick 4`; the
+  attract loop (title and the opening movie; the W3 record called it "the
+  opening event with skinned characters", which was wrong). Chronicle on
+  `f1b8e80` (rebased on upstream `109c6eff`): ctest 352/352, `ps2-pal` 100%,
+  screenshot byte-identical, Windows builds. Kazarov pytest 93 passed,
+  14 skipped.
+- Not reached (Phase 7): the opening and the first town by `--input`.
+  START at the title enters the next mode, then frames stop advancing.
+  Not run: the 2560x1440 windowed FPS run, the aspect matrix screenshots.
+
 Phase 4 parallel groups: {4.1} then {4.2} then {4.3, 4.4, 4.5, 4.6, 4.7}
 then {4.8, 4.9, 4.10} then {4.11}. Phase 5 runs beside phase 4.
 
@@ -1195,6 +1318,18 @@ fail as on the PAL disc. Tests: open/play/stop a synthetic stream.
 Depends: 5.3, 5.1. Size: ~700.
 
 Phase 5 parallel groups: {5.1, 5.3} then {5.2, 5.4}.
+
+**Phase 5 status: done.**
+- WP5.1/5.3 (W2): `audio_init`, `hsmsg`, SOUND.HD3/SOUND.DAT extraction.
+- WP5.2/5.4 (`audio-game`): `CSound`, ezMidi, ezBgm and `sndLoadSound` on
+  the shared mixer (banks selected by CC 0, HS pitch, per-core volume);
+  SOUND.DAT streams on Kazarov's new stream channels (`audio/stream.*`).
+- Verified: `DC2_AUDIO_WAV` at the title is non-silent (RMS about 750, peaks
+  near 24,000); stream open/play/stop tests green; Chronicle's audio tests
+  green on the same Kazarov.
+- Open: end-of-stream state held 1 s as a stand-in for the driver drain;
+  `SndInReverb` is a no-op (streams bypass reverb); movie audio stays on
+  mixer port 5, not a stream channel.
 
 ### Phase 6: movies
 
@@ -1250,7 +1385,29 @@ into a shared mixer stream; threads, handlers and registers gone.
 `movieviewlp.cpp` unchanged. Tests: scripted play of `L5LOGO.PSS` for 30
 frames with a screenshot. Depends: 6.3, 4.3, 5.1. Size: ~800.
 
+**Phase 6 status: done.**
+- WP6.1/6.2 (W2): the PSS demuxer and the minimal LGPL FFmpeg (`mpeg2video`
+  only, `License: LGPL version 2.1 or later`).
+- WP6.3/6.4 (`movies`): `CMovie` on the host: libavcodec's MPEG-2 decoder,
+  BT.601 to RGBA into the game's `moviework` texture, the PCM soundtrack into
+  the mixer, pumped by the game's frames against the clock; no threads,
+  handlers or registers. Only libavcodec and libavutil are linked.
+- Verified: the logo sequence of a real-data headless run shows
+  `L5LOGO.PSS`'s frames (Level-5 logo at frame 540 of the scripted run);
+  `movie_test` plays 30 frames to a PNG.
+
 ### Phase 7: integration, decoupling, options
+
+Status (W4, partial; details and resume steps in `docs/port/HANDOFF.md`):
+WP7.1/7.2 largely done in W3-W4 (display lists, interpolated display frames
+including bone palettes, window aspect, letterbox clip, HUD anchors, frame
+grabs in frame targets; measured 215-404 FPS at 2560x1440 with ticks at
+50/s). WP7.4 started: New Game's background read, the opening's character
+arena (`BaseCharacter[7]`, script budgets) and the red-mark/lock-on draws are
+fixed; the run reaches "Confirm Max's costume?" and stops in the opening
+event on a frame-tree loop. Sprite sampling matches the GS at texel
+boundaries (font bleed, tile seams). WP7.3, 7.5, 7.6 and the debug mode are
+open.
 
 **WP7.1 Presentation decoupling [decision]** Game frames as display lists;
 `mgEndFrame` presents at the display rate with interpolation where the mesh
@@ -1293,7 +1450,7 @@ Depends: 7.4.
 | macOS build | `./build.sh macos-arm64` with `VK_DRIVER_FILES` for MoltenVK when running |
 | Chronicle on every Kazarov pin | `Chronicle: ./build.sh linux-x64 && ctest`, `./build.sh ps2-pal`, `ps2-ntsc`, `pc.yml` green, before ChronicleTwo pins the same commit |
 | Override integrity | `port_override.py check` in the build; `objdump -d darkchronicle \| grep -c Ps2Unimplemented` against the documented stub list |
-| Headless run | `darkchronicle --headless --frames N --screenshot out.png --data data` reaches the phase's target (1: `sceDmaReset` abort after pipelines built; 2: the same after `InitCDFile`; 4: title screenshot; 6: movie screenshot; 7: town and dungeon by `--input`) |
+| Headless run | `darkchronicle --headless --frames N --screenshot out.png --data data` reaches the phase's target (1: `mgInit` abort after pipelines built; 2: the same after `InitCDFile` indexed 8751 files; 4: title screenshot; 6: movie screenshot; 7: town and dungeon by `--input`) |
 | Warnings | `port/src` and `tools/kazarov/port` build `-Wall` clean; `ps2/` diffs listed with justifications |
 
 Tests are GoogleTest cases; host-side ones live in Kazarov and run in both

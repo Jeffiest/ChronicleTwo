@@ -35,7 +35,13 @@ set(PS2_INCLUDE_SRC ${CMAKE_SOURCE_DIR}/ps2/include)
 set(PS2_INCLUDE_DIR ${CMAKE_BINARY_DIR}/ps2_include)
 set(PS2_INCLUDE_STAMP ${CMAKE_BINARY_DIR}/ps2_include.stamp)
 set(HEADER_FIXUPS_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/header_fixups.py)
+set(LONG64_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/long64.py)
 file(GLOB_RECURSE PS2_INCLUDE_FILES CONFIGURE_DEPENDS LIST_DIRECTORIES false ${PS2_INCLUDE_SRC}/*)
+set(PS2_INCLUDE_MIRROR "")
+foreach(ps2_header IN LISTS PS2_INCLUDE_FILES)
+    file(RELATIVE_PATH ps2_header_rel ${PS2_INCLUDE_SRC} ${ps2_header})
+    list(APPEND PS2_INCLUDE_MIRROR ${PS2_INCLUDE_DIR}/${ps2_header_rel})
+endforeach()
 execute_process(COMMAND ${Python3_EXECUTABLE} ${HEADER_FIXUPS_SCRIPT} ${PS2_INCLUDE_SRC} ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_STAMP}
     RESULT_VARIABLE header_fixups_result
     OUTPUT_VARIABLE header_fixups_output
@@ -43,9 +49,12 @@ execute_process(COMMAND ${Python3_EXECUTABLE} ${HEADER_FIXUPS_SCRIPT} ${PS2_INCL
 if(NOT header_fixups_result EQUAL 0)
     message(FATAL_ERROR "header_fixups.py failed (${header_fixups_result}):\n${header_fixups_output}${header_fixups_error}")
 endif()
+# Objects find these headers through their depfiles. Undeclared, ninja judges the objects before the mirror is
+# refreshed, so an edited ps2/include header reaches its dependents only on the second build.
 add_custom_command(OUTPUT ${PS2_INCLUDE_STAMP}
     COMMAND ${Python3_EXECUTABLE} ${HEADER_FIXUPS_SCRIPT} ${PS2_INCLUDE_SRC} ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_STAMP}
-    DEPENDS ${PS2_INCLUDE_FILES} ${HEADER_FIXUPS_SCRIPT}
+    DEPENDS ${PS2_INCLUDE_FILES} ${HEADER_FIXUPS_SCRIPT} ${LONG64_SCRIPT}
+    BYPRODUCTS ${PS2_INCLUDE_MIRROR}
     COMMENT "Mirroring ps2/include with the header fixups"
     VERBATIM)
 add_custom_target(ps2_include DEPENDS ${PS2_INCLUDE_STAMP})
@@ -72,11 +81,14 @@ set(PS2_UNITS "")
 # C2 ships only the PAL release, so PAL is the one region the port is built for.
 set(PORT_DEFINITIONS PORT PAL)
 list(TRANSFORM PORT_DEFINITIONS PREPEND --define= OUTPUT_VARIABLE port_override_defines)
+# ps2/src spells the 64-bit long that long64.py turns into the long long port/src has to spell.
+list(APPEND port_override_defines --long-is-64)
 # The names port/src's PORT_OVERRIDE definitions link under. PORT_OVERRIDE_SOURCES is written only when
 # its content changes, and a unit or stub header appearing or vanishing changes no timestamp, so it is a
 # dependency of its own.
 # Checked parser extensions and the native ownership exclusions live outside Kazarov.
 set(PORT_OVERRIDE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/port_override.py)
+set(UNIT_COPY_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/unit_copy.py)
 set(PORT_OVERRIDES ${CMAKE_BINARY_DIR}/port_overrides.txt)
 set(PORT_OVERRIDE_SOURCES ${CMAKE_BINARY_DIR}/port_override_sources.txt)
 set(PORT_OVERRIDE_EXCLUDES "")
@@ -117,34 +129,37 @@ set(WIN_REWRITE_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/port/win_rewrite.py)
 set(HOST_SCRIPT_STORAGE ${CMAKE_SOURCE_DIR}/scripts/port/host_script_storage.py)
 set(HOST_MENU_POINTERS ${CMAKE_SOURCE_DIR}/scripts/port/host_menu_pointers.py)
 set(HOST_PHOTO_NAMES ${CMAKE_SOURCE_DIR}/scripts/port/host_photo_names.py)
-set(HOST_SCRIPT_STORAGE_UNITS event.cpp actscript.cpp effscript.cpp runscript_opcodes.cpp)
+set(HOST_COMBAT_TRACE ${CMAKE_SOURCE_DIR}/scripts/port/host_combat_trace.py)
+set(HOST_ACTION_CALLBACKS ${CMAKE_SOURCE_DIR}/scripts/port/wp01_action_callbacks.py)
+set(HOST_LOADING_MEMORY ${CMAKE_SOURCE_DIR}/scripts/port/wp12_loading_memory.py)
+set(HOST_VECTOR_CONTRACTS ${CMAKE_SOURCE_DIR}/scripts/port/host_vector_contracts.py)
+set(HOST_SCRIPT_STORAGE_UNITS effscript.cpp)
 set(WIN_REWRITE_UNITS "")
 if(WIN32)
     execute_process(COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} units
         OUTPUT_VARIABLE WIN_REWRITE_UNITS OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
     file(GLOB_RECURSE PS2_HEADERS CONFIGURE_DEPENDS LIST_DIRECTORIES false ${PS2_INCLUDE_SRC}/*)
-    set(PS2_MIRRORED_HEADERS "")
-    foreach(header_file IN LISTS PS2_HEADERS)
-        file(RELATIVE_PATH relative_header ${PS2_INCLUDE_SRC} ${header_file})
-        list(APPEND PS2_MIRRORED_HEADERS ${PS2_INCLUDE_DIR}/${relative_header})
-    endforeach()
     set(PS2_WIN_REWRITE_STAMP ${CMAKE_BINARY_DIR}/ps2_include.win_rewrite.stamp)
     add_custom_command(OUTPUT ${PS2_WIN_REWRITE_STAMP}
         COMMAND ${Python3_EXECUTABLE} ${WIN_REWRITE_SCRIPT} headers ${PS2_INCLUDE_DIR} ${PS2_INCLUDE_DIR}
         COMMAND ${CMAKE_COMMAND} -E touch ${PS2_WIN_REWRITE_STAMP}
-        BYPRODUCTS ${PS2_MIRRORED_HEADERS}
         DEPENDS ${PS2_INCLUDE_STAMP} ${PS2_HEADERS} ${WIN_REWRITE_SCRIPT}
         COMMENT "Applying Windows source compatibility rewrites to mirrored headers"
         VERBATIM)
     add_custom_target(ct_win_headers DEPENDS ${PS2_WIN_REWRITE_STAMP})
 endif()
 
+# The check writes each unit's own overrides entries to a split file. A unit depends only on that file, so a
+# PORT_OVERRIDE edit recopies the units it reaches, not all 149. One process per unit: start-up dominates the copy.
+set(PORT_OVERRIDE_SPLITS "")
 foreach(unit IN LISTS PS2_SOURCES)
     set(copy ${CMAKE_BINARY_DIR}/ps2_src/${unit})
     set(original ${PS2_DIR}/${unit})
     if(EXISTS ${CT_PS2_HOST_FIXUPS})
         set(original ${CT_PS2_HOST_DIR}/${unit})
     endif()
+    set(split ${CMAKE_BINARY_DIR}/port_overrides/${unit}.txt)
+    list(APPEND PORT_OVERRIDE_SPLITS ${split})
     string(REGEX REPLACE "\\.cpp$" ".hpp" header ${CMAKE_SOURCE_DIR}/port/include/stubs/${unit})
     if(EXISTS ${header})
         set(stubs --stubs ${header})
@@ -162,6 +177,10 @@ foreach(unit IN LISTS PS2_SOURCES)
         list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_SCRIPT_STORAGE} unit src/${unit} ${copy})
         list(APPEND ct_transform_deps ${HOST_SCRIPT_STORAGE} ${CMAKE_SOURCE_DIR}/port/include/script_storage.hpp)
     endif()
+    if(unit STREQUAL "effscript.cpp" OR unit STREQUAL "event_func.cpp")
+        list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_VECTOR_CONTRACTS} unit ${copy})
+        list(APPEND ct_transform_deps ${HOST_VECTOR_CONTRACTS} ${HOST_ACTION_CALLBACKS})
+    endif()
     if(unit STREQUAL "menuop.cpp")
         list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_MENU_POINTERS} unit src/${unit} ${copy})
         list(APPEND ct_transform_deps ${HOST_MENU_POINTERS})
@@ -170,11 +189,26 @@ foreach(unit IN LISTS PS2_SOURCES)
         list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_PHOTO_NAMES} ${copy})
         list(APPEND ct_transform_deps ${HOST_PHOTO_NAMES} ${CMAKE_SOURCE_DIR}/port/include/photo_name_storage.hpp)
     endif()
+    if(unit STREQUAL "actscript.cpp")
+        list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_ACTION_CALLBACKS} unit src/${unit} ${copy})
+        list(APPEND ct_transform_deps ${HOST_ACTION_CALLBACKS})
+    endif()
+    set(ct_post_transform_commands "")
+    if(unit STREQUAL "nowload.cpp")
+        list(APPEND ct_post_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_LOADING_MEMORY} ${copy})
+        list(APPEND ct_transform_deps ${HOST_LOADING_MEMORY})
+    endif()
+    if(unit STREQUAL "dng_main.cpp" OR unit STREQUAL "actionchara.cpp" OR unit STREQUAL "actscript.cpp")
+        list(APPEND ct_transform_commands COMMAND ${Python3_EXECUTABLE} ${HOST_COMBAT_TRACE} src/${unit} ${copy})
+        list(APPEND ct_transform_deps ${HOST_COMBAT_TRACE} ${CMAKE_SOURCE_DIR}/port/include/combat_trace.hpp)
+    endif()
     add_custom_command(OUTPUT ${copy}
-        COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} strip --overrides ${PORT_OVERRIDES} ${stubs}
-            ${port_override_defines} ${original} ${copy}
+        COMMAND ${Python3_EXECUTABLE} ${UNIT_COPY_SCRIPT} --port-override ${PORT_OVERRIDE_SCRIPT} --overrides ${split}
+            ${stubs} ${port_override_defines} ${original} ${copy}
         ${ct_transform_commands}
-        DEPENDS ${original} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT} ${header} ${ct_transform_deps}
+        ${ct_post_transform_commands}
+        DEPENDS ${original} ${split} ${PORT_OVERRIDE_SCRIPT} ${UNIT_COPY_SCRIPT} ${HEADER_FIXUPS_SCRIPT} ${header}
+            ${ct_transform_deps}
         COMMENT "Removing overridden definitions from ps2/src/${unit}"
         VERBATIM)
     list(APPEND PS2_UNITS ${copy})
@@ -187,11 +221,14 @@ endforeach()
 # A tag that names no definition in ps2/src stops the build: its replacement would be unused wherever
 # the two signatures differ.
 set(PORT_OVERRIDES_CHECKED ${CMAKE_BINARY_DIR}/port_overrides.checked)
+set(PORT_OVERRIDE_CACHE ${CMAKE_BINARY_DIR}/port_overrides.cache.json)
 add_custom_command(OUTPUT ${PORT_OVERRIDES_CHECKED}
     COMMAND ${Python3_EXECUTABLE} ${PORT_OVERRIDE_SCRIPT} check --overrides ${PORT_OVERRIDES}
         --stubs ${CMAKE_SOURCE_DIR}/port/include/stubs ${port_override_defines} ${PS2_DIR}
+        --split ${CMAKE_BINARY_DIR}/port_overrides --cache ${PORT_OVERRIDE_CACHE}
         -o ${PORT_OVERRIDES_CHECKED}
     DEPENDS ${PS2_ORIGINALS} ${PORT_OVERRIDES} ${PORT_OVERRIDE_SOURCES} ${PORT_OVERRIDE_SCRIPT}
+    BYPRODUCTS ${PORT_OVERRIDE_SPLITS} ${PORT_OVERRIDE_CACHE}
     COMMENT "Checking that every PORT_OVERRIDE definition replaces one of ps2/src's"
     VERBATIM)
 
@@ -210,6 +247,7 @@ target_compile_options(ct_options INTERFACE
     "SHELL:-include \"${CMAKE_SOURCE_DIR}/port/include/port.h\""
     -fms-extensions -ffunction-sections -fdata-sections
     -Wno-register -Wno-c++11-narrowing -Wno-return-mismatch)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/movies.cmake)
 # arm64 clang fuses a*b+c into one rounding by default and x86-64 has no FMA in its baseline; off
 # everywhere so the game's arithmetic rounds the same on both.
 target_compile_options(ct_options INTERFACE -ffp-contract=off)
@@ -299,9 +337,13 @@ include(GNUInstallDirs)
 install(TARGETS darkchronicle RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 option(CT_BUILD_TESTS "Build darkchronicle_tests" ON)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/data.cmake)
 if(CT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(src/tests)
 endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/CompatibilityTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/CompletionTargets.cmake)
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/RuntimeContracts.cmake)

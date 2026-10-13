@@ -6,47 +6,78 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 
 | ID | Category | Retail source site | Function | Expression/token | Host override candidate |
 |---|---|---|---|---|---|
+| 9071df36588c7e72 | hardware:ps2_sdk_or_thread | host-source/src/automap.cpp:58 | CMiniMapSymbol::DrawSymbol_Chara | sceVu0SubVector | host-source/src/automap.cpp |
+| 4e052cee42180f27 | hardware:ps2_sdk_or_thread | host-source/src/automap.cpp:106 | CMiniMapSymbol::Draw | sceVu0CopyVector | host-source/src/automap.cpp |
+| 97b12d99f3a4ba3f | hardware:ps2_sdk_or_thread | host-source/src/automap.cpp:136 | CMiniMapSymbol::Draw | sceVu0SubVector | host-source/src/automap.cpp |
 | 9f0ee557a7d57ae9 | hardware:ps2_sdk_or_thread | host-source/src/character.cpp:70 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | host-source/src/character.cpp |
 | ebab5b62cf508e7c | hardware:ps2_sdk_or_thread | host-source/src/character.cpp:71 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | host-source/src/character.cpp |
-| cfb3f3ad3bc61047 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:662 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
-| fb03c785cb2682fe | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:748 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| d1152164d146515f | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:754 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| 01a2b4f617cf5e3a | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:761 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
-| 72c29a9f27eb1a7c | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:764 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
-| 6c5148508ed1facf | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:765 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
-| ed89307d878a183d | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:768 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
-| 6cfef66e91c40bf1 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:771 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 5133884da2f8ff0d | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:14 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| f4b18da13feacf8c | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:15 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 77b1e9434cfc707e | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:16 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 99ad0a539750522a | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:17 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 9b7466d97a06656d | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:66 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| b8f9681badb9fed0 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:67 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| af677a37cf1d2045 | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:68 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 50c1839dd31ecd2a | hardware:ps2_sdk_or_thread | host-source/src/collision_asm.cpp:76 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/collision_asm.cpp |
+| 780ee3382696ae75 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:880 | BreakReadBG | sceClose | host-source/src/dataread.cpp |
+| d97ce02371d292df | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:966 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| a9b660e63ab22de8 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:985 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| e3d6630c2cedb75b | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:992 | LoadFile2 | sceLseek | host-source/src/dataread.cpp |
+| 24dedcb9331788fb | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:995 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| 9205f64bfbbac465 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:996 | LoadFile2 | sceOpen | host-source/src/dataread.cpp |
+| 0d38c35f493a0c8a | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:999 | LoadFile2 | sceRead | host-source/src/dataread.cpp |
+| 1d0ab0cf33dda367 | hardware:ps2_sdk_or_thread | host-source/src/dataread.cpp:1002 | LoadFile2 | sceClose | host-source/src/dataread.cpp |
+| ef9a3cd4647cfb61 | hardware:ps2_sdk_or_thread | host-source/src/dng_hud.cpp:57 | CLockOnModel::Draw | sceVu0CopyVector | host-source/src/dng_hud.cpp |
 | 7377eaa86cca2ec1 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:57 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | f7774abc8c9a9625 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:61 | <file-scope> | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | 0cc4aecb9ddc3937 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:150 | SkinMotionVisual | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | 7b228a9f1d3ef399 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:155 | SkinMotionVisual | sceVu0FVECTOR | host-source/src/dynamicanime.cpp |
 | a4a6f5946c157652 | hardware:ps2_sdk_or_thread | host-source/src/dynamicanime.cpp:177 | SkinMotionVisual | sceVu0UnitMatrix | host-source/src/dynamicanime.cpp |
-| 829d77804241ef47 | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:15 | <file-scope> | TerminateThread | host-source/src/eekernel.cpp |
-| 86261794a882497f | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:188 | ThreadEntry | TerminateThread | host-source/src/eekernel.cpp |
-| a0a6eecc9c42eefe | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:200 | CreateThread | CreateThread | host-source/src/eekernel.cpp |
-| ee740dc1cd05c12c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:216 | StartThread | StartThread | host-source/src/eekernel.cpp |
-| f72ef91abd6d7dec | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:280 | TerminateThread | TerminateThread | host-source/src/eekernel.cpp |
-| 0de084363ec3152c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:335 | DeleteThread | TerminateThread | host-source/src/eekernel.cpp |
-| d19877330352fdc4 | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:408 | WaitSema | WaitSema | host-source/src/eekernel.cpp |
-| a1a8e3684b59422c | hardware:ps2_sdk_or_thread | host-source/src/eekernel.cpp:444 | SignalSema | SignalSema | host-source/src/eekernel.cpp |
-| 1889c918865f6226 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:29 | pad_button_read | scePadRead | host-source/src/gamepad.cpp |
-| 146b8ed9eb4e4b6f | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:56 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 796084a19c6a7aa8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:58 | read_pad | scePadStateDiscon | host-source/src/gamepad.cpp |
-| feebd648e9d9a921 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:66 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
-| 04d5ea9d6768f2b5 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:67 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| f1a16fdf48be0660 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:70 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| ba6f41aaa13b57d5 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:110 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
-| f8508fefb12a8ff8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:118 | read_pad | scePadSetMainMode | host-source/src/gamepad.cpp |
-| 7bae6a635cda5380 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:124 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 8842cc33bb77afad | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:130 | read_pad | scePadInfoAct | host-source/src/gamepad.cpp |
-| d1b5e508e232efab | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:141 | read_pad | scePadSetActAlign | host-source/src/gamepad.cpp |
-| 823bb41f6180f8f3 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:147 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
-| 22e17196f0621758 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:153 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
-| 1b58c3da52db4433 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:188 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| be226c974488b7a2 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:191 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| 5f4ee7d3d61d12ec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:193 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
-| 172c204a39e4663b | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:199 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
-| 012822a5b2baba9f | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:201 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| 0eb0f61ca546292c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:51 | pad_button_read | scePadRead | host-source/src/gamepad.cpp |
+| 65698757961ad4a3 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:78 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| 067ed7dfcc076f47 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:80 | read_pad | scePadStateDiscon | host-source/src/gamepad.cpp |
+| 10f106c2b0506cec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:88 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
+| cd2d152297fc19e9 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:89 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| 8d3edc2e1f2b7d9d | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:92 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| cda1e59b93f196ec | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:132 | read_pad | scePadInfoMode | host-source/src/gamepad.cpp |
+| 11701932a71185b0 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:140 | read_pad | scePadSetMainMode | host-source/src/gamepad.cpp |
+| 89cca857abc756fc | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:146 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| d21902689c55a4e1 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:152 | read_pad | scePadInfoAct | host-source/src/gamepad.cpp |
+| 2fdb4736190bc8e2 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:163 | read_pad | scePadSetActAlign | host-source/src/gamepad.cpp |
+| 55042f1300a7866c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:169 | read_pad | scePadGetState | host-source/src/gamepad.cpp |
+| 5641a99fe988a810 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:175 | read_pad | scePadStateStable | host-source/src/gamepad.cpp |
+| f24328ec83bec4f6 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:210 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 6cb3304c0124b58c | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:213 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 698ad66d6053fbb8 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:215 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| 9e548c7a764a0e09 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:221 | CGamePad::WaitEnable | sceGsSyncV | host-source/src/gamepad.cpp |
+| 8e65220dc305f317 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:223 | CGamePad::WaitEnable | scePadGetState | host-source/src/gamepad.cpp |
+| f79b11878c888d47 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:378 | CreateGamePadThread | CreateThread | host-source/src/gamepad.cpp |
+| 039d245cf6403a81 | hardware:ps2_sdk_or_thread | host-source/src/gamepad.cpp:379 | CreateGamePadThread | StartThread | host-source/src/gamepad.cpp |
+| 43f3ddd5a311c7b9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:33 | testVUnew | sceVu0FVECTOR | host-source/src/gameutil_asm.cpp |
+| 4815e38c7de74f42 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:34 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 4a91d18acbfb30c5 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:35 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| c151fe789c6309d9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:36 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 0b881fc9f2527948 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:37 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| a2525bbfb60f6d91 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:38 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_asm.cpp |
+| 8ae7443f58e0712f | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:87 | testVUnew | sceVu0UnitMatrix | host-source/src/gameutil_asm.cpp |
+| 9b7c1d2b083c7632 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:88 | testVUnew | sceVu0UnitMatrix | host-source/src/gameutil_asm.cpp |
+| e1caea2bd1396668 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:103 | testVUnew | sceVu0ApplyMatrix | host-source/src/gameutil_asm.cpp |
+| 63801864fc3f4ca1 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:111 | testVUnew | sceVu0CopyVectorXYZ | host-source/src/gameutil_asm.cpp |
+| e576961c63c8706e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:168 | CheckHit | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| f9d640a6b7ba4bc6 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:169 | CheckHit | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| f3ae1953d1f4cfcf | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:170 | CheckHit | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| c89968fb3440ccc8 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:171 | CheckHit | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 7085b95c003e109e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:188 | CheckHit | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 7283618299ddcb43 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:200 | CheckHit | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 994cebedc23a9d87 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:204 | if | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| b310c5656916ddb9 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:252 | CheckHits | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| 94bfae0d983bf8c3 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:253 | CheckHits | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 762f5256008282e6 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:254 | CheckHits | sceVu0SubVector | host-source/src/gameutil_asm.cpp |
+| 1e6f3c171e57d51e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:255 | CheckHits | sceVu0InnerProduct | host-source/src/gameutil_asm.cpp |
+| 8cbe09b5e8c94b98 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:275 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| a2256478a24fcc50 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:291 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| 80a6ffd56b88485a | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:292 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
+| fe95ddf1eb30ce11 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_asm.cpp:293 | CheckHits | sceVu0CopyVector | host-source/src/gameutil_asm.cpp |
 | 39b617340743d991 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:52 | testVUnew | sceVu0FVECTOR | host-source/src/gameutil_motion.cpp |
 | 99188f348cbef32e | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:53 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_motion.cpp |
 | 4aa043c62d576c31 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:54 | testVUnew | sceVu0FMATRIX | host-source/src/gameutil_motion.cpp |
@@ -72,7 +103,27 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4880e703fca40262 | hardware:ps2_sdk_or_thread | host-source/src/gameutil_motion.cpp:234 | testVUnew | sceVu0InterVectorXYZ | host-source/src/gameutil_motion.cpp |
 | b0531457e1ffc49a | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:194 | MappedOffsets | static_cast<int32_t>(std::lround(value * | host-source/src/host_overrides/gfx/resources.cpp |
 | ff7c187e767abce9 | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:198 | MappedOffsets | static_cast<int32_t>(std::lround(value * | host-source/src/host_overrides/gfx/resources.cpp |
-| a6e02c611d082349 | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:799 | ConvertPs2Alpha | static_cast<uint8_t>(std::min(alpha * | host-source/src/host_overrides/gfx/resources.cpp |
+| 5b33f78365191e17 | pointer-narrowing | host-source/src/host_overrides/gfx/resources.cpp:801 | ConvertPs2Alpha | static_cast<uint8_t>(std::min(alpha * | host-source/src/host_overrides/gfx/resources.cpp |
+| a17140a49be217ee | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:44 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| ef3c00ae985dd8a9 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:45 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 1b504dab20e53c44 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:46 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| c4053fcb9a8d052b | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:47 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 57dcb8d0810d6963 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:48 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 2e4a831e35561530 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:49 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| bb43f1cb32ce37fb | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:50 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| bf07cc12080729c3 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:51 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 6f4df46e9b1551ff | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:52 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| 69cb130e95b4cd39 | hardware:inline_asm_or_intrinsic | host-source/src/mainloop.cpp:53 | <file-scope> | asm | host-source/src/mainloop.cpp |
+| b10c7a68eb485115 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:98 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 8df4c7914ae72120 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:108 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 7f8eae843c41fe9b | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:110 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| 355a496000eb9fa8 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:112 | MainLoop | sceGsSyncV | host-source/src/mainloop.cpp |
+| c6f3597297b4e8a3 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:330 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 567e7cafd233b932 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:373 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| d369e31731052912 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:375 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 969799283eaa4666 | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:378 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 1a5109eac1b9604e | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:385 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
+| 4579f3f4dc9c409f | hardware:ps2_sdk_or_thread | host-source/src/mainloop.cpp:387 | <file-scope> | sceGsSyncV | host-source/src/mainloop.cpp |
 | e324637ed55c382e | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:11 | <file-scope> | sceMc | host-source/src/memcard.cpp |
 | af540331426d47a2 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:16 | <file-scope> | sceMcEnd | host-source/src/memcard.cpp |
 | 0d3232127f098551 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:18 | <file-scope> | sceMcSeek | host-source/src/memcard.cpp |
@@ -121,142 +172,173 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 69dd8e62a7535481 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:578 | if | sceMcSync | host-source/src/memcard.cpp |
 | 15d3345e2fe95dd5 | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:584 | if | sceMcClose | host-source/src/memcard.cpp |
 | 5cbb34fabaec5d3e | hardware:ps2_sdk_or_thread | host-source/src/memcard.cpp:591 | if | sceMcSync | host-source/src/memcard.cpp |
-| d5fd7aa06000ddc1 | raw-allocation | host-source/src/menudraw.cpp:50 | MenuCapture | reinterpret_cast<uint8_t *>(stack->Alloc(static_cast<int>(bytes / 16) | host-source/src/menudraw.cpp |
-| 000b17397f2aad68 | hardware:ps2_sdk_or_thread | host-source/src/menudraw.cpp:72 | MenuCapture | sceVif1Packet | host-source/src/menudraw.cpp |
-| e04a0a829c3a5f91 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:123 | ScissorRect | sceGsTest | host-source/src/mg_drawenv.cpp |
-| 7b1c15733d427c06 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:124 | ScissorRect | sceGsPrim | host-source/src/mg_drawenv.cpp |
-| 1d4d58b51d07f78f | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:325 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
-| be82697f73f60406 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:328 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| 26068613f27c6f68 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:331 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
-| 4f2439ed2d4ed725 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:332 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
-| 42ed85062c5ea9a0 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:349 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
-| bb0848550866c389 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:358 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
-| 172787e992df3bab | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:369 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| afc77736e0206d0b | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:375 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
-| bb49636bc3ec4f72 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:376 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
-| f0ceaa03452bd098 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:383 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| 819a4f4975bb33ba | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:389 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 147f0ec5db8f53f7 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:391 | mgRENDER_INFO::SetViewMatrix | sceVu0TransposeMatrix | host-source/src/mg_drawenv.cpp |
-| 7390c3bd814be462 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:392 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 7f16524113842a13 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:398 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| a09cc25bba4b738f | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:404 | mgRENDER_INFO::SetViewMatrix | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
-| 5b274926425f0d19 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:405 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| d6f1bbeae47d7065 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:413 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| cacff7ecb8a90d63 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:414 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 4eb4402a6ac4b2cd | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:415 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 85dde9b418e0ec62 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:461 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| 19477f80ba36dc32 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:462 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| dbeb3cfff6f677de | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:475 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| fb80d298d85420f9 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:476 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
-| 68ebc6902595eb1c | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:498 | mgRENDER_INFO::SetAmbient | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 6dc41f58a01a3d75 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:502 | mgRENDER_INFO::GetAmbient | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 5c8cccc7b1c50bfd | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:507 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 2d7ff66ac3cba839 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:508 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
-| 15e58254a5f2b49e | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:38 | <file-scope> | sceGsTest | host-source/src/mg_drawprim.cpp |
-| 6ce0c637c1351bfa | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:39 | <file-scope> | sceGsPrim | host-source/src/mg_drawprim.cpp |
-| 11697d5734815721 | pointer-narrowing | host-source/src/mg_drawprim.cpp:49 | Fixed4 | static_cast<int>(std::lroundf(value * | host-source/src/mg_drawprim.cpp |
-| 416cbca54de4a023 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:56 | Fixed4 | sceGsTest | host-source/src/mg_drawprim.cpp |
-| 1ab9ded98b0951dc | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:57 | Fixed4 | sceGsZbuf | host-source/src/mg_drawprim.cpp |
-| 14a1d38322f2574b | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:58 | Fixed4 | sceGsAlpha | host-source/src/mg_drawprim.cpp |
-| 38e34c35b56afa3d | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:111 | CurrentState | sceGsTest | host-source/src/mg_drawprim.cpp |
-| 695382631a9eb7f4 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:112 | CurrentState | sceGsZbuf | host-source/src/mg_drawprim.cpp |
-| 3eb8244b94ca1fdf | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:113 | CurrentState | sceGsAlpha | host-source/src/mg_drawprim.cpp |
-| ea8ef5c2d61555b9 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:440 | mgCDrawPrim::Initialize | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| 5e418e84e6955fef | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:644 | mgCDrawPrim::Direct | sceGsTexa | host-source/src/mg_drawprim.cpp |
-| 5b1657ce9f784682 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:689 | mgCDrawPrim::Texture | sceGsTex0 | host-source/src/mg_drawprim.cpp |
-| 4b851c79cc507c9f | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:753 | mgCDrawPrim::DepthTestEnable | sceGsTest | host-source/src/mg_drawprim.cpp |
-| 8f7a7bb36c1a0fb3 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:764 | mgCDrawPrim::DepthTest | sceGsTest | host-source/src/mg_drawprim.cpp |
-| 4dc463e5d917a5f7 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:874 | mgCDrawManager::ReloadTexture | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| 0feb579dbaed58d1 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:886 | mgCDrawManager::Draw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| cf4d8122133baafa | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:896 | mgCDrawManager::EndDraw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
-| cb9cfe5f5e691d86 | hardware:inline_asm_or_intrinsic | host-source/src/mg_frame_math.cpp:13 | <file-scope> | asm | host-source/src/mg_frame_math.cpp |
-| aa3dce91ded5601c | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:24 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
-| 01a06acf104d44f9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:26 | mgCFrame::GetLocalMatrix | sceVu0FVECTOR | host-source/src/mg_frame_math.cpp |
-| 53297ce4149683f1 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:29 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
-| 18bda5d20a27b8d2 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:35 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixX | host-source/src/mg_frame_math.cpp |
-| 61cda123c6e49348 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:39 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixY | host-source/src/mg_frame_math.cpp |
-| 43414dbc599e686d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:43 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixZ | host-source/src/mg_frame_math.cpp |
-| 22737bfaf16f5553 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:48 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_math.cpp |
-| d740c1befb1f1bfd | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:51 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_math.cpp |
-| 9100e18ff076410b | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:55 | mgCFrame::GetLocalMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 7f1604deb9843cc6 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:71 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 3315ece394109055 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:85 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 185968e6685231f7 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:97 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 45f21f04e2138823 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:98 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 828a2044c0de0fd1 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:103 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| bdccb4fe7bbfc301 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:121 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 3ca7b97d63a5a282 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:126 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 6f99cb1a8a78e133 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:136 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 0b1e8318030ca2a9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:137 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| c46f469f4a7d40ac | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:139 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 49030824e9fa7294 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:141 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| 051a9643e4995e21 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:158 | mgCFrame::GetBBoardMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
-| 1869e0eb92dbf4b1 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:159 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_math.cpp |
-| a0c2dca66846565a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:162 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
-| 0a04f5e5995e5aa8 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:165 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
-| deeab102d9fd1a98 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:171 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_math.cpp |
-| 50c2466979171942 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:172 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
-| 02ae0a0b82a749f4 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:173 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
-| 04f3b0d62dcc1fc5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:182 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
-| 67ff0600930ae208 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:185 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
-| 7bf5cf2ebd8fddb9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:202 | mgCFrame::GetBBoardMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
-| fc1c5d6b73364d2f | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:325 | mgRotMatrixXYZ | sceVu0FMATRIX | host-source/src/mg_math.cpp |
-| 5e4f16e2e4905379 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:326 | mgRotMatrixXYZ | sceVu0FMATRIX | host-source/src/mg_math.cpp |
-| e3b4f000edaa0b02 | hardware:inline_asm_or_intrinsic | host-source/src/mg_memory.cpp:15 | <file-scope> | __builtin_return_address | host-source/src/mg_memory.cpp |
-| 62a96f757fb4e861 | raw-member-offset | host-source/src/mg_tanime.cpp:157 | MoveClut | clut + position | host-source/src/mg_tanime.cpp |
-| 48a9e6aa676de341 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:544 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
-| c16b219397765422 | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:626 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_tanime.cpp |
-| c0c8171eb282b774 | raw-member-offset | host-source/src/mg_texture.cpp:304 | if | clut + position | host-source/src/mg_texture.cpp |
-| 5fd58dc05de88c2c | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:395 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| a5b3d7119964b4aa | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:397 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 3ae5e3028ee7f0b3 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:403 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 3fab51f7ff770cb6 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:407 | mgCVisualPrim::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
-| 13ac4db031bcbb8c | raw-allocation | host-source/src/mg_visual.cpp:432 | mgCVisualMDT::CopyMDTDataPointer | (mgMaterial *) memory->Alloc((material_num * sizeof(mgMaterial) | host-source/src/mg_visual.cpp |
-| e8db79aa64b3fd8c | hardware:scratchpad | host-source/src/mg_visual.cpp:441 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| 63efa235fbe844c1 | hardware:scratchpad | host-source/src/mg_visual.cpp:442 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| d9f75a5a4fce2f57 | hardware:scratchpad | host-source/src/mg_visual.cpp:444 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| ecfa9b59a6f96348 | hardware:scratchpad | host-source/src/mg_visual.cpp:446 | mgCVisualMDT::CopyMDTDataPointer | scratchpad | host-source/src/mg_visual.cpp |
-| b24b3cdafc50914d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:33 | <file-scope> | sceVif1Packet | host-source/src/mglib.cpp |
-| e2da105d56e0a9bd | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:206 | mgInit | sceGsSetDefDBuff | host-source/src/mglib.cpp |
-| f0a481072dfd4f5c | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:305 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 10a7d2e3677e8b6d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:347 | mgSetPkFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| 0745d9703703df2f | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:469 | mgGetFrameBackBuffer | sceGsFrame | host-source/src/mglib.cpp |
-| ffb977b6fc3f6e98 | pointer-narrowing | host-source/src/mglib.cpp:523 | mgStoreImage | static_cast<int>(bytes * | host-source/src/mglib.cpp |
-| b6b188b703dc2b2d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:565 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
-| 1726cd65317c930b | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:598 | mgEndPacket | sceVif1PkEnd | host-source/src/mglib.cpp |
-| 564b0b36e7757a82 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:632 | mgBeginFrame | sceGsFrame | host-source/src/mglib.cpp |
-| 0c7e3178fcede0b3 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:22 | <file-scope> | sceMpeg | host-source/src/movie.cpp |
-| 74ec2576cd6f458b | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:81 | ReadTiming | sceMpegAddStrCallback | host-source/src/movie.cpp |
-| a9acbc24c46a7571 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:84 | ReadTiming | sceMpegCallback | host-source/src/movie.cpp |
-| 78d27d773fc2e94d | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:90 | ReadTiming | sceMpeg | host-source/src/movie.cpp |
-| 9ee71d03d9a03947 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:93 | ReadTiming | sceMpegCallback | host-source/src/movie.cpp |
-| 052a2e688aef8a92 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:95 | ReadTiming | sceMpegStrType | host-source/src/movie.cpp |
-| 7456594675c13c3a | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:98 | ReadTiming | sceMpeg | host-source/src/movie.cpp |
-| 928505b8eba709c0 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:345 | CMovie::GetTagProgSize | sceMpegCreate | host-source/src/movie.cpp |
-| b288674bf14674e1 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:348 | CMovie::videoDecSetStream | sceMpegCallback | host-source/src/movie.cpp |
-| 88c577ecd8dddbe6 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:349 | CMovie::videoDecSetStream | sceMpegAddStrCallback | host-source/src/movie.cpp |
-| a6d26b6a08f81955 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:355 | CMovie::videoDecDelete | sceMpegDelete | host-source/src/movie.cpp |
-| 39d303cf987de31a | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:368 | sceMpegInit | sceMpegInit | host-source/src/movie.cpp |
-| 8b2579fb8305a2e0 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:372 | sceMpegCreate | sceMpegCreate | host-source/src/movie.cpp |
-| 605b98a2b9887174 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:392 | sceMpegDelete | sceMpegDelete | host-source/src/movie.cpp |
-| 30964e6ff40b1f42 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:402 | sceMpegReset | sceMpegReset | host-source/src/movie.cpp |
-| bd840ad94b36d0b1 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:419 | sceMpegGetPicture | sceMpegGetPicture | host-source/src/movie.cpp |
-| 7b3e96627c333f76 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:426 | sceMpegIsEnd | sceMpegIsEnd | host-source/src/movie.cpp |
-| ee85b543b71022f9 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:431 | sceMpegIsEnd | sceMpegCallback | host-source/src/movie.cpp |
-| d17f8c8a799ac24d | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:435 | sceMpegIsEnd | sceMpegCbError | host-source/src/movie.cpp |
-| ba19c73962a0b5cc | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:439 | sceMpegIsEnd | sceMpegCallback | host-source/src/movie.cpp |
-| 7b76175ad0ef4978 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:446 | sceMpegIsEnd | sceMpegCallback | host-source/src/movie.cpp |
-| 3e317ea7a117b337 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:447 | sceMpegIsEnd | sceMpegCallback | host-source/src/movie.cpp |
-| d30bfa237e6ecd8a | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:450 | sceMpegIsEnd | sceMpegStrM2V | host-source/src/movie.cpp |
-| d11edb36f640057b | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:455 | sceMpegIsEnd | sceMpegCallback | host-source/src/movie.cpp |
-| 3ca2ca6c18501d09 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:463 | sceMpegDemuxPssRing | sceMpegDemuxPssRing | host-source/src/movie.cpp |
-| 2f1b3c5d01225095 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:524 | sceMpegDemuxPssRing | sceMpegStrM2V | host-source/src/movie.cpp |
-| 9fa44b15297fdebd | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:526 | if | sceMpegStrPCM | host-source/src/movie.cpp |
-| 6e1623f77ee1543e | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:550 | if | sceMpegCbDataStr | host-source/src/movie.cpp |
-| fbcec47f9d72f5d3 | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:552 | if | sceMpegCbStr | host-source/src/movie.cpp |
-| 5f1d74a5f47ea98f | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:559 | if | sceMpegCbData | host-source/src/movie.cpp |
-| 74ea6510a2d77e0a | hardware:ps2_sdk_or_thread | host-source/src/movie.cpp:571 | if | sceMpegStrM2V | host-source/src/movie.cpp |
+| 4c788be3cd73eec2 | hardware:ps2_sdk_or_thread | host-source/src/menudraw.cpp:65 | MenuCapture | sceVif1Packet | host-source/src/menudraw.cpp |
+| 80bd4e97bc574f56 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:124 | ScissorRect | sceGsTest | host-source/src/mg_drawenv.cpp |
+| 6477229cf85d9153 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:125 | ScissorRect | sceGsPrim | host-source/src/mg_drawenv.cpp |
+| 12de683313c33066 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:337 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
+| 924f747149e9a731 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:340 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| e2e644f47c34f336 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:343 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
+| 0c0d9e7709a73958 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:344 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
+| 342ad370600db6a2 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:361 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
+| e0acb6b520d95736 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:370 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
+| 713c9d2327984bd8 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:381 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| b99dea87f760012b | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:387 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
+| 352edb5b00e9cb1c | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:388 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | host-source/src/mg_drawenv.cpp |
+| 77c66db86e658929 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:395 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| 52ca966c60a46acf | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:401 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 46c455b71d9931d2 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:403 | mgRENDER_INFO::SetViewMatrix | sceVu0TransposeMatrix | host-source/src/mg_drawenv.cpp |
+| 3f5f4ee8ca7a8bc9 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:404 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 188d9e94bfec9fe2 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:410 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| feaf951577e78f73 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:416 | mgRENDER_INFO::SetViewMatrix | sceVu0FMATRIX | host-source/src/mg_drawenv.cpp |
+| 453eca437c5f0d1c | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:417 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| 3f3c38f76d54a8fc | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:425 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 59171c15e4481a74 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:426 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 32c65af276cf8ebb | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:427 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| b24c12b665d1417b | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:473 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| 0cdea192da67704d | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:474 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| e919b349730f1f2d | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:487 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| cbddb30a8cfdf2b7 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:488 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | host-source/src/mg_drawenv.cpp |
+| 4a94c1b99bdaf0e5 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:510 | mgRENDER_INFO::SetAmbient | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 1f65c46ff322e5d6 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:514 | mgRENDER_INFO::GetAmbient | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 0e51e3d25e8eac38 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:519 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 99bb75d5e59cf8b7 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawenv.cpp:520 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | host-source/src/mg_drawenv.cpp |
+| 4a1daabcc627055d | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:1 | <file-scope> | sceGsTex0 | host-source/src/mg_drawprim.cpp |
+| ad0c5bd795b15646 | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:281 | mgCDrawPrim::Begin2 | sceGsZbuf | host-source/src/mg_drawprim.cpp |
+| 844dd2afbd3a446f | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:457 | mgCDrawManager::ReloadTexture | sceVif1Packet | host-source/src/mg_drawprim.cpp |
+| 722653ffe7ec146e | hardware:ps2_sdk_or_thread | host-source/src/mg_drawprim.cpp:474 | mgCDrawManager::Draw | sceVif1Packet | host-source/src/mg_drawprim.cpp |
+| ea19ccc1c1f99832 | pointer-narrowing | host-source/src/mg_drawprim.cpp:623 | mgPortPrimColor | static_cast<int>((count * | host-source/src/mg_drawprim.cpp |
+| 6221e815db46a7e8 | raw-allocation | host-source/src/mg_drawprim.cpp:623 | mgPortPrimColor | reinterpret_cast<T *>(memory->Alloc(static_cast<int>((count * sizeof(T) | host-source/src/mg_drawprim.cpp |
+| 423efa2d6375d8e0 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:59 | mgCFrame::Draw | sceVu0FMATRIX | host-source/src/mg_frame.cpp |
+| c35d6ee3d7dc8593 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:76 | mgCFrame::Draw | sceVu0FVECTOR | host-source/src/mg_frame.cpp |
+| 2e4ab7121278a143 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:77 | mgCFrame::Draw | sceVu0FVECTOR | host-source/src/mg_frame.cpp |
+| 880d75e58e6f2293 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:113 | mgCFrame::Draw | sceVu0CopyVector | host-source/src/mg_frame.cpp |
+| 3984f7800e0ae750 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:117 | mgCFrame::Draw | sceVu0FMATRIX | host-source/src/mg_frame.cpp |
+| d738b29c1d3bbda0 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:118 | mgCFrame::Draw | sceVu0TransposeMatrix | host-source/src/mg_frame.cpp |
+| 396a6ba4ea3eac22 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:125 | mgCFrame::Draw | sceVu0FVECTOR | host-source/src/mg_frame.cpp |
+| 44061a46ad754d63 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:126 | mgCFrame::Draw | sceVu0CopyVector | host-source/src/mg_frame.cpp |
+| 032f436fea075f67 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame.cpp:128 | mgCFrame::Draw | sceVu0ApplyMatrix | host-source/src/mg_frame.cpp |
+| 8e0533bb2994380a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:119 | mgCFrame::GetLocalMatrix | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| 732a10f41e0f05da | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:121 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 21dc53e018533450 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:127 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixX | host-source/src/mg_frame_asm.cpp |
+| d1dd5a6f89aad819 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:131 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixY | host-source/src/mg_frame_asm.cpp |
+| f4e3991792d51092 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:135 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixZ | host-source/src/mg_frame_asm.cpp |
+| cae6e74cb600176a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:140 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_asm.cpp |
+| 035e2f30a140fd18 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:143 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_asm.cpp |
+| 09800f5bb82ca7b7 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:147 | mgCFrame::GetLocalMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 176f3a2f4d02a847 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:163 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_asm.cpp |
+| 3e828caa0c33bfd5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:166 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| fc2c2f260046ce0d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:169 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| 577fa703cd899d1a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:175 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_asm.cpp |
+| 487edcbf27c599a4 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:176 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| be338120d408b96b | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:177 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| 67f25f6e95e54398 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:186 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_asm.cpp |
+| b63bd2ccf3cb9390 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:189 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_asm.cpp |
+| fd87754b5675bacf | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:199 | mgCFrame::GetBBoardMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 86a109b71e8c2bf5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:216 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 7a0890233c5ec27a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:230 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 0a63bb29c08bd6ed | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:242 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 8c34bff8b650d453 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:243 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 727dac58d962bba5 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:273 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 5022c40f801be10e | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:278 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| bb680a43adb4e890 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:288 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 52193277c74c16ea | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:289 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| 7e330fadcdb607d8 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:291 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_asm.cpp |
+| a612f505676f669d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:306 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/mg_frame_asm.cpp |
+| a27b8d64d4defbd9 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:307 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| 89ef12eee4dfdb34 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:308 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/mg_frame_asm.cpp |
+| a13a53752a5fbdea | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:309 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/mg_frame_asm.cpp |
+| d849c0a36c9b5485 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:384 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 59218838406695ca | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:385 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 949c4e057d2eaeea | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:401 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 9a2ba3673b44ece2 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:402 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 5bc989ac98d1a527 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:411 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| 6f4023b37b343d55 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_asm.cpp:412 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/mg_frame_asm.cpp |
+| de9130edd59074ab | hardware:inline_asm_or_intrinsic | host-source/src/mg_frame_math.cpp:61 | test2 | asm | host-source/src/mg_frame_math.cpp |
+| 829fd36fd80df38f | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:72 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
+| 9cf03c292f8cb81d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:74 | mgCFrame::GetLocalMatrix | sceVu0FVECTOR | host-source/src/mg_frame_math.cpp |
+| f31bcac161a5b856 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:77 | mgCFrame::GetLocalMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
+| c093d90f59108535 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:83 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixX | host-source/src/mg_frame_math.cpp |
+| d569f4280344e06f | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:87 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixY | host-source/src/mg_frame_math.cpp |
+| c883958490b42e09 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:91 | mgCFrame::GetLocalMatrix | sceVu0RotMatrixZ | host-source/src/mg_frame_math.cpp |
+| dda6c160add51324 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:96 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_math.cpp |
+| de2569628b1ab30b | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:99 | mgCFrame::GetLocalMatrix | sceVu0AddVector | host-source/src/mg_frame_math.cpp |
+| f8a07d75218810a0 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:103 | mgCFrame::GetLocalMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| 2f74d982175d4e0a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:119 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| c06d7b155dca64ed | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:133 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| dc0f905265b82fa1 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:145 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| a0e18e242fcaf0d7 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:146 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| c43c1398b2ca3af7 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:151 | mgCFrame::GetLWMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| 3f38961f917548c4 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:169 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| 879aff74258d7a23 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:174 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| b61df6bb9ac5c5c0 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:184 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| 1747073ff30b4b3d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:185 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| cfdd4a9cf4ba51b1 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:187 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| fbdbafa6d6da305c | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:189 | mgCFrame::GetLWMatrixTopBottom | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| 5934ed93ccbb502a | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:206 | mgCFrame::GetBBoardMatrix | sceVu0CopyVector | host-source/src/mg_frame_math.cpp |
+| 7f8759ee56508a60 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:207 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_math.cpp |
+| 455dbc049b42a725 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:210 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
+| c24015e0f6b52d44 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:213 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
+| 2b59c5045fa1a056 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:219 | mgCFrame::GetBBoardMatrix | sceVu0UnitMatrix | host-source/src/mg_frame_math.cpp |
+| adc2388e25df8f58 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:220 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
+| 33800256d7b65d62 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:221 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
+| 5346bc497d40bb2d | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:230 | mgCFrame::GetBBoardMatrix | sceVu0SubVector | host-source/src/mg_frame_math.cpp |
+| cdbf86ac857b5155 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:233 | mgCFrame::GetBBoardMatrix | sceVu0Normalize | host-source/src/mg_frame_math.cpp |
+| aa817a831f561625 | hardware:ps2_sdk_or_thread | host-source/src/mg_frame_math.cpp:250 | mgCFrame::GetBBoardMatrix | sceVu0CopyMatrix | host-source/src/mg_frame_math.cpp |
+| e5f5a3bcd08ab1c5 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:139 | mgNormalizeVector | sceVu0FVECTOR | host-source/src/mg_math.cpp |
+| 71077dd41fc0eda0 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:141 | mgNormalizeVector | sceVu0Normalize | host-source/src/mg_math.cpp |
+| a5104d1ebac72479 | hardware:ps2_sdk_or_thread | host-source/src/mg_math.cpp:142 | mgNormalizeVector | sceVu0ScaleVector | host-source/src/mg_math.cpp |
+| 88da093e0087dd99 | hardware:ps2_sdk_or_thread | host-source/src/mg_shadow.cpp:94 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_shadow.cpp |
+| 725a82f7832f49cc | hardware:ps2_sdk_or_thread | host-source/src/mg_shadow.cpp:95 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_shadow.cpp |
+| 531bb3864207cfb1 | hardware:ps2_sdk_or_thread | host-source/src/mg_shadow.cpp:96 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_shadow.cpp |
+| 89f2d26ee68c345d | pointer-narrowing | host-source/src/mg_sprite.cpp:109 | SpriteVertex | static_cast<uint8_t>(std::lround(s.fog * | host-source/src/mg_sprite.cpp |
+| 9eb5f88e15e471ea | hardware:ps2_sdk_or_thread | host-source/src/mg_tanime.cpp:11 | mgCTextureAnime::TexAnime | sceVif1Packet | host-source/src/mg_tanime.cpp |
+| 85874ddfcc3ae83b | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:383 | MgTextureLookupTex0 | sceGsTex0 | host-source/src/mg_texture.cpp |
+| 173edad5ae66a852 | raw-allocation | host-source/src/mg_texture.cpp:422 | mgCTextureManager::SetTableBuffer | (mgCTexture **) memory->Alloc(QuadwordsFor(bytes) | host-source/src/mg_texture.cpp |
+| e163f2af3b88a7ee | raw-allocation | host-source/src/mg_texture.cpp:434 | mgCTextureManager::SetTableBuffer | (mgTEXTURE_HASH **) memory->Alloc(QuadwordsFor(bytes) | host-source/src/mg_texture.cpp |
+| d735064f647ff4ee | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:580 | mgCTextureManager::Initialize | sceGsTex1 | host-source/src/mg_texture.cpp |
+| 2832edf6b6ead563 | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:693 | mgCTextureManager::ReloadTexture | sceVif1Packet | host-source/src/mg_texture.cpp |
+| 1fc52210bc42e36d | hardware:ps2_sdk_or_thread | host-source/src/mg_texture.cpp:730 | mgCTextureManager::ReloadCLUT | sceVif1Packet | host-source/src/mg_texture.cpp |
+| bd7eceda2f71fffe | hardware:scratchpad | host-source/src/mg_visual.cpp:239 | mgVisualPortSweep | scratchpad | host-source/src/mg_visual.cpp |
+| 24cff9bc6c4fc619 | hardware:scratchpad | host-source/src/mg_visual.cpp:240 | mgVisualPortSweep | scratchpad | host-source/src/mg_visual.cpp |
+| a50ad3ea99ad78a8 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:440 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e767ad7a2fb2ae85 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:441 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e481a3c9435b78a1 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:466 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | host-source/src/mg_visual.cpp |
+| e225d2608d67b248 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:467 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| e2ea8ba259c30780 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:468 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | host-source/src/mg_visual.cpp |
+| 7cfa0532099fd296 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:469 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0InversMatrix | host-source/src/mg_visual.cpp |
+| 5980f48e1657c4b6 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:470 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ApplyMatrix | host-source/src/mg_visual.cpp |
+| a71f14aadfbb579a | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:476 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| 3ac07faaa78d4959 | hardware:ps2_sdk_or_thread | host-source/src/mg_visual.cpp:477 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | host-source/src/mg_visual.cpp |
+| 36342aada74b6f50 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:100 | ToRaw | sceVif1Packet | host-source/src/mglib.cpp |
+| 77e737817de96e55 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:228 | BindingFor | sceGsTex0 | host-source/src/mglib.cpp |
+| 4e0b8adb77bdd7ce | pointer-narrowing | host-source/src/mglib.cpp:284 | WriteTexel | static_cast<uint8_t>((a * | host-source/src/mglib.cpp |
+| 562159014cca4b2d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:419 | FrameTargetFor | sceGsTex0 | host-source/src/mglib.cpp |
+| 01555dc724313a72 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:432 | FrameTargetFor | sceGsTex0 | host-source/src/mglib.cpp |
+| 3ca0b69c79d105df | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:651 | mgPortApplyTest | sceGsTest | host-source/src/mglib.cpp |
+| c3afa3ccdc973d9c | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:659 | mgPortApplyZbuf | sceGsZbuf | host-source/src/mglib.cpp |
+| 4be7ffc20c2ad6e2 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:663 | mgPortApplyAlpha | sceGsAlpha | host-source/src/mglib.cpp |
+| b8c0550edf081924 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:672 | mgPortApplyTexa | sceGsTexa | host-source/src/mglib.cpp |
+| db1f30c6e7ef5de0 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:697 | mgPortWrapU | sceGsClamp | host-source/src/mglib.cpp |
+| a38ab9cf6765d61c | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:701 | mgPortWrapV | sceGsClamp | host-source/src/mglib.cpp |
+| 1665ac03d5280b39 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:705 | mgPortFilter | sceGsTex1 | host-source/src/mglib.cpp |
+| 2f5edcd7e25ca21e | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:716 | mgPortFindTexture | sceGsTex0 | host-source/src/mglib.cpp |
+| 2921304217ac6b5d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1034 | mgInit | sceGsTex1 | host-source/src/mglib.cpp |
+| f91145291013d096 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1036 | mgInit | sceGsTest | host-source/src/mglib.cpp |
+| 6c22ffba3bb56835 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1038 | mgInit | sceGsAlpha | host-source/src/mglib.cpp |
+| 4f7c6f625f689519 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1040 | mgInit | sceGsTexa | host-source/src/mglib.cpp |
+| 3ac4b57520e4c3c1 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1042 | mgInit | sceGsZbuf | host-source/src/mglib.cpp |
+| dba6e14fef3b3cd9 | pointer-narrowing | host-source/src/mglib.cpp:1042 | mgInit | static_cast<uint64_t>(frame_buf1 * | host-source/src/mglib.cpp |
+| 3d88504d3ca0325d | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1316 | mgSetPkTextureRepeat | sceGsClamp | host-source/src/mglib.cpp |
+| 0f8949b554bdb98b | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1389 | SetFrameBuffer | sceGsFrame | host-source/src/mglib.cpp |
+| 9be23432f7335b1c | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1425 | SetFrameBuffer | sceGsTex0 | host-source/src/mglib.cpp |
+| b64e23138d8a7374 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1433 | SetFrameBuffer | sceGsTex1 | host-source/src/mglib.cpp |
+| 5f081cf0dbe32e52 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1552 | mgCloseFont | sceGsTex0 | host-source/src/mglib.cpp |
+| 719fc3a97b9761af | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1577 | mgCloseFont | sceGsTex0 | host-source/src/mglib.cpp |
+| 2c679d8a7582e8c6 | hardware:ps2_sdk_or_thread | host-source/src/mglib.cpp:1703 | mgEndDrawShadow | sceGsTexa | host-source/src/mglib.cpp |
+| fceaece78bed4605 | hardware:ps2_sdk_or_thread | host-source/src/mglib_port.hpp:6 | <file-scope> | sceVu0FMATRIX | host-source/src/mglib_port.hpp |
 | 6b45486e8afd9fae | hardware:ps2_sdk_or_thread | host-source/src/occlusion.cpp:45 | PlaneNormal | sceVu0Normalize | host-source/src/occlusion.cpp |
+| 7f5a88b7bfcef1af | pointer-narrowing | host-source/src/outline.cpp:69 | OutlineEdgeOffset | static_cast<int>(kUnitsPerPixel * (width * | host-source/src/outline.cpp |
+| bbfa4348ed64c822 | pointer-narrowing | host-source/src/outline.cpp:219 | COutLineDraw::Draw | static_cast<uint8_t>(static_cast<int>(128.0f * opacity * | host-source/src/outline.cpp |
 | 7568d877d0689b15 | hardware:ps2_sdk_or_thread | host-source/src/sce/libcdvd.cpp:13 | <file-scope> | sceCdSearchFile | host-source/src/sce/libcdvd.cpp |
 | b9aab3c4a4d7c705 | hardware:ps2_sdk_or_thread | host-source/src/sce/libcdvd.cpp:20 | <file-scope> | sceCdRead | host-source/src/sce/libcdvd.cpp |
 | 7a526f6b21ef10ae | hardware:ps2_sdk_or_thread | host-source/src/sce/libcdvd.cpp:27 | <file-scope> | sceCdSearchFile | host-source/src/sce/libcdvd.cpp |
@@ -414,44 +496,191 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 9509a45214007f42 | hardware:ps2_sdk_or_thread | host-source/src/sce/sifrpc.cpp:126 | sceSifBindRpc | sceSifBindRpc | host-source/src/sce/sifrpc.cpp |
 | ea93d5577cfc2b85 | hardware:ps2_sdk_or_thread | host-source/src/sce/sifrpc.cpp:130 | sceSifCheckStatRpc | sceSifCheckStatRpc | host-source/src/sce/sifrpc.cpp |
 | 6acda00befe05645 | hardware:ps2_sdk_or_thread | host-source/src/sce/sifrpc.cpp:134 | sceSifCheckStatRpc | sceSifCallRpc | host-source/src/sce/sifrpc.cpp |
-| 059f81c81de6604c | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:125 | <file-scope> | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
-| 367513ba16ebe37c | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:132 | <file-scope> | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
-| 94649b7f7ed8ec4c | pointer-narrowing | host-source/src/snd_mngr.cpp:1160 | sndSePlayVPf | (int) (vol * | host-source/src/snd_mngr.cpp |
-| fe02e445a4232726 | pointer-narrowing | host-source/src/snd_mngr.cpp:1182 | sndSePlayVf | (int) (vol * | host-source/src/snd_mngr.cpp |
-| 1cb4fe6eca343c25 | pointer-narrowing | host-source/src/snd_mngr.cpp:1550 | sndSetSeVolf | (int) (vol * | host-source/src/snd_mngr.cpp |
-| 566adb73aa529290 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1621 | sndGetVolPan | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
-| 30c479b46458cf94 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1622 | sndGetVolPan | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
-| 3f0106b2f8892d29 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1643 | sndGetVolPan | sceVu0CopyVector | host-source/src/snd_mngr.cpp |
-| 7f35aa0802e412f1 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1645 | sndGetVolPan | sceVu0Normalize | host-source/src/snd_mngr.cpp |
-| 5e6d101b7c10a04d | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1649 | sndGetVolPan | sceVu0SubVector | host-source/src/snd_mngr.cpp |
-| 56d13521792c5670 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1651 | sndGetVolPan | sceVu0Normalize | host-source/src/snd_mngr.cpp |
-| 38f77787c504b1f8 | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1652 | sndGetVolPan | sceVu0InnerProduct | host-source/src/snd_mngr.cpp |
-| fe90de06ab741abd | hardware:ps2_sdk_or_thread | host-source/src/snd_mngr.cpp:1677 | sndGetVolPan | sceVu0FVECTOR | host-source/src/snd_mngr.cpp |
+| cceaf2b5bbce7f4c | raw-member-offset | host-source/src/scene.cpp:7 | <file-scope> | (u8 *) this + 8 | host-source/src/scene.cpp |
+| df10c4a942c4445d | hardware:ps2_sdk_or_thread | host-source/src/sceneevent.cpp:52 | CScene::DrawSky | sceVu0CopyVector | host-source/src/sceneevent.cpp |
+| 96386ef5c307a94d | hardware:ps2_sdk_or_thread | host-source/src/sceneevent.cpp:53 | CScene::DrawSky | sceVu0ScaleVector | host-source/src/sceneevent.cpp |
+| 82e3d87115d95424 | hardware:ps2_sdk_or_thread | host-source/src/sceneevent.cpp:55 | CScene::DrawSky | sceVu0CopyVector | host-source/src/sceneevent.cpp |
+| acdfcb018317ef63 | hardware:ps2_sdk_or_thread | host-source/src/sceneevent.cpp:56 | CScene::DrawSky | sceVu0ScaleVector | host-source/src/sceneevent.cpp |
+| dbc206369e37d7b5 | raw-allocation | host-source/src/sceneload.cpp:141 | CScene::LoadMapFromMemory | (CMapSky *) operator new(sizeof(CMapSky), stack->Alloc(0x13) | host-source/src/sceneload.cpp |
+| 63ebb2e58d98d310 | hardware:ps2_sdk_or_thread | host-source/src/screeneffect.cpp:179 | DepthOfField | sceGsTex1 | host-source/src/screeneffect.cpp |
+| c128d8782b53519d | hardware:ps2_sdk_or_thread | host-source/src/screeneffect.cpp:425 | LensFlare | sceVu0IVECTOR | host-source/src/screeneffect.cpp |
+| b0a363deae1fafd8 | hardware:ps2_sdk_or_thread | host-source/src/screeneffect.cpp:433 | LensFlare | sceVif1Packet | host-source/src/screeneffect.cpp |
 | 80d53b14320965a2 | pointer-narrowing | host-source/src/snd_seseq.cpp:219 | sndCSeSeq::Count | (int) (((float) seq_data->tick_rate * | host-source/src/snd_seseq.cpp |
-| 50794c948a088b2e | pointer-narrowing | host-source/src/sound.cpp:420 | CSound::SetVol | static_cast<int>(volume * | host-source/src/sound.cpp |
-| bc2963ca429a49d1 | raw-allocation | host-source/src/tests/bits64_fixture.hpp:29 | Arena | reinterpret_cast<u_long128 *>(arena.alloc.Alloc(quads) | host-source/src/tests/bits64_fixture.hpp |
-| 4d2ebc42b895d6d6 | raw-member-offset | host-source/src/tests/bits64_placement_test.cpp:146 | <file-scope> | reinterpret_cast<u_char *>(frames), reinterpret_cast<u_char *>(drawn + 1 | host-source/src/tests/bits64_placement_test.cpp |
-| ab99f143e1e3245f | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:23 | OpenPads | scePadInit | host-source/src/tests/input_lifecycle_test.cpp |
-| a3b58e300ef205f5 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:24 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_test.cpp |
-| 3594daa62ceba5e3 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_test.cpp:25 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_test.cpp |
-| 9be1773c062cb6e8 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:7 | <file-scope> | sceGsSyncV | host-source/src/tests/platform_pad_test.cpp |
-| d2e399887e83c856 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:8 | <file-scope> | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| 112963bf5aea9ff5 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:9 | <file-scope> | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 99de66f851dc10d4 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:17 | OpenPads | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| df9e60f96177bac2 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:18 | OpenPads | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 79105cf169687a53 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:19 | OpenPads | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| 1faed2cc7f5faf0c | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:68 | Unplug | scePadRead | host-source/src/tests/platform_pad_test.cpp |
-| edd4eb406bd67ce5 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:100 | Unplug | scePadStateDiscon | host-source/src/tests/platform_pad_test.cpp |
-| 10ed95655395c8af | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:106 | Unplug | scePadInit | host-source/src/tests/platform_pad_test.cpp |
-| 9d2d5a115adcfbd6 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:109 | Unplug | scePadGetState | host-source/src/tests/platform_pad_test.cpp |
-| 4ca8df3f9af1e3c4 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:110 | Unplug | scePadRead | host-source/src/tests/platform_pad_test.cpp |
-| 3aec7b621034bc65 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:111 | Unplug | scePadPortOpen | host-source/src/tests/platform_pad_test.cpp |
-| b76625fa87340431 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:112 | Unplug | scePadGetState | host-source/src/tests/platform_pad_test.cpp |
-| c219286d961c5942 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:113 | Unplug | scePadInfoMode | host-source/src/tests/platform_pad_test.cpp |
-| 415ef6e58fc9f53e | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:114 | Unplug | scePadInfoMode | host-source/src/tests/platform_pad_test.cpp |
-| 5bb99977e0230277 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:115 | Unplug | scePadInfoAct | host-source/src/tests/platform_pad_test.cpp |
-| 3c84609039e7d8c6 | hardware:ps2_sdk_or_thread | host-source/src/tests/tex_decode_test.cpp:153 | OnParavirtualGpu | sceGsTex0 | host-source/src/tests/tex_decode_test.cpp |
-| 75349a821e05cdb3 | hardware:ps2_sdk_or_thread | host-source/src/tests/tex_decode_test.cpp:196 | OnParavirtualGpu | sceGsTex0 | host-source/src/tests/tex_decode_test.cpp |
+| b50ce72c4fb6737f | pointer-narrowing | host-source/src/tests/dataread_test.cpp:56 | BuildPack | static_cast<int>(starts[i] - i * | host-source/src/tests/dataread_test.cpp |
+| 7ce338c07788edc9 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:37 | Sync | sceMcSync | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 55adf684c752a6ad | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:42 | Succeed | sceMcResSucceed | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fea830b1b96f350f | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:53 | MakeDirectory | sceMcMkdir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 612b720ffa15f554 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:54 | MakeDirectory | sceMcFuncNoMkdir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6b73d4ab4dbf6cf4 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:63 | main | sceMcInit | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| e3b2c8145d5f1e95 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:76 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 5b3431f44c6493b3 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:77 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| a7bacd618d1e357c | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:79 | main | sceMcWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| ac82aa3af795a406 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:80 | main | sceMcFuncNoWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b76f490dbb50f337 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:81 | main | sceMcFlush | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 46db80cb38b8fffa | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:82 | main | sceMcFuncNoFlush | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fe11eaa5a0f44071 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:83 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b82d2cbdaaf2b38a | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:84 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 86d448212f3a3773 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:87 | main | sceMcTblGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 4047245fd9c8686a | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:88 | main | sceMcGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 24acde39c0f36478 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:89 | main | sceMcFuncNoGetDir | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| adb6da5a33942449 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:99 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 83f3e155c342c925 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:100 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| b0925fa2dad39905 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:102 | main | sceMcSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 3f4760d928d12d97 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:103 | main | sceMcFuncNoSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 51ea139383dee227 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:105 | main | sceMcRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6781de4d0f973e69 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:106 | main | sceMcFuncNoRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| c2891b0614d62315 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:108 | main | sceMcSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| be7b3c63586e6a81 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:109 | main | sceMcFuncNoSeek | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 5a0c3d85170fa920 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:111 | main | sceMcRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| eaee1600afeb9db7 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:112 | main | sceMcFuncNoRead | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 6ea45a6f4b542a98 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:114 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| d31a36ac8c8b99e6 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:115 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 640bb67cfe0bbea8 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:119 | main | sceMcOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 2f2815d2ccc380ce | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:120 | main | sceMcFuncNoOpen | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| fad858d75cc7cee5 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:123 | main | sceMcWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 84fbf403aa8e9596 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:124 | main | sceMcFuncNoWrite | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| da9820db5bc30a44 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:125 | main | sceMcClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 09bddf19a38b2b84 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:126 | main | sceMcFuncNoClose | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| f9dcc02bb9f62d64 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:130 | main | sceMcDelete | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 25db2ce908582743 | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:131 | main | sceMcFuncNoDelete | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 4d347c3b5ffe064d | hardware:ps2_sdk_or_thread | host-source/src/tests/dc2_save_roundtrip_standalone.cpp:135 | main | sceMcEnd | host-source/src/tests/dc2_save_roundtrip_standalone.cpp |
+| 8f45fabeec544da4 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:44 | OnceAfterWait | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| a3f082a4800ef6f5 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:74 | PumpWithSwitchingPumpHook | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| c3b61902f3efc469 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:75 | PumpWithSwitchingPumpHook | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5bdda7278d77aa86 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:87 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| a3aa9d48c79aa676 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:88 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 705b5ab4345f65de | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:102 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| af01508b6957f9bc | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:103 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| b794e2a1df1f34ee | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:104 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5c5e2dcf577b34a7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:105 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| e5bab30453cb94ef | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:113 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| e88855b50ee03c38 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:114 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 3da4cd55e2bdd7b8 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:124 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| da311528ef591784 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:125 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 8d9862c57c8b5090 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:137 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 5c7c3eb3f28867cd | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:138 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 0fc143ca0da91ceb | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:139 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 9e0c8a52ec15823a | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:141 | PumpWithSwitchingTickCallback | TerminateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| ea7658eb1351c8d7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:144 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 9371f7b9bd1a1067 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:146 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 67e2d392b0cec5db | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:165 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| ef5c809deac41b76 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:166 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| bf8110a2bc00049c | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:171 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 4499c163a04013d6 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:215 | PumpWithSwitchingTickCallback | CreateThread | host-source/src/tests/eekernel_threads_test.cpp |
+| 7bfaa5f465a1b42e | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:216 | PumpWithSwitchingTickCallback | StartThread | host-source/src/tests/eekernel_threads_test.cpp |
+| a7890f16ecb27cfe | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:220 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 7e32b3c710b91b03 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:223 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 7c508e7aad954ba1 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:245 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 981fc35c43e2fbb4 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:246 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 1724fc2c0e54f6b7 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:247 | PumpWithSwitchingTickCallback | SignalSema | host-source/src/tests/eekernel_threads_test.cpp |
+| bea0e78218a7e3f1 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:249 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| dec853e3242a3c88 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:250 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| cd715042f1f03909 | hardware:ps2_sdk_or_thread | host-source/src/tests/eekernel_threads_test.cpp:251 | PumpWithSwitchingTickCallback | WaitSema | host-source/src/tests/eekernel_threads_test.cpp |
+| 0df91e7229e66b30 | hardware:ps2_sdk_or_thread | host-source/src/tests/effectlist_draw_test.cpp:57 | Screen | sceVif1Packet | host-source/src/tests/effectlist_draw_test.cpp |
+| c3faea9c37b6bee2 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_standalone.cpp:22 | OpenPads | scePadInit | host-source/src/tests/input_lifecycle_standalone.cpp |
+| 9f085a8995705f70 | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_standalone.cpp:23 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_standalone.cpp |
+| 71a4446e58c4f32b | hardware:ps2_sdk_or_thread | host-source/src/tests/input_lifecycle_standalone.cpp:24 | OpenPads | scePadPortOpen | host-source/src/tests/input_lifecycle_standalone.cpp |
+| a77a6ae15b99bbc9 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:40 | Image | sceMcSync | host-source/src/tests/memcard_test.cpp |
+| 9dc44791db21e1c1 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:44 | Done | sceMcSync | host-source/src/tests/memcard_test.cpp |
+| dbb585926c1245b1 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:50 | Open | sceMcOpen | host-source/src/tests/memcard_test.cpp |
+| b69d01b832907c82 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:51 | Open | sceMcFuncNoOpen | host-source/src/tests/memcard_test.cpp |
+| 90294d2a1deeca66 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:57 | WriteAll | sceMcWrite | host-source/src/tests/memcard_test.cpp |
+| 60d07c5af7959311 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:58 | WriteAll | sceMcFuncNoWrite | host-source/src/tests/memcard_test.cpp |
+| c94764c829bbc5d5 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:66 | ReadAll | sceMcRead | host-source/src/tests/memcard_test.cpp |
+| a190d1ea2118ce30 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:67 | ReadAll | sceMcFuncNoRead | host-source/src/tests/memcard_test.cpp |
+| 8e9db86e281f3f91 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:77 | Close | sceMcClose | host-source/src/tests/memcard_test.cpp |
+| 6faf5b162cf6c35e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:78 | Close | sceMcFuncNoClose | host-source/src/tests/memcard_test.cpp |
+| 9801cbd3856dd3bd | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:82 | MakeCardDirectory | sceMcMkdir | host-source/src/tests/memcard_test.cpp |
+| 8fb9dcfcb93c2c2e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:83 | MakeCardDirectory | sceMcFuncNoMkdir | host-source/src/tests/memcard_test.cpp |
+| da1e60baa7191959 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:101 | RunUntilIdle | sceMcInit | host-source/src/tests/memcard_test.cpp |
+| 22500ddbeca49d8f | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:134 | RunUntilIdle | sceMcGetInfo | host-source/src/tests/memcard_test.cpp |
+| 7fb101fbeb541237 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:135 | RunUntilIdle | sceMcFuncNoCardInfo | host-source/src/tests/memcard_test.cpp |
+| 2ea985b70875e965 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:136 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| 0d5372c0d663572e | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:145 | RunUntilIdle | sceMcFlush | host-source/src/tests/memcard_test.cpp |
+| 80c1cb44f11465e2 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:146 | RunUntilIdle | sceMcFuncNoFlush | host-source/src/tests/memcard_test.cpp |
+| b27e9995ed6a1689 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:149 | RunUntilIdle | sceMcTblGetDir | host-source/src/tests/memcard_test.cpp |
+| 28df4c0045186a1d | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:150 | RunUntilIdle | sceMcGetDir | host-source/src/tests/memcard_test.cpp |
+| 595f4d6ad3443e81 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:151 | RunUntilIdle | sceMcFuncNoGetDir | host-source/src/tests/memcard_test.cpp |
+| 3cf2c6205718e012 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:153 | RunUntilIdle | sceMcTblGetDir | host-source/src/tests/memcard_test.cpp |
+| 79d00e2ded85cf3d | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:181 | RunUntilIdle | sceMcSeek | host-source/src/tests/memcard_test.cpp |
+| d58bc822ecbf5454 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:182 | RunUntilIdle | sceMcFuncNoSeek | host-source/src/tests/memcard_test.cpp |
+| 738caa355b52333b | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:184 | RunUntilIdle | sceMcWrite | host-source/src/tests/memcard_test.cpp |
+| 692219acc59402ed | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:185 | RunUntilIdle | sceMcFuncNoWrite | host-source/src/tests/memcard_test.cpp |
+| 05cd70f65ed825a8 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:206 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| b4cd2acbdcce4360 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:219 | RunUntilIdle | sceMcTypePS2 | host-source/src/tests/memcard_test.cpp |
+| 78d84c4f5242c987 | hardware:ps2_sdk_or_thread | host-source/src/tests/memcard_test.cpp:229 | RunUntilIdle | sceMcResNoFormat | host-source/src/tests/memcard_test.cpp |
+| 4d1feed9ce75a1af | raw-member-offset | host-source/src/tests/menudraw_grab_test.cpp:113 | <file-scope> | image + 256 | host-source/src/tests/menudraw_grab_test.cpp |
+| 86b5ea7015c27e68 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_drawprim_asm_test.cpp:51 | ReadLanes | sceVif1Packet | host-source/src/tests/mg_drawprim_asm_test.cpp |
+| 002cd361368de90c | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_drawprim_render_test.cpp:70 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_drawprim_render_test.cpp |
+| 62af006edcaed35b | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_drawprim_test.cpp:46 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_drawprim_test.cpp |
+| 46a86518976c15e0 | pointer-narrowing | host-source/src/tests/mg_drawprim_test.cpp:87 | Gs | static_cast<int>(pixels * | host-source/src/tests/mg_drawprim_test.cpp |
+| 119c9fb921de1791 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_shadow_test.cpp:234 | RenderGroundUnder | sceVu0FVECTOR | host-source/src/tests/mg_shadow_test.cpp |
+| e9bc988c763441aa | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_sprite_test.cpp:70 | VifPacketScope | sceVif1Packet | host-source/src/tests/mg_sprite_test.cpp |
+| b2a405749621b2d9 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_sprite_test.cpp:82 | VifPacketScope | sceVif1Packet | host-source/src/tests/mg_sprite_test.cpp |
+| e9924a0c9123d45b | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_sprite_test.cpp:119 | VifPacketScope | sceVif1Packet | host-source/src/tests/mg_sprite_test.cpp |
+| 51c7191f368f024d | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_sprite_test.cpp:154 | VifPacketScope | sceVif1Packet | host-source/src/tests/mg_sprite_test.cpp |
+| efe3644894ab1a45 | pointer-narrowing | host-source/src/tests/mg_tanime_test.cpp:219 | SetCopy | static_cast<uint8_t>(i * | host-source/src/tests/mg_tanime_test.cpp |
+| 842243d28b20229a | pointer-narrowing | host-source/src/tests/mg_tanime_test.cpp:314 | <file-scope> | static_cast<uint8_t>(i * | host-source/src/tests/mg_tanime_test.cpp |
+| 4cc0a6510bdd9bcb | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:444 | Ct32Pixels | static_cast<uint8_t>(x * | host-source/src/tests/mg_texture_test.cpp |
+| 93f96f5ee4aedc3c | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:445 | Ct32Pixels | static_cast<uint8_t>(y * | host-source/src/tests/mg_texture_test.cpp |
+| ffe8f9afd002131d | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:788 | RetailBucket | static_cast<uint8_t>(x * 40), static_cast<uint8_t>(y * | host-source/src/tests/mg_texture_test.cpp |
+| f77f706c4f57bd87 | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:835 | <file-scope> | static_cast<uint8_t>(t * | host-source/src/tests/mg_texture_test.cpp |
+| 15b2ba976b9f874d | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:855 | <file-scope> | static_cast<uint8_t>(p * | host-source/src/tests/mg_texture_test.cpp |
+| 754505cfd8b105df | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:875 | <file-scope> | static_cast<uint8_t>(p * | host-source/src/tests/mg_texture_test.cpp |
+| fc074820f5234c5f | pointer-narrowing | host-source/src/tests/mg_texture_test.cpp:950 | <file-scope> | static_cast<uint8_t>(t * | host-source/src/tests/mg_texture_test.cpp |
+| bace4d272e68e89d | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_texture_test.cpp:962 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_texture_test.cpp |
+| 35c957c3c00c09e9 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_texture_test.cpp:970 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_texture_test.cpp |
+| 46e81c78fbd17996 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_texture_test.cpp:992 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_texture_test.cpp |
+| 5f6fc50761720298 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_texture_test.cpp:1006 | <file-scope> | sceVif1Packet | host-source/src/tests/mg_texture_test.cpp |
+| 192440211162ca70 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_texture_test.cpp:1029 | <file-scope> | sceGsTex0 | host-source/src/tests/mg_texture_test.cpp |
+| 716fc1d69588c204 | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:93 | MdtFile::Build | base + vertex_ofs | host-source/src/tests/mg_visual_test.cpp |
+| afba32c2a7ad3120 | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:94 | MdtFile::Build | base + normal_ofs | host-source/src/tests/mg_visual_test.cpp |
+| 2a29cc055903a7ae | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:100 | MdtFile::Build | base + material_ofs | host-source/src/tests/mg_visual_test.cpp |
+| cdce067750a043d7 | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:105 | MdtFile::Build | base + faces_ofs | host-source/src/tests/mg_visual_test.cpp |
+| 7a5f529a794973ad | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:111 | MdtFile::Build | base + cursor | host-source/src/tests/mg_visual_test.cpp |
+| 9a1a14c39aa47231 | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:112 | MdtFile::Build | base + cursor | host-source/src/tests/mg_visual_test.cpp |
+| 0cd3264b8cb7c6f3 | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:113 | MdtFile::Build | base + cursor | host-source/src/tests/mg_visual_test.cpp |
+| 3fdd00c7144f40fd | raw-member-offset | host-source/src/tests/mg_visual_test.cpp:118 | MdtFile::Build | base + cursor | host-source/src/tests/mg_visual_test.cpp |
+| bea0eb1ae26f7db4 | hardware:ps2_sdk_or_thread | host-source/src/tests/mg_visual_test.cpp:206 | PrepareObject | sceVu0CopyVector | host-source/src/tests/mg_visual_test.cpp |
+| a48174698530c262 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:68 | UnboundedVSyncClock | sceGsSyncV | host-source/src/tests/mglib_time_test.cpp |
+| f69240fe44ebe639 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:82 | UnboundedVSyncClock | CreateThread | host-source/src/tests/mglib_time_test.cpp |
+| 71bebe4258abbd9e | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:83 | UnboundedVSyncClock | StartThread | host-source/src/tests/mglib_time_test.cpp |
+| 362983608a4f1e8a | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:90 | UnboundedVSyncClock | TerminateThread | host-source/src/tests/mglib_time_test.cpp |
+| 370073b7267b02f2 | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:103 | UnboundedVSyncClock | CreateThread | host-source/src/tests/mglib_time_test.cpp |
+| 81b0abb620de7b2c | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:104 | UnboundedVSyncClock | StartThread | host-source/src/tests/mglib_time_test.cpp |
+| fee1449375813f0a | hardware:ps2_sdk_or_thread | host-source/src/tests/mglib_time_test.cpp:112 | UnboundedVSyncClock | TerminateThread | host-source/src/tests/mglib_time_test.cpp |
+| 1348ad9a1f7eeb00 | hardware:ps2_sdk_or_thread | host-source/src/tests/model_storage_standalone.cpp:16 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/model_storage_standalone.cpp |
+| 45ed3cc4369ee550 | hardware:ps2_sdk_or_thread | host-source/src/tests/movie_test.cpp:618 | <file-scope> | sceVif1Packet | host-source/src/tests/movie_test.cpp |
+| e9ab8e6617cf759d | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:20 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| d69879ea56594272 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:21 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| f5a06dedeafdfeb5 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:23 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
+| 0e98e484f5234baa | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:32 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| 53ad55c8afbefe53 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:33 | <file-scope> | sceVu0FVECTOR | host-source/src/tests/native_math_contract_test.cpp |
+| 770a525681bb9d56 | hardware:ps2_sdk_or_thread | host-source/src/tests/native_math_contract_test.cpp:35 | <file-scope> | sceVu0Normalize | host-source/src/tests/native_math_contract_test.cpp |
+| f85b5c014727d2cd | hardware:ps2_sdk_or_thread | host-source/src/tests/nd_meswin_test.cpp:49 | <file-scope> | sceVif1Packet | host-source/src/tests/nd_meswin_test.cpp |
+| 6f4fcc05442063ce | hardware:ps2_sdk_or_thread | host-source/src/tests/nd_meswin_test.cpp:51 | <file-scope> | sceVif1Packet | host-source/src/tests/nd_meswin_test.cpp |
+| 0841dcda031d3f0f | pointer-narrowing | host-source/src/tests/nd_meswin_test.cpp:55 | Gs | static_cast<int>(pixels * | host-source/src/tests/nd_meswin_test.cpp |
+| a1a7ea4f0d7bee68 | hardware:ps2_sdk_or_thread | host-source/src/tests/platform_pad_test.cpp:33 | InitGamePad | sceGsSyncV | host-source/src/tests/platform_pad_test.cpp |
+| 048b46163832854a | pointer-narrowing | host-source/src/tests/video_yuv_test.cpp:77 | Pixels | static_cast<uint8_t>(16 + i * | host-source/src/tests/video_yuv_test.cpp |
+| 756a18d17f9f5487 | pointer-narrowing | host-source/src/tests/video_yuv_test.cpp:81 | Pixels | static_cast<uint8_t>(100 + i * | host-source/src/tests/video_yuv_test.cpp |
+| c6c5f8dc96e004e6 | pointer-narrowing | host-source/src/tests/video_yuv_test.cpp:85 | Pixels | static_cast<uint8_t>(200 - i * | host-source/src/tests/video_yuv_test.cpp |
+| e4285f289bedb9de | hardware:ps2_sdk_or_thread | host-source/src/tests/visualmotion_test.cpp:108 | PoseBone | sceVu0FVECTOR | host-source/src/tests/visualmotion_test.cpp |
+| d3062a98771bd72c | hardware:ps2_sdk_or_thread | host-source/src/tests/visualmotion_test.cpp:109 | PoseBone | sceVu0FVECTOR | host-source/src/tests/visualmotion_test.cpp |
+| 380d838025f9af55 | hardware:ps2_sdk_or_thread | host-source/src/tests/visualmotion_test.cpp:110 | PoseBone | sceVu0FVECTOR | host-source/src/tests/visualmotion_test.cpp |
+| d6cd6e59b95b184d | pointer-narrowing | host-source/src/tests/vu1_prog0_cpu_test.cpp:720 | ExpectStripReorderMatchesRetail | static_cast<uint32_t>(vertex_num * | host-source/src/tests/vu1_prog0_cpu_test.cpp |
+| 2d1dfad300dbfe9a | hardware:ps2_sdk_or_thread | host-source/src/tests/wavetable_draw_test.cpp:46 | <file-scope> | sceVif1Packet | host-source/src/tests/wavetable_draw_test.cpp |
+| 62b9b0f203d33ff2 | hardware:ps2_sdk_or_thread | host-source/src/tests/wavetable_draw_test.cpp:48 | <file-scope> | sceVif1Packet | host-source/src/tests/wavetable_draw_test.cpp |
+| ec833c825fd806be | hardware:ps2_sdk_or_thread | host-source/src/tests/wp04_archive_extents_standalone.cpp:36 | DataReadFailureCount | sceOpen | host-source/src/tests/wp04_archive_extents_standalone.cpp |
+| 094a7c74e215f345 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp04_archive_extents_standalone.cpp:37 | DataReadFailureCount | sceLseek | host-source/src/tests/wp04_archive_extents_standalone.cpp |
+| 1440eeaf7d2202cb | hardware:ps2_sdk_or_thread | host-source/src/tests/wp04_archive_extents_standalone.cpp:38 | DataReadFailureCount | sceRead | host-source/src/tests/wp04_archive_extents_standalone.cpp |
+| 6073d67b03b29cfd | hardware:ps2_sdk_or_thread | host-source/src/tests/wp04_archive_extents_standalone.cpp:39 | DataReadFailureCount | sceClose | host-source/src/tests/wp04_archive_extents_standalone.cpp |
+| 4161d87ca8c127a5 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:30 | <file-scope> | sceGsTest | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| 4541b73929e4d067 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:31 | <file-scope> | sceGsPrim | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| 4d4f9232e3f5ed39 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:56 | main | sceGsTest | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| 7fd255d4e19cbb94 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:59 | main | sceGsZbuf | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| ebf9c4145f85797e | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:63 | main | sceGsAlpha | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| 03dd16b247384051 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:65 | main | sceGsPrim | host-source/src/tests/wp08_hud_state_standalone.cpp |
+| d53b622b8cc559f3 | hardware:ps2_sdk_or_thread | host-source/src/tests/wp08_hud_state_standalone.cpp:76 | main | sceGsAlpha | host-source/src/tests/wp08_hud_state_standalone.cpp |
 | e78d8678345a0e32 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:58 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
 | 385254d30c96e66f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:59 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
 | 695aa6826821c003 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:60 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
@@ -460,49 +689,47 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4316e044b53e1f35 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:84 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | 071e0a3054c024d6 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:85 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | c7e75d852d65da66 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:93 | CCollisionMDT::PickUpNearPoly | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| ecd5215bcc563066 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:121 | mgNormalizeVector | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| d6a814df344c3e1c | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:123 | mgNormalizeVector | sceVu0Normalize | host-source/src/vu0_gaps.cpp |
-| 120e1f8856b32d22 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:124 | mgNormalizeVector | sceVu0ScaleVector | host-source/src/vu0_gaps.cpp |
-| 95443be34b92ed9d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:166 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| 08bbd853961cb0ac | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:167 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| ca4e041b6e71793b | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:168 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| 64454ba4898be8b7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:169 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| 0c8dc745d9795607 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:186 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 738efbbd4f93549a | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:198 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 8b37e9dcf8960bbb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:237 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| b2fdfe7379801117 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:238 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| c0ccb6808a4fba13 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:239 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
-| ad32c194d2976ff8 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:240 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
-| 5c1d4c9176435d61 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:261 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7c6ca8e342ae5399 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:275 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| f82a7450a3e1cb64 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:276 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| f27d227a2a04891c | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:277 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7925209cd0d225bd | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:317 | LogDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| 23bbaefb64b8dfb2 | pointer-narrowing | host-source/src/vu0_gaps.cpp:334 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
-| c2fd69a3f7f769b1 | pointer-narrowing | host-source/src/vu0_gaps.cpp:337 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
-| acb2312eba6ae195 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:368 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| c39cb4630c395738 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:369 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| 54f23afc3e9fc7f8 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:370 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
-| 86f44b3f6d55c0ab | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:371 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
-| 52891462904b07d7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:425 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 21496f9be2ee9a41 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:426 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| bf6160991de6a0be | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:159 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 7ec94c4d017a9425 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:160 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 402e2bbf46ea3dfb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:161 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 28a32ef204632565 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:162 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 0a228976780f7864 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:179 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 515bca1fe7990e09 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:191 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| c62edbfd8db00efe | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:230 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| 0199b165d6196c41 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:231 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 2d094cb1a92ccabb | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:232 | CheckHit | sceVu0SubVector | host-source/src/vu0_gaps.cpp |
+| ed39cbc5474ed5bf | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:233 | CheckHit | sceVu0InnerProduct | host-source/src/vu0_gaps.cpp |
+| 3cfa611964a4125f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:254 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| e933e37969797d69 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:268 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 15296efb880a827e | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:269 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 7b8635b14e42952d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:270 | CheckHit | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| cbdd83b25df374c7 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:310 | LogDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| e48886ec6761998a | pointer-narrowing | host-source/src/vu0_gaps.cpp:327 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
+| 7054a550088ea337 | pointer-narrowing | host-source/src/vu0_gaps.cpp:330 | LogDrawRect | (int) const_cast<mgCVisual * | host-source/src/vu0_gaps.cpp |
+| d61b23fd48731d6d | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:361 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| 9dba1d8435ff7428 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:362 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
+| 3b601925c7fa317b | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:363 | mgCFrame::GetDrawRect | sceVu0FVECTOR | host-source/src/vu0_gaps.cpp |
+| 6d0cd004ea04306f | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:364 | mgCFrame::GetDrawRect | sceVu0FMATRIX | host-source/src/vu0_gaps.cpp |
+| 5ba8f2c7b31ec440 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:414 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| bee86767d829e745 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:415 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 0ad2470b079f6445 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:429 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 54a44db5191d79bd | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:430 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| af07dcb761a00cdc | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:439 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
 | 1ffde73981825f74 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:440 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| cf7aa7f05301db21 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:441 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| 7df192e877425157 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:450 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
-| c6e8dce76a725fe6 | hardware:ps2_sdk_or_thread | host-source/src/vu0_gaps.cpp:451 | mgCFrame::GetDrawRect | sceVu0CopyVector | host-source/src/vu0_gaps.cpp |
+| 405c78ae85204785 | hardware:ps2_sdk_or_thread | host-source/src/water.cpp:160 | CWater::Draw | sceVu0FMATRIX | host-source/src/water.cpp |
 | bb9d9704bb53910d | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:275 | <file-scope> | sceVu0FVECTOR | none detected |
 | f60b1500805c95d1 | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:316 | <file-scope> | sceVu0FVECTOR | none detected |
 | bb6c3dd5627f6c9b | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:357 | <file-scope> | sceVu0FVECTOR | none detected |
 | a4d989458296bdeb | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:363 | <file-scope> | sceVu0FVECTOR | none detected |
 | 87713eed11863d08 | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:398 | <file-scope> | sceVu0FVECTOR | none detected |
 | 85e096e6da395746 | hardware:ps2_sdk_or_thread | retail/include/actionchara.hpp:427 | <file-scope> | sceVu0FVECTOR | none detected |
-| da6f31dd3e70043d | hardware:ps2_sdk_or_thread | retail/include/automap.hpp:267 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| da6f31dd3e70043d | hardware:ps2_sdk_or_thread | retail/include/automap.hpp:267 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | e9b3a1a01f5a4f76 | hardware:ps2_sdk_or_thread | retail/include/cameracontrol.hpp:126 | <file-scope> | sceVu0FVECTOR | none detected |
 | b78a175c52f613c8 | hardware:ps2_sdk_or_thread | retail/include/cameracontrol.hpp:130 | <file-scope> | sceVu0FVECTOR | none detected |
 | 7e0429581c0ae5a8 | hardware:ps2_sdk_or_thread | retail/include/character.hpp:203 | <file-scope> | sceVu0FVECTOR | none detected |
-| 2bd0735619bcdc86 | hardware:ps2_sdk_or_thread | retail/include/character.hpp:376 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| b0dffa4cea301ac5 | hardware:ps2_sdk_or_thread | retail/include/character.hpp:377 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| f588c80bce76f2ea | hardware:ps2_sdk_or_thread | retail/include/character.hpp:379 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 2bd0735619bcdc86 | hardware:ps2_sdk_or_thread | retail/include/character.hpp:376 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| b0dffa4cea301ac5 | hardware:ps2_sdk_or_thread | retail/include/character.hpp:377 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| f588c80bce76f2ea | hardware:ps2_sdk_or_thread | retail/include/character.hpp:379 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 29e9ee2f9e4eac83 | hardware:ps2_sdk_or_thread | retail/include/collision.hpp:68 | <file-scope> | sceVu0FVECTOR | none detected |
 | 19bd022ce87ac6a4 | hardware:ps2_sdk_or_thread | retail/include/collision.hpp:69 | <file-scope> | sceVu0FVECTOR | none detected |
 | 14b5165c390d03f2 | hardware:ps2_sdk_or_thread | retail/include/colprim.hpp:177 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -668,16 +895,16 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 9c2e3eb95e61135d | hardware:ps2_sdk_or_thread | retail/include/gamepad.hpp:124 | <file-scope> | scePadGetState | none detected |
 | 89557753183937c0 | hardware:ps2_sdk_or_thread | retail/include/gamepad.hpp:125 | <file-scope> | scePadInfoMode | none detected |
 | 71fed4cefd094ac2 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:69 | <file-scope> | sceVu0FVECTOR | none detected |
-| 556b5380f6881a11 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:101 | <file-scope> | sceVu0FVECTOR | none detected |
-| eff7ef9f6b44a0dd | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:131 | <file-scope> | sceVu0FVECTOR | none detected |
-| 973c6b148c39c5f0 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:132 | <file-scope> | sceVu0FVECTOR | none detected |
-| b644f787b1414294 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:144 | <file-scope> | sceVu0FMATRIX | none detected |
-| f7239109d18ccc36 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:192 | <file-scope> | sceVu0FVECTOR | none detected |
-| 5337738572eb2927 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:195 | <file-scope> | sceVu0FVECTOR | none detected |
-| 45daef19280fe152 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:198 | <file-scope> | sceVu0FVECTOR | none detected |
+| 0ec69dd6777bce54 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:103 | <file-scope> | sceVu0FVECTOR | none detected |
+| ebbd4034b72dae61 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:133 | <file-scope> | sceVu0FVECTOR | none detected |
+| 745587c7d5fb771e | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:134 | <file-scope> | sceVu0FVECTOR | none detected |
+| cf407ded61b85829 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:146 | <file-scope> | sceVu0FMATRIX | none detected |
+| a4ac65d9b068e802 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:194 | <file-scope> | sceVu0FVECTOR | none detected |
+| c04271a50e4dab07 | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:197 | <file-scope> | sceVu0FVECTOR | none detected |
+| 14f1d5b69340f28f | hardware:ps2_sdk_or_thread | retail/include/gameutil.hpp:200 | <file-scope> | sceVu0FVECTOR | none detected |
 | a77d6e1339b4ffdc | hardware:ps2_sdk_or_thread | retail/include/gyorace.hpp:195 | <file-scope> | sceVu0FVECTOR | none detected |
-| 5b8c0f4f852533e1 | hardware:ps2_sdk_or_thread | retail/include/map.hpp:182 | <file-scope> | sceVu0FMATRIX | none detected |
-| e40df1dc3aa67cba | hardware:ps2_sdk_or_thread | retail/include/map.hpp:197 | <file-scope> | sceVu0IVECTOR | none detected |
+| a02017095e88ca6e | hardware:ps2_sdk_or_thread | retail/include/map.hpp:183 | <file-scope> | sceVu0FMATRIX | none detected |
+| 62c9b854d397abdb | hardware:ps2_sdk_or_thread | retail/include/map.hpp:198 | <file-scope> | sceVu0IVECTOR | none detected |
 | 6c4974de03ffb127 | hardware:ps2_sdk_or_thread | retail/include/mapinfo.hpp:44 | <file-scope> | sceVu0FVECTOR | none detected |
 | 80baceac64e817ce | hardware:ps2_sdk_or_thread | retail/include/mapinfo.hpp:106 | <file-scope> | sceVu0FVECTOR | none detected |
 | 43a5e55450d60452 | hardware:ps2_sdk_or_thread | retail/include/mapload.hpp:102 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -742,7 +969,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d47cc2bddd7a352e | hardware:ps2_sdk_or_thread | retail/include/mg_camera.hpp:308 | Iam | sceVu0FVECTOR | none detected |
 | 4803597512d24ceb | hardware:ps2_sdk_or_thread | retail/include/mg_camera.hpp:309 | Iam | sceVu0FVECTOR | none detected |
 | 4527f3a94b45c155 | hardware:ps2_sdk_or_thread | retail/include/mg_camera.hpp:315 | <file-scope> | sceVu0FVECTOR | none detected |
-| 49fce5135f4510de | hardware:ps2_sdk_or_thread | retail/include/mg_dataset.hpp:84 | <file-scope> | sceVu0FMATRIX | none detected |
+| d7867f85043c1789 | hardware:ps2_sdk_or_thread | retail/include/mg_dataset.hpp:85 | <file-scope> | sceVu0FMATRIX | none detected |
 | a070b2c8da4f035c | hardware:ps2_sdk_or_thread | retail/include/mg_drawenv.hpp:45 | <file-scope> | sceVu0FVECTOR | none detected |
 | 101a7122feb7b7be | hardware:ps2_sdk_or_thread | retail/include/mg_drawenv.hpp:46 | <file-scope> | sceVu0FVECTOR | none detected |
 | e3193be260e7b352 | hardware:ps2_sdk_or_thread | retail/include/mg_drawenv.hpp:77 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -795,11 +1022,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 57458d8c938a40e6 | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:243 | <file-scope> | sceVu0FVECTOR | none detected |
 | ce068eeb2a6b7deb | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:244 | <file-scope> | sceVu0FVECTOR | none detected |
 | ae79115f9bd8ef4e | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:245 | <file-scope> | sceVu0FVECTOR | none detected |
-| e08269d170cec1e8 | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:301 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| aae92d48b8c0439e | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:302 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 0417f8a2f752384b | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:303 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 91b1d915cdf10f7d | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:316 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 411fdb1655a9a2a5 | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:317 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| e08269d170cec1e8 | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:301 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| aae92d48b8c0439e | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:302 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 0417f8a2f752384b | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:303 | Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 91b1d915cdf10f7d | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:316 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 411fdb1655a9a2a5 | hardware:ps2_sdk_or_thread | retail/include/mg_frame.hpp:317 | Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 2907759e4b1bbbda | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:63 | <file-scope> | sceVu0IVECTOR | none detected |
 | e7e5dd4864ceeb57 | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:65 | <file-scope> | sceVu0FMATRIX | none detected |
 | b843c5dd8a7f7f36 | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:66 | <file-scope> | sceVu0FMATRIX | none detected |
@@ -807,26 +1034,26 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | abe670f61cac6a44 | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:78 | <file-scope> | sceVu0FMATRIX | none detected |
 | 086709d4d36c9f28 | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:117 | <file-scope> | sceGsRgbaq | none detected |
 | c6b1448f7e753b5b | hardware:ps2_sdk_or_thread | retail/include/mg_sprite.hpp:199 | <file-scope> | sceGifTag | none detected |
-| 40ade5f19aaf1665 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:188 | <file-scope> | sceGsClamp | none detected |
-| 1798afd6d90d5f7a | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:229 | <file-scope> | sceGsTex0 | none detected |
-| 2c7e3c566146f15b | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:234 | <file-scope> | sceGsTex1 | none detected |
-| a24503f813fed5e9 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:239 | <file-scope> | sceGsClamp | none detected |
-| bd7a5a0561aee9dd | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:379 | <file-scope> | sceVif1Packet | none detected |
-| 331a23a11b3430f5 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:828 | <file-scope> | sceVif1Packet | none detected |
-| aab317856b8c3d67 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:861 | <file-scope> | sceVif1Packet | none detected |
-| cecc49827b184d26 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:77 | <file-scope> | sceVu0FVECTOR | none detected |
-| e5730a9c0d3d2856 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:120 | <file-scope> | sceVu0FVECTOR | none detected |
-| 1830b3d9e01c49a6 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:121 | <file-scope> | sceVu0FVECTOR | none detected |
-| 7e8bac4ceb7ee08d | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:336 | <file-scope> | sceVu0FVECTOR | none detected |
-| 5e2f673282e345db | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:337 | <file-scope> | sceVu0FVECTOR | none detected |
-| 30d993ed7cde5b7d | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:338 | <file-scope> | sceVu0FVECTOR | none detected |
+| 51beca5d0def80cc | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:190 | <file-scope> | sceGsClamp | none detected |
+| fbf64faf3da1ca13 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:232 | <file-scope> | sceGsTex0 | none detected |
+| 03d64d4666e85b25 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:237 | <file-scope> | sceGsTex1 | none detected |
+| 1ae5aaf643ad4aab | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:242 | <file-scope> | sceGsClamp | none detected |
+| be820074d57e10e0 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:382 | <file-scope> | sceVif1Packet | none detected |
+| 7c5789b420f4ff2d | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:831 | <file-scope> | sceVif1Packet | none detected |
+| 93676b50729f26b2 | hardware:ps2_sdk_or_thread | retail/include/mg_texture.hpp:864 | <file-scope> | sceVif1Packet | none detected |
+| 3bc3466b38798cfb | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:78 | <file-scope> | sceVu0FVECTOR | none detected |
+| ab572005b3d7e05e | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:123 | <file-scope> | sceVu0FVECTOR | none detected |
+| 0b1bc37d47428b86 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:124 | <file-scope> | sceVu0FVECTOR | none detected |
 | 2c69ed320f0abef0 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:339 | <file-scope> | sceVu0FVECTOR | none detected |
-| 57d5fd66aec4afdb | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:556 | <file-scope> | sceVu0FVECTOR | none detected |
-| 6ec7ab2367cf61e1 | hardware:scratchpad | retail/include/mg_visual.hpp:689 | <file-scope> | scratchpad | none detected |
-| 9b3df7b4be049343 | hardware:scratchpad | retail/include/mg_visual.hpp:700 | <file-scope> | scratchpad | none detected |
-| 350852fa7b8bdff7 | hardware:scratchpad | retail/include/mg_visual.hpp:701 | <file-scope> | scratchpad | none detected |
-| 4f95f9e238bf3893 | hardware:scratchpad | retail/include/mg_visual.hpp:974 | <file-scope> | scratchpad | none detected |
-| 86f1353edb1d0f3d | hardware:scratchpad | retail/include/mg_visual.hpp:984 | <file-scope> | scratchpad | none detected |
+| 5d18aea54c4b6433 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:340 | <file-scope> | sceVu0FVECTOR | none detected |
+| d6e156dcd122518b | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:341 | <file-scope> | sceVu0FVECTOR | none detected |
+| 8c2eccdd85efc2d5 | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:342 | <file-scope> | sceVu0FVECTOR | none detected |
+| 510c1768cff3fb4b | hardware:ps2_sdk_or_thread | retail/include/mg_visual.hpp:559 | <file-scope> | sceVu0FVECTOR | none detected |
+| 92cef2217f5fb15b | hardware:scratchpad | retail/include/mg_visual.hpp:692 | <file-scope> | scratchpad | none detected |
+| 4d57ecb21772ba4f | hardware:scratchpad | retail/include/mg_visual.hpp:703 | <file-scope> | scratchpad | none detected |
+| bb8c4318be79a3fb | hardware:scratchpad | retail/include/mg_visual.hpp:704 | <file-scope> | scratchpad | none detected |
+| 2f94f1e258507513 | hardware:scratchpad | retail/include/mg_visual.hpp:977 | <file-scope> | scratchpad | none detected |
+| 504e5c34ffd8e994 | hardware:scratchpad | retail/include/mg_visual.hpp:987 | <file-scope> | scratchpad | none detected |
 | e5d2b51ec38ac592 | hardware:ps2_sdk_or_thread | retail/include/mglib.hpp:126 | <file-scope> | sceDmaChan | none detected |
 | 2d1a8743529d2dbf | hardware:ps2_sdk_or_thread | retail/include/mglib.hpp:133 | <file-scope> | sceDmaChan | none detected |
 | 45d261be43cfcb49 | hardware:scratchpad | retail/include/mglib.hpp:137 | <file-scope> | scratchpad | none detected |
@@ -1029,39 +1256,43 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 74c287a41b36be20 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:43 | <file-scope> | sceMcFuncNoUnformat | none detected |
 | 6f883cb182507205 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:50 | <file-scope> | sceMcColor | none detected |
 | 5c1de364bc0f2557 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:57 | <file-scope> | sceMcColor | none detected |
-| e87ac9fd7d70d700 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:62 | <file-scope> | sceMcColorF | none detected |
-| 37f2baaaec1887c1 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:67 | <file-scope> | sceMcVu0FVECTOR | none detected |
-| 5094cd84e72aa6f7 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:72 | <file-scope> | sceMcIconSys | none detected |
-| 35be6ef460848180 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:78 | <file-scope> | sceMcColor | none detected |
-| db3865c4c9a14305 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:79 | <file-scope> | sceMcVu0FVECTOR | none detected |
-| cbb84d3a02ee9383 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:80 | <file-scope> | sceMcColorF | none detected |
+| 7f47b3d578e1331c | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:58 | <file-scope> | sceMcColor | none detected |
+| 9689167dd4c08ac5 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:63 | <file-scope> | sceMcColorF | none detected |
+| 375ca0d67404d746 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:68 | <file-scope> | sceMcVu0FVECTOR | none detected |
+| c6f09affbefb94fd | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:73 | <file-scope> | sceMcIconSys | none detected |
+| 35cb9a00685a262d | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:79 | <file-scope> | sceMcColor | none detected |
+| 70866a1baaae5f7b | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:80 | <file-scope> | sceMcVu0FVECTOR | none detected |
 | 7977fe78d2030188 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:81 | <file-scope> | sceMcColorF | none detected |
-| 80996d7678a59500 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:89 | <file-scope> | sceMcIconSys | none detected |
-| ce6a4448a587cf52 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:94 | <file-scope> | sceMcStDateTime | none detected |
-| bf45d06f66cd54c5 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:104 | <file-scope> | sceMcStDateTime | none detected |
-| 4d6a5dcc1a91b81a | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:107 | <file-scope> | sceMcGetDir | none detected |
-| 54fc04c4fc541b1b | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:109 | <file-scope> | sceMcTblGetDir | none detected |
-| 527f29c79adcc0cd | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:110 | <file-scope> | sceMcStDateTime | none detected |
-| aace3388e0eef10f | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:111 | <file-scope> | sceMcStDateTime | none detected |
-| 372bb52bc1e9cedb | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:120 | <file-scope> | sceMcTblGetDir | none detected |
-| 54862c8cb11f2003 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:129 | <file-scope> | sceMcInit | none detected |
-| 3729f685b8e33ad2 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:134 | <file-scope> | sceMcEnd | none detected |
-| 95971da6c2f9a448 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:140 | <file-scope> | sceMcEnd | none detected |
-| 0c1cc558ed2168fe | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:142 | <file-scope> | sceMcSync | none detected |
-| ab39227a65614351 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:147 | <file-scope> | sceMcOpen | none detected |
-| 50f5cb92d6c4f765 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:152 | <file-scope> | sceMcClose | none detected |
-| 41c06a8572b1c237 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:157 | <file-scope> | sceMcRead | none detected |
-| 267bfa34f4a5ee04 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:162 | <file-scope> | sceMcWrite | none detected |
-| 44ee986ed45bcf71 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:167 | <file-scope> | sceMcSeek | none detected |
-| 6e8c8f5641b9f618 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:172 | <file-scope> | sceMcFlush | none detected |
-| 7d29ff53f5458f59 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:177 | <file-scope> | sceMcChdir | none detected |
-| ec3593f161ac768f | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:182 | <file-scope> | sceMcRename | none detected |
-| d5107a839619ba85 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:187 | <file-scope> | sceMcMkdir | none detected |
-| 5258c19d62da2908 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:192 | <file-scope> | sceMcDelete | none detected |
-| a206b76b6b399ff8 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:197 | <file-scope> | sceMcGetDir | none detected |
-| 46dd4ef1196f97a5 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:202 | <file-scope> | sceMcGetInfo | none detected |
-| 0f29eb6bc4fe7148 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:207 | <file-scope> | sceMcFormat | none detected |
-| 4c02ebc034b50164 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:212 | <file-scope> | sceMcUnformat | none detected |
+| 0fead60b4a66ffbd | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:82 | <file-scope> | sceMcColorF | none detected |
+| 291ffc5ae741aa75 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:90 | <file-scope> | sceMcIconSys | none detected |
+| dbc8ae2a248c4551 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:91 | <file-scope> | sceMcIconSys | none detected |
+| f840bcf17e6e782e | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:96 | <file-scope> | sceMcStDateTime | none detected |
+| 6fee3996c4ef7f87 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:106 | <file-scope> | sceMcStDateTime | none detected |
+| 67792b7ac3bff2fc | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:107 | <file-scope> | sceMcStDateTime | none detected |
+| 4d8f90ab6edb9f33 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:110 | <file-scope> | sceMcGetDir | none detected |
+| 07c71462d85167a3 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:112 | <file-scope> | sceMcTblGetDir | none detected |
+| 1d56882bbcfc790b | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:113 | <file-scope> | sceMcStDateTime | none detected |
+| f4a53c0f930134fb | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:114 | <file-scope> | sceMcStDateTime | none detected |
+| a93a632b3d1443ab | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:123 | <file-scope> | sceMcTblGetDir | none detected |
+| c77cc48fc69b75c6 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:124 | <file-scope> | sceMcTblGetDir | none detected |
+| 3f70617cae172438 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:133 | <file-scope> | sceMcInit | none detected |
+| 8c44e4c565120810 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:138 | <file-scope> | sceMcEnd | none detected |
+| d485bf341c37afc1 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:144 | <file-scope> | sceMcEnd | none detected |
+| e6f469024c4a2d2e | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:146 | <file-scope> | sceMcSync | none detected |
+| 12f2f9d6edf48f79 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:151 | <file-scope> | sceMcOpen | none detected |
+| 282d2172408db31f | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:156 | <file-scope> | sceMcClose | none detected |
+| 3d10404e813aad56 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:161 | <file-scope> | sceMcRead | none detected |
+| 8146c048c0ec6b10 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:166 | <file-scope> | sceMcWrite | none detected |
+| 354d6d7da9b2f70d | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:171 | <file-scope> | sceMcSeek | none detected |
+| 388d55c0b3c175c2 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:176 | <file-scope> | sceMcFlush | none detected |
+| 3941a2f9c6c45858 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:181 | <file-scope> | sceMcChdir | none detected |
+| 3a0e510d78d1ad13 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:186 | <file-scope> | sceMcRename | none detected |
+| c83870ea48d3ebc2 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:191 | <file-scope> | sceMcMkdir | none detected |
+| 79a14349e6943859 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:196 | <file-scope> | sceMcDelete | none detected |
+| aeb9c3014e4570d0 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:201 | <file-scope> | sceMcGetDir | none detected |
+| 845572917eca3506 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:206 | <file-scope> | sceMcGetInfo | none detected |
+| fb3e30a5b44b3914 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:211 | <file-scope> | sceMcFormat | none detected |
+| 186aa54e19c41e46 | hardware:ps2_sdk_or_thread | retail/include/sce/libmc.h:216 | <file-scope> | sceMcUnformat | none detected |
 | 67b02bff3541d727 | hardware:ps2_sdk_or_thread | retail/include/sce/libmpeg.h:16 | <file-scope> | sceMpeg | none detected |
 | 58617606e206be0d | hardware:ps2_sdk_or_thread | retail/include/sce/libmpeg.h:30 | <file-scope> | sceMpegAddCallback | none detected |
 | f3108f4d7113ebc0 | hardware:ps2_sdk_or_thread | retail/include/sce/libmpeg.h:32 | <file-scope> | sceMpegCbType | none detected |
@@ -1270,7 +1501,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 291becda028c161c | hardware:ps2_sdk_or_thread | retail/include/sceneseq.hpp:1263 | <file-scope> | sceVu0FVECTOR | none detected |
 | 5b4bb5117da17e6e | hardware:ps2_sdk_or_thread | retail/include/sceneseq.hpp:1264 | <file-scope> | sceVu0FVECTOR | none detected |
 | c0589bb9a7846252 | hardware:ps2_sdk_or_thread | retail/include/sceneseq.hpp:1265 | <file-scope> | sceVu0FVECTOR | none detected |
-| 9cab35119927b6b7 | hardware:ps2_sdk_or_thread | retail/include/scenesnd.hpp:420 | <file-scope> | sceVu0FVECTOR | none detected |
+| 9094b1cacedff1e7 | hardware:ps2_sdk_or_thread | retail/include/scenesnd.hpp:421 | <file-scope> | sceVu0FVECTOR | none detected |
 | 28f6c30028d08244 | hardware:ps2_sdk_or_thread | retail/include/sphida.hpp:149 | <file-scope> | sceVu0FVECTOR | none detected |
 | 52f60935cf794c4a | hardware:ps2_sdk_or_thread | retail/include/sphida.hpp:150 | <file-scope> | sceVu0FVECTOR | none detected |
 | 3956ab0c6e7f9346 | hardware:ps2_sdk_or_thread | retail/include/sphida.hpp:151 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -1415,12 +1646,12 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | e039b42b69a96577 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3562 | CActionChara::StepParam | sceVu0ScaleVectorXYZ | none detected |
 | 0e6e13be5a1a7cba | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3563 | CActionChara::StepParam | sceVu0AddVector | none detected |
 | a40f7eb7bece4e01 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3579 | CActionChara::StepParam | sceVu0CopyVector | none detected |
-| 49ccc87b96b74ce7 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3697 | CActionChara::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 8c44fa895e6977dc | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3698 | CActionChara::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e3c990faa0522ef4 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3706 | CActionChara::Step | sceVu0CopyMatrix | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 6df51517223cdf7a | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3707 | CActionChara::Step | sceVu0UnitMatrix | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| d6821b86921a9ae4 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3708 | CActionChara::Step | sceVu0RotMatrixZ | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ce146606ecda3ada | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3709 | CActionChara::Step | sceVu0MulMatrix | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 49ccc87b96b74ce7 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3697 | CActionChara::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 8c44fa895e6977dc | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3698 | CActionChara::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e3c990faa0522ef4 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3706 | CActionChara::Step | sceVu0CopyMatrix | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 6df51517223cdf7a | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3707 | CActionChara::Step | sceVu0UnitMatrix | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| d6821b86921a9ae4 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3708 | CActionChara::Step | sceVu0RotMatrixZ | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ce146606ecda3ada | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3709 | CActionChara::Step | sceVu0MulMatrix | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | cc0d1c327737a6fe | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3835 | GuardEffectSet | sceVu0CopyVector | none detected |
 | 41b1f29edad4d3a4 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3837 | GuardEffectSet | sceVu0SubVector | none detected |
 | 85070927af45eee5 | hardware:ps2_sdk_or_thread | retail/src/actionchara.cpp:3838 | GuardEffectSet | sceVu0Normalize | none detected |
@@ -1468,17 +1699,17 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | dca60c2e9734b702 | hardware:ps2_sdk_or_thread | retail/src/actscript.cpp:2056 | if | sceVu0AddVector | none detected |
 | 0b627ab1a96348a1 | hardware:ps2_sdk_or_thread | retail/src/actscript.cpp:2057 | if | sceVu0ScaleVector | none detected |
 | d358d830a54d4b49 | hardware:ps2_sdk_or_thread | retail/src/actscript.cpp:2058 | if | sceVu0AddVector | none detected |
-| ce5f820838abba00 | raw-allocation | retail/src/actscript.cpp:2612 | SetActionScript | reinterpret_cast<RS_STACKDATA *>(memory->Alloc(0x40) | none detected |
-| a0cb69d40fa41f8d | raw-allocation | retail/src/actscript.cpp:2613 | SetActionScript | reinterpret_cast<RS_CALLDATA *>(memory->Alloc(0x180) | none detected |
-| 732b4b92faf188dd | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:515 | CMiniMapSymbol::DrawSymbol | sceVu0SubVector | none detected |
-| c1e840b86831c327 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:558 | CMiniMapSymbol::DrawSymbol_Chara | sceVu0SubVector | none detected |
-| cbf9a159e7a8042d | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:604 | CMiniMapSymbol::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 47064ec12fb9bf68 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:634 | CMiniMapSymbol::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| be0ea7b1dd138ac5 | raw-allocation | retail/src/automap.cpp:758 | _ROOM_SIZE | (s16 *) operator new[](bytes, nowPrisetStack->Alloc(blocks + 2) | none detected |
-| a3277c916aad70bc | raw-member-offset | retail/src/automap.cpp:1474 | CAutoMapGen::CreatTermParts | (u8 *) cells + (y + 1 | none detected |
-| bbe537691091ff29 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:1932 | CAutoMapGen::SearchHealingPoint | sceVu0AddVector | none detected |
-| d7e984cc41d5ec6f | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:126 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 619628733ab9ca35 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:130 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 226199b1ac74b12d | raw-allocation | retail/src/actscript.cpp:2612 | SetActionScript | reinterpret_cast<RS_STACKDATA *>(memory->Alloc((sizeof(RS_STACKDATA) | none detected |
+| 8fc1713dc1b972a4 | raw-allocation | retail/src/actscript.cpp:2613 | SetActionScript | reinterpret_cast<RS_CALLDATA *>(memory->Alloc((sizeof(RS_CALLDATA) | none detected |
+| fbc016c896b098ab | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:534 | CMiniMapSymbol::DrawSymbol | sceVu0SubVector | none detected |
+| e5f5eb27732eb673 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:577 | CMiniMapSymbol::DrawSymbol_Chara | sceVu0SubVector | src/automap.cpp |
+| f74c5f3497b0a425 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:623 | CMiniMapSymbol::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 61899705d4a31b9e | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:653 | CMiniMapSymbol::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 218e6bf3da99811f | raw-allocation | retail/src/automap.cpp:777 | _ROOM_SIZE | (s16 *) operator new[](bytes, nowPrisetStack->Alloc(blocks + 2) | none detected |
+| 2757ba38622bb3b3 | raw-member-offset | retail/src/automap.cpp:1493 | CAutoMapGen::CreatTermParts | (u8 *) cells + (y + 1 | none detected |
+| b1dfadd5827da00e | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:1951 | CAutoMapGen::SearchHealingPoint | sceVu0AddVector | none detected |
+| d7e984cc41d5ec6f | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:126 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 619628733ab9ca35 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:130 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | be19d6cc597ba3c2 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:194 | CCameraControl::MoveCamera | sceVu0AddVector | none detected |
 | e341b0cae2127aa5 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:195 | CCameraControl::MoveCamera | sceVu0SubVector | none detected |
 | 1c5a265762894121 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:197 | CCameraControl::MoveCamera | sceVu0Normalize | none detected |
@@ -1523,7 +1754,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 30d57bb5ffa924ec | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:617 | CCameraControl::GetCameraMatrix | sceVu0Normalize | none detected |
 | c5846316df3fda47 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:618 | CCameraControl::GetCameraMatrix | sceVu0Normalize | none detected |
 | 03544ba112deb410 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:619 | CCameraControl::GetCameraMatrix | sceVu0CameraMatrix | none detected |
-| daf8221af523c412 | hardware:ps2_sdk_or_thread | retail/src/character.cpp:428 | CCharacter2::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| daf8221af523c412 | hardware:ps2_sdk_or_thread | retail/src/character.cpp:428 | CCharacter2::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 4a87ac40beff346e | hardware:ps2_sdk_or_thread | retail/src/character.cpp:470 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | src/character.cpp |
 | 488b4a68003937db | hardware:ps2_sdk_or_thread | retail/src/character.cpp:471 | CCharacter2::SetDeformMesh | sceVu0FVECTOR | src/character.cpp |
 | 1cb2d85a5f7ddcc5 | hardware:ps2_sdk_or_thread | retail/src/character.cpp:488 | CCharacter2::GetCameraDist | sceVu0FVECTOR | none detected |
@@ -1549,8 +1780,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 5339d8e958326b0e | hardware:ps2_sdk_or_thread | retail/src/character.cpp:3421 | _SKIN_MOTION | sceVu0FVECTOR | none detected |
 | b7f4ce9ce1bb1c1b | hardware:ps2_sdk_or_thread | retail/src/character.cpp:3422 | _SKIN_MOTION | sceVu0FVECTOR | none detected |
 | 5786540ea08c399b | raw-allocation | retail/src/character.cpp:3714 | CCharacter2::Copy | ((dest_outline = (COutLineDraw *) operator new(sizeof(COutLineDraw), memory->Alloc(9) | none detected |
-| 0471800ad146f7db | hardware:ps2_sdk_or_thread | retail/src/charasetup.cpp:655 | SetupRobo | sceVu0FMATRIX | none detected |
-| 1db14cc93f98d9a5 | hardware:ps2_sdk_or_thread | retail/src/charasetup.cpp:656 | SetupRobo | sceVu0CopyMatrix | none detected |
+| 81b4f54cf8116038 | hardware:ps2_sdk_or_thread | retail/src/charasetup.cpp:658 | SetupRobo | sceVu0FMATRIX | none detected |
+| d6dc15da810e3d33 | hardware:ps2_sdk_or_thread | retail/src/charasetup.cpp:659 | SetupRobo | sceVu0CopyMatrix | none detected |
 | 7d6a7638fc0b27d7 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:168 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | none detected |
 | 32c7ecadca63c9a7 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:169 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | none detected |
 | 51f7be3458330087 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:170 | CCollisionMDT::PickUpNearPoly | sceVu0FVECTOR | none detected |
@@ -1576,9 +1807,9 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 904696428e58edc6 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:459 | CColFrame::GetWorldBBox | sceVu0FVECTOR | none detected |
 | d0eeeb1e7bec2cee | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:460 | CColFrame::GetWorldBBox | sceVu0FVECTOR | none detected |
 | cc01731d853af956 | raw-member-offset | retail/src/collision.cpp:503 | CColFrame::GetWorldBBox | data + object | none detected |
-| 9bc93d92717f8d35 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:535 | CColFrame::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| cc77df0cefa20041 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:552 | CColFrame::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 9ed8196b92b8d28a | raw-allocation | retail/src/collision.cpp:579 | CColFrame::Initialize | (CCPoly *) memory->Alloc(poly_count * sizeof(CCPoly) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 9bc93d92717f8d35 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:535 | CColFrame::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| cc77df0cefa20041 | hardware:ps2_sdk_or_thread | retail/src/collision.cpp:552 | CColFrame::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 9ed8196b92b8d28a | raw-allocation | retail/src/collision.cpp:579 | CColFrame::Initialize | (CCPoly *) memory->Alloc(poly_count * sizeof(CCPoly) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 305e5bb05f1c8e3b | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:938 | CColPrim::SetCoord | sceVu0CopyVector | none detected |
 | 5c24b9383425a49b | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:939 | CColPrim::SetCoord | sceVu0CopyVector | none detected |
 | 06308ba477793a9c | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:940 | CColPrim::SetCoord | sceVu0CopyVector | none detected |
@@ -1613,8 +1844,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | f3672c5c1b561667 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1083 | CColPrim::IsHit | sceVu0Normalize | none detected |
 | 546c8f8e16b14c02 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1093 | CColPrim::IsHit | sceVu0SubVector | none detected |
 | db919832614fd2d1 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1140 | CColPrim::GetReversVec | sceVu0SubVector | none detected |
-| 049e34b717421584 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1158 | CColPrim::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| b4862430a0a7c088 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1162 | CColPrim::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 049e34b717421584 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1158 | CColPrim::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| b4862430a0a7c088 | hardware:ps2_sdk_or_thread | retail/src/colprim.cpp:1162 | CColPrim::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 84718c292e72a422 | hardware:ps2_sdk_or_thread | retail/src/convviewlp.cpp:92 | <file-scope> | sceMcTblGetDir | none detected |
 | 232581beaf96dfc4 | hardware:ps2_sdk_or_thread | retail/src/convviewlp.cpp:160 | SVConvViewInit | sceMcInit | none detected |
 | 296eb598d7f37f43 | hardware:ps2_sdk_or_thread | retail/src/convviewlp.cpp:162 | SVConvViewInit | sceMcTblGetDir | none detected |
@@ -1698,72 +1929,72 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | b8985e4334d3492a | hardware:ps2_sdk_or_thread | retail/src/dng_debug.cpp:139 | dngDebugDraw | sceVif1Packet | none detected |
 | 6854d0cd36557609 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:133 | CChillAfterHit::SetPos | sceVu0ScaleVector | none detected |
 | dc9354f7ba968c66 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:134 | CChillAfterHit::SetPos | sceVu0AddVector | none detected |
-| 7f26051de6179149 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:167 | CChillAfterHit::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 6186709fd3736c0a | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:187 | CChillAfterHit::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 7f26051de6179149 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:167 | CChillAfterHit::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 6186709fd3736c0a | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:187 | CChillAfterHit::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | bbee2e6c7d9ec814 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:240 | LocalTransWorldPrimPos | sceVu0ApplyMatrix | none detected |
-| f263d549dfc8cf18 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:345 | CChillAfterHit::Draw | sceVu0ScaleVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| dae499d4d31f31b5 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:346 | CChillAfterHit::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| f263d549dfc8cf18 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:345 | CChillAfterHit::Draw | sceVu0ScaleVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| dae499d4d31f31b5 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:346 | CChillAfterHit::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | f2bdada15ee160b1 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:407 | CFireAfterHit::SetPos | sceVu0ScaleVector | none detected |
 | d12abcdebc634b59 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:408 | CFireAfterHit::SetPos | sceVu0AddVector | none detected |
-| d0f1e38b64b09666 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:495 | CFireAfterHit::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| b0bd8c7e0b761fd2 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:609 | CFireAfterHit::Draw | sceVu0ScaleVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a00f251dbe9a03aa | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:610 | CFireAfterHit::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| d0f1e38b64b09666 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:495 | CFireAfterHit::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| b0bd8c7e0b761fd2 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:609 | CFireAfterHit::Draw | sceVu0ScaleVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a00f251dbe9a03aa | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:610 | CFireAfterHit::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | f2adecac966d2fda | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:642 | CTornado::SetPos | sceVu0CopyVector | none detected |
 | 14f871eefe468ef1 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:653 | CTornado::SetPos | sceVu0CopyVector | none detected |
-| 11436fdb02b6ea01 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:832 | CThunder::Draw | sceGsTest | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 62315863d0cc7a8f | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:887 | CThunder::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 11436fdb02b6ea01 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:832 | CThunder::Draw | sceGsTest | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 62315863d0cc7a8f | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:887 | CThunder::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | a0eaa4fafe429083 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1012 | CMiniEffPrim::SetPrim | sceVu0CopyVector | none detected |
-| b9796a06b7690840 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1192 | CHealingEffectMan::Draw | sceVu0UnitMatrix | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 9cf791a2411fe037 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1246 | CHealingEffectMan::Draw | sceVu0RotMatrixY | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 4d6b7372100cb51e | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1247 | CHealingEffectMan::Draw | sceVu0ApplyMatrix | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| cf1d547d6d04cd80 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1248 | CHealingEffectMan::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| b9796a06b7690840 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1192 | CHealingEffectMan::Draw | sceVu0UnitMatrix | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 9cf791a2411fe037 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1246 | CHealingEffectMan::Draw | sceVu0RotMatrixY | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 4d6b7372100cb51e | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1247 | CHealingEffectMan::Draw | sceVu0ApplyMatrix | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| cf1d547d6d04cd80 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1248 | CHealingEffectMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | e4f62304131789b6 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1329 | CHealingEffectMan::Set | sceVu0CopyVector | none detected |
-| 2893154947a1f8d8 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1368 | CSwordLuminous::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f86c7b06bbd74bb0 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1370 | CSwordLuminous::Draw | sceVu0Normalize | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 7233378bb74a36c2 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1371 | CSwordLuminous::Draw | sceVu0ScaleVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 9525604957844fa0 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1398 | CSwordLuminous::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| c4c20a8e4f21c990 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1457 | CSWordAfterImage::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 8c637c4c938b4de3 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1458 | CSWordAfterImage::Draw | sceVu0ScaleVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 9d713120052a7b6b | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1459 | CSWordAfterImage::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 2893154947a1f8d8 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1368 | CSwordLuminous::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f86c7b06bbd74bb0 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1370 | CSwordLuminous::Draw | sceVu0Normalize | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 7233378bb74a36c2 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1371 | CSwordLuminous::Draw | sceVu0ScaleVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 9525604957844fa0 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1398 | CSwordLuminous::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| c4c20a8e4f21c990 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1457 | CSWordAfterImage::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 8c637c4c938b4de3 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1458 | CSWordAfterImage::Draw | sceVu0ScaleVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 9d713120052a7b6b | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1459 | CSWordAfterImage::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 0dfe6324dd915a2d | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1530 | CSWordAfterImage::AddPoint | sceVu0CopyVector | none detected |
 | 1dc9d27e478308cb | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1531 | CSWordAfterImage::AddPoint | sceVu0CopyVector | none detected |
-| 3f988bc2c22c7113 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1585 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| f65a66a79f94d583 | raw-allocation | retail/src/dng_effect.cpp:1585 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_bytes / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| d70abf649826aa4f | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1586 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 1f17538297944450 | raw-allocation | retail/src/dng_effect.cpp:1586 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_bytes / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| f4940230c3052608 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1588 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 2658e8ade38d8d51 | raw-allocation | retail/src/dng_effect.cpp:1588 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_blocks) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 91185a618fddbf5c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1589 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 14c2488db62980ad | raw-allocation | retail/src/dng_effect.cpp:1589 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_blocks) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| af411ace764594be | raw-allocation | retail/src/dng_effect.cpp:1590 | CSWordAfterImage::Initialize | (float *) memory->Alloc(capacity * 4 / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 16f88aad55ca0426 | raw-allocation | retail/src/dng_effect.cpp:1591 | CSWordAfterImage::Initialize | (float *) memory->Alloc(smooth_capacity * 4 / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 3f988bc2c22c7113 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1585 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| f65a66a79f94d583 | raw-allocation | retail/src/dng_effect.cpp:1585 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_bytes / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| d70abf649826aa4f | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1586 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 1f17538297944450 | raw-allocation | retail/src/dng_effect.cpp:1586 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_bytes / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| f4940230c3052608 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1588 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 2658e8ade38d8d51 | raw-allocation | retail/src/dng_effect.cpp:1588 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_blocks) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 91185a618fddbf5c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1589 | CSWordAfterImage::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 14c2488db62980ad | raw-allocation | retail/src/dng_effect.cpp:1589 | CSWordAfterImage::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_blocks) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| af411ace764594be | raw-allocation | retail/src/dng_effect.cpp:1590 | CSWordAfterImage::Initialize | (float *) memory->Alloc(capacity * 4 / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 16f88aad55ca0426 | raw-allocation | retail/src/dng_effect.cpp:1591 | CSWordAfterImage::Initialize | (float *) memory->Alloc(smooth_capacity * 4 / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | e994f0ce8b029f4c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1620 | CAfterWire::SetPos | sceVu0CopyVector | none detected |
 | d6cfb067df8e3bbe | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1684 | CAfterWire::StepWire | sceVu0CopyVector | none detected |
 | a38213aee31a7254 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1685 | CAfterWire::StepWire | sceVu0CopyVector | none detected |
 | 37f37124b657a967 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1686 | CAfterWire::StepWire | sceVu0Normalize | none detected |
 | f2904bb3c1542732 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1697 | CAfterWire::StepWire | sceVu0ScaleVectorXYZ | none detected |
 | 0db2e196187c2baf | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1714 | CAfterWire::StepWire | sceVu0Normalize | none detected |
-| 1033d95fe2ed6100 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1745 | CHitEffectImage::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 7e234c5137574174 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2033 | CPowerLine::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 1033d95fe2ed6100 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:1745 | CHitEffectImage::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 7e234c5137574174 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2033 | CPowerLine::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 667b9cc7715b08b6 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2068 | CDeadEffect::SetDeadEffect | sceVu0CopyVector | none detected |
-| 6fff0b387e8e6403 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2212 | CDeadEffect::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 0da27966685b9782 | pointer-narrowing | retail/src/dng_effect.cpp:2229 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a7ee2cce740f9211 | pointer-narrowing | retail/src/dng_effect.cpp:2232 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| b5cbb78e869dec22 | pointer-narrowing | retail/src/dng_effect.cpp:2235 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ecd8b043c859fe31 | pointer-narrowing | retail/src/dng_effect.cpp:2238 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 035aa37a4ac8e2fb | pointer-narrowing | retail/src/dng_effect.cpp:2241 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 7cc282be451259b3 | pointer-narrowing | retail/src/dng_effect.cpp:2244 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 70d2a4669297b585 | pointer-narrowing | retail/src/dng_effect.cpp:2247 | CDeadEffect::Draw | (int) (fleck->rate * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 6fff0b387e8e6403 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2212 | CDeadEffect::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0da27966685b9782 | pointer-narrowing | retail/src/dng_effect.cpp:2229 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a7ee2cce740f9211 | pointer-narrowing | retail/src/dng_effect.cpp:2232 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| b5cbb78e869dec22 | pointer-narrowing | retail/src/dng_effect.cpp:2235 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| ecd8b043c859fe31 | pointer-narrowing | retail/src/dng_effect.cpp:2238 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 035aa37a4ac8e2fb | pointer-narrowing | retail/src/dng_effect.cpp:2241 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 7cc282be451259b3 | pointer-narrowing | retail/src/dng_effect.cpp:2244 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 70d2a4669297b585 | pointer-narrowing | retail/src/dng_effect.cpp:2247 | CDeadEffect::Draw | (int) (fleck->rate * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 4ba018b67b543b5f | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2272 | CMapEffect_Sprite::Set | sceVu0CopyVector | none detected |
 | 4ca7c45e45fe2cc3 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2273 | CMapEffect_Sprite::Set | sceVu0CopyVector | none detected |
 | d7ea1aecba5431dd | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2287 | CMapEffect_Sprite::Set | sceVu0Normalize | none detected |
-| bc3c03f21fd861fe | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2300 | CMapEffect_Sprite::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ce8cd0942736e11c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2304 | CMapEffect_Sprite::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 10d882910fafd3e4 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2341 | CMapEffect_Sprite::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| bc3c03f21fd861fe | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2300 | CMapEffect_Sprite::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ce8cd0942736e11c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2304 | CMapEffect_Sprite::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 10d882910fafd3e4 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2341 | CMapEffect_Sprite::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 8ab384110ee6bfb2 | pointer-narrowing | retail/src/dng_effect.cpp:2430 | CMapEffectsManeger::Init_LightBoll | (int) sizeof(CMapEffect_Sprite) + 0x10, (u_long128 * | none detected |
-| 3ccad0821eb1f803 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2455 | CMapEffectsManeger::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 3371f1f4a7f77c4c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2480 | CMapEffectsManeger::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| f3c392cd424def61 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2482 | CMapEffectsManeger::Step | sceVu0InnerProduct | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3ccad0821eb1f803 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2455 | CMapEffectsManeger::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3371f1f4a7f77c4c | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2480 | CMapEffectsManeger::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| f3c392cd424def61 | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2482 | CMapEffectsManeger::Step | sceVu0InnerProduct | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 45c53a4a1451ee14 | pointer-narrowing | retail/src/dng_effect.cpp:2587 | BattleEffectMan::AllocEffect | (int) sizeof(CFlushEffect) + 16, memory->Alloc(align16_blocks(num * | none detected |
 | c0455396f87299bd | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:2994 | CWeaponElement::Draw_Cold | sceVu0CopyVector | none detected |
 | 7a68e2f51afe0e2a | hardware:ps2_sdk_or_thread | retail/src/dng_effect.cpp:3061 | CWeaponElement::Init_Wind | sceVu0CopyVector | none detected |
@@ -1819,11 +2050,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | fc67855f16030ebb | hardware:ps2_sdk_or_thread | retail/src/dng_event.cpp:1660 | ScanEyePoint | sceVu0ApplyMatrix | none detected |
 | 0b7a266c1ccf8e14 | raw-member-offset | retail/src/dng_event.cpp:2424 | LoadMonsterFile | monster_man + offset | src/dng_event.cpp |
 | bb06a874e78a9408 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:405 | CEnemyLifeGage::Set | sceVu0CopyVector | none detected |
-| 5de0ce29d4f573c9 | pointer-narrowing | retail/src/dng_hud.cpp:448 | CEnemyLifeGage::Draw | (int) (hp_width * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 5de0ce29d4f573c9 | pointer-narrowing | retail/src/dng_hud.cpp:448 | CEnemyLifeGage::Draw | (int) (hp_width * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 26b6d73a5c388fd8 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:587 | CDamageScore::SetValue | sceVu0CopyVector | none detected |
 | 9a19ef61bd961b04 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:607 | CDamageScore::SetSprite | sceVu0CopyVector | none detected |
-| a161267dd5103f50 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:753 | CDamageScore2::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| d5f74a1b110c01ee | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:861 | CLockOnModel::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| a161267dd5103f50 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:753 | CDamageScore2::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d5f74a1b110c01ee | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:861 | CLockOnModel::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 35497e5244849500 | hardware:ps2_sdk_or_thread | retail/src/dng_hud.cpp:941 | CLockOnModel::DrawMess | sceVif1Packet | none detected |
 | ea8d0eee48b983f6 | hardware:ps2_sdk_or_thread | retail/src/dng_main.cpp:1174 | DngMainDraw | sceVu0FVECTOR | none detected |
 | e9110d520607adf9 | hardware:ps2_sdk_or_thread | retail/src/dng_main.cpp:1175 | DngMainDraw | sceVu0FVECTOR | none detected |
@@ -1946,82 +2177,82 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 16eb44d96b52d883 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:365 | CRocketLauncher::SetPos | sceVu0CopyVector | none detected |
 | 59af454f0e93c3d1 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:366 | CRocketLauncher::SetPos | sceVu0CopyVector | none detected |
 | 5c66d1e725d73830 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:372 | CRocketLauncher::SetPos | sceVu0CopyVector | none detected |
-| 07df060fcc53981d | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:383 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 016be66b219edaeb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:384 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 3778663bc3be6cfb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:385 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 7358f99d4a644f28 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:388 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 88ec082a088701b5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:389 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 21b53a8d2da38827 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:426 | CRocketLauncher::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 1e9be12be32c8e36 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:427 | CRocketLauncher::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| a1d0519f43e506ed | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:431 | CRocketLauncher::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| faad8b179bc9ac34 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:432 | CRocketLauncher::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| b27ba666ef383f69 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:433 | CRocketLauncher::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 0e6a9b662d4cccfb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:469 | CRocketLauncher::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e247722e277f90a2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:470 | CRocketLauncher::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 80519f303a27f0b2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:471 | CRocketLauncher::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 0c3cb618710611b6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:472 | CRocketLauncher::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| a3f1c0323c336d80 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:480 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| d28d15a254cfe779 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:507 | CRocketLauncher::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e2cc6ae539a480f0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:623 | CRocketLauncherMan::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 07df060fcc53981d | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:383 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 016be66b219edaeb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:384 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3778663bc3be6cfb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:385 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 7358f99d4a644f28 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:388 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 88ec082a088701b5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:389 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 21b53a8d2da38827 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:426 | CRocketLauncher::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 1e9be12be32c8e36 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:427 | CRocketLauncher::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| a1d0519f43e506ed | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:431 | CRocketLauncher::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| faad8b179bc9ac34 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:432 | CRocketLauncher::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| b27ba666ef383f69 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:433 | CRocketLauncher::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 0e6a9b662d4cccfb | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:469 | CRocketLauncher::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e247722e277f90a2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:470 | CRocketLauncher::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 80519f303a27f0b2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:471 | CRocketLauncher::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 0c3cb618710611b6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:472 | CRocketLauncher::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| a3f1c0323c336d80 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:480 | CRocketLauncher::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| d28d15a254cfe779 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:507 | CRocketLauncher::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e2cc6ae539a480f0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:623 | CRocketLauncherMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | beac51b991c81c89 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:677 | CMachineGun::Set | sceVu0CopyVector | none detected |
 | 4b2d2ddc4cf4ff79 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:678 | CMachineGun::Set | sceVu0Normalize | none detected |
 | 2c56c9c4fac70f25 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:679 | CMachineGun::Set | sceVu0ScaleVectorXYZ | none detected |
 | 24d80d73d70bddcd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:680 | CMachineGun::Set | sceVu0CopyVector | none detected |
 | 880429bd3d2b37a2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:681 | CMachineGun::Set | sceVu0CopyVector | none detected |
-| cb8d751e7ada1262 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:700 | CMachineGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e823c6a13bb89bac | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:701 | CMachineGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| cb8d751e7ada1262 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:700 | CMachineGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e823c6a13bb89bac | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:701 | CMachineGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 61e920fe8a420ee5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:770 | CLaserGun::SetPos | sceVu0CopyVector | none detected |
 | 1b379c8dfb6379fd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:771 | CLaserGun::SetPos | sceVu0CopyVector | none detected |
 | 81b1bc9b80b5beee | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:772 | CLaserGun::SetPos | sceVu0CopyVector | none detected |
 | 7cba6172fa1126d0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:773 | CLaserGun::SetPos | sceVu0CopyVector | none detected |
 | 8755ebf99a643c52 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:781 | CLaserGun::SetPos | sceVu0CopyVector | none detected |
-| eddd6ff92fbcdbb8 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:911 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| d709fa230fd0c9b1 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:912 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| f2febc8a6e38f0c6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:917 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 56a7bb45467ae11a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:918 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| a97973494f449f34 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:919 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 68e1fd77accade3a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:942 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 2fef43ba1d31cd58 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:943 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 55dc84f7d8eeb64b | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:944 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 560e8947fa3c6532 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:945 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ffaf0f6aa6556cc7 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:948 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| dd728d07359ee9d5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:967 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 3348382f6c400ae9 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:968 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 3e878687eb230c84 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:969 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 246d859362412eaa | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:970 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 877a150cddb2709f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:973 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 5945632c52be6a6f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1033 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ce3ed9d75d80c2dd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1077 | CLaserGun::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ae4b6fe87b13b675 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1128 | CLaserGun::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3db78036bca4cbfe | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1131 | CLaserGun::Draw | sceVu0ScaleVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f51498770b512384 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1132 | CLaserGun::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 631831856463e782 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1150 | CLaserGun::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 84a016c849d73f49 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1218 | CLaserGunMan::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 40070be6dbc322ff | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1285 | CPullItem::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 551242c0bd5493f6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1304 | CPullItem::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e535df880f825d73 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1337 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 098ae85bf579b7e5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1338 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 945d6ebc717faec0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1339 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 12740c21b5fe7cc7 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1340 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| db9da55cf474e004 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1341 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e3609537096b9dce | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1346 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| a195a4fe47db0f11 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1348 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| fa401a3862192e58 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1349 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ba03141f8b722ae0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1350 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 083e0865082c13dd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1353 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 6739453e63f3758f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1355 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 76a898bcee50ec4c | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1357 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| c27f8d33420cdf32 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1399 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| c5612e182da60822 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1400 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e46f9e1aa03eea6e | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1409 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 443f7506de7b27de | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1415 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 3533c509d26db105 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1416 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ed49e90121bd925a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1471 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ae732c90e2d75bce | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1500 | CPullItem::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| de577b99ecdc8e6c | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1501 | CPullItem::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 473a386763726112 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1502 | CPullItem::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| fffc2b8307b9ea01 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1503 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 342d8be3681fb4d4 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1533 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| eddd6ff92fbcdbb8 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:911 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| d709fa230fd0c9b1 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:912 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| f2febc8a6e38f0c6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:917 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 56a7bb45467ae11a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:918 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| a97973494f449f34 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:919 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 68e1fd77accade3a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:942 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 2fef43ba1d31cd58 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:943 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 55dc84f7d8eeb64b | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:944 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 560e8947fa3c6532 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:945 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ffaf0f6aa6556cc7 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:948 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| dd728d07359ee9d5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:967 | CLaserGun::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3348382f6c400ae9 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:968 | CLaserGun::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3e878687eb230c84 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:969 | CLaserGun::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 246d859362412eaa | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:970 | CLaserGun::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 877a150cddb2709f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:973 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 5945632c52be6a6f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1033 | CLaserGun::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ce3ed9d75d80c2dd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1077 | CLaserGun::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| ae4b6fe87b13b675 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1128 | CLaserGun::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 3db78036bca4cbfe | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1131 | CLaserGun::Draw | sceVu0ScaleVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f51498770b512384 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1132 | CLaserGun::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 631831856463e782 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1150 | CLaserGun::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 84a016c849d73f49 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1218 | CLaserGunMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 40070be6dbc322ff | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1285 | CPullItem::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 551242c0bd5493f6 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1304 | CPullItem::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e535df880f825d73 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1337 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 098ae85bf579b7e5 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1338 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 945d6ebc717faec0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1339 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 12740c21b5fe7cc7 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1340 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| db9da55cf474e004 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1341 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e3609537096b9dce | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1346 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| a195a4fe47db0f11 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1348 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| fa401a3862192e58 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1349 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ba03141f8b722ae0 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1350 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 083e0865082c13dd | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1353 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 6739453e63f3758f | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1355 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 76a898bcee50ec4c | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1357 | CPullItem::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| c27f8d33420cdf32 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1399 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| c5612e182da60822 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1400 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e46f9e1aa03eea6e | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1409 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 443f7506de7b27de | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1415 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3533c509d26db105 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1416 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ed49e90121bd925a | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1471 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ae732c90e2d75bce | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1500 | CPullItem::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| de577b99ecdc8e6c | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1501 | CPullItem::Step | sceVu0Normalize | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 473a386763726112 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1502 | CPullItem::Step | sceVu0ScaleVectorXYZ | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| fffc2b8307b9ea01 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1503 | CPullItem::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 342d8be3681fb4d4 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1533 | CPullItem::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 755664e9e45b57f2 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1544 | <file-scope> | sceVu0SubVector | none detected |
 | daf63288aaa17e51 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1545 | <file-scope> | sceVu0Normalize | none detected |
 | e83cee5fa6f8bbe7 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1546 | <file-scope> | sceVu0ScaleVectorXYZ | none detected |
@@ -2043,7 +2274,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 2f5169bd31f24029 | hardware:ps2_sdk_or_thread | retail/src/dng_object.cpp:1682 | CPullItem::SetItem | sceVu0CopyVector | none detected |
 | 5a13a27e20e6b7c3 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:1371 | DrawGeoramaMateria | sceVif1Packet | none detected |
 | e553e3fd63dc3d20 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:1388 | DrawGeoramaMateria | sceVif1Packet | none detected |
-| 733674fcdbb9f4aa | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:1654 | CDngFreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 733674fcdbb9f4aa | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:1654 | CDngFreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 5fc66120014863c6 | raw-allocation | retail/src/dngmenu.cpp:2579 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
 | 866cec11eeaeeaed | raw-allocation | retail/src/dngmenu.cpp:2609 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
 | 4c2650c3711a87dc | raw-allocation | retail/src/dngmenu.cpp:2617 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
@@ -2051,28 +2282,28 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 435ffbd1068282d3 | raw-allocation | retail/src/dngmenu.cpp:2650 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
 | 083095dd51a53aa0 | raw-allocation | retail/src/dngmenu.cpp:2664 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
 | 1f3fcd83ca484dd3 | raw-allocation | retail/src/dngmenu.cpp:2672 | if | (DNGMAP_KOMA_POS *) memory.Alloc(1) | none detected |
-| da5068a8a8bbd3fa | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3736 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 6841e9daae935929 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3780 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a97766643704695e | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3803 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| bfa7a7c67745ecd8 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3851 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 06ee785408c36d5c | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3856 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 36bae5e53a5a764d | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3870 | CMenuTreeMap::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| da5068a8a8bbd3fa | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3736 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 6841e9daae935929 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3780 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a97766643704695e | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3803 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| bfa7a7c67745ecd8 | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3851 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 06ee785408c36d5c | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3856 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 36bae5e53a5a764d | hardware:ps2_sdk_or_thread | retail/src/dngmenu.cpp:3870 | CMenuTreeMap::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | a4b058a97f183b66 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:104 | BindPosition | sceVu0SubVector | none detected |
 | fb7f28f590ede868 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:107 | BindPosition | sceVu0ScaleVector | none detected |
 | 304763f2cf743614 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:108 | BindPosition | sceVu0ScaleVector | none detected |
-| 45ce767daf279e9c | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:139 | CDynamicAnime::Step | sceVu0FMATRIX | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ec13ca1ca187677d | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:140 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 9c3f03079de5406e | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:141 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 7688cc3e837ba9e5 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:142 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 11f5c763932d446b | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:143 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 011871bfe29de2df | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:197 | CDynamicAnime::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e094dd30418ffeed | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:198 | CDynamicAnime::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| abd5589504003290 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:202 | CDynamicAnime::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 185c35b69e5e778b | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:212 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e3cc5350db96513e | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:214 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| c2a25a84fbe39e20 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:236 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| e9f3f789c9f11e12 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:243 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 77b20e77da45c026 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:258 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 45ce767daf279e9c | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:139 | CDynamicAnime::Step | sceVu0FMATRIX | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| ec13ca1ca187677d | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:140 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 9c3f03079de5406e | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:141 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 7688cc3e837ba9e5 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:142 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 11f5c763932d446b | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:143 | CDynamicAnime::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 011871bfe29de2df | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:197 | CDynamicAnime::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e094dd30418ffeed | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:198 | CDynamicAnime::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| abd5589504003290 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:202 | CDynamicAnime::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 185c35b69e5e778b | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:212 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e3cc5350db96513e | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:214 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| c2a25a84fbe39e20 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:236 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| e9f3f789c9f11e12 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:243 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 77b20e77da45c026 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:258 | CDynamicAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | b93c87f9ec46e33f | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:274 | CDynamicAnime::SetWind | sceVu0Normalize | none detected |
 | 2e26b0bfcb025097 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:292 | CDynamicAnime::FramePose | sceVu0FMATRIX | none detected |
 | 0ac9e32702f3a1a2 | hardware:ps2_sdk_or_thread | retail/src/dynamicanime.cpp:323 | CDynamicAnime::FramePose | sceVu0FVECTOR | none detected |
@@ -2242,9 +2473,9 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 097ea7755c815019 | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:194 | EditPaintEffect | sceVu0ScaleVector | none detected |
 | e8b28f82e0d32563 | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:276 | CStarEffect::ParamInit | sceVu0FVECTOR | none detected |
 | 6972ae7866365e4b | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:278 | CStarEffect::ParamInit | sceVu0ScaleVector | none detected |
-| 0259b7cf7f006d65 | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:350 | CStarEffect::Draw | sceGsTest | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 98102cf57b48a0fe | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:383 | CStarEffect::Draw | sceVu0MulVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ad779db59893657b | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:454 | CPaintEffect::Draw | sceGsTest | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 0259b7cf7f006d65 | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:350 | CStarEffect::Draw | sceGsTest | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 98102cf57b48a0fe | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:383 | CStarEffect::Draw | sceVu0MulVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| ad779db59893657b | hardware:ps2_sdk_or_thread | retail/src/editeff.cpp:454 | CPaintEffect::Draw | sceGsTest | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 9075cf954b91b32e | hardware:ps2_sdk_or_thread | retail/src/editevent.cpp:753 | LoadGeoNPC | sceVu0ApplyMatrix | none detected |
 | 46553af91c8cfa41 | hardware:ps2_sdk_or_thread | retail/src/editevent.cpp:796 | GeoUpdateNpcPos | sceVu0ApplyMatrix | none detected |
 | d1c55e8d81d9fccc | raw-allocation | retail/src/editexception.cpp:383 | InitFirePowder | (u_char *) memory->Alloc(align16_blocks(size) | none detected |
@@ -2442,23 +2673,22 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 801118b25a30750c | hardware:ps2_sdk_or_thread | retail/src/editparts.cpp:379 | CEditParts::CheckTerritory | sceVu0ApplyMatrix | none detected |
 | d4a2d2d388067bfd | hardware:ps2_sdk_or_thread | retail/src/editparts.cpp:380 | CEditParts::CheckTerritory | sceVu0ApplyMatrix | none detected |
 | 91eda98710fbba3a | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:93 | CEditMap::CreateGrid | sceVu0CopyMatrix | none detected |
-| 90b616b2d79e9efb | pointer-narrowing | retail/src/editriver.cpp:393 | CEditGrid::Check | (int) data + ((x + (y * | none detected |
 | 3342de64ed7f4427 | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:678 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
 | 6efa8cfbc6c3a321 | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:679 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
 | 6ef0c90afe2d00ec | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:680 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
 | 3cf122ec4d54ccd2 | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:687 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
 | b5212ccb9b05e8e5 | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:689 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
 | afd73662ad99d41c | hardware:ps2_sdk_or_thread | retail/src/editriver.cpp:691 | CEditGrid::GetRiverPoly | sceVu0AddVector | none detected |
-| 2d4e1f9ab36667a6 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:236 | CEffect::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| aa5f861d34ab23d1 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:263 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 90af134adc9e4b03 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:264 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| d086bdef89450bad | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:265 | CEffect::Step | sceVu0MulVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 903841ab675e0343 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:266 | CEffect::Step | sceVu0MulVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| af807fe1c2da9d20 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:269 | CEffect::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 7d081a0d105eba96 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:273 | CEffect::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 4b719574d5531378 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:283 | CEffect::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 88de54dc29637bce | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:285 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 656dca70daf1bca5 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:286 | CEffect::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 2d4e1f9ab36667a6 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:236 | CEffect::Step | sceVu0FVECTOR | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| aa5f861d34ab23d1 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:263 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 90af134adc9e4b03 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:264 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| d086bdef89450bad | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:265 | CEffect::Step | sceVu0MulVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 903841ab675e0343 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:266 | CEffect::Step | sceVu0MulVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| af807fe1c2da9d20 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:269 | CEffect::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 7d081a0d105eba96 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:273 | CEffect::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 4b719574d5531378 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:283 | CEffect::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 88de54dc29637bce | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:285 | CEffect::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 656dca70daf1bca5 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:286 | CEffect::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | c445ce2fa5bf12bd | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:566 | CEffectCtrl::Ctrl | sceVu0CopyVector | none detected |
 | 79fb91ef38f5b8fc | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:580 | CEffectCtrl::Ctrl | sceVu0AddVector | none detected |
 | 5f042f7ba8d28cf3 | hardware:ps2_sdk_or_thread | retail/src/effect.cpp:584 | CEffectCtrl::Ctrl | sceVu0CopyVector | none detected |
@@ -2501,91 +2731,91 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 8ea8d3a120182725 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:139 | CEffectManager::CreatePacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | 6f85507823608ef0 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:140 | CEffectManager::CreatePacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | c945968bc34637bb | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:141 | CEffectManager::CreatePacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
-| 9110078f02560a62 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:352 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| 018486dd950dba9b | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:353 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| c255d9a092e25f69 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:354 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| 98b944a7acaede49 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:382 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| 7a8eff2a63adb3f7 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:384 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| 49681b5d8f5e1e12 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:385 | DivSpriteScreen | sceVu0IVECTOR | none detected |
-| cf36921d7b979175 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:438 | CFadeInOut::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 9110078f02560a62 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:352 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| 018486dd950dba9b | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:353 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| c255d9a092e25f69 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:354 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| 98b944a7acaede49 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:382 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| 7a8eff2a63adb3f7 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:384 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| 49681b5d8f5e1e12 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:385 | DivSpriteScreen | sceVu0IVECTOR | src/effectlist.cpp |
+| cf36921d7b979175 | hardware:ps2_sdk_or_thread | retail/src/effectlist.cpp:438 | CFadeInOut::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 8e17a3e7e901c550 | raw-member-offset | retail/src/effscript.cpp:628 | CEffectScriptMan::BuildBase | (char *) memory->stAlloc64(script_size / 16 + 1 | none detected |
-| 891cc7d511cf5daf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1043 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| ec8808d23d84072b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1044 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 2bec0fa3a04680fd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1053 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| c8d5e11241197381 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1054 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 5efd69aebcac2e6d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1111 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| fdbfee82b86ccef3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1117 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 51e564fa04c523fa | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1127 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 4553827f228669d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1148 | CEffectScriptMan::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3966e305869d9c38 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1150 | CEffectScriptMan::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a998fc38a2dbe95c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1151 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 1f69bdf9fc440445 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1153 | CEffectScriptMan::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e7a448cd1df8b324 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1157 | CEffectScriptMan::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a24c4234deb8a96e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1163 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3ef41b781dc4527f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1165 | CEffectScriptMan::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 49c5770c09c9d6e3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1169 | CEffectScriptMan::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ba531777d29ea352 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1190 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ffaaaa362168d80e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1196 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 4f13eb514aa0bd42 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1206 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 6e070c835b9c6a7e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1227 | CEffectScriptMan::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 5becc17788ce51ad | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1229 | CEffectScriptMan::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e6a41f63ca69ad07 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1237 | CEffectScriptMan::Draw | sceVu0FMATRIX | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e51d6d5d1356aec3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1772 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| d39b4554246116e2 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1777 | DrawEffSptSprite | sceGsTest | none detected |
+| 2c9c6e21cec1c052 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1061 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| df5d9000cbe3030d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1062 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| beb49c95fbfd27f0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1071 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 6a06b49413dddb01 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1072 | CEffectScriptMan::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 61aa0faf1e813caf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1129 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a6fbe4e36481e885 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1135 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e9db7642eec45ab7 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1145 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 6b12c21694786ba8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1166 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e12dc8700b789429 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1168 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d8f7b589105f08e5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1169 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f87752b6b7b35575 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1171 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a2af6024ee9ca4ee | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1175 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 4a14434d422847e8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1181 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 66239e06bb760b3d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1183 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0744369aed4d9e02 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1187 | CEffectScriptMan::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 19cb489de0a485be | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1208 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f04f4be24bc53cfb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1214 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 9971dcc69c963f14 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1224 | CEffectScriptMan::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| c57c3e88d9e52712 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1245 | CEffectScriptMan::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 301face9d4b14d57 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1247 | CEffectScriptMan::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0094d7c06e36d52f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1255 | CEffectScriptMan::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 04443a689f081f1c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1790 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
 | 2ba99a7078c331d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1795 | DrawEffSptSprite | sceGsTest | none detected |
-| 0333dc32cac0503e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1805 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 013374566c39c024 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1806 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 202f65be29a1ea46 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1807 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 95e0081b73f85705 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1810 | DrawEffSptSprite | sceVu0AddVector | none detected |
-| 8d0bea211475d59d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1842 | DrawEffSptSprite | sceVu0FMATRIX | none detected |
-| 64edd88e0d0897e4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1843 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
-| 393a0c7ea912408f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1979 | _NORMAL_VECTOR | sceVu0Normalize | none detected |
-| 9554b8c9fb4ea12a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2230 | _GET_REF_ROT | sceVu0SubVector | none detected |
-| ef963dcde46c85bd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2231 | _GET_REF_ROT | sceVu0Normalize | none detected |
-| 53250b9814174188 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2272 | _GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
-| d9aa4ad1cdee5828 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2273 | _GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
-| 156a50aac7ebc89c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2274 | _GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
-| ad5c904ae0bac0f0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2275 | _GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
-| 352d53d7baa38a03 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2586 | _CHR_SET_ROT | sceVu0SubVector | none detected |
-| 58ca59123f4ae9e6 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2592 | _CHR_SET_ROT | sceVu0DivVector | none detected |
-| 3e53c6eab755d1bb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2593 | _CHR_SET_ROT | sceVu0AddVector | none detected |
-| d37c678eeccdecd9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2744 | _CHR_GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
-| 4c2c97d465f4dde8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2746 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
-| 8acfa0040f15f1dc | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2747 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
-| f48c7f214615aafa | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2748 | _CHR_GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
-| 8e554eea8a850e18 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2774 | _CHR_GET_REF_ROT | sceVu0SubVector | none detected |
-| de38714c481a42a1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2775 | _CHR_GET_REF_ROT | sceVu0Normalize | none detected |
-| c1c9f949858b09ce | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2810 | _CHR_ADD_POS | sceVu0AddVector | none detected |
-| fbc0081a1b135813 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2829 | _CHR_ADD_ROT | sceVu0AddVector | none detected |
-| 8777f48a65b3bdd0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2854 | _CHR_ADD_SCALE | sceVu0AddVector | none detected |
-| 94ba4535b53ea5d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2976 | _CHR_ADD_POS2 | sceVu0AddVector | none detected |
-| 2fa3e86dad20fb74 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2999 | _CHR_ADD_ROT2 | sceVu0AddVector | none detected |
-| 206207ccdcb849e1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3026 | _CHR_ADD_SCALE2 | sceVu0AddVector | none detected |
-| a3ba7fb89fe06734 | raw-member-offset | retail/src/effscript.cpp:3746 | _SPT_VAN_SET_POS | (u8 *) stack + 9 | none detected |
-| 8eb5bec6636070c1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3760 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
-| e2461d38fc010efe | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3762 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
-| 603166f8e1821558 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3850 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
-| 2a4932aee5aff7bb | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3851 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
-| ef711b971c64b49e | raw-member-offset | retail/src/effscript.cpp:3920 | _SPT_ADD_POS | (u8 *) stack + 3 | none detected |
-| 11b0dc71e14f576e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3933 | _SPT_ADD_POS | sceVu0AddVector | none detected |
-| bfd8e6509ed9e55c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4003 | _SPT_ADD_COLOR | sceVu0AddVector | none detected |
-| 09aab562f7099e24 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4054 | _SPT_WORLD_ROT | sceVu0UnitMatrix | none detected |
-| a955638a07f01fe1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4064 | _SPT_WORLD_ROT | sceVu0ApplyMatrix | none detected |
-| 51be63060782bf82 | raw-member-offset | retail/src/effscript.cpp:4095 | _SPT_SET_VELO_POS | (u8 *) stack + 3 | none detected |
-| 8a92a7af5651b327 | raw-member-offset | retail/src/effscript.cpp:4130 | _SPT_SET_ACC_POS | (u8 *) stack + 3 | none detected |
-| a57fb0a6f8780ca4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4663 | _SCN_GET_CHR_FRM_ROT | sceVu0SubVector | none detected |
-| 7f651dfdcf85acd1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4664 | _SCN_GET_CHR_FRM_ROT | sceVu0Normalize | none detected |
-| b30b62edbed4e67c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4713 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 9210f912ec2e8723 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4714 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 8cf1aea585428875 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4715 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| e99782eb4546accd | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4716 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| b381bc247aa98170 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4719 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
-| 12c2fbde2967c21d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4752 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
-| 683dbe334df6208b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4754 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
-| 8ed552702066caf0 | raw-allocation | retail/src/effscript.cpp:5563 | SetEffectScript | (RS_STACKDATA *) memory->Alloc(0x20) | none detected |
-| bf5ae505b8740f52 | raw-allocation | retail/src/effscript.cpp:5564 | SetEffectScript | (RS_CALLDATA *) memory->Alloc(1) | none detected |
-| 34fdf6a9bb849b2e | raw-allocation | retail/src/event.cpp:112 | SetEventScript | (RS_STACKDATA *) memory->Alloc(0x40) | none detected |
-| ef85d9c2425e3a8e | raw-allocation | retail/src/event.cpp:113 | SetEventScript | (RS_CALLDATA *) memory->Alloc(0x180) | none detected |
+| 3fa04c00b824e9e3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1813 | DrawEffSptSprite | sceGsTest | none detected |
+| aeaa671987aa6d9d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1823 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| 2b717d47dffbef6e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1824 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| d57fa80d66ecef14 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1825 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| ba5876c7cc0a54b5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1828 | DrawEffSptSprite | sceVu0AddVector | none detected |
+| 218a8530e43a269a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1860 | DrawEffSptSprite | sceVu0FMATRIX | none detected |
+| daf48cdc67696844 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1861 | DrawEffSptSprite | sceVu0FVECTOR | none detected |
+| cd8ca44ddd62ad50 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:1997 | _NORMAL_VECTOR | sceVu0Normalize | none detected |
+| 4279d17272dca9ca | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2248 | _GET_REF_ROT | sceVu0SubVector | none detected |
+| 4718f19dd47bd8c8 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2249 | _GET_REF_ROT | sceVu0Normalize | none detected |
+| f266aaefbd9b4e47 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2290 | _GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
+| 605e59de13b5502d | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2291 | _GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
+| 357e1ddaf3e0812f | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2292 | _GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
+| d33ad49a82feac84 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2293 | _GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
+| a2d010e9e0ff7ebf | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2604 | _CHR_SET_ROT | sceVu0SubVector | none detected |
+| 89098b532047e93c | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2610 | _CHR_SET_ROT | sceVu0DivVector | none detected |
+| e7c560e6e1a3aea0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2611 | _CHR_SET_ROT | sceVu0AddVector | none detected |
+| 95e665f823a5c573 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2762 | _CHR_GET_DIR_VECTOR | sceVu0UnitMatrix | none detected |
+| f3ec601c57740ce4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2764 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixX | none detected |
+| 874862fe072fc552 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2765 | _CHR_GET_DIR_VECTOR | sceVu0RotMatrixY | none detected |
+| 914c5fa283889dc5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2766 | _CHR_GET_DIR_VECTOR | sceVu0ApplyMatrix | none detected |
+| 8adba442b983ba72 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2792 | _CHR_GET_REF_ROT | sceVu0SubVector | none detected |
+| c97135de0408b6d9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2793 | _CHR_GET_REF_ROT | sceVu0Normalize | none detected |
+| 884b8b23ae43e30b | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2828 | _CHR_ADD_POS | sceVu0AddVector | none detected |
+| 3450dc2d2eeb4c30 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2847 | _CHR_ADD_ROT | sceVu0AddVector | none detected |
+| f9ab21a8c09497a0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2872 | _CHR_ADD_SCALE | sceVu0AddVector | none detected |
+| bd4766ba583cd9bc | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:2994 | _CHR_ADD_POS2 | sceVu0AddVector | none detected |
+| 382b3385217cad9a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3017 | _CHR_ADD_ROT2 | sceVu0AddVector | none detected |
+| e3acad9a505739ab | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3044 | _CHR_ADD_SCALE2 | sceVu0AddVector | none detected |
+| c38720c565a951d2 | raw-member-offset | retail/src/effscript.cpp:3764 | _SPT_VAN_SET_POS | (u8 *) stack + 9 | none detected |
+| f3a1141e2219301e | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3778 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
+| 1210b0fc5f0565a9 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3780 | _SPT_VAN_SET_POS | sceVu0AddVector | none detected |
+| 9c134a93e0ae87b5 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3868 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
+| 764477dfa651ee8a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3869 | _SPT_VAN_SET_COL | sceVu0AddVector | none detected |
+| b9112334ed1924fd | raw-member-offset | retail/src/effscript.cpp:3938 | _SPT_ADD_POS | (u8 *) stack + 3 | none detected |
+| 5407200842457195 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:3951 | _SPT_ADD_POS | sceVu0AddVector | none detected |
+| 1c237641ac9d1436 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4021 | _SPT_ADD_COLOR | sceVu0AddVector | none detected |
+| 8268e95f7fbf71b1 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4072 | _SPT_WORLD_ROT | sceVu0UnitMatrix | none detected |
+| efe24508182735c0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4082 | _SPT_WORLD_ROT | sceVu0ApplyMatrix | none detected |
+| 9897b0bb2aaf389c | raw-member-offset | retail/src/effscript.cpp:4113 | _SPT_SET_VELO_POS | (u8 *) stack + 3 | none detected |
+| 793ec6fa1e98a4c2 | raw-member-offset | retail/src/effscript.cpp:4148 | _SPT_SET_ACC_POS | (u8 *) stack + 3 | none detected |
+| c4b0dac1c95a2d18 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4681 | _SCN_GET_CHR_FRM_ROT | sceVu0SubVector | none detected |
+| 563f3527535553e4 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4682 | _SCN_GET_CHR_FRM_ROT | sceVu0Normalize | none detected |
+| 924bf1a172c674e2 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4731 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| ef813c2400456264 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4732 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 628482cddec73241 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4733 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 3978f68145d562e0 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4734 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| 7004d920945e447a | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4737 | _INTERSECTION_POINT | sceVu0FVECTOR | none detected |
+| c4e1e09d433f99d3 | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4770 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
+| 67835fb35e6ad4ce | hardware:ps2_sdk_or_thread | retail/src/effscript.cpp:4772 | _INTERSECTION_POINT | sceVu0Normalize | none detected |
+| 4140f668cfa4f471 | raw-allocation | retail/src/effscript.cpp:5581 | SetEffectScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
+| 934a1e34d9e9cac6 | raw-allocation | retail/src/effscript.cpp:5583 | SetEffectScript | (RS_CALLDATA *) memory->Alloc(sizeof(RS_CALLDATA) | none detected |
+| 471c2b824fb2ec49 | raw-allocation | retail/src/event.cpp:112 | SetEventScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
+| 5394e4371c3dbc85 | raw-allocation | retail/src/event.cpp:113 | SetEventScript | (RS_CALLDATA *) memory->Alloc((sizeof(RS_CALLDATA) | none detected |
 | 16fb45447c213575 | hardware:ps2_sdk_or_thread | retail/src/event.cpp:139 | EventDoorLoop | sceVu0FMATRIX | none detected |
 | bcb88ad630384428 | hardware:ps2_sdk_or_thread | retail/src/event.cpp:214 | if | sceVu0UnitMatrix | none detected |
 | 4cbd8f4f0674310a | hardware:ps2_sdk_or_thread | retail/src/event.cpp:215 | if | sceVu0RotMatrixY | none detected |
@@ -2594,8 +2824,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | dbe2cd54f2876320 | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:300 | VectMatMul | sceVu0CopyVector | none detected |
 | 3b6632a89b6e9e3f | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:310 | CalcPosWorldCoord | sceVu0AddVector | none detected |
 | 9248869dc2f7a6d1 | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:325 | CalcPosWorldCoordGyaku | sceVu0SubVector | none detected |
-| f33b83f81f56183b | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:2480 | CScreenEffect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| b12bde8b1c210b0d | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:2500 | CScreenEffect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| f33b83f81f56183b | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:2480 | CScreenEffect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| b12bde8b1c210b0d | hardware:ps2_sdk_or_thread | retail/src/event_func.cpp:2500 | CScreenEffect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 8436c46a428400e3 | pointer-narrowing | retail/src/event_func.cpp:3096 | if | (int) (EdEventInfo.stopwatch_x + 0.75 * texture.width * | none detected |
 | fec85a35c5606884 | pointer-narrowing | retail/src/event_func.cpp:3099 | if | (int) (8.0 + (EdEventInfo.stopwatch_x + 0.75 * texture.width * | none detected |
 | df3b221570948e5d | pointer-narrowing | retail/src/event_func.cpp:3102 | if | (int) (EdEventInfo.stopwatch_x + 0.5 * texture.width * | none detected |
@@ -2725,30 +2955,30 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d47bae3888bca7b7 | hardware:ps2_sdk_or_thread | retail/src/eventedit.cpp:1262 | <file-scope> | sceVu0CopyVector | none detected |
 | de12f9a3384ccb65 | hardware:ps2_sdk_or_thread | retail/src/eventedit.cpp:1274 | <file-scope> | sceVu0CopyVector | none detected |
 | 5c744c99933477e3 | hardware:ps2_sdk_or_thread | retail/src/eventedit.cpp:1275 | <file-scope> | sceVu0CopyVector | none detected |
-| b7f71311b349afe8 | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:153 | CEventSprite::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| b7f71311b349afe8 | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:153 | CEventSprite::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 3378eeac2471d021 | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:330 | CEventSprite2::SetPosition | sceVu0CopyVector | none detected |
 | 732f37cececcf3a9 | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:334 | CEventSprite2::SetColor | sceVu0CopyVector | none detected |
 | c742cb264820c54c | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:360 | CEventSprite2::GetPosition | sceVu0CopyVector | none detected |
 | 09899a548e779fba | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:364 | CEventSprite2::GetColor | sceVu0CopyVector | none detected |
-| a3f590c54c2a012a | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:397 | CEventSprite2::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| a3f590c54c2a012a | hardware:ps2_sdk_or_thread | retail/src/eventsprite.cpp:397 | CEventSprite2::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | fcfea687eb9d128b | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:22 | <file-scope> | sceSifClientData | none detected |
-| a29f32a27b08ca60 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:28 | ezBgmInit | sceSifInitRpc | none detected |
-| c9c378e37829db83 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:31 | ezBgmInit | sceSifBindRpc | none detected |
-| caa84b84bfbe0776 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:32 | ezBgmInit | sceSifBindRpc | none detected |
-| 0ac8e8cb219da44a | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:52 | ezBgm | sceSifCheckStatRpc | none detected |
-| 0be376a8982b2321 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:57 | ezBgm | sceSifCallRpc | none detected |
-| 09caedcbf1460019 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:61 | ezBgm | sceSifCheckStatRpc | none detected |
-| 14fcaefdbcba7def | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:67 | ezBgm | sceSifCallRpc | none detected |
-| 9fff8e1e16907b3b | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:71 | ezBgm | sceSifCheckStatRpc | none detected |
-| 8c023ef87abce880 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:77 | ezBgm | sceSifCallRpc | none detected |
-| 9351bfde332734e5 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:86 | CSound::StreamOpenState | sceSifCheckStatRpc | src/sound.cpp |
+| a29f32a27b08ca60 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:28 | ezBgmInit | sceSifInitRpc | src/ezbgm.cpp |
+| c9c378e37829db83 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:31 | ezBgmInit | sceSifBindRpc | src/ezbgm.cpp |
+| caa84b84bfbe0776 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:32 | ezBgmInit | sceSifBindRpc | src/ezbgm.cpp |
+| 0ac8e8cb219da44a | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:52 | ezBgm | sceSifCheckStatRpc | src/ezbgm.cpp |
+| 0be376a8982b2321 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:57 | ezBgm | sceSifCallRpc | src/ezbgm.cpp |
+| 09caedcbf1460019 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:61 | ezBgm | sceSifCheckStatRpc | src/ezbgm.cpp |
+| 14fcaefdbcba7def | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:67 | ezBgm | sceSifCallRpc | src/ezbgm.cpp |
+| 9fff8e1e16907b3b | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:71 | ezBgm | sceSifCheckStatRpc | src/ezbgm.cpp |
+| 8c023ef87abce880 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:77 | ezBgm | sceSifCallRpc | src/ezbgm.cpp |
+| 9351bfde332734e5 | hardware:ps2_sdk_or_thread | retail/src/ezbgm.cpp:86 | CSound::StreamOpenState | sceSifCheckStatRpc | src/ezbgm.cpp |
 | d6d5257db2c36e32 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:19 | <file-scope> | sceSifClientData | none detected |
 | 09e3dae0d24a70d6 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:24 | <file-scope> | sceSifDmaData | none detected |
-| 664361d100be28a9 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:29 | ezMidiInit | sceSifInitRpc | none detected |
-| 2782050350b60d8f | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:32 | ezMidiInit | sceSifBindRpc | none detected |
-| d96d1f455b2e666a | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:33 | ezMidiInit | sceSifBindRpc | none detected |
-| 6fb07e819a53bc8e | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:68 | ezMidi | sceSifCallRpc | none detected |
-| a9a9fcac70c84cb9 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:71 | ezMidi | sceSifCallRpc | none detected |
+| 664361d100be28a9 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:29 | ezMidiInit | sceSifInitRpc | src/ezmidi.cpp |
+| 2782050350b60d8f | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:32 | ezMidiInit | sceSifBindRpc | src/ezmidi.cpp |
+| d96d1f455b2e666a | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:33 | ezMidiInit | sceSifBindRpc | src/ezmidi.cpp |
+| 6fb07e819a53bc8e | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:68 | ezMidi | sceSifCallRpc | src/ezmidi.cpp |
+| a9a9fcac70c84cb9 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:71 | ezMidi | sceSifCallRpc | src/ezmidi.cpp |
 | bffe1c3b4f697759 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:86 | ezTransToIOP2 | sceSifSetDma | none detected |
 | 46a4e3b3dc69f192 | hardware:ps2_sdk_or_thread | retail/src/ezmidi.cpp:92 | ezTransToIOP2 | sceSifDmaStat | none detected |
 | 457e5bff4cfba3b6 | hardware:ps2_sdk_or_thread | retail/src/fishing.cpp:1341 | CreateLoadThread | CreateThread | none detected |
@@ -2909,10 +3139,10 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4f02aab31c8fb27c | hardware:ps2_sdk_or_thread | retail/src/fishingobj.cpp:1808 | ParaBlend | sceVu0TransposeMatrix | none detected |
 | abc33bdb9bd0f2b5 | hardware:ps2_sdk_or_thread | retail/src/fishingobj.cpp:1814 | ParaBlend | sceVu0ScaleVector | none detected |
 | 91ce1dd86a47fb92 | hardware:ps2_sdk_or_thread | retail/src/fishingobj.cpp:1815 | ParaBlend | sceVu0ApplyMatrix | none detected |
-| 9cf2274d15b07542 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:141 | CObjAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| f2ff99917e3362d0 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:175 | CObjAnime::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| f1df34dccd11072a | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:179 | CObjAnime::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 92b5edb3754cce85 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:234 | CObjAnime::Step | sceVu0ApplyMatrix | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 9cf2274d15b07542 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:141 | CObjAnime::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| f2ff99917e3362d0 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:175 | CObjAnime::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| f1df34dccd11072a | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:179 | CObjAnime::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 92b5edb3754cce85 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:234 | CObjAnime::Step | sceVu0ApplyMatrix | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 1d87c98794467001 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:337 | CObjAnime::SetParam | sceVu0ApplyMatrix | none detected |
 | 090287069a864910 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:488 | CObjAnime::AssignFuncAnime | sceVu0FVECTOR | none detected |
 | 449d7119c36ccbef | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:877 | if | sceVu0ScaleVector | none detected |
@@ -2929,16 +3159,16 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 2f24720434dd4bc0 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1274 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
 | e27cec04b91d6c66 | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1275 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
 | fd98d3fbd84ba79a | hardware:ps2_sdk_or_thread | retail/src/funcpoint.cpp:1280 | DrawFireRaster | sceVu0ApplyMatrix | none detected |
-| 0078ed955046b645 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:65 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 8fbc43cd2b1f57fb | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:68 | CGamePad::Init | scePadInit | src/sound.cpp |
-| 533b7a8e794f85c9 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:98 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 5dbac8c6cb7596de | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:99 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 7f9b43012e558aa2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:103 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 04fcf080b735e2b2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:104 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| c772b887d01a4a90 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:106 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 0e9649663169dc35 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:107 | CGamePad::Init | scePadPortOpen | src/sound.cpp |
-| 0ef40e87c1450a15 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:111 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
-| 5fb0092f8a4972f0 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:112 | CGamePad::Init | sceGsSyncV | src/sound.cpp |
+| 0078ed955046b645 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:65 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 8fbc43cd2b1f57fb | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:68 | CGamePad::Init | scePadInit | src/mg_memory.cpp, src/sound.cpp |
+| 533b7a8e794f85c9 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:98 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 5dbac8c6cb7596de | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:99 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 7f9b43012e558aa2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:103 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 04fcf080b735e2b2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:104 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| c772b887d01a4a90 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:106 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 0e9649663169dc35 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:107 | CGamePad::Init | scePadPortOpen | src/mg_memory.cpp, src/sound.cpp |
+| 0ef40e87c1450a15 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:111 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
+| 5fb0092f8a4972f0 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:112 | CGamePad::Init | sceGsSyncV | src/mg_memory.cpp, src/sound.cpp |
 | 51940f66581d49c2 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:116 | CGamePad::Close | scePadPortClose | none detected |
 | 60d0e8ccfcd5fe1b | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:117 | CGamePad::Close | scePadPortClose | none detected |
 | ac1d54377d50f592 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:118 | CGamePad::Close | scePadEnd | none detected |
@@ -2963,7 +3193,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | b23d7b14f392c6ad | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:327 | CGamePad::Connect | scePadGetState | none detected |
 | a849f43051c5ba8a | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:329 | CGamePad::Connect | scePadStateStable | none detected |
 | 5ba7ef151de1d1b4 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:333 | CGamePad::Connect | scePadStateFindCTP1 | none detected |
-| 3c2c5aace8bb8758 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:469 | CGamePad::Step | scePadSetActDirect | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 3c2c5aace8bb8758 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:469 | CGamePad::Step | scePadSetActDirect | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | a7043c283eab2788 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:829 | CreateGamePadThread | CreateThread | src/gamepad.cpp |
 | b4c4cdae67bda040 | hardware:ps2_sdk_or_thread | retail/src/gamepad.cpp:831 | CreateGamePadThread | StartThread | src/gamepad.cpp |
 | 44757ce6681b2e35 | hardware:ps2_sdk_or_thread | retail/src/gameutil.cpp:90 | QuatSlerp | sceVu0FVECTOR | none detected |
@@ -3169,9 +3399,9 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 3430873f26192d10 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1022 | if | sceVu0ApplyMatrix | none detected |
 | 62d8412b4c872d05 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1125 | <file-scope> | sceVu0SubVector | none detected |
 | d331062960f35f33 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1203 | sgCharaDrawGyoRace | sceVif1Packet | none detected |
-| beca1c24741913a0 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1249 | DivSpriteScreen | sceVu0UnitMatrix | none detected |
-| 0d9964197a05c3c7 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1260 | DivSpriteScreen | sceVu0RotMatrixZ | none detected |
-| ad318cee815b7ddd | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1261 | DivSpriteScreen | sceVu0ApplyMatrix | none detected |
+| beca1c24741913a0 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1249 | DivSpriteScreen | sceVu0UnitMatrix | src/effectlist.cpp |
+| 0d9964197a05c3c7 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1260 | DivSpriteScreen | sceVu0RotMatrixZ | src/effectlist.cpp |
+| ad318cee815b7ddd | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1261 | DivSpriteScreen | sceVu0ApplyMatrix | src/effectlist.cpp |
 | 455dc2a5867e1529 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1347 | sgSysDrawGyoRace | sceVif1Packet | none detected |
 | bb9cf34c358f4501 | hardware:ps2_sdk_or_thread | retail/src/gyorace.cpp:1357 | sgSysDrawGyoRace | sceVif1Packet | none detected |
 | d2a4b65add4c2a3f | pointer-narrowing | retail/src/gyorace.cpp:1381 | sgSysDrawGyoRace | (int) (31.0f + (float) (int) (326.0f * (progress.pos / 16.0f))), (RaceInfo.fish[i].lane * | none detected |
@@ -3213,15 +3443,15 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d1cc1a3c6ae1bad2 | hardware:ps2_sdk_or_thread | retail/src/intersection.cpp:284 | IntersectionBox | sceVu0ApplyMatrix | none detected |
 | 6b6c781246907db6 | hardware:ps2_sdk_or_thread | retail/src/intersection.cpp:285 | IntersectionBox | sceVu0ApplyMatrix | none detected |
 | cd9f500363979061 | hardware:ps2_sdk_or_thread | retail/src/intersection.cpp:290 | IntersectionBox | sceVu0ApplyMatrix | none detected |
-| bf434c840a1ce1ec | raw-allocation | retail/src/inventmn.cpp:1406 | _PIC_INFO | (PIC_NAME_INFO *) operator new[](pic_name_info_num * sizeof(PIC_NAME_INFO), PicNameStack->Alloc(blocks + 2) | none detected |
-| 0d3f2a996f8859cb | raw-allocation | retail/src/inventmn.cpp:1753 | _INVENT_DATATABLESET | (INVENT_DATA_INFO *) InventTeigiStack.Alloc(blocks) | none detected |
-| 3d09f31e41bfcea7 | raw-allocation | retail/src/inventmn.cpp:1790 | _INVENT_DATASET | (INVENT_MATERIAL *) InventTeigiStack.Alloc(blocks) | none detected |
-| e83c3c12e1ca8ea6 | pointer-narrowing | retail/src/inventmn.cpp:3925 | CMenuInvent::CalcTex | (int) (center[0] + neta_circle_radius * | none detected |
-| 1d4052197d3f9eab | pointer-narrowing | retail/src/inventmn.cpp:3926 | CMenuInvent::CalcTex | (int) (center[1] + neta_circle_radius * | none detected |
-| d84f2255a3095613 | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4135 | if | sceVu0SubVector | none detected |
-| 15b849a1243face2 | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4136 | if | sceVu0ScaleVectorXYZ | none detected |
-| 45423d5481e1ead8 | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4137 | if | sceVu0AddVector | none detected |
-| 97078c94567954f9 | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:6501 | MenuInventDebugDraw | sceVif1Packet | none detected |
+| 60fc7329de2397ff | raw-allocation | retail/src/inventmn.cpp:1407 | _PIC_INFO | (PIC_NAME_INFO *) operator new[](pic_name_info_num * sizeof(PIC_NAME_INFO), PicNameStack->Alloc(blocks + 2) | none detected |
+| 748b6b870fd8139d | raw-allocation | retail/src/inventmn.cpp:1754 | _INVENT_DATATABLESET | (INVENT_DATA_INFO *) InventTeigiStack.Alloc(blocks) | none detected |
+| 15a71a7b4fe8785e | raw-allocation | retail/src/inventmn.cpp:1791 | _INVENT_DATASET | (INVENT_MATERIAL *) InventTeigiStack.Alloc(blocks) | none detected |
+| ec1ae5bca44ae07e | pointer-narrowing | retail/src/inventmn.cpp:3926 | CMenuInvent::CalcTex | (int) (center[0] + neta_circle_radius * | none detected |
+| 2badee0a5f2a4c3b | pointer-narrowing | retail/src/inventmn.cpp:3927 | CMenuInvent::CalcTex | (int) (center[1] + neta_circle_radius * | none detected |
+| 048a0cf668831365 | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4136 | if | sceVu0SubVector | none detected |
+| 7bc905056fa2b36f | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4137 | if | sceVu0ScaleVectorXYZ | none detected |
+| b7103816966c600d | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:4138 | if | sceVu0AddVector | none detected |
+| ae08e822957e161a | hardware:ps2_sdk_or_thread | retail/src/inventmn.cpp:6502 | MenuInventDebugDraw | sceVif1Packet | none detected |
 | f50bc51479ecc359 | hardware:ps2_sdk_or_thread | retail/src/main.cpp:51 | ClearScreen | sceGsDBuff | none detected |
 | 6e521e6d70f83d10 | hardware:ps2_sdk_or_thread | retail/src/main.cpp:53 | ClearScreen | sceGsSetDefDBuff | none detected |
 | ef7caa4fe8b4655f | hardware:ps2_sdk_or_thread | retail/src/main.cpp:64 | ClearScreen | sceGsSyncV | none detected |
@@ -3273,52 +3503,52 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 366620b36b49e58e | hardware:ps2_sdk_or_thread | retail/src/mainloop.cpp:885 | MenuLoop | sceVif1Packet | none detected |
 | a4c1f533325b951b | hardware:ps2_sdk_or_thread | retail/src/mainloop.cpp:912 | MenuLoop | sceVif1Packet | none detected |
 | c9ba60b790fb6c5c | hardware:ps2_sdk_or_thread | retail/src/mainloop3.cpp:395 | EmergencyMessage | sceVif1Packet | none detected |
-| 924b99d68c855354 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:820 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| e747112d14bf4d0f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:821 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| 84cecdbaf2d1d46b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:822 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| f488361ad8c2249b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:849 | CMap::GetCharaLight | sceVu0SubVector | src/map.cpp |
-| 2f89b609ebb0c792 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:858 | CMap::GetCharaLight | sceVu0ScaleVector | src/map.cpp |
-| 89141d256e613101 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:860 | CMap::GetCharaLight | sceVu0Normalize | src/map.cpp |
-| 29d0ca5ad737641c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:875 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| 784ce55d48448467 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:876 | CMap::GetCharaLight | sceVu0FMATRIX | src/map.cpp |
-| 3213f53c67fc4b19 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:877 | CMap::GetCharaLight | sceVu0FMATRIX | src/map.cpp |
-| 7023afbd05cd0b6b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:888 | CMap::GetCharaLight | sceVu0ApplyMatrix | src/map.cpp |
-| 5cf7f8f05d161bf9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:898 | CMap::GetCharaLight | sceVu0ApplyMatrix | src/map.cpp |
-| efa5453ae730d057 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:905 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| e7db64bde345ee55 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:906 | CMap::GetCharaLight | sceVu0FVECTOR | src/map.cpp |
-| 5b435255078e97ba | hardware:ps2_sdk_or_thread | retail/src/map.cpp:907 | CMap::GetCharaLight | sceVu0SubVector | src/map.cpp |
-| d04c06a40f713484 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:915 | CMap::GetCharaLight | sceVu0ScaleVector | src/map.cpp |
-| 5b5b60ad8f0cdc6a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:917 | CMap::GetCharaLight | sceVu0Normalize | src/map.cpp |
-| 46d54f9d65aa304d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:927 | CMap::SetFuncPLight | sceVu0FVECTOR | none detected |
-| 37553d5dafdd6b25 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:936 | CMap::SetFuncPLight | sceVu0ScaleVector | none detected |
-| 7d33c8dee48c017f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1067 | CMap::DrawFireEffect | sceVif1Packet | none detected |
-| 2f72fadb396b9d6e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1127 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8c958d2c1b535c2f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1128 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8431f7324d7a71e1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1129 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| d45918f2d162ed4e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1153 | CMap::DrawWater | sceVu0Normalize | none detected |
-| 3e2eaaa7859593d6 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1154 | CMap::DrawWater | sceVu0ScaleVector | none detected |
-| 19ba5c841488d92a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1177 | CMap::DrawWater | sceVif1Packet | none detected |
-| 95b117c4b48ff5aa | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1183 | CMap::DrawWater | sceVu0FMATRIX | none detected |
-| 1468c747038a1810 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1184 | CMap::DrawWater | sceVu0FMATRIX | none detected |
-| 9fdf702b64362a38 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1185 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8a43f0506a9de542 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1186 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 16c139b76d907b51 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1187 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 42d1690e72d3c29e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1241 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 78bea8bf9d869489 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1242 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 94d4cd138feadbb9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1243 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| ab790003f3114208 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1334 | CMap::DrawTrBox | sceVif1Packet | none detected |
-| 3aaa94c924432192 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1459 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| d997515cec884836 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1473 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 3af75d1ac0b48e1f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1474 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 850b2dad3fc30176 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1475 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 1cd4d0b6913e704a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1476 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 6cbd5206edc24c00 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1513 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
-| 3e3926c36345fba8 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1514 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
-| 6cf0abdb530431cd | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1516 | CMap::GetFixCameraPos | sceVu0InnerProduct | none detected |
-| 289f9361b341675a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1519 | CMap::GetFixCameraPos | sceVu0ScaleVector | none detected |
-| 7a620ec8a55462e9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2105 | CheckFuncEvent | sceVu0FMATRIX | none detected |
-| bcf2a74852954c9e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2106 | CheckFuncEvent | sceVu0FVECTOR | none detected |
-| 3544ed334dbb9cd1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2107 | CheckFuncEvent | sceVu0FVECTOR | none detected |
+| d923fe5bc922940f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:824 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| a57f07b183eb4211 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:825 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 05484de6ed10fb23 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:826 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| a20307621cfa1b0b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:853 | CMap::GetCharaLight | sceVu0SubVector | none detected |
+| 3048c1d10f9a4789 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:862 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
+| f75203e7b37716f3 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:864 | CMap::GetCharaLight | sceVu0Normalize | none detected |
+| f90a8ce6a3711da2 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:879 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 3454639dba2d408d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:880 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
+| 2714c7aada89d3a2 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:881 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
+| cfa41b89e93710a8 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:892 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
+| 5489a0976ecaa00f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:902 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
+| 8f812d3433f1807b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:909 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 786beb7db85ea16e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:910 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| bf6444d8376df813 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:911 | CMap::GetCharaLight | sceVu0SubVector | none detected |
+| a702c5c82f07386c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:919 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
+| 6e3f84b14d433fa0 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:921 | CMap::GetCharaLight | sceVu0Normalize | none detected |
+| 397d0386913f03b9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:931 | CMap::SetFuncPLight | sceVu0FVECTOR | none detected |
+| a9ab68cf74546630 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:940 | CMap::SetFuncPLight | sceVu0ScaleVector | none detected |
+| 41f4d0e0f39a781e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1071 | CMap::DrawFireEffect | sceVif1Packet | none detected |
+| 7b63281290a996d7 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1131 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 6b1c2b3a8c2bd50c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1132 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 8131bfe3268c832d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1133 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| bb79e2ba43026455 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1157 | CMap::DrawWater | sceVu0Normalize | none detected |
+| bd765367cb17834b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1158 | CMap::DrawWater | sceVu0ScaleVector | none detected |
+| 84569b2e178af88b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1181 | CMap::DrawWater | sceVif1Packet | none detected |
+| 39f59f6111aa76d1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1187 | CMap::DrawWater | sceVu0FMATRIX | none detected |
+| 1024ca8b86b77d41 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1188 | CMap::DrawWater | sceVu0FMATRIX | none detected |
+| f0e8cffd6bdcedda | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1189 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 7343fb4ba4c0b56a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1190 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| e2889f98110059a7 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1191 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 0653eb5f5bbcdcbb | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1245 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 3f094cf9efa97174 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1246 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 46bee61f61e3fd17 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1247 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 96abd3deef7d6a41 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1338 | CMap::DrawTrBox | sceVif1Packet | none detected |
+| 8b1dafbb935894bf | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1463 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 0854fca2b4f2c8cf | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1477 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 70356cd5b198f9f6 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1478 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 605d8ad9e147eb0c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1479 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 8c33c461335105bc | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1480 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 452e34afe1a0af80 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1517 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
+| 39cadc73d60de6ab | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1518 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
+| 853456cb8e34296a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1520 | CMap::GetFixCameraPos | sceVu0InnerProduct | none detected |
+| 600fa0df456a41a3 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1523 | CMap::GetFixCameraPos | sceVu0ScaleVector | none detected |
+| 73eef8413b7b75f4 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2109 | CheckFuncEvent | sceVu0FMATRIX | none detected |
+| 76b2425fb67ba812 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2110 | CheckFuncEvent | sceVu0FVECTOR | none detected |
+| 2dc51ec10bbe8811 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2111 | CheckFuncEvent | sceVu0FVECTOR | none detected |
 | cf23bb04c141d68a | raw-allocation | retail/src/mapinfo.cpp:226 | mapIMG | (char *) MapInfoStack->Alloc(blocks) | none detected |
 | 9a53aae0d3d3fcd6 | raw-allocation | retail/src/mapinfo.cpp:264 | mapPCP | (char *) MapInfoStack->Alloc(blocks) | none detected |
 | b016bddb32f9c83c | hardware:ps2_sdk_or_thread | retail/src/mapinfo.cpp:401 | mapLIGHT | sceVu0Normalize | none detected |
@@ -3605,7 +3835,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | eeba0b48b980081f | hardware:ps2_sdk_or_thread | retail/src/memcard.cpp:2515 | McCheckMCPs2 | sceMcTypePS2 | none detected |
 | d9c77847c2afc048 | hardware:ps2_sdk_or_thread | retail/src/memcard.cpp:2527 | McCheckMCPs2Boot | sceMcTypePS2 | none detected |
 | 6900f43086d1898c | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:201 | <file-scope> | sceVu0FVECTOR | none detected |
-| fdcc4f1a83ab5c90 | raw-allocation | retail/src/menuaqua.cpp:1652 | CBubble::Initialize | (AQUA_BUBBLE *) memory->Alloc(blocks) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| fdcc4f1a83ab5c90 | raw-allocation | retail/src/menuaqua.cpp:1652 | CBubble::Initialize | (AQUA_BUBBLE *) memory->Alloc(blocks) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 48fb7354ce20a0b4 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:1795 | CAquaFish::GetPosition2D | sceVu0ITOF4Vector | none detected |
 | 28153874385b2466 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:1807 | CAquaFish::GetDirVect | sceVu0UnitMatrix | none detected |
 | e80f4186346fd3dd | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:1808 | CAquaFish::GetDirVect | sceVu0RotMatrixY | none detected |
@@ -3633,12 +3863,12 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 41ad2c890626655e | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:2174 | CAquaFish::NextThink | sceVu0AddVector | none detected |
 | f14e039021c3b665 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:2631 | if | sceVu0SubVector | none detected |
 | 1fe74d80087e6d16 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:2633 | if | sceVu0Normalize | none detected |
-| 2e674268ca410b0c | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3221 | CAquaMes::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 8c0a896f772ba6c6 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3252 | CAquaMes::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 2e674268ca410b0c | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3221 | CAquaMes::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 8c0a896f772ba6c6 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3252 | CAquaMes::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 1e53d90c69161ea3 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3261 | CAquaMes::DrawTitleMes | sceVif1Packet | none detected |
 | 7ac61cba7f12854f | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3619 | <file-scope> | sceVif1Packet | none detected |
-| a7145045eb497ec0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3784 | CAquarium::Initialize | sceVu0SubVector | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| e0c93db0a5bd3f4e | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3785 | CAquarium::Initialize | sceVu0Normalize | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| a7145045eb497ec0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3784 | CAquarium::Initialize | sceVu0SubVector | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| e0c93db0a5bd3f4e | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:3785 | CAquarium::Initialize | sceVu0Normalize | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | b6057c31f6e0d654 | raw-allocation | retail/src/menuaqua.cpp:3978 | CAquarium::SettingAqua | (u8 *) aqua_stack.Alloc(size / 16 + 1) | none detected |
 | ae1bd7bbcdb031bc | raw-member-offset | retail/src/menuaqua.cpp:3978 | CAquarium::SettingAqua | (u8 *) aqua_stack.Alloc(size / 16 + 1 | none detected |
 | 8a6b4fa507814bb2 | raw-allocation | retail/src/menuaqua.cpp:3992 | CAquarium::SettingAqua | (u8 *) aqua_stack.Alloc(size / 16 + 1) | none detected |
@@ -3680,18 +3910,18 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 14fb70c93b3bddb1 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:4873 | CAquarium::ColCheck | sceVu0ScaleVector | none detected |
 | 4ba3688d2487159e | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:4925 | CAquarium::ColCheck | sceVu0AddVector | none detected |
 | 44d484df4f423195 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:5043 | CAquarium::SelFishSetCursor | sceVu0ITOF4Vector | none detected |
-| 6dd06e4372486748 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6144 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| fb7c70495e1d3437 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6153 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 159b9cc9ccb1cafb | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6173 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 509d3588a88052c5 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6178 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 5bb46c80b4d0d131 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6182 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ebe00f2a7b65db6f | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6213 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| d50372b7d0ddae76 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6243 | CAquarium::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f7e8862641ca00f0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6260 | CAquarium::Draw | sceVu0Normalize | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 33c601ca46fb5f10 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6262 | CAquarium::Draw | sceVu0Normalize | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| d5847b22ac0c1ec6 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6265 | CAquarium::Draw | sceVu0InnerProduct | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 78c62144c0d9f4a0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6266 | CAquarium::Draw | sceVu0InnerProduct | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 6712b687c8e1f25c | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6298 | CAquarium::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 6dd06e4372486748 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6144 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| fb7c70495e1d3437 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6153 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 159b9cc9ccb1cafb | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6173 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 509d3588a88052c5 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6178 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 5bb46c80b4d0d131 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6182 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| ebe00f2a7b65db6f | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6213 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d50372b7d0ddae76 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6243 | CAquarium::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| f7e8862641ca00f0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6260 | CAquarium::Draw | sceVu0Normalize | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 33c601ca46fb5f10 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6262 | CAquarium::Draw | sceVu0Normalize | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d5847b22ac0c1ec6 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6265 | CAquarium::Draw | sceVu0InnerProduct | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 78c62144c0d9f4a0 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6266 | CAquarium::Draw | sceVu0InnerProduct | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 6712b687c8e1f25c | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6298 | CAquarium::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | a6ddc205c73357d8 | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6304 | <file-scope> | sceVu0FVECTOR | none detected |
 | 14fd519de5d702ae | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6310 | <file-scope> | sceVu0FVECTOR | none detected |
 | 8a900b5ad8bd60cc | hardware:ps2_sdk_or_thread | retail/src/menuaqua.cpp:6316 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -3735,17 +3965,17 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | dd05a92b6bb3c849 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:4970 | MenuMonsterBoxDraw | sceVif1Packet | none detected |
 | 334d1239a6608399 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:4983 | MenuMonsterBoxDraw | sceVif1Packet | none detected |
 | 9e5834d72c9dc446 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:6684 | CMenuCostumeSel::KeyStep | sceVu0FVECTOR | none detected |
-| bdba8b1512709725 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7025 | CMenuCostumeSel::Draw | sceVu0FMATRIX | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 22e8e8d48e3ca0f1 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7026 | CMenuCostumeSel::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 7ac0b64d3b157477 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7036 | CMenuCostumeSel::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 0d9f3613a3b824ac | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7043 | CMenuCostumeSel::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 65af312dd5fa332d | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7047 | CMenuCostumeSel::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 29865eddadeb6955 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7153 | CMenuCostumeSel::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 67ce6b2a9a7178cd | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7519 | CMosBookMenu::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 0c9e09a600d409aa | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7615 | CMosBookMenu::Draw | sceVu0FMATRIX | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| dcb338cb71f40be8 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7616 | CMosBookMenu::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e7dc979babe5dc89 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7624 | CMosBookMenu::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 79ba50d6d40bfb4f | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7629 | CMosBookMenu::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| bdba8b1512709725 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7025 | CMenuCostumeSel::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 22e8e8d48e3ca0f1 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7026 | CMenuCostumeSel::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 7ac0b64d3b157477 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7036 | CMenuCostumeSel::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0d9f3613a3b824ac | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7043 | CMenuCostumeSel::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 65af312dd5fa332d | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7047 | CMenuCostumeSel::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 29865eddadeb6955 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7153 | CMenuCostumeSel::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 67ce6b2a9a7178cd | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7519 | CMosBookMenu::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 0c9e09a600d409aa | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7615 | CMosBookMenu::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| dcb338cb71f40be8 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7616 | CMosBookMenu::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e7dc979babe5dc89 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7624 | CMosBookMenu::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 79ba50d6d40bfb4f | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7629 | CMosBookMenu::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | b8f1997470c149e9 | hardware:ps2_sdk_or_thread | retail/src/menuchr.cpp:7652 | <file-scope> | sceVif1Packet | none detected |
 | e2e50c3a349fa8a5 | byte-stride-pointer-array | retail/src/menucommon.cpp:1022 | MenuCommonReadData | (char **) ((u8 *) names + i) | src/menucommon.cpp |
 | 7f077922c2646392 | byte-stride-pointer-array | retail/src/menucommon.cpp:1023 | MenuCommonReadData | (char **) ((u8 *) names + i) | src/menucommon.cpp |
@@ -3774,12 +4004,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 258730b303449f66 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:5794 | CMenuPosDataManage::MallocPallet | sceVif1Packet | none detected |
 | 93a02282cac01c4a | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6005 | MenuCapture | sceVif1Packet | src/menudraw.cpp |
 | c163fc40e57d288c | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6027 | SetBGFrameForMenu | sceVif1Packet | none detected |
-| 445b5fb79f654912 | pointer-narrowing | retail/src/menudraw.cpp:6397 | CRepairManager::Generate | (int) this | src/menudraw.cpp |
-| fc8f4628a5132d1d | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6481 | CRepairManager::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 87a8d11b7e5a7660 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6601 | CLevelUpEffect::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| fc8f4628a5132d1d | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6481 | CRepairManager::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 87a8d11b7e5a7660 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6601 | CLevelUpEffect::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 4071684be1954a34 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:6962 | DrawBuildUpInfoEffect | sceVif1Packet | none detected |
 | a7d440a7adc94e9e | raw-allocation | retail/src/menudraw.cpp:7160 | CMenuEffect::SetMemory | (MENU_EFFECT_INFO *) memory->Alloc(blocks) | none detected |
-| f3dfe8d1c66d6535 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:7844 | CMenuEffect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| f3dfe8d1c66d6535 | hardware:ps2_sdk_or_thread | retail/src/menudraw.cpp:7844 | CMenuEffect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 1a2a2cb5d54553c9 | pointer-narrowing | retail/src/menudraw.cpp:7980 | if | (int) particle->star_color * | none detected |
 | 05412532d961ed57 | hardware:ps2_sdk_or_thread | retail/src/menumain.cpp:1406 | MenuMainExit | sceVu0UnitMatrix | none detected |
 | 2c529c0218f82502 | hardware:ps2_sdk_or_thread | retail/src/menumain.cpp:1407 | MenuMainExit | sceVu0MulMatrix | none detected |
@@ -3858,8 +4087,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 34add92af4b5d7ab | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12175 | MenuItemDraw | sceVif1Packet | none detected |
 | ae6b31ebd964d13c | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12180 | MenuItemDraw | sceVif1Packet | none detected |
 | ed78e80fd773794d | pointer-narrowing | retail/src/menusys.cpp:12324 | CItemSelect::KeyStep | (int) ((int) ITEM_SELECT_COLUMNS * | none detected |
-| 6a911e36b959bd59 | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12445 | CItemSelect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 24e124e3e4aeabb1 | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12603 | CItemSelect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 6a911e36b959bd59 | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12445 | CItemSelect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 24e124e3e4aeabb1 | hardware:ps2_sdk_or_thread | retail/src/menusys.cpp:12603 | CItemSelect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 1922ac8c04f9a54d | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:96 | if | sceVu0Normalize | none detected |
 | 82922210ad416e7d | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:103 | mgCCamera::Stay | sceVu0CopyVector | none detected |
 | c30ed565d2e1c73a | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:104 | mgCCamera::Stay | sceVu0CopyVector | none detected |
@@ -3870,7 +4099,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d552a9fe54b79ee5 | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:203 | mgCCamera::GetRef | sceVu0CopyVector | none detected |
 | a08e27f12bd7f62e | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:207 | mgCCamera::GetNextPos | sceVu0CopyVector | none detected |
 | 4c4725ddb7d17559 | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:211 | mgCCamera::GetNextRef | sceVu0CopyVector | none detected |
-| 5cbfafcc9fd4aeef | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:254 | mgCCameraFollow::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 5cbfafcc9fd4aeef | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:254 | mgCCameraFollow::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 6a46b3c5a5f91fd1 | hardware:ps2_sdk_or_thread | retail/src/mg_camera.cpp:314 | mgCCameraFollow::Stay | sceVu0CopyVector | none detected |
 | 8a30a48f086ac706 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:493 | if | sceVu0FMATRIX | none detected |
 | 4afb633c2b1a8162 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:495 | if | sceVu0FVECTOR | none detected |
@@ -3883,7 +4112,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 51d4f277fbb56dd4 | raw-allocation | retail/src/mg_dataset.cpp:547 | <file-scope> | (mgCFrame::BoundInfo *) memory->Alloc(sizeof(mgCFrame::BoundInfo) | none detected |
 | 59ea6c41ef5a15e4 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:553 | <file-scope> | sceVu0SubVector | none detected |
 | 1d90c23408bddb45 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:554 | <file-scope> | sceVu0ScaleVector | none detected |
-| f57515bc849918b3 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:723 | mgCVisual::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| f57515bc849918b3 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:723 | mgCVisual::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 164a4d890ad30c6a | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:789 | mgCreateBBoxSphere | sceVu0CopyVector | none detected |
 | dd0d0d5e88dae883 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:790 | mgCreateBBoxSphere | sceVu0CopyVector | none detected |
 | 05267b0827067fb1 | hardware:ps2_sdk_or_thread | retail/src/mg_dataset.cpp:797 | mgCreateBBoxSphere | sceVu0AddVector | none detected |
@@ -3891,17 +4120,17 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | ea010c87b292587c | raw-allocation | retail/src/mg_dataset.cpp:850 | CopyFrame | (char *) memory->Alloc(blocks) | none detected |
 | bb1971b9b7b7c30b | raw-allocation | retail/src/mg_dataset.cpp:867 | CopyFrame | (mgCFrame::BoundInfo *) operator new(sizeof(mgCFrame::BoundInfo), memory->Alloc(0xD) | none detected |
 | aac3c17ab3995d24 | raw-allocation | retail/src/mg_dataset.cpp:944 | mgCVisual::Iam | (mgCFrame **) operator new[](bytes, memory->Alloc(blocks + 2) | none detected |
-| 30df69ae366d8266 | raw-allocation | retail/src/mg_dataset.cpp:1034 | mgCMDTBuilder::End | (mgCFrame::BoundInfo *) operator new(sizeof(mgCFrame::BoundInfo), load->memory->Alloc(0xD) | src/mg_drawprim.cpp |
-| 3cd87586c552c46d | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:176 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 23759cf865837fab | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:179 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 335d5899263fb80d | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:182 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| e068750974c67ef8 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:183 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 2321986a8ea2ce1e | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:200 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| aece8f844de088b6 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:209 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 7841f87eeb6acabb | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:220 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 41f192981b24d950 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:226 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| b4258c733dbf2393 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:227 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| b04b5104c7f16239 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:234 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 30df69ae366d8266 | raw-allocation | retail/src/mg_dataset.cpp:1034 | mgCMDTBuilder::End | (mgCFrame::BoundInfo *) operator new(sizeof(mgCFrame::BoundInfo), load->memory->Alloc(0xD) | none detected |
+| 3cd87586c552c46d | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:176 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 23759cf865837fab | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:179 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 335d5899263fb80d | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:182 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| e068750974c67ef8 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:183 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 2321986a8ea2ce1e | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:200 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| aece8f844de088b6 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:209 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 7841f87eeb6acabb | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:220 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 41f192981b24d950 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:226 | mgRENDER_INFO::Initialize | sceVu0FMATRIX | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| b4258c733dbf2393 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:227 | mgRENDER_INFO::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| b04b5104c7f16239 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:234 | mgRENDER_INFO::Initialize | sceVu0CopyMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | a73fb40cfbb252ec | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:240 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | src/mg_drawenv.cpp |
 | e9be9d46e925dc73 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:242 | mgRENDER_INFO::SetViewMatrix | sceVu0TransposeMatrix | src/mg_drawenv.cpp |
 | 61a5e853304f0fa4 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:243 | mgRENDER_INFO::SetViewMatrix | sceVu0CopyVector | src/mg_drawenv.cpp |
@@ -3913,22 +4142,22 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 4622be435f175590 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:266 | mgRENDER_INFO::SetDropShadowMatrix | sceVu0CopyVector | src/mg_drawenv.cpp |
 | efe971a675ec4f44 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:312 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | src/mg_drawenv.cpp |
 | 634c9c68360f75a7 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:313 | mgRENDER_INFO::SetLight | sceVu0CopyMatrix | src/mg_drawenv.cpp |
-| 51f5987967d5d2a7 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:326 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | src/funcpoint.cpp, src/mg_drawenv.cpp |
-| b8c218a861d5aa82 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:327 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | src/funcpoint.cpp, src/mg_drawenv.cpp |
+| 51f5987967d5d2a7 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:326 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | src/mg_drawenv.cpp |
+| b8c218a861d5aa82 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:327 | mgRENDER_INFO::GetLight | sceVu0CopyMatrix | src/mg_drawenv.cpp |
 | e2a6aaec629ec169 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:349 | mgRENDER_INFO::SetAmbient | sceVu0CopyVector | src/mg_drawenv.cpp |
 | 36c441c10944e09f | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:353 | mgRENDER_INFO::GetAmbient | sceVu0CopyVector | src/mg_drawenv.cpp |
 | 2cf90cc59ad58937 | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:358 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | src/mg_drawenv.cpp |
 | b41c5ccec6635a8f | hardware:ps2_sdk_or_thread | retail/src/mg_drawenv.cpp:359 | mgRENDER_INFO::SetPlight | sceVu0CopyVector | src/mg_drawenv.cpp |
-| 0449b8b3ac044b44 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:21 | mgCDrawPrim::Initialize | sceVif1Packet | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 0449b8b3ac044b44 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:21 | mgCDrawPrim::Initialize | sceVif1Packet | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | 3d70e74cb6cea379 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:134 | mgCDrawPrim::Begin2 | sceVif1PkCall | src/mg_drawprim.cpp |
 | 5f1a0486f0fabb21 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:144 | mgCDrawPrim::Begin2 | sceGsZbuf | src/mg_drawprim.cpp |
 | 2b6205f44239aa75 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:235 | mgCDrawPrim::End2 | sceVif1PkTerminate | src/mg_drawprim.cpp |
 | e9681aeb43b4ecb1 | hardware:inline_asm_or_intrinsic | retail/src/mg_drawprim.cpp:245 | mgCDrawPrim::Data0 | asm | none detected |
 | b6ea1e446e1c016a | hardware:inline_asm_or_intrinsic | retail/src/mg_drawprim.cpp:255 | mgCDrawPrim::Data4 | asm | none detected |
-| 68d04a2afb0eef79 | hardware:inline_asm_or_intrinsic | retail/src/mg_drawprim.cpp:288 | mgCDrawPrim::Vertex | asm | src/mg_drawprim.cpp |
+| 68d04a2afb0eef79 | hardware:inline_asm_or_intrinsic | retail/src/mg_drawprim.cpp:288 | mgCDrawPrim::Vertex | asm | none detected |
 | aa4ffa739cad3225 | hardware:inline_asm_or_intrinsic | retail/src/mg_drawprim.cpp:322 | mgCDrawPrim::Color | asm | src/mg_drawprim.cpp |
-| ed8b16071ec27d87 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:421 | mgCDrawPrim::DepthTestEnable | sceGsTest | src/mg_drawprim.cpp |
-| d75b46c3a3964240 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:432 | mgCDrawPrim::DepthTest | sceGsTest | src/mg_drawprim.cpp |
+| ed8b16071ec27d87 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:421 | mgCDrawPrim::DepthTestEnable | sceGsTest | none detected |
+| d75b46c3a3964240 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:432 | mgCDrawPrim::DepthTest | sceGsTest | none detected |
 | 8841cd908d59d541 | raw-allocation | retail/src/mg_drawprim.cpp:538 | mgCDrawManager::BeginDraw | (int *) memory->Alloc(group_max / 4 + 1) | src/mg_drawprim.cpp |
 | bfaa1a43e9e264b7 | raw-allocation | retail/src/mg_drawprim.cpp:552 | mgCDrawManager::BeginDraw | (int *) memory->Alloc((used_count + 1) | src/mg_drawprim.cpp |
 | b9e68c44cd83bc4e | raw-allocation | retail/src/mg_drawprim.cpp:564 | mgCDrawManager::BeginDraw | (mgSORT_PACKET ***) memory->Alloc(blocks) | src/mg_drawprim.cpp |
@@ -3937,13 +4166,13 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | fbe037d5e11415b5 | raw-allocation | retail/src/mg_drawprim.cpp:567 | mgCDrawManager::BeginDraw | (mgSORT_PACKET **) memory->Alloc(sort_num) | src/mg_drawprim.cpp |
 | 2807bba130212d15 | raw-allocation | retail/src/mg_drawprim.cpp:600 | mgCDrawManager::PreEndDraw | (mgSORT_PACKET ***) memory->Alloc(group_num / 4 + 1) | src/mg_drawprim.cpp |
 | 6faf365a036d418d | raw-allocation | retail/src/mg_drawprim.cpp:608 | mgCDrawManager::PreEndDraw | (mgSORT_PACKET **) memory->Alloc(size / 4 + 1) | src/mg_drawprim.cpp |
-| 39fbf1f7837ade04 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:629 | mgCDrawManager::ReloadTexture | sceVif1Packet | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| 19c7d6396be6c57a | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:647 | mgCDrawManager::ReloadTexture | sceVif1PkTerminate | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| c016130e689bcb9d | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:654 | mgCDrawManager::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a7cd7210677665b5 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:680 | mgCDrawManager::Draw | sceVif1PkTerminate | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 92ee7c779ed7ec4a | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:709 | mgCDrawManager::Draw | sceVif1PkReserve | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 1721e591c0d06829 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:713 | mgCDrawManager::EndDraw | sceVif1Packet | src/mg_drawprim.cpp |
-| 22cc35de15d339a7 | raw-allocation | retail/src/mg_drawprim.cpp:751 | mgCDrawManager::AddPacket | (mgSORT_PACKET *) memory->Alloc(1) | src/mg_drawprim.cpp |
+| 39fbf1f7837ade04 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:629 | mgCDrawManager::ReloadTexture | sceVif1Packet | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| 19c7d6396be6c57a | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:647 | mgCDrawManager::ReloadTexture | sceVif1PkTerminate | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| c016130e689bcb9d | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:654 | mgCDrawManager::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a7cd7210677665b5 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:680 | mgCDrawManager::Draw | sceVif1PkTerminate | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 92ee7c779ed7ec4a | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:709 | mgCDrawManager::Draw | sceVif1PkReserve | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 1721e591c0d06829 | hardware:ps2_sdk_or_thread | retail/src/mg_drawprim.cpp:713 | mgCDrawManager::EndDraw | sceVif1Packet | none detected |
+| 49119d16353cffc2 | raw-allocation | retail/src/mg_drawprim.cpp:751 | mgCDrawManager::AddPacket | (mgSORT_PACKET *) memory->Alloc((sizeof(mgSORT_PACKET) | none detected |
 | 77a7608e3a9906cd | hardware:inline_asm_or_intrinsic | retail/src/mg_frame.cpp:98 | test1 | asm | none detected |
 | f863955663bdf456 | hardware:inline_asm_or_intrinsic | retail/src/mg_frame.cpp:188 | test2 | asm | none detected |
 | e2f5912668e14e56 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:242 | mgInsideScreen | sceVu0FMATRIX | none detected |
@@ -3958,8 +4187,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 283a0b59521d42ec | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:431 | mgCObject::SetRotation | sceVu0CopyVector | none detected |
 | 541403ec74246a86 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:446 | mgCObject::GetRotation | sceVu0CopyVector | none detected |
 | 58c11df8f39274a8 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:470 | mgCObject::GetScale | sceVu0CopyVector | none detected |
-| 594e6901e44f738d | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:491 | mgCFrame::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 4bf5082241d2a0c6 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:492 | mgCFrame::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 594e6901e44f738d | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:491 | mgCFrame::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 4bf5082241d2a0c6 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:492 | mgCFrame::Initialize | sceVu0UnitMatrix | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | bad4432c8f81f602 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:519 | mgCFrame::SetBBox | sceVu0CopyVector | none detected |
 | 736ef541043f25c0 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:520 | mgCFrame::SetBBox | sceVu0CopyVector | none detected |
 | 02ad7314b8f6b6e9 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:540 | mgCFrame::GetBBox | sceVu0CopyVector | none detected |
@@ -4014,15 +4243,15 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 0fcd575529a1ad73 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1193 | mgCFrame::GetWorldPosition0 | sceVu0FMATRIX | none detected |
 | 6ff73cb57ce097b4 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1200 | mgCFrame::GetWorldDir | sceVu0FMATRIX | none detected |
 | 07c05e0185752ab6 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1207 | mgCFrame::GetWorldDir | sceVu0ApplyMatrix | none detected |
-| 0722279eada4ff9e | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1419 | mgCFrame::Draw | sceVu0FMATRIX | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3d77a2babb4201b6 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1436 | mgCFrame::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 2a77f486b50d59c9 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1437 | mgCFrame::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3cbb249f52633f20 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1465 | mgCFrame::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 292ae22a2e4f3858 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1469 | mgCFrame::Draw | sceVu0FMATRIX | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 98221636ec1636eb | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1470 | mgCFrame::Draw | sceVu0TransposeMatrix | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 8bf1541382964d38 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1477 | mgCFrame::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ce9b81be411ad671 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1478 | mgCFrame::Draw | sceVu0CopyVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 5bef62acca04e122 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1480 | mgCFrame::Draw | sceVu0ApplyMatrix | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 0722279eada4ff9e | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1419 | mgCFrame::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 3d77a2babb4201b6 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1436 | mgCFrame::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 2a77f486b50d59c9 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1437 | mgCFrame::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 3cbb249f52633f20 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1465 | mgCFrame::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 292ae22a2e4f3858 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1469 | mgCFrame::Draw | sceVu0FMATRIX | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 98221636ec1636eb | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1470 | mgCFrame::Draw | sceVu0TransposeMatrix | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 8bf1541382964d38 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1477 | mgCFrame::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| ce9b81be411ad671 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1478 | mgCFrame::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 5bef62acca04e122 | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1480 | mgCFrame::Draw | sceVu0ApplyMatrix | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 3a5c812a141683ae | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1522 | mgCFrame::GetDrawRect | sceVu0FMATRIX | none detected |
 | e847a8a68f62501d | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1523 | mgCFrame::GetDrawRect | sceVu0FVECTOR | none detected |
 | 24caf8a787dd43dc | hardware:ps2_sdk_or_thread | retail/src/mg_frame.cpp:1524 | mgCFrame::GetDrawRect | sceVu0FVECTOR | none detected |
@@ -4127,8 +4356,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | ed157c78bc449033 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:655 | MulMatrix3 | asm | none detected |
 | 9751fd7e1c11fc23 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:707 | mgMulMatrix | asm | none detected |
 | ddbb930dd7372223 | hardware:inline_asm_or_intrinsic | retail/src/mg_math.cpp:739 | mgInversMatrix | asm | none detected |
-| f8a6820786a00324 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:829 | mgRotMatrixXYZ | sceVu0FMATRIX | src/mg_math.cpp |
-| 85b1345c7f26c55f | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:830 | mgRotMatrixXYZ | sceVu0FMATRIX | src/mg_math.cpp |
+| f8a6820786a00324 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:829 | mgRotMatrixXYZ | sceVu0FMATRIX | none detected |
+| 85b1345c7f26c55f | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:830 | mgRotMatrixXYZ | sceVu0FMATRIX | none detected |
 | efc44cda6eee3357 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:840 | mgCreateMatrixPY | sceVu0RotMatrixY | none detected |
 | 6a11d577521ab9c4 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:846 | mgLookAtMatrixZ | sceVu0FMATRIX | none detected |
 | 3d5f96e9378cdf15 | hardware:ps2_sdk_or_thread | retail/src/mg_math.cpp:847 | mgLookAtMatrixZ | sceVu0FMATRIX | none detected |
@@ -4167,11 +4396,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | c6ef7aa4e2501bb8 | raw-allocation | retail/src/mg_shadow.cpp:186 | mgCShadowMDT::CreateFacePacket | (mgFACE_GROUP *) face_memory->Alloc(0x12) | src/mg_shadow.cpp, src/mg_visual.cpp |
 | 6e31ce4f425dacf8 | pointer-narrowing | retail/src/mg_shadow.cpp:253 | mgCShadowMDT::CreatePacket | (int) ((u_char *) cursor - (u_char * | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | bce9a88e84f7dbd7 | pointer-narrowing | retail/src/mg_shadow.cpp:257 | mgCShadowMDT::CreatePacket | (int) ((u_char *) cursor - (u_char * | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
-| 09de9c7fa3201438 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:286 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f60b64e2dc4dc878 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:311 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| d3df85ad3a301830 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:312 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 4b40dd3dc505fa96 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:323 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 328cfc658b9ca1df | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:375 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 09de9c7fa3201438 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:286 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| f60b64e2dc4dc878 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:311 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| d3df85ad3a301830 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:312 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 4b40dd3dc505fa96 | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:323 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 328cfc658b9ca1df | hardware:ps2_sdk_or_thread | retail/src/mg_shadow.cpp:375 | mgCShadowMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | a7678a596a102b25 | hardware:ps2_sdk_or_thread | retail/src/mg_sprite.cpp:86 | <file-scope> | sceVu0FMATRIX | none detected |
 | f67ba63541233dd2 | hardware:ps2_sdk_or_thread | retail/src/mg_sprite.cpp:87 | <file-scope> | sceVu0IVECTOR | none detected |
 | e29556734bed4b84 | hardware:ps2_sdk_or_thread | retail/src/mg_sprite.cpp:118 | <file-scope> | sceVu0CopyMatrix | none detected |
@@ -4200,7 +4429,6 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | f2afd3bed04bda65 | hardware:ps2_sdk_or_thread | retail/src/mg_tanime.cpp:599 | if | sceVif1PkAddGsAD | none detected |
 | f213701bfb77f5ba | hardware:ps2_sdk_or_thread | retail/src/mg_tanime.cpp:600 | if | sceVif1PkCloseGifTag | none detected |
 | 9a6f62ddf453e961 | hardware:ps2_sdk_or_thread | retail/src/mg_tanime.cpp:601 | if | sceVif1PkCloseDirectCode | none detected |
-| 2c669f25df19ae10 | pointer-narrowing | retail/src/mg_tanime.cpp:675 | mgCTextureAnime::SearchGroupName | (int) this | none detected |
 | 671f473de44e30bb | raw-allocation | retail/src/mg_tanime.cpp:835 | texTEX_ANIME | (char *) TexAnimeStack->Alloc((strlen(name) | none detected |
 | e5543ba2b96e72e5 | raw-member-offset | retail/src/mg_tanime.cpp:835 | texTEX_ANIME | (char *) TexAnimeStack->Alloc((strlen(name) + 1) / MG_TEX_ANIME_NAME_ALLOC_UNIT + 1 | none detected |
 | ddd615fd3f738fba | hardware:dma_gif_vif | retail/src/mg_texture.cpp:29 | <file-scope> | DMA_ID_CNT | none detected |
@@ -4209,20 +4437,18 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 93c118814dcef542 | hardware:dma_gif_vif | retail/src/mg_texture.cpp:32 | <file-scope> | GIF_EOP | none detected |
 | 81d9e73673fc3fbe | hardware:dma_gif_vif | retail/src/mg_texture.cpp:33 | <file-scope> | GIF_NREG_1 | none detected |
 | 93c106f75c7ab220 | hardware:dma_gif_vif | retail/src/mg_texture.cpp:34 | <file-scope> | GIF_FLG_IMAGE | none detected |
-| bbbf6d2980dc77de | raw-allocation | retail/src/mg_texture.cpp:490 | mgCTextureManager::SetTableBuffer | (mgCTexture **) memory->Alloc(align16_blocks(bytes) | none detected |
-| 0a588eab73e14139 | raw-allocation | retail/src/mg_texture.cpp:502 | mgCTextureManager::SetTableBuffer | (mgTEXTURE_HASH **) memory->Alloc(align16_blocks(bytes) | none detected |
-| 9bdde7c18e4adf0a | pointer-narrowing | retail/src/mg_texture.cpp:546 | mgCTextureManager::Initialize | (int) this | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| af1aab95f1adbeb5 | pointer-narrowing | retail/src/mg_texture.cpp:644 | mgCTextureManager::DelHash | (int) this | none detected |
-| f83f2205a0f752cc | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:736 | mgCTextureManager::GetRemainVRAM | sceGsTex1 | none detected |
+| bbbf6d2980dc77de | raw-allocation | retail/src/mg_texture.cpp:490 | mgCTextureManager::SetTableBuffer | (mgCTexture **) memory->Alloc(align16_blocks(bytes) | src/mg_texture.cpp |
+| 0a588eab73e14139 | raw-allocation | retail/src/mg_texture.cpp:502 | mgCTextureManager::SetTableBuffer | (mgTEXTURE_HASH **) memory->Alloc(align16_blocks(bytes) | src/mg_texture.cpp |
+| f83f2205a0f752cc | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:736 | mgCTextureManager::GetRemainVRAM | sceGsTex1 | src/mg_texture.cpp |
 | b57fb5e0f6819659 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:912 | if | sceGsTex1 | none detected |
-| f87d6598cdefa185 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1449 | mgCTextureManager::ReloadTexture | sceVif1Packet | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| d8e1e5e657c6c003 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1466 | mgCTextureManager::ReloadTexture | sceVif1PkTerminate | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| 1e53372c42394ed7 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1470 | mgCTextureManager::ReloadTexture | sceVif1PkReserve | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| 4c01bef73fac544a | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1489 | mgCTextureManager::ReloadTexture | sceGsTex0 | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| c8c7bac1292c16dd | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1597 | mgCTextureManager::ReloadTexture | sceGsTex0 | src/mg_drawprim.cpp, src/mg_tanime.cpp, src/mg_texture.cpp |
-| d25c489a456ed8a4 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1633 | mgCTextureManager::ReloadCLUT | sceVif1Packet | none detected |
-| 99c6039ba96ceefb | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1641 | mgCTextureManager::ReloadCLUT | sceVif1PkTerminate | none detected |
-| 1305f43697865577 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1646 | mgCTextureManager::ReloadCLUT | sceVif1PkReserve | none detected |
+| f87d6598cdefa185 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1449 | mgCTextureManager::ReloadTexture | sceVif1Packet | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| d8e1e5e657c6c003 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1466 | mgCTextureManager::ReloadTexture | sceVif1PkTerminate | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| 1e53372c42394ed7 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1470 | mgCTextureManager::ReloadTexture | sceVif1PkReserve | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| 4c01bef73fac544a | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1489 | mgCTextureManager::ReloadTexture | sceGsTex0 | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| c8c7bac1292c16dd | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1597 | mgCTextureManager::ReloadTexture | sceGsTex0 | src/mg_drawprim.cpp, src/mg_texture.cpp |
+| d25c489a456ed8a4 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1633 | mgCTextureManager::ReloadCLUT | sceVif1Packet | src/mg_texture.cpp |
+| 99c6039ba96ceefb | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1641 | mgCTextureManager::ReloadCLUT | sceVif1PkTerminate | src/mg_texture.cpp |
+| 1305f43697865577 | hardware:ps2_sdk_or_thread | retail/src/mg_texture.cpp:1646 | mgCTextureManager::ReloadCLUT | sceVif1PkReserve | src/mg_texture.cpp |
 | 956848bf5f9f0ac4 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:33 | <file-scope> | sceVu0FMATRIX | none detected |
 | c4bb724169bf0c49 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:34 | <file-scope> | sceVu0FMATRIX | none detected |
 | 29cab3669b3954b3 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:35 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -4255,34 +4481,33 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | f140f57a7db2fb6a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:385 | mgCVisualMDT::CopyMDTData | sceVu0CopyVector | none detected |
 | 0e27210b590b5e20 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:391 | mgCVisualMDT::CopyMDTData | sceVu0CopyVector | none detected |
 | ac1eba1f7791b036 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:397 | mgCVisualMDT::CopyMDTData | sceVu0CopyVector | none detected |
-| 57ad85807dbcefd7 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:420 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | src/mg_visual.cpp |
-| bd8a5d6dc98b6223 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:421 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | src/mg_visual.cpp |
-| c6575a0ac6e48080 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:422 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | src/mg_visual.cpp |
-| 557771bb3c77b41e | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:423 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | src/mg_visual.cpp |
-| 8ec14f4d18a67df0 | raw-allocation | retail/src/mg_visual.cpp:424 | mgCVisualMDT::CopyMDTDataPointer | (mgMaterial *) memory->Alloc(material_num * 0x30 / 16) | src/mg_visual.cpp |
-| c77e3c1f1c367f27 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:445 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | src/mg_visual.cpp |
+| 57ad85807dbcefd7 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:420 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | none detected |
+| bd8a5d6dc98b6223 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:421 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | none detected |
+| c6575a0ac6e48080 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:422 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | none detected |
+| 557771bb3c77b41e | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:423 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | none detected |
+| a82b77c4544e52cd | raw-allocation | retail/src/mg_visual.cpp:424 | mgCVisualMDT::CopyMDTDataPointer | (mgMaterial *) memory->Alloc(material_num * (int) | none detected |
+| c77e3c1f1c367f27 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:445 | mgCVisualMDT::CopyMDTDataPointer | sceVu0FVECTOR | none detected |
 | 9533b93f237d569c | raw-allocation | retail/src/mg_visual.cpp:472 | mgCVisualMDT::CreateBBox | (mgCFace *) memory->Alloc(3) | none detected |
 | a30762d8ad66d3bc | raw-allocation | retail/src/mg_visual.cpp:492 | mgCVisualMDT::CreateBBox | (int *) index_memory->Alloc(face->index_num / 4 + 1) | none detected |
-| 595ed94da4249463 | pointer-narrowing | retail/src/mg_visual.cpp:803 | mgCVisualFixMDT::CreatePacket | (int) cursor - (int) (u_int * | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | 2c2d04eb5766d090 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1067 | mgCVisualMDT::CreateFacePacket | sceGifTag | src/mg_shadow.cpp, src/mg_visual.cpp |
 | 592e0e39bd25f039 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1074 | mgCVisualMDT::CreateFacePacket | sceGifTag | src/mg_shadow.cpp, src/mg_visual.cpp |
-| 18b344509f3aeb0a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1217 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f2897e70950e692a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1218 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a0e2ea8a3d94dd3e | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1219 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a5acc0532a96c56d | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1220 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 1343a02ceed3e1f6 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1221 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| fe10bcb3dd4fc3f2 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1222 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 47664cb9a040b2fc | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1223 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 641d434a9ecda3ea | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1224 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 0d9f874836945ff3 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1244 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 975dd19fcf15cab3 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1262 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| c3f08b2d4ce3ac15 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1267 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ScaleVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 51634784a888734f | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1288 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 46d670224fe005b9 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1289 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0InversMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f3afa1482bd307fe | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1290 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ApplyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 8369825226e76e08 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1301 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 3cbd891cff869e5a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1318 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0SubVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| f524ecfab7f6262b | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1320 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 18b344509f3aeb0a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1217 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| f2897e70950e692a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1218 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| a0e2ea8a3d94dd3e | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1219 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| a5acc0532a96c56d | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1220 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 1343a02ceed3e1f6 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1221 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| fe10bcb3dd4fc3f2 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1222 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 47664cb9a040b2fc | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1223 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 641d434a9ecda3ea | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1224 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 0d9f874836945ff3 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1244 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 975dd19fcf15cab3 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1262 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| c3f08b2d4ce3ac15 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1267 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ScaleVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 51634784a888734f | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1288 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 46d670224fe005b9 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1289 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0InversMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| f3afa1482bd307fe | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1290 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0ApplyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 8369825226e76e08 | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1301 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 3cbd891cff869e5a | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1318 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0SubVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| f524ecfab7f6262b | hardware:ps2_sdk_or_thread | retail/src/mg_visual.cpp:1320 | mgCVisualMDT::CreateRenderInfoPacket | sceVu0CopyVector | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | 1b57d6dc458aacdc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:101 | <file-scope> | sceVif1Packet | none detected |
 | b07fac271f16c178 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:227 | <file-scope> | sceGsDimx | none detected |
 | 84d3aeeeccdfbd3d | hardware:scratchpad | retail/src/mglib.cpp:285 | <file-scope> | scratchpad | none detected |
@@ -4343,8 +4568,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 28ff81c40fa5a809 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:968 | mgDrawDirect | sceVif1PkReserve | src/mglib.cpp |
 | 0202dbb60b5d7270 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:973 | mgDrawDirectStart | sceVif1PkTerminate | src/mglib.cpp |
 | 92875933b5ddfde7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:989 | mgDrawDirectEnd | sceVif1PkReserve | src/mglib.cpp |
-| b93ca48d945b985e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1032 | mgEndDrawShadow | sceGsAlpha | src/mg_shadow.cpp |
-| 317a093b0bc77a18 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1033 | mgEndDrawShadow | sceGsTexa | src/mg_shadow.cpp |
+| b93ca48d945b985e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1032 | mgEndDrawShadow | sceGsAlpha | src/mglib.cpp |
+| 317a093b0bc77a18 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1033 | mgEndDrawShadow | sceGsTexa | src/mglib.cpp |
 | 1f71846d331456d1 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1089 | mgSetBackGround | sceVu0CopyVector | none detected |
 | 41235cb95a5348d2 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1229 | mgFlushRenderInfo | sceVif1Packet | src/mglib.cpp |
 | f824193cb3fdb3fb | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1230 | mgFlushRenderInfo | sceVif1PkTerminate | src/mglib.cpp |
@@ -4366,51 +4591,51 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 2e458b37b7034d8f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1346 | mgSetPkFrameBuffer | sceVif1PkTerminate | src/mglib.cpp |
 | 7de5118d537ee5dc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1369 | mgSetPkFrameBuffer | sceVif1PkReserve | src/mglib.cpp |
 | 22fee4fd827679c6 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1441 | mgGetFrameBackBuffer | sceGsFrame | src/mglib.cpp |
-| 7b4aa9978ca033bd | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1467 | mgSetPkMoveImage | sceGsTex0 | none detected |
-| ff54da16fa682bc0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1472 | mgSetPkMoveImage | sceVif1Packet | none detected |
-| f18dba17f7a57490 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1506 | mgSetPkMoveImage | sceVif1PkCnt | none detected |
-| 355960b818b17143 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1507 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | none detected |
-| 056177d10fc6d5f5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1508 | mgSetPkMoveImage | sceVif1PkOpenGifTag | none detected |
-| c6bb4a88b916cc37 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1509 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 59cb9100112e8ef9 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1510 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 21a47db6b0e7be97 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1511 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| df16e03b7ca68a00 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1512 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 6d63e13982096bdf | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1513 | mgSetPkMoveImage | sceVif1PkCloseGifTag | none detected |
-| c0a7848c77938976 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1514 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | none detected |
-| 403d33d0989d59a7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1515 | mgSetPkMoveImage | sceVif1PkCnt | none detected |
-| 0c84405ab4b2ba1d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1516 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | none detected |
-| ad5ee7d368eb3991 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1517 | mgSetPkMoveImage | sceVif1PkOpenGifTag | none detected |
-| 16166962557c9377 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1518 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| d95175c6d0759dc7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1519 | mgSetPkMoveImage | sceVif1PkCloseGifTag | none detected |
-| 6786fb34d48c12cf | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1520 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | none detected |
-| 9d0f38f6189024fc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1534 | mgSetPkMoveImage | sceGsTex0 | none detected |
-| a0c24a727d8d66d6 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1535 | mgSetPkMoveImage | sceVif1Packet | none detected |
-| 5c17159ac2acbe87 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1550 | mgSetPkMoveImage | sceVif1PkCnt | none detected |
-| 9db3f5276de33fb2 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1551 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | none detected |
-| 7da005af89f516e7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1552 | mgSetPkMoveImage | sceVif1PkOpenGifTag | none detected |
-| a6775b86bb0606a5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1553 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| b39306162e61b8f4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1556 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 07434466d44c2392 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1557 | mgSetPkMoveImage | sceGsZbuf | none detected |
-| 50912719eee77dbd | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1559 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| bb5639b81acbe025 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1560 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| c8a3cd3270a4d6ce | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1562 | mgSetPkMoveImage | sceGsTest | none detected |
-| a082fc848c0a2ee7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1567 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| a72ef093e944561d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1568 | mgSetPkMoveImage | sceGsZbuf | none detected |
-| 4188b95885081ef4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1570 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 7acd3eb7779fa68e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1571 | mgSetPkMoveImage | sceGsAlpha | none detected |
-| febbab3a641d69e1 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1576 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 822e057ac960c509 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1579 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| fde8b7ed4f95ec4f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1580 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 6d06fa1f2059890f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1581 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 33515263908f118f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1582 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 2f0a764ecb923e4b | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1583 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| f3f98150e3079e99 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1584 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 271160360e9d9e86 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1585 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 7f07a5e1b99f2ca5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1586 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 8c8101f81d956ab1 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1587 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| c50ca85e44faef4d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1588 | mgSetPkMoveImage | sceVif1PkAddGsAD | none detected |
-| 37ad48599dee97b2 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1589 | mgSetPkMoveImage | sceVif1PkCloseGifTag | none detected |
-| 2a8287a12d31a84d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1590 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | none detected |
+| 7b4aa9978ca033bd | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1467 | mgSetPkMoveImage | sceGsTex0 | src/mglib.cpp |
+| ff54da16fa682bc0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1472 | mgSetPkMoveImage | sceVif1Packet | src/mglib.cpp |
+| f18dba17f7a57490 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1506 | mgSetPkMoveImage | sceVif1PkCnt | src/mglib.cpp |
+| 355960b818b17143 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1507 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | src/mglib.cpp |
+| 056177d10fc6d5f5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1508 | mgSetPkMoveImage | sceVif1PkOpenGifTag | src/mglib.cpp |
+| c6bb4a88b916cc37 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1509 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 59cb9100112e8ef9 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1510 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 21a47db6b0e7be97 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1511 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| df16e03b7ca68a00 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1512 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 6d63e13982096bdf | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1513 | mgSetPkMoveImage | sceVif1PkCloseGifTag | src/mglib.cpp |
+| c0a7848c77938976 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1514 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | src/mglib.cpp |
+| 403d33d0989d59a7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1515 | mgSetPkMoveImage | sceVif1PkCnt | src/mglib.cpp |
+| 0c84405ab4b2ba1d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1516 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | src/mglib.cpp |
+| ad5ee7d368eb3991 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1517 | mgSetPkMoveImage | sceVif1PkOpenGifTag | src/mglib.cpp |
+| 16166962557c9377 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1518 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| d95175c6d0759dc7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1519 | mgSetPkMoveImage | sceVif1PkCloseGifTag | src/mglib.cpp |
+| 6786fb34d48c12cf | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1520 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | src/mglib.cpp |
+| 9d0f38f6189024fc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1534 | mgSetPkMoveImage | sceGsTex0 | src/mglib.cpp |
+| a0c24a727d8d66d6 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1535 | mgSetPkMoveImage | sceVif1Packet | src/mglib.cpp |
+| 5c17159ac2acbe87 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1550 | mgSetPkMoveImage | sceVif1PkCnt | src/mglib.cpp |
+| 9db3f5276de33fb2 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1551 | mgSetPkMoveImage | sceVif1PkOpenDirectCode | src/mglib.cpp |
+| 7da005af89f516e7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1552 | mgSetPkMoveImage | sceVif1PkOpenGifTag | src/mglib.cpp |
+| a6775b86bb0606a5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1553 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| b39306162e61b8f4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1556 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 07434466d44c2392 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1557 | mgSetPkMoveImage | sceGsZbuf | src/mglib.cpp |
+| 50912719eee77dbd | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1559 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| bb5639b81acbe025 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1560 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| c8a3cd3270a4d6ce | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1562 | mgSetPkMoveImage | sceGsTest | src/mglib.cpp |
+| a082fc848c0a2ee7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1567 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| a72ef093e944561d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1568 | mgSetPkMoveImage | sceGsZbuf | src/mglib.cpp |
+| 4188b95885081ef4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1570 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 7acd3eb7779fa68e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1571 | mgSetPkMoveImage | sceGsAlpha | src/mglib.cpp |
+| febbab3a641d69e1 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1576 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 822e057ac960c509 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1579 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| fde8b7ed4f95ec4f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1580 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 6d06fa1f2059890f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1581 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 33515263908f118f | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1582 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 2f0a764ecb923e4b | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1583 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| f3f98150e3079e99 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1584 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 271160360e9d9e86 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1585 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 7f07a5e1b99f2ca5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1586 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 8c8101f81d956ab1 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1587 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| c50ca85e44faef4d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1588 | mgSetPkMoveImage | sceVif1PkAddGsAD | src/mglib.cpp |
+| 37ad48599dee97b2 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1589 | mgSetPkMoveImage | sceVif1PkCloseGifTag | src/mglib.cpp |
+| 2a8287a12d31a84d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1590 | mgSetPkMoveImage | sceVif1PkCloseDirectCode | src/mglib.cpp |
 | 1e7100e348690773 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1595 | mgSetPkClearScreen | sceVif1Packet | src/mglib.cpp |
 | 140e25293320c50d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1596 | mgSetPkClearScreen | sceVif1PkCnt | src/mglib.cpp |
 | e50bcbf334184713 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1597 | mgSetPkClearScreen | sceVif1PkOpenDirectCode | src/mglib.cpp |
@@ -4439,10 +4664,10 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 822f828e105a7562 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1656 | mgStoreImage | sceGsSetDefStoreImage | src/mglib.cpp |
 | 24c168477b60ef85 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1659 | mgStoreImage | sceGsExecStoreImage | src/mglib.cpp |
 | b9a1522e861105ab | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1660 | mgStoreImage | sceGsSyncPath | src/mglib.cpp |
-| 704589f39cadf9e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1665 | mgStoreZBuffImage | sceGsStoreImage | none detected |
-| a9e9fe03a59b31b7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1686 | mgStoreZBuffImage | sceGsSetDefStoreImage | none detected |
-| 279e45c1eeb17fd3 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1688 | mgStoreZBuffImage | sceGsExecStoreImage | none detected |
-| 442d40259c91047c | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1689 | mgStoreZBuffImage | sceGsSyncPath | none detected |
+| 704589f39cadf9e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1665 | mgStoreZBuffImage | sceGsStoreImage | src/mglib.cpp |
+| a9e9fe03a59b31b7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1686 | mgStoreZBuffImage | sceGsSetDefStoreImage | src/mglib.cpp |
+| 279e45c1eeb17fd3 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1688 | mgStoreZBuffImage | sceGsExecStoreImage | src/mglib.cpp |
+| 442d40259c91047c | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1689 | mgStoreZBuffImage | sceGsSyncPath | src/mglib.cpp |
 | 862a60e2f24aacc7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1742 | mgTransWorldPrim | sceVu0ApplyMatrix | none detected |
 | 5d0a3157c063ba64 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1763 | mgTransViewPrim | sceVu0ApplyMatrix | none detected |
 | c82cc34ea36977ec | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1776 | mgTransWorldView | sceVu0ApplyMatrix | none detected |
@@ -4453,35 +4678,35 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 936b9bfcac7d3c0c | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1817 | mgTransWorldPrim3DSprite | sceVu0ApplyMatrix | none detected |
 | bb706f2c4ec54ecc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1829 | mgTransWorldPrim3DSprite | sceVu0CopyVector | none detected |
 | 868a2f21f8f2231a | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1830 | mgTransWorldPrim3DSprite | sceVu0CopyVector | none detected |
-| ae9aa11a27cc8589 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1963 | StoreImage | sceOpen | none detected |
-| 03e1e6ba21a6ecc4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1973 | StoreImage | sceGsSetDefStoreImage | none detected |
-| b2e8bae848bc98e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1975 | StoreImage | sceGsExecStoreImage | none detected |
-| 838cd15a824fb9cc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1976 | StoreImage | sceGsSyncPath | none detected |
-| 638dac5466a8a658 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1977 | StoreImage | sceWrite | none detected |
-| 2d7ff31b7fd0bded | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1992 | StoreImage | sceWrite | none detected |
-| bb5d7e62d4dedb59 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1995 | StoreImage | sceClose | none detected |
-| 87b58fb6169dbc11 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1999 | mgInitFont | sceDevConsInit | none detected |
-| fd9540e2b2e5b35a | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2000 | mgInitFont | sceDevConsOpen | none detected |
-| 3c828e94db125bf4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2006 | mgCloseFont | sceDevConsClose | none detected |
-| 15c1ac9aed074399 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2015 | mgCloseFont | sceDmaChan | none detected |
-| 7cc361ead8cddb3d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2016 | mgCloseFont | sceDmaChan | none detected |
-| 9310888a6ddd4af6 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2017 | mgCloseFont | sceDmaChan | none detected |
-| 817413a3a08d92ca | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2018 | mgCloseFont | sceVif1Packet | none detected |
-| 3fcafc46012f01c7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2036 | mgCloseFont | sceGsTex1 | none detected |
-| 3d8a4f9e952d8f35 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2037 | mgCloseFont | sceGsTex1 | none detected |
-| bf9c224710195a64 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2038 | mgCloseFont | sceGsTest | none detected |
-| 76369ca369565671 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2039 | mgCloseFont | sceGsTest | none detected |
-| 9896724c289a61e9 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2040 | mgCloseFont | sceGsZbuf | none detected |
-| 10dd61e2ec7dba74 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2041 | mgCloseFont | sceGsZbuf | none detected |
-| 3b80b7dcbeed8a84 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2042 | mgCloseFont | sceGsAlpha | none detected |
-| 47983fa872800862 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2043 | mgCloseFont | sceGsAlpha | none detected |
-| 8ff2010a28dacf76 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2044 | mgCloseFont | sceGsTexa | none detected |
-| f7a95209e3986ed5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2045 | mgCloseFont | sceGsTexa | none detected |
-| 5fc238f73605445e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2046 | mgCloseFont | sceGsFrame | none detected |
-| 9928bd8112c47f64 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2049 | mgCloseFont | sceGifTag | none detected |
-| 6be3db2afe1621ee | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2050 | mgCloseFont | sceVu0FVECTOR | none detected |
-| b241f4c81764c0e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2051 | mgCloseFont | sceGsDBuff | none detected |
-| d2d276077a6a9720 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2053 | mgCloseFont | sceGsStoreImage | none detected |
+| ae9aa11a27cc8589 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1963 | StoreImage | sceOpen | src/mglib.cpp |
+| 03e1e6ba21a6ecc4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1973 | StoreImage | sceGsSetDefStoreImage | src/mglib.cpp |
+| b2e8bae848bc98e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1975 | StoreImage | sceGsExecStoreImage | src/mglib.cpp |
+| 838cd15a824fb9cc | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1976 | StoreImage | sceGsSyncPath | src/mglib.cpp |
+| 638dac5466a8a658 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1977 | StoreImage | sceWrite | src/mglib.cpp |
+| 2d7ff31b7fd0bded | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1992 | StoreImage | sceWrite | src/mglib.cpp |
+| bb5d7e62d4dedb59 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1995 | StoreImage | sceClose | src/mglib.cpp |
+| 87b58fb6169dbc11 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:1999 | mgInitFont | sceDevConsInit | src/mglib.cpp |
+| fd9540e2b2e5b35a | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2000 | mgInitFont | sceDevConsOpen | src/mglib.cpp |
+| 3c828e94db125bf4 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2006 | mgCloseFont | sceDevConsClose | src/mglib.cpp |
+| 15c1ac9aed074399 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2015 | mgCloseFont | sceDmaChan | src/mglib.cpp |
+| 7cc361ead8cddb3d | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2016 | mgCloseFont | sceDmaChan | src/mglib.cpp |
+| 9310888a6ddd4af6 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2017 | mgCloseFont | sceDmaChan | src/mglib.cpp |
+| 817413a3a08d92ca | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2018 | mgCloseFont | sceVif1Packet | src/mglib.cpp |
+| 3fcafc46012f01c7 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2036 | mgCloseFont | sceGsTex1 | src/mglib.cpp |
+| 3d8a4f9e952d8f35 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2037 | mgCloseFont | sceGsTex1 | src/mglib.cpp |
+| bf9c224710195a64 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2038 | mgCloseFont | sceGsTest | src/mglib.cpp |
+| 76369ca369565671 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2039 | mgCloseFont | sceGsTest | src/mglib.cpp |
+| 9896724c289a61e9 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2040 | mgCloseFont | sceGsZbuf | src/mglib.cpp |
+| 10dd61e2ec7dba74 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2041 | mgCloseFont | sceGsZbuf | src/mglib.cpp |
+| 3b80b7dcbeed8a84 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2042 | mgCloseFont | sceGsAlpha | src/mglib.cpp |
+| 47983fa872800862 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2043 | mgCloseFont | sceGsAlpha | src/mglib.cpp |
+| 8ff2010a28dacf76 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2044 | mgCloseFont | sceGsTexa | src/mglib.cpp |
+| f7a95209e3986ed5 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2045 | mgCloseFont | sceGsTexa | src/mglib.cpp |
+| 5fc238f73605445e | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2046 | mgCloseFont | sceGsFrame | src/mglib.cpp |
+| 9928bd8112c47f64 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2049 | mgCloseFont | sceGifTag | src/mglib.cpp |
+| 6be3db2afe1621ee | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2050 | mgCloseFont | sceVu0FVECTOR | src/mglib.cpp |
+| b241f4c81764c0e0 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2051 | mgCloseFont | sceGsDBuff | src/mglib.cpp |
+| d2d276077a6a9720 | hardware:ps2_sdk_or_thread | retail/src/mglib.cpp:2053 | mgCloseFont | sceGsStoreImage | src/mglib.cpp |
 | 07719b23ca9168d4 | raw-member-offset | retail/src/monster.cpp:1117 | if | (char *) memory->stAlloc64(blocks + 1 | none detected |
 | 99a4781605d0f353 | hardware:ps2_sdk_or_thread | retail/src/monster.cpp:1128 | if | sceVu0FVECTOR | none detected |
 | 91e5405bd75eed5d | hardware:ps2_sdk_or_thread | retail/src/monster.cpp:1182 | if | sceVu0CopyVector | none detected |
@@ -4548,15 +4773,15 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 339de5c86954ca96 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:348 | CMovie::Term | TerminateThread | src/movie.cpp |
 | 9d5af0d400f36497 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:350 | CMovie::Term | TerminateThread | src/movie.cpp |
 | 79338d47a8074578 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:352 | CMovie::Term | TerminateThread | src/movie.cpp |
-| 2f8f7a66cdc9832f | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:434 | CMovie::GetTagProgSize | sceMpegCreate | src/movie.cpp |
-| 38ff454c4bb49779 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:435 | CMovie::GetTagProgSize | sceMpegAddCallback | src/movie.cpp |
-| 6c54b5a856f7ba26 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:436 | CMovie::GetTagProgSize | sceMpegAddCallback | src/movie.cpp |
-| 4c7bcdd238268b7a | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:437 | CMovie::GetTagProgSize | sceMpegAddCallback | src/movie.cpp |
-| 4efee1b45b238476 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:438 | CMovie::GetTagProgSize | sceMpegAddCallback | src/movie.cpp |
-| e7774d07f5cf167e | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:439 | CMovie::GetTagProgSize | sceMpegAddCallback | src/movie.cpp |
-| 4153068acb91cd33 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:445 | CMovie::videoDecSetStream | sceMpegCallback | src/movie.cpp |
-| d570d611a91068d3 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:446 | CMovie::videoDecSetStream | sceMpegAddStrCallback | src/movie.cpp |
-| 750918561bd0b608 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:452 | CMovie::videoDecDelete | sceMpegDelete | src/movie.cpp |
+| 2f8f7a66cdc9832f | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:434 | CMovie::GetTagProgSize | sceMpegCreate | none detected |
+| 38ff454c4bb49779 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:435 | CMovie::GetTagProgSize | sceMpegAddCallback | none detected |
+| 6c54b5a856f7ba26 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:436 | CMovie::GetTagProgSize | sceMpegAddCallback | none detected |
+| 4c7bcdd238268b7a | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:437 | CMovie::GetTagProgSize | sceMpegAddCallback | none detected |
+| 4efee1b45b238476 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:438 | CMovie::GetTagProgSize | sceMpegAddCallback | none detected |
+| e7774d07f5cf167e | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:439 | CMovie::GetTagProgSize | sceMpegAddCallback | none detected |
+| 4153068acb91cd33 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:445 | CMovie::videoDecSetStream | sceMpegCallback | none detected |
+| d570d611a91068d3 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:446 | CMovie::videoDecSetStream | sceMpegAddStrCallback | none detected |
+| 750918561bd0b608 | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:452 | CMovie::videoDecDelete | sceMpegDelete | none detected |
 | b92aee4a7c2370bd | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:532 | stepMain | sceMpegDemuxPssRing | none detected |
 | 61573174a7f7fdcd | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:557 | mpegError | sceMpeg | none detected |
 | 44c881acee4dd54b | hardware:ps2_sdk_or_thread | retail/src/movie.cpp:561 | mpegNodata | sceMpeg | none detected |
@@ -4713,11 +4938,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | fb21bfa45bc22839 | hardware:ps2_sdk_or_thread | retail/src/occlusion.cpp:70 | COcclusion::CheckSphere | sceVu0InnerProduct | src/occlusion.cpp |
 | b0496bb863ced7c1 | hardware:ps2_sdk_or_thread | retail/src/occlusion.cpp:74 | COcclusion::CheckSphere | sceVu0InnerProduct | src/occlusion.cpp |
 | 4d5b2b0680d95a26 | hardware:ps2_sdk_or_thread | retail/src/occlusion.cpp:78 | COcclusion::CheckSphere | sceVu0InnerProduct | src/occlusion.cpp |
-| 9dfda1b1e2b845a6 | pointer-narrowing | retail/src/outline.cpp:182 | COutLineDraw::Draw | (int) (128.0f * opacity * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| e4fe4038fb5fada0 | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:233 | COutLineDraw::Draw | sceVu0IVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a42e025b30411770 | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:234 | COutLineDraw::Draw | sceVu0IVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| a9b94fd26e02b7cc | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:235 | COutLineDraw::Draw | sceVu0IVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 163a13288d34673b | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:236 | COutLineDraw::Draw | sceVu0IVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 9dfda1b1e2b845a6 | pointer-narrowing | retail/src/outline.cpp:182 | COutLineDraw::Draw | (int) (128.0f * opacity * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| e4fe4038fb5fada0 | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:233 | COutLineDraw::Draw | sceVu0IVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a42e025b30411770 | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:234 | COutLineDraw::Draw | sceVu0IVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| a9b94fd26e02b7cc | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:235 | COutLineDraw::Draw | sceVu0IVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 163a13288d34673b | hardware:ps2_sdk_or_thread | retail/src/outline.cpp:236 | COutLineDraw::Draw | sceVu0IVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 4d79736955478135 | raw-allocation | retail/src/pbuggy.cpp:525 | sgInitBuggy | (u8 *) stack->Alloc(blocks) | none detected |
 | a3bb99ec87465784 | hardware:ps2_sdk_or_thread | retail/src/pbuggy.cpp:725 | sgSystemDrawBuggy | sceVif1Packet | none detected |
 | 27ebfa96ef2f8b86 | hardware:ps2_sdk_or_thread | retail/src/pbuggy.cpp:771 | sgSystemDrawBuggy | sceVu0SubVector | none detected |
@@ -4761,8 +4986,8 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 80a964a30b9c2777 | hardware:ps2_sdk_or_thread | retail/src/photo.cpp:571 | DrawTakePhotoSystem | sceVif1Packet | none detected |
 | a32d3f4632033568 | pointer-narrowing | retail/src/photo.cpp:602 | DrawTakePhotoSystem | (int) ((u32) (char_width * | none detected |
 | 7d49e488139bb08f | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:27 | CalcReflectionVector | sceVu0Normalize | none detected |
-| b59f2137b8b79482 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:50 | CFragment::Draw | sceVu0SubVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 77df340ac9c6f6cf | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:82 | CFragment::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| b59f2137b8b79482 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:50 | CFragment::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 77df340ac9c6f6cf | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:82 | CFragment::Step | sceVu0ScaleVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | e7760e97aec3a565 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:151 | CFragment::Set | sceVu0CopyVector | none detected |
 | bc1490e03ec5a41f | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:152 | CFragment::Set | sceVu0CopyVector | none detected |
 | 53825be3b30d5c38 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:176 | CBPot::Clash | sceVu0CopyVector | none detected |
@@ -4774,7 +4999,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 881c1da5c67e49ba | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:399 | CPot::FlyStep | sceVu0CopyVector | none detected |
 | dab84206d14a08bf | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:401 | CPot::FlyStep | sceVu0ScaleVector | none detected |
 | 1a0323218f4cfc20 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:454 | if | sceVu0CopyVector | none detected |
-| cf7519a414e38418 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:466 | CPot::Clear | sceVu0CopyVector | src/snd_mngr.cpp |
+| cf7519a414e38418 | hardware:ps2_sdk_or_thread | retail/src/pot.cpp:466 | CPot::Clear | sceVu0CopyVector | none detected |
 | 054a4ab2111518a1 | raw-allocation | retail/src/quest.cpp:78 | quest_NUM | (QUEST_INFO *) operator new[](size, spi_queststack->Alloc(blocks + 2) | none detected |
 | 94d0f6aadfa2d78f | hardware:ps2_sdk_or_thread | retail/src/runscript_opcodes.cpp:621 | _GET_POSREF_ANGLE | sceVu0SubVector | none detected |
 | 1f36121783f37be0 | hardware:ps2_sdk_or_thread | retail/src/runscript_opcodes.cpp:622 | _GET_POSREF_ANGLE | sceVu0Normalize | none detected |
@@ -4851,15 +5076,15 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 872f137130dc1b6e | hardware:ps2_sdk_or_thread | retail/src/runscript_opcodes.cpp:4166 | _SHOT_ROCKET_LAUNCHER | sceVu0Normalize | none detected |
 | 55ce8da42d9b8898 | hardware:ps2_sdk_or_thread | retail/src/runscript_opcodes.cpp:4167 | _SHOT_ROCKET_LAUNCHER | sceVu0ScaleVector | none detected |
 | f39c95f120970ffd | hardware:ps2_sdk_or_thread | retail/src/runscript_opcodes.cpp:4168 | _SHOT_ROCKET_LAUNCHER | sceVu0AddVector | none detected |
-| ea1cdfcc0c11ab40 | raw-allocation | retail/src/runscript_opcodes.cpp:4678 | SetMonsterScript | (RS_STACKDATA *) memory->Alloc(0x40) | none detected |
-| b1f5b523f6bcbc54 | raw-allocation | retail/src/runscript_opcodes.cpp:4679 | SetMonsterScript | (RS_CALLDATA *) memory->Alloc(0x180) | none detected |
+| 814ea8217875ec30 | raw-allocation | retail/src/runscript_opcodes.cpp:4678 | SetMonsterScript | (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) | none detected |
+| a0d9733bc25b0f1d | raw-allocation | retail/src/runscript_opcodes.cpp:4679 | SetMonsterScript | (RS_CALLDATA *) memory->Alloc((sizeof(RS_CALLDATA) | none detected |
 | f1442e60dd5e33a4 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:56 | RandXYinViewArea | sceVu0SubVector | none detected |
 | 45145cf2eb5b7bd5 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:78 | CRipple::Birth | sceVu0CopyVector | none detected |
 | a2d2b108a46748b2 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:314 | CRainDrop::Birth | sceVu0CopyVector | none detected |
-| 121310bf422f9bd4 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:343 | CRainDrop::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
-| 997eb0531c6d61f6 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:346 | CRainDrop::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 121310bf422f9bd4 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:343 | CRainDrop::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 997eb0531c6d61f6 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:346 | CRainDrop::Step | sceVu0AddVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 43b7898b919d1f02 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:424 | CRain::ParticleBirth | sceVu0FVECTOR | none detected |
-| 24799ae6e3e188f7 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:486 | CRain::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 24799ae6e3e188f7 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:486 | CRain::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | d17e4b7f48e62329 | byte-stride-pointer-array | retail/src/scene.cpp:899 | CScene::ClearStack | (mgCMemory **) ((u8 *) this + offset + 8) | src/scene.cpp |
 | dd5906a016fe971f | raw-member-offset | retail/src/scene.cpp:899 | CScene::ClearStack | (u8 *) this + offset + 8 | src/scene.cpp |
 | 5a905d1c54ec6518 | hardware:ps2_sdk_or_thread | retail/src/scene.cpp:1468 | CScene::GetMainMapNo | sceVu0FMATRIX | none detected |
@@ -4893,7 +5118,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | ef205466dff95156 | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:299 | CCameraPas::DelCameraPas | sceVu0CopyVector | none detected |
 | dfb778407297d051 | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:300 | CCameraPas::DelCameraPas | sceVu0CopyVector | none detected |
 | afd7cdfc941af1ae | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:467 | CCharaPas::AddCharaPas | sceVu0CopyVector | none detected |
-| 1cbf4e8663ef3a68 | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:542 | CCharaPas::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 1cbf4e8663ef3a68 | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:542 | CCharaPas::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 116521733ee1b3ba | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:574 | CCharaPas::InsCharaPas | sceVu0CopyVector | none detected |
 | 30d5b9d8584af28e | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:581 | CCharaPas::InsCharaPas | sceVu0CopyVector | none detected |
 | a056ab14c8070254 | hardware:ps2_sdk_or_thread | retail/src/sceneseq.cpp:582 | CCharaPas::InsCharaPas | sceVu0CopyVector | none detected |
@@ -5121,23 +5346,23 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 0a0e14b46d995bcb | hardware:ps2_sdk_or_thread | retail/src/scenevillager.cpp:1300 | CScene::InScreenChara | sceVu0Normalize | none detected |
 | d63926b5733cecfc | hardware:ps2_sdk_or_thread | retail/src/scenevillager.cpp:1303 | CScene::InScreenChara | sceVu0RotMatrixY | none detected |
 | e8f4b3760c9f3911 | hardware:ps2_sdk_or_thread | retail/src/scenevillager.cpp:1308 | CScene::InScreenChara | sceVu0InnerProduct | none detected |
-| a11978bf21a65687 | hardware:ps2_sdk_or_thread | retail/src/screeneffect.cpp:129 | LensFlare | sceVu0IVECTOR | none detected |
-| 0b16b64e7627c33a | hardware:ps2_sdk_or_thread | retail/src/screeneffect.cpp:140 | LensFlare | sceVif1Packet | none detected |
+| a11978bf21a65687 | hardware:ps2_sdk_or_thread | retail/src/screeneffect.cpp:129 | LensFlare | sceVu0IVECTOR | src/screeneffect.cpp |
+| 0b16b64e7627c33a | hardware:ps2_sdk_or_thread | retail/src/screeneffect.cpp:140 | LensFlare | sceVif1Packet | src/screeneffect.cpp |
 | 849fb527afc6e7c8 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:123 | <file-scope> | sceVu0FVECTOR | none detected |
 | 55495efa2a5296b7 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:130 | <file-scope> | sceVu0FVECTOR | none detected |
 | 05b7dbe39ea14d26 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:476 | sndWaitSema | WaitSema | src/snd_mngr.cpp |
 | b6a35445d96725e8 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:482 | sndSignalSema | SignalSema | src/snd_mngr.cpp |
-| 6482e2f90990a070 | pointer-narrowing | retail/src/snd_mngr.cpp:1167 | sndSePlayVPf | (int) (vol * | src/snd_mngr.cpp |
-| 5c2cf0fef584a411 | pointer-narrowing | retail/src/snd_mngr.cpp:1189 | sndSePlayVf | (int) (vol * | src/snd_mngr.cpp |
-| 4750f2a9bc316db2 | pointer-narrowing | retail/src/snd_mngr.cpp:1557 | sndSetSeVolf | (int) (vol * | src/snd_mngr.cpp |
-| 7f8cf0d690e1b8f7 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1628 | sndGetVolPan | sceVu0FVECTOR | src/snd_mngr.cpp |
-| 25f6b1ef0eb2c82b | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1629 | sndGetVolPan | sceVu0FVECTOR | src/snd_mngr.cpp |
-| e1269ceda2bb033e | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1650 | sndGetVolPan | sceVu0CopyVector | src/snd_mngr.cpp |
-| c801be9ec6fe12c1 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1652 | sndGetVolPan | sceVu0Normalize | src/snd_mngr.cpp |
-| 197a30c065563770 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1656 | sndGetVolPan | sceVu0SubVector | src/snd_mngr.cpp |
-| f91842d7001cab3f | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1658 | sndGetVolPan | sceVu0Normalize | src/snd_mngr.cpp |
-| f4ec396b86fd402e | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1659 | sndGetVolPan | sceVu0InnerProduct | src/snd_mngr.cpp |
-| 59504eb4521bec8f | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1684 | sndGetVolPan | sceVu0FVECTOR | src/snd_mngr.cpp |
+| 6482e2f90990a070 | pointer-narrowing | retail/src/snd_mngr.cpp:1167 | sndSePlayVPf | (int) (vol * | none detected |
+| 5c2cf0fef584a411 | pointer-narrowing | retail/src/snd_mngr.cpp:1189 | sndSePlayVf | (int) (vol * | none detected |
+| 4750f2a9bc316db2 | pointer-narrowing | retail/src/snd_mngr.cpp:1557 | sndSetSeVolf | (int) (vol * | none detected |
+| 7f8cf0d690e1b8f7 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1628 | sndGetVolPan | sceVu0FVECTOR | none detected |
+| 25f6b1ef0eb2c82b | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1629 | sndGetVolPan | sceVu0FVECTOR | none detected |
+| e1269ceda2bb033e | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1650 | sndGetVolPan | sceVu0CopyVector | none detected |
+| c801be9ec6fe12c1 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1652 | sndGetVolPan | sceVu0Normalize | none detected |
+| 197a30c065563770 | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1656 | sndGetVolPan | sceVu0SubVector | none detected |
+| f91842d7001cab3f | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1658 | sndGetVolPan | sceVu0Normalize | none detected |
+| f4ec396b86fd402e | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1659 | sndGetVolPan | sceVu0InnerProduct | none detected |
+| 59504eb4521bec8f | hardware:ps2_sdk_or_thread | retail/src/snd_mngr.cpp:1684 | sndGetVolPan | sceVu0FVECTOR | none detected |
 | 29779b7854a24f54 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:34 | <file-scope> | sceCslCtx | none detected |
 | 2dcfa54c614430fe | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:55 | <file-scope> | sceCslBuffGrp | none detected |
 | 929fe8cb459f4a79 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:62 | <file-scope> | sceCslBuffCtx | none detected |
@@ -5175,10 +5400,10 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | cd2ab8f343c5738a | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:198 | TransHdBd | sceSdRemote | src/sound.cpp |
 | 2b260f4bd5cc48b1 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:199 | TransHdBd | sceSdRemote | src/sound.cpp |
 | f8ce06e55836f0f5 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:202 | TransHdBd | sceSdRemote | src/sound.cpp |
-| b3a8292d5ced079b | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:219 | CSound::Init | sceSifInitIopHeap | src/sound.cpp |
-| 2130d95722f55575 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:223 | CSound::Init | sceSifAllocSysMemory | src/sound.cpp |
-| 2ea4821ac9d0b183 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:248 | CSound::Init | sceMSIn_Init | src/sound.cpp |
-| 94776776b9430ef6 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:249 | CSound::Init | sceMSIn_Init | src/sound.cpp |
+| b3a8292d5ced079b | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:219 | CSound::Init | sceSifInitIopHeap | src/mg_memory.cpp, src/sound.cpp |
+| 2130d95722f55575 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:223 | CSound::Init | sceSifAllocSysMemory | src/mg_memory.cpp, src/sound.cpp |
+| 2ea4821ac9d0b183 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:248 | CSound::Init | sceMSIn_Init | src/mg_memory.cpp, src/sound.cpp |
+| 94776776b9430ef6 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:249 | CSound::Init | sceMSIn_Init | src/mg_memory.cpp, src/sound.cpp |
 | 87e986a85b25ab95 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:379 | CSound::Exit | sceSifInitIopHeap | src/sound.cpp |
 | f040181d4e0e08b7 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:380 | CSound::Exit | sceSifFreeSysMemory | src/sound.cpp |
 | f3d99977a0c27f53 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:387 | CSound::Exit | sceSifInitIopHeap | src/sound.cpp |
@@ -5205,7 +5430,7 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 1ff6ff9090b88626 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:613 | CSound::SE_Stop | sceMSIn_PutMsg | src/sound.cpp |
 | d395f431a45530d2 | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:614 | CSound::SE_Stop | sceMSIn_PutMsg | src/sound.cpp |
 | 53f788d53c4e668b | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:622 | CSound::SE_Stop | sceMSIn_PutHsMsg | src/sound.cpp |
-| 6a81a1c9a96b8af3 | pointer-narrowing | retail/src/sound.cpp:673 | CSound::SetVol | (int) (volume * | src/sound.cpp |
+| 6a81a1c9a96b8af3 | pointer-narrowing | retail/src/sound.cpp:673 | CSound::SetVol | (int) (volume * | none detected |
 | 6c79b70e946c6e3d | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:684 | CSound::SetMasterVol | sceSdRemote | src/sound.cpp |
 | 21340cf7bb3aecda | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:685 | CSound::SetMasterVol | sceSdRemote | src/sound.cpp |
 | 57ef82ed835cfa3d | hardware:ps2_sdk_or_thread | retail/src/sound.cpp:734 | CSound::LoadHdBd2 | sceSifInitIopHeap | src/sound.cpp |
@@ -5225,13 +5450,13 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | e1fce6b721d784ac | pointer-narrowing | retail/src/sphida.cpp:339 | CSphida::SetUp | (int) (mgDistVector(this->pin_pos, this | none detected |
 | 90bb9ddda7e73551 | pointer-narrowing | retail/src/sphida.cpp:350 | CSphida::SetUp | (int) (mgDistVector(this->pin_pos, this | none detected |
 | fe1b4172b2b7c207 | pointer-narrowing | retail/src/sphida.cpp:379 | CSphida::s17_SetUp | (int) (mgDistVector(this->pin_pos, this | none detected |
-| 0dabe4381c664964 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:563 | CSphida::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp, src/sound.cpp |
+| 0dabe4381c664964 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:563 | CSphida::Step | sceVu0CopyVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | a013d7c1ee0bc1aa | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:633 | CSphida::DrawStatusSprite | sceVif1Packet | none detected |
 | aa79cfc664bdeffe | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:709 | CSphida::DrawStatusSprite | sceVu0AddVector | none detected |
 | df58818df354d2e8 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:798 | CSphida::DrawStatusSprite | sceVu0AddVector | none detected |
 | abca097e157ae043 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:836 | CSphida::DrawParCounter | sceVif1Packet | none detected |
 | 2ebc06e9aaeb531e | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:877 | CSphida::DrawParCounter | sceVu0CopyVector | none detected |
-| 29f6df0e577425a1 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:910 | CSphida::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 29f6df0e577425a1 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:910 | CSphida::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 88d5de62f3503d32 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:960 | if | sceVif1Packet | none detected |
 | 37f8d1492fe1bce0 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:981 | if | sceVif1Packet | none detected |
 | 7a0ec4489ab9b675 | hardware:ps2_sdk_or_thread | retail/src/sphida.cpp:1002 | if | sceVif1Packet | none detected |
@@ -5240,18 +5465,18 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | f73bdb0bbb2d4634 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:17 | CreatSmoothPassSW | sceVu0FMATRIX | none detected |
 | e259be0827498732 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:101 | CreatSmoothPassSW | sceVu0MulMatrix | none detected |
 | e622c32deddc0ef7 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:110 | CreatSmoothPassSW | sceVu0ApplyMatrix | none detected |
-| e7d9b5345dacc6e6 | pointer-narrowing | retail/src/swordeffect.cpp:137 | CSWordAfterEffect::Draw | (int) ((float) length * | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| b66c788d7e83842f | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:152 | CSWordAfterEffect::Draw | sceVif1Packet | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| e7d9b5345dacc6e6 | pointer-narrowing | retail/src/swordeffect.cpp:137 | CSWordAfterEffect::Draw | (int) ((float) length * | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| b66c788d7e83842f | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:152 | CSWordAfterEffect::Draw | sceVif1Packet | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 3dd4d04d62aa6c16 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:276 | CSWordAfterEffect::AddPoint | sceVu0CopyVector | none detected |
 | 8e704c81c5deafc1 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:277 | CSWordAfterEffect::AddPoint | sceVu0CopyVector | none detected |
-| 6848412884b67057 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:330 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 3df3314fe0ca65d7 | raw-allocation | retail/src/swordeffect.cpp:330 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| d3a8dc8ba54d9fdb | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:331 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| dc8c862150bbed8c | raw-allocation | retail/src/swordeffect.cpp:331 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| c0691a6cff8022ae | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:332 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 91c726187cad3e3a | raw-allocation | retail/src/swordeffect.cpp:332 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 6aa46de35e22f89e | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:333 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
-| 367462f07b1eb75e | raw-allocation | retail/src/swordeffect.cpp:333 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_drawprim.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_mngr.cpp, src/snd_seseq.cpp |
+| 6848412884b67057 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:330 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 3df3314fe0ca65d7 | raw-allocation | retail/src/swordeffect.cpp:330 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| d3a8dc8ba54d9fdb | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:331 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| dc8c862150bbed8c | raw-allocation | retail/src/swordeffect.cpp:331 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(point_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| c0691a6cff8022ae | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:332 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 91c726187cad3e3a | raw-allocation | retail/src/swordeffect.cpp:332 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 6aa46de35e22f89e | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:333 | CSWordAfterEffect::Initialize | sceVu0FVECTOR | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
+| 367462f07b1eb75e | raw-allocation | retail/src/swordeffect.cpp:333 | CSWordAfterEffect::Initialize | (sceVu0FVECTOR *) memory->Alloc(smooth_size / 16 + 1) | src/mg_drawenv.cpp, src/mg_texture.cpp, src/padcontrol.cpp, src/snd_seseq.cpp |
 | c7309cdac33335a0 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:385 | CSWordAfterEffect::Copy | sceVu0FVECTOR | none detected |
 | f36e6d4d834f91f4 | raw-allocation | retail/src/swordeffect.cpp:385 | CSWordAfterEffect::Copy | (sceVu0FVECTOR *) memory->Alloc(point_size / 16 + 1) | none detected |
 | 63ecae1c2b745bc2 | hardware:ps2_sdk_or_thread | retail/src/swordeffect.cpp:386 | CSWordAfterEffect::Copy | sceVu0FVECTOR | none detected |
@@ -5292,11 +5517,11 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | bcee8d9a7cd56223 | hardware:ps2_sdk_or_thread | retail/src/villagermngr.cpp:345 | if | sceVu0ScaleVector | none detected |
 | 45edf4be291b9530 | byte-stride-pointer-array | retail/src/villagermngr.cpp:437 | if | (CVillagerPlaceInfo **) ((u8 *) places + output_position) | none detected |
 | 741bb1043d45dd6e | byte-stride-pointer-array | retail/src/villagermngr.cpp:473 | if | (CVillagerPlaceInfo **) ((u8 *) places + fallback_output_position) | none detected |
-| 6e425de74dabb16e | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:536 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | none detected |
-| a2f425bfa9a067f9 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:538 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | none detected |
+| 6e425de74dabb16e | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:536 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | src/visualmotion.cpp |
+| a2f425bfa9a067f9 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:538 | mgCVisualMotionMDT::CreateFaceMotionPacket | sceGifTag | src/visualmotion.cpp |
 | 5c6a5380180201fc | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:798 | mgCVisualMotionMDT::CreateBBox | sceVu0AddVector | none detected |
 | 25ad3afdd192bc14 | hardware:ps2_sdk_or_thread | retail/src/visualmotion.cpp:799 | mgCVisualMotionMDT::CreateBBox | sceVu0ScaleVector | none detected |
-| f8f10396a7547b80 | raw-allocation | retail/src/vlgr_info.cpp:464 | niNPC_INFO_NUM | (CVillagerInfo *) (int) new (niStack->Alloc(blocks + 2) | none detected |
+| 358c9ca6dc47fb38 | raw-allocation | retail/src/vlgr_info.cpp:464 | niNPC_INFO_NUM | (CVillagerInfo *) (uptr) new (niStack->Alloc(blocks + 2) | none detected |
 | 2a1e2c9fa00959b8 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:27 | <file-scope> | sceVu0FMATRIX | none detected |
 | 8a7b542a8a0b6262 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:28 | <file-scope> | sceVu0FMATRIX | none detected |
 | 2ddd7d915e7a0606 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:30 | <file-scope> | sceVu0FVECTOR | none detected |
@@ -5307,9 +5532,9 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 1b24f16fb95b6c0d | hardware:ps2_sdk_or_thread | retail/src/water.cpp:35 | <file-scope> | sceVu0FVECTOR | none detected |
 | 73cdb925a7d290f6 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:36 | <file-scope> | sceVu0FVECTOR | none detected |
 | d26771d56c101ded | hardware:ps2_sdk_or_thread | retail/src/water.cpp:56 | <file-scope> | sceGifTag | none detected |
-| b7af938ff701b794 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:143 | CFireRaster::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 7917d9f34a71f886 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:148 | CFireRaster::Draw | sceVu0FVECTOR | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| b7b634048bfd05ef | hardware:ps2_sdk_or_thread | retail/src/water.cpp:181 | CFireRaster::Draw | sceVu0AddVector | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| b7af938ff701b794 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:143 | CFireRaster::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 7917d9f34a71f886 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:148 | CFireRaster::Draw | sceVu0FVECTOR | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| b7b634048bfd05ef | hardware:ps2_sdk_or_thread | retail/src/water.cpp:181 | CFireRaster::Draw | sceVu0AddVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | 5d326a422a179483 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:359 | CWaterFrame::Shake | sceVu0FMATRIX | none detected |
 | bc847c66c281a0b6 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:360 | CWaterFrame::Shake | sceVu0FMATRIX | none detected |
 | f997c53c644f64e8 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:361 | CWaterFrame::Shake | sceVu0FVECTOR | none detected |
@@ -5319,14 +5544,14 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 784534beb2acfc55 | pointer-narrowing | retail/src/water.cpp:386 | CWaterFrame::Shake | (int) (water->columns * | none detected |
 | 7a19ac6e5aaec899 | raw-allocation | retail/src/water.cpp:398 | CWater::SetSize | (float *) memory->Alloc(blocks) | none detected |
 | 75f3a7707375a107 | raw-allocation | retail/src/water.cpp:399 | CWater::SetSize | (float *) memory->Alloc(blocks) | none detected |
-| 0291930df72bd6ad | hardware:ps2_sdk_or_thread | retail/src/water.cpp:441 | CWater::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 033b18a0429fe931 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:442 | CWater::CreateRenderInfoPacket | sceVu0IVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| b2a291d6112ec7c9 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:443 | CWater::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 825faed693152443 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:471 | CWater::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| ac2e97bf0dfd3368 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:472 | CWater::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 49ff658e7ffe8069 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:637 | CWater::Draw | sceGsTex0 | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| d7b1eec1f0e12f2c | hardware:ps2_sdk_or_thread | retail/src/water.cpp:642 | CWater::Draw | sceGsTex1 | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
-| 77171357167c7861 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:647 | CWater::Draw | sceGsClamp | src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_sprite.cpp, src/mg_visual.cpp |
+| 0291930df72bd6ad | hardware:ps2_sdk_or_thread | retail/src/water.cpp:441 | CWater::CreateRenderInfoPacket | sceVu0FMATRIX | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 033b18a0429fe931 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:442 | CWater::CreateRenderInfoPacket | sceVu0IVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| b2a291d6112ec7c9 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:443 | CWater::CreateRenderInfoPacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 825faed693152443 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:471 | CWater::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| ac2e97bf0dfd3368 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:472 | CWater::CreateRenderInfoPacket | sceVu0CopyMatrix | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
+| 49ff658e7ffe8069 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:637 | CWater::Draw | sceGsTex0 | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| d7b1eec1f0e12f2c | hardware:ps2_sdk_or_thread | retail/src/water.cpp:642 | CWater::Draw | sceGsTex1 | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 77171357167c7861 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:647 | CWater::Draw | sceGsClamp | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
 | e7d1252d6c950128 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:659 | CWater::CreatePacket | sceGsTexa | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | 21edcb3326067328 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:660 | CWater::CreatePacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |
 | 7ba3dd9f962f5e02 | hardware:ps2_sdk_or_thread | retail/src/water.cpp:661 | CWater::CreatePacket | sceVu0FVECTOR | src/mg_shadow.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/water.cpp |

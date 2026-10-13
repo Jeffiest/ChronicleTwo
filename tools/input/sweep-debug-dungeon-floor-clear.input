@@ -1,0 +1,50 @@
+# Reach Dungeon 2 Floor 1 from the title debug menu and exercise the floor-clear event.
+# The extra pad-2 taps are needed for the current route before pad-1 R3 opens the DNG debug menu.
+# EnemyReset clears the active monsters; the game then runs the normal floor-clear sequence.
+300 circle
+306
+320 cross
+326
+900 start
+906
+1200 circle
+1206
+1500 cross
+1506
+2450 start
+2456 start select
+2462
+2500 down
+2506
+2515 down
+2521
+2530 right
+2536
+2560 circle
+3620 cross
+3626
+3650 cross
+3656
+3680 cross
+3686
+3710 cross
+3716
+3740 cross
+3746
+
+4950 pad2 circle
+4956 pad2
+4970 pad2 circle
+4976 pad2
+5000 r3
+5006
+5020 down
+5026
+5040 down
+5046
+5060 down
+5066
+5080 down
+5086
+5100 circle
+5106

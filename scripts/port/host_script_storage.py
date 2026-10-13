@@ -22,29 +22,9 @@ def replace(pattern, replacement, count, text, key):
 
 
 RULES = {
-    "src/event.cpp": [
-        (r"^(\s*)stack_data = \(RS_STACKDATA \*\) memory->Alloc\(0x40\);$",
-         r'\1stack_data = port_script_storage::allocate<RS_STACKDATA>(memory, 0x80, "SetEventScript");', 1),
-        (r"^(\s*)call_data = \(RS_CALLDATA \*\) memory->Alloc\(0x180\);$",
-         r'\1call_data = port_script_storage::allocate<RS_CALLDATA>(memory, 0x200, "SetEventScript");', 1),
-    ],
-    "src/actscript.cpp": [
-        (r"^(\s*)RS_STACKDATA \*stack = reinterpret_cast<RS_STACKDATA \*>\(memory->Alloc\(0x40\)\);$",
-         r'\1RS_STACKDATA *stack = port_script_storage::allocate<RS_STACKDATA>(memory, 0x80, "SetActionScript");', 1),
-        (r"^(\s*)RS_CALLDATA  \*call_data = reinterpret_cast<RS_CALLDATA \*>\(memory->Alloc\(0x180\)\);$",
-         r'\1RS_CALLDATA  *call_data = port_script_storage::allocate<RS_CALLDATA>(memory, 0x200, "SetActionScript");', 1),
-    ],
     "src/effscript.cpp": [
-        (r"^(\s*)RS_STACKDATA \*stack = \(RS_STACKDATA \*\) memory->Alloc\(0x20\);$",
-         r'\1RS_STACKDATA *stack = port_script_storage::allocate<RS_STACKDATA>(memory, 0x40, "SetEffectScript");', 1),
-        (r"^(\s*)RS_CALLDATA  \*call_data = \(RS_CALLDATA \*\) memory->Alloc\(1\);$",
+        (r"^(\s*)RS_CALLDATA\s+\*call_data\s*=\s*\(RS_CALLDATA \*\)\s*memory->Alloc\([^;]+\);$",
          r'\1RS_CALLDATA  *call_data = port_script_storage::allocate<RS_CALLDATA>(memory, 2, "SetEffectScript");', 1),
-    ],
-    "src/runscript_opcodes.cpp": [
-        (r"^(\s*)RS_STACKDATA \*value_stack = \(RS_STACKDATA \*\) memory->Alloc\(0x40\);$",
-         r'\1RS_STACKDATA *value_stack = port_script_storage::allocate<RS_STACKDATA>(memory, 128, "SetMonsterScript");', 1),
-        (r"^(\s*)RS_CALLDATA  \*call_stack = \(RS_CALLDATA \*\) memory->Alloc\(0x180\);$",
-         r'\1RS_CALLDATA  *call_stack = port_script_storage::allocate<RS_CALLDATA>(memory, 512, "SetMonsterScript");', 1),
     ],
 }
 

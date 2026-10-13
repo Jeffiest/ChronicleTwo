@@ -1,4 +1,5 @@
-#include <climits>
+#include <algorithm>
+#include <charconv>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -6,251 +7,166 @@
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <utility>
 #include <vector>
 
-#include "audio/mixer.hpp"
+#include "dataread.hpp"
 #include "exitcodes.hpp"
 #include "gfx/gfx.hpp"
 #include "identity.hpp"
-#include "platform/audio.hpp"
+#include "mainloop.hpp"
+#include "mglib_port.hpp"
+#include "present.hpp"
 #include "platform/clock.hpp"
 #include "platform/config.hpp"
+#include "platform/display.hpp"
 #include "platform/input.hpp"
 #include "platform/input_script.hpp"
 #include "platform/paths.hpp"
 #include "platform/settings.hpp"
 #include "platform/window.hpp"
+#include "sce/threads.hpp"
 
-// The game headers keep MWCC's pragmas, which clang names but ignores.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#include "dataread.hpp"
-#include "mainloop_port.hpp"
-#pragma clang diagnostic pop
+// The audio branch adds audio_init.hpp; until it lands the port builds without audio.
+#if __has_include("audio_init.hpp")
+#include "audio_init.hpp"
+#define CT_HAVE_AUDIO_INIT 1
+#endif
 
-// DC2_CRASH_TRACE=1 installs a handler (crash_trace.cpp) that writes a backtrace on a fault. It lives
-// in its own unit because Windows' headers clash with the game's (macros B/R, struct RECT).
-void InstallCrashTrace();
-
-/**
- *
- * The port's entry point. It takes the place of ps2/src/main.cpp's main:
- * the build strips that definition from its copy of the unit.
- *
- * It is retail main's work without the hardware: parse the command line, set
- * up the platform layer and the renderer, open the data tree, and run the
- * game's own MainLoop. The parts of the boot that belong to a mode - the
- * debug start menu, the language, the save pick - are MainLoop's, and the
- * loop's stop, frame budget and start mode are the seam in mainloop_port.hpp.
- *
- */
-
-namespace fs = std::filesystem;
+int VSyncCallBack(int field);
 
 namespace {
 
+constexpr float kLogicalWidth = 512.0f;
+constexpr float kLogicalHeight = 480.0f;
+
 struct Options {
-    bool         headless = false;
-    bool         offscreen = false;
-    std::int64_t frames = -1;
-    const char  *screenshot = nullptr;
-    const char  *input = nullptr;
-    int          width = 0;
-    int          height = 0;
-    const char  *jump = nullptr;
-    bool         fast_load = false;
+    bool                  headless = false;
+    bool                  offscreen = false;
+    int                   frames = 0;
+    int                   window_width = 0;
+    int                   window_height = 0;
+    int                   display_per_tick = 0;
+    bool                  show_fps = false;
+    bool                  log_fps = false;
+    int                   screenshot_display = 0;
+    bool                  screenshot_fps = false;
+    std::filesystem::path screenshot;
+    std::filesystem::path input;
 };
+
+Options g_options;
 
 [[noreturn]] void Usage(const char *program) {
     std::fprintf(stderr,
-                 "usage: %s [--data DIR] [--save DIR] [--headless] [--offscreen]\n"
-                 "          [--frames N] [--screenshot PATH] [--input FILE]\n"
-                 "          [--width W] [--height H] [--jump MODE[:MAP]] [--fast-load]\n"
-                 "  --data DIR         the extracted game data (default: DC2_DATA, then ./data, then data/\n"
+                 "usage: %s [--data DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n"
+                 "          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n"
+                 "          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps]\n"
+                 "  --data DIR         the extracted game data (default: DC2_DATA, then ./data, then data/ beside\n"
+                 "                     the executable)\n"
+                 "  --save DIR         saves and the pipeline cache (default: DC2_SAVE, then ./save, then save/\n"
                  "                     beside the executable)\n"
-                 "  --save DIR         saves, config.json and the pipeline cache (default: DC2_SAVE, then\n"
-                 "                     ./save, then save/ beside the executable)\n"
-                 "  --headless         render offscreen (SDL's offscreen driver, VK_EXT_headless_surface),\n"
-                 "                     no audio output, the game clock unbounded\n"
+                 "  --headless         render offscreen (SDL offscreen driver, VK_EXT_headless_surface)\n"
                  "  --offscreen        --headless without a Vulkan surface: render to an image only\n"
-                 "  --frames N         stop after N frames of the game's main loop (one frame is one\n"
-                 "                     mgEndFrame; the loop checks the budget between frames)\n"
-                 "  --screenshot PATH  write the last tick's image to PATH as a PNG on exit\n"
-                 "  --input FILE       drive pad 1 from a script (default: DC2_INPUT); see\n"
-                 "                     platform/input_script.hpp. The script's frames are main-loop frames.\n"
-                 "  --width, --height  window size in pixels (default: config.json, then the monitor's)\n"
-                 "test hooks:\n"
-                 "  --jump MODE[:MAP]  start in title, menu, edit:<map> or dungeon:<map>, skipping the\n"
-                 "                     warm-up (DC2_JUMP)\n"
-                 "  --fast-load        cut the loading screens' holds and fades (DC2_FAST_LOAD=1); no\n"
-                 "                     loading-screen seam yet, a value warns and is ignored\n",
+                 "  --frames N         exit after frame N of the game's main loop (N a positive integer)\n"
+                 "  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n"
+                 "  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n"
+                 "                     beside PATH, as PATH-display-K.png for K = 0..N-1\n"
+                 "  --screenshot-fps   with --screenshot: draw the FPS counter into the written image\n"
+                 "  --input SCRIPT     drive the pads named in SCRIPT from an input script\n"
+                 "  --window WxH       window size in pixels (default: config.json, then the monitor's)\n"
+                 "  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n"
+                 "  --show-fps         draw the FPS counter on presented frames, headless too\n"
+                 "  --log-fps          print the FPS counter's text on stderr every second\n",
                  program);
     std::exit(kExitUsage);
 }
 
-Options ParseOptions(int argc, char **argv) {
+const char *OptionValue(int argc, const char **argv, int &i) {
+    if (i + 1 >= argc) {
+        Usage(argv[0]);
+    }
+    return argv[++i];
+}
+
+int ParsePositive(std::string_view text, const char *program) {
+    int         value = 0;
+    const char *last = text.data() + text.size();
+    const auto [end, ec] = std::from_chars(text.data(), last, value);
+    if (ec != std::errc() || end != last || value <= 0) {
+        Usage(program);
+    }
+    return value;
+}
+
+void ParseWindow(std::string_view text, Options &options, const char *program) {
+    const char *last = text.data() + text.size();
+    const auto [x, width_ec] = std::from_chars(text.data(), last, options.window_width);
+    if (width_ec != std::errc() || x == last || (*x != 'x' && *x != 'X')) {
+        Usage(program);
+    }
+    const auto [end, height_ec] = std::from_chars(x + 1, last, options.window_height);
+    if (height_ec != std::errc() || end != last || options.window_width <= 0 || options.window_height <= 0) {
+        Usage(program);
+    }
+}
+
+Options ParseOptions(int argc, const char **argv) {
     Options options;
     for (int i = 1; i < argc; i++) {
         std::string_view arg = argv[i];
-        auto             value = [&]() -> const char * {
-            if (i + 1 >= argc) {
-                Usage(argv[0]);
-            }
-            return argv[++i];
-        };
-        auto number = [&]() {
-            char     *end = nullptr;
-            long long result = std::strtoll(value(), &end, 10);
-            if (end == nullptr || *end != '\0' || result < 0) {
-                Usage(argv[0]);
-            }
-            return static_cast<std::int64_t>(result);
-        };
         if (arg == "--headless") {
             options.headless = true;
         } else if (arg == "--offscreen") {
             options.headless = true;
             options.offscreen = true;
         } else if (arg == "--frames") {
-            options.frames = number();
+            options.frames = ParsePositive(OptionValue(argc, argv, i), argv[0]);
+        } else if (arg == "--window") {
+            ParseWindow(OptionValue(argc, argv, i), options, argv[0]);
+        } else if (arg == "--display-per-tick") {
+            options.display_per_tick = ParsePositive(OptionValue(argc, argv, i), argv[0]);
+        } else if (arg == "--show-fps") {
+            options.show_fps = true;
+        } else if (arg == "--log-fps") {
+            options.log_fps = true;
         } else if (arg == "--screenshot") {
-            options.screenshot = value();
+            options.screenshot = PathsFromUtf8(OptionValue(argc, argv, i));
+            if (options.screenshot.empty()) {
+                Usage(argv[0]);
+            }
+        } else if (arg == "--screenshot-display") {
+            options.screenshot_display = ParsePositive(OptionValue(argc, argv, i), argv[0]);
+        } else if (arg == "--screenshot-fps") {
+            options.screenshot_fps = true;
         } else if (arg == "--input") {
-            options.input = value();
-        } else if (arg == "--width") {
-            options.width = static_cast<int>(number());
-        } else if (arg == "--height") {
-            options.height = static_cast<int>(number());
-        } else if (arg == "--jump") {
-            options.jump = value();
-        } else if (arg == "--fast-load") {
-            options.fast_load = true;
+            options.input = PathsFromUtf8(OptionValue(argc, argv, i));
+            if (options.input.empty()) {
+                Usage(argv[0]);
+            }
         } else {
             Usage(argv[0]);
         }
     }
+    if (!options.screenshot.empty() && options.frames == 0) {
+        Usage(argv[0]);
+    }
+    if ((options.screenshot_display > 0 || options.screenshot_fps) && options.screenshot.empty()) {
+        Usage(argv[0]);
+    }
     return options;
 }
 
-// InitCDFile stops on the same conditions, but checking first gives the one-line message and its
-// own exit status before a window or a Vulkan device exists.
-void RequireData() {
-    const fs::path &root = PathsDataRoot();
-    std::error_code error;
-    const char     *why = nullptr;
-    if (!fs::is_directory(root, error)) {
-        why = "is not a directory";
-    } else {
-        why = "is empty";
-        auto options = fs::directory_options::follow_directory_symlink |
-                       fs::directory_options::skip_permission_denied;
-        for (fs::recursive_directory_iterator it(root, options, error), end; !error && it != end;
-             it.increment(error)) {
-            std::error_code entry_error;
-            if (it->is_regular_file(entry_error)) {
-                why = nullptr;
-                break;
-            }
-        }
-    }
-    if (why != nullptr) {
-        std::fprintf(stderr,
-                     "no game data: %s %s; point --data (or DC2_DATA) at the extracted disc, the "
-                     "directory holding DATA.HD4 and DATA.DAT\n",
-                     root.string().c_str(), why);
-        std::exit(kExitNoData);
-    }
-}
-
-// The clock's pump hook: the host side of every VSync the game waits on. A pump runs at most once
-// per elapsed tick and never from inside another pump, so this is where the driver feeds the
-// platform; the stop and the frame budget are the loop's own seam and need no help from here.
-void PumpHost() {
-    if (!WindowPollEvents()) {
-        GameRequestStop();
-    }
-    InputPoll();
-    InputScriptApply(GameFrameCount());
-}
-
-/**
- *
- * The driver's --jump: MODE[:MAP] for the loop's start-mode seam. The mode runs its own LoopInit
- * from the first frame with the boot's warm-up skipped; MAP is the mode's starting map, or -1
- * (none, or the saved one) when absent. Only the debug menu needs its debug flag to be entered
- * at all: the loop reroutes an unflagged menu to the title.
- *
- */
-bool SetJump(const char *spec) {
-    std::string_view text = spec;
-    std::string_view name = text;
-    int              map = -1;
-    if (auto colon = text.find(':'); colon != std::string_view::npos) {
-        name = text.substr(0, colon);
-        std::string digits(text.substr(colon + 1));
-        char       *end = nullptr;
-        long long   parsed = std::strtoll(digits.c_str(), &end, 10);
-        if (end == digits.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX) {
-            return false;
-        }
-        map = static_cast<int>(parsed);
-    }
-    int loop_no;
-    int debug_flag = 0;
-    if (name == "title") {
-        loop_no = LOOP_TITLE;
-    } else if (name == "menu") {
-        loop_no = LOOP_MENU;
-        debug_flag = 1;
-    } else if (name == "edit") {
-        loop_no = LOOP_EDIT;
-    } else if (name == "dungeon") {
-        loop_no = LOOP_DUNGEON;
-    } else {
-        return false;
-    }
-    INIT_LOOP_ARG arg;
-    arg.map_no = map;
-    arg.floor_no = -1;
-    arg.event_no = -1;
-    arg.mc_load = 0;
-    GameSetStartMode(loop_no, arg, debug_flag, true);
-    return true;
-}
-
-void LoadInputScript(const char *path) {
-    if (path == nullptr) {
-        path = std::getenv("DC2_INPUT");
-    }
-    if (path == nullptr || *path == '\0') {
-        return;
-    }
-    InputScript script;
-    std::string error;
-    if (!InputScriptLoad(path, script, error)) {
-        std::fprintf(stderr, "bad input script: %s\n", error.c_str());
-        std::exit(kExitUsage);
-    }
-    InputScriptInstall(std::move(script));
-}
-
-void ReportShaderProgress(uint32_t done, uint32_t total) {
-    static uint32_t    reported = 0;
-    constexpr uint32_t kSteps = 4;
+void ReportPipelineProgress(std::uint32_t done, std::uint32_t total) {
+    static std::uint32_t    reported = 0;
+    constexpr std::uint32_t kSteps = 4;
     if (total == 0) {
         return;
     }
-    uint32_t step = done * kSteps / total;
+    std::uint32_t step = done * kSteps / total;
     if (done == 0 || step > reported) {
         reported = step;
         std::fprintf(stderr, "compiling shaders %u/%u\n", done, total);
     }
-}
-
-// What the shared host layer needs to know of this game before anything of it runs.
-void ConfigureHost() {
-    GameSetIdentity();
 }
 
 gfx::PresentMode PresentMode(ConfigPresentMode mode) {
@@ -264,104 +180,153 @@ gfx::PresentMode PresentMode(ConfigPresentMode mode) {
     }
 }
 
-int Screenshot(const char *path) {
-    std::vector<uint8_t> pixels;
-    uint32_t             width = 0;
-    uint32_t             height = 0;
-    if (!gfx::ReadbackFrame(pixels, width, height) || !gfx::WritePng(path, pixels.data(), width, height)) {
-        std::fprintf(stderr, "cannot write the screenshot to %s\n", path);
-        return kExitFailure;
-    }
-    return kExitOk;
+gfx::FrameLayout Layout(const Config &config) {
+    return {config.aspect == ConfigAspect::Auto ? gfx::AspectMode::Fill : gfx::AspectMode::Letterbox, config.ui_scale};
 }
 
-// The sound manager starts the output device itself (CSound::Init, sound.cpp), so the driver's
-// only lever is the setting it reads. A headless run wants no device; an explicit DC2_AUDIO or
-// DC2_AUDIO_WAV from the caller wins.
-void DisableAudioForHeadless() {
-    if (std::getenv("DC2_AUDIO") != nullptr || std::getenv("DC2_AUDIO_WAV") != nullptr) {
-        return;
+PresentSettings PresentSettingsFor(const Config &config, const Options &options) {
+    return {
+        .interpolation = config.interpolation,
+        .max_fps = config.max_fps,
+        .display_per_tick = options.display_per_tick,
+        .show_fps = options.show_fps || (config.show_fps && !options.headless),
+        .fps_detail = config.fps_detail,
+        .log_fps = options.log_fps,
+    };
+}
+
+// A closed window ends the process here: the game has no stop request to ask its loop to return.
+void PumpHost() {
+    if (!WindowPollEvents()) {
+        std::exit(kExitOk);
     }
-#if defined(_WIN32)
-    _putenv_s("DC2_AUDIO", "off");
-#else
-    setenv("DC2_AUDIO", "off", 0);
+    DisplayPump();
+    InputPoll();
+    InputScriptApply(mgPortFrameCount());
+
+    // SetFrameLayout recreates frame targets; it must not run inside a tick's recording.
+    if (!gfx::InFrame()) {
+        const gfx::FrameLayout layout = Layout(ConfigGet());
+        const gfx::FrameLayout current = gfx::CurrentFrameLayout();
+        if (layout.aspect != current.aspect || layout.ui_scale != current.ui_scale) {
+            gfx::SetFrameLayout(layout);
+        }
+    }
+}
+
+void ApplyConfigChange(const HostSettings &before, const HostSettings &after) {
+    if (before.tick_rate != after.tick_rate) {
+        ClockSetTickRate(after.tick_rate);
+    }
+    if (before.present_mode != after.present_mode) {
+        gfx::SetPresentMode(PresentMode(after.present_mode));
+    }
+    InputApplyConfig(after);
+    if (std::ranges::none_of(after.key_bindings, [](const ConfigKeyBinding &binding) {
+            return binding.action == "debug_menu";
+        })) {
+        constexpr std::string_view debug_menu_keys[] = {"F10", "Gamepad:paddle1"};
+        InputBindKeys("debug_menu", debug_menu_keys);
+    }
+    // HostSettings has no interpolation or aspect, so the present settings come from ConfigGet, which
+    // already holds the new values. This also resets an F3 toggle of show_fps to the config's value.
+    PresentSetSettings(PresentSettingsFor(ConfigGet(), g_options));
+}
+
+int Run(int argc, const char **argv) {
+    GameSetIdentity();
+    argc = PathsConsumeArgs(argc, argv);
+    g_options = ParseOptions(argc, argv);
+    const Options &options = g_options;
+    InputScript   input_script;
+    if (!options.input.empty()) {
+        std::string error;
+        if (!InputScriptLoad(options.input, input_script, error)) {
+            std::fprintf(stderr, "bad input script: %s\n", error.c_str());
+            std::exit(kExitUsage);
+        }
+    }
+    ConfigLoad();
+    const HostSettings &settings = SettingsGet();
+    const bool          offscreen = options.offscreen || (options.headless && !gfx::HeadlessSurfaceAvailable());
+
+    DisplaySetOverrides(options.window_width, options.window_height, options.headless);
+    WindowConfig window = DisplayWindowConfig(settings);
+    window.vulkan = !offscreen;
+    WindowInit(window);
+    InputInit();
+    if (std::ranges::none_of(ConfigGet().key_bindings, [](const ConfigKeyBinding &binding) {
+            return binding.action == "debug_menu";
+        })) {
+        constexpr std::string_view debug_menu_keys[] = {"F10", "Gamepad:paddle1"};
+        InputBindKeys("debug_menu", debug_menu_keys);
+    }
+    InputScriptInstall(std::move(input_script));
+
+    gfx::RendererConfig renderer;
+    renderer.app_name = "Dark Chronicle";
+    renderer.logical_width = kLogicalWidth;
+    renderer.logical_height = kLogicalHeight;
+    renderer.display_aspect = 4.0f / 3.0f;
+    renderer.present_mode = PresentMode(settings.present_mode);
+    renderer.pipeline_cache = PathsSaveRoot() / "pipeline_cache.bin";
+    renderer.progress = ReportPipelineProgress;
+    renderer.offscreen = offscreen;
+    renderer.layout = Layout(ConfigGet());
+    renderer.prog0_meshes = true;
+    renderer.validation = renderer.validation || SettingsEnv("VULKAN_VALIDATION") != nullptr;
+    gfx::RendererInit(WindowHandle(), renderer);
+    PresentSetSettings(PresentSettingsFor(ConfigGet(), g_options));
+#ifdef CT_HAVE_AUDIO_INIT
+    AudioInit();
+    // --frames leaves through std::exit from mgEndFrame: the output must stop before the mixer's statics are destroyed
+    // under the audio thread.
+    std::atexit(AudioShutdown);
 #endif
+
+    ClockSetTickRate(settings.tick_rate);
+    ClockSetUnbounded(options.headless);
+    ClockAddPumpHook(PumpHost);
+    ClockSetTickCallback(VSyncCallBack);
+    ConfigSetChangeHook(ApplyConfigChange);
+
+    MainThreadPriority = 10;
+    KzThreadsSetMainPriority(MainThreadPriority);
+    InitCDFile();
+    if (options.frames > 0) {
+        mgPortSetScreenshotOptions({.display_frames = options.screenshot_display, .fps = options.screenshot_fps});
+        mgPortExitAfterFrames(options.frames, options.screenshot);
+    }
+    MainLoop();
+
+    ClockRemovePumpHook(PumpHost);
+    ConfigSetChangeHook(nullptr);
+    InputShutdown();
+#ifdef CT_HAVE_AUDIO_INIT
+    AudioShutdown();
+#endif
+    gfx::RendererShutdown();
+    WindowShutdown();
+    return kExitOk;
 }
 
 } // namespace
 
-PORT_OVERRIDE int main(int argc, char **argv) {
-    // The game logs with printf; redirected to a file it is block-buffered and a hung or killed run loses it all.
-    std::setvbuf(stdout, nullptr, _IONBF, 0);
-    InstallCrashTrace();
-    ConfigureHost();
-    argc = PathsConsumeArgs(argc, argv);
-    Options options = ParseOptions(argc, argv);
-    if (options.jump == nullptr) {
-        options.jump = std::getenv("DC2_JUMP");
-    }
-    if (options.jump != nullptr && *options.jump != '\0' && !SetJump(options.jump)) {
-        std::fprintf(stderr, "bad --jump: %s (title, menu, edit[:map], dungeon[:map])\n", options.jump);
-        std::exit(kExitUsage);
-    }
-    const char *fast_load = std::getenv("DC2_FAST_LOAD");
-    if (options.fast_load || (fast_load != nullptr && *fast_load != '\0' && *fast_load != '0')) {
-        std::fprintf(stderr, "--fast-load: no loading-screen seam in this build; holds unchanged\n");
-    }
-    RequireData();
-    LoadInputScript(options.input);
-
-    ConfigLoad();
-    const Config &config = ConfigGet();
-    if (options.headless) {
-        DisableAudioForHeadless();
-    }
-
-    WindowConfig window;
-    window.width = options.width > 0 ? options.width : config.window_width;
-    window.height = options.height > 0 ? options.height : config.window_height;
-    window.fullscreen = config.fullscreen;
-    window.headless = options.headless;
-    bool offscreen = options.offscreen || (options.headless && !gfx::HeadlessSurfaceAvailable());
-    window.vulkan = !offscreen;
-    WindowInit(window);
-    InputInit();
-
-    gfx::RendererConfig renderer;
-    renderer.app_name = "Dark Chronicle";
-    renderer.logical_width = 640.0f;
-    renderer.logical_height = 480.0f;
-    renderer.display_aspect = 4.0f / 3.0f;
-    renderer.validation = renderer.validation || SettingsEnv("VULKAN_VALIDATION") != nullptr;
-    renderer.present_mode = PresentMode(config.present_mode);
-    renderer.pipeline_cache = PathsSaveRoot() / "pipeline_cache.bin";
-    renderer.progress = ReportShaderProgress;
-    renderer.offscreen = offscreen;
-    renderer.layout.aspect =
-        config.aspect == ConfigAspect::Auto ? gfx::AspectMode::Fill : gfx::AspectMode::Letterbox;
-    renderer.layout.ui_scale = config.ui_scale;
-    gfx::RendererInit(WindowHandle(), renderer);
-
-    audio::DefaultMixer().SetMasterGain(config.master_volume);
-
-    ClockSetTickRate(config.tick_rate);
-    ClockSetUnbounded(options.headless);
-    ClockAddPumpHook(PumpHost);
-    GameSetFrameBudget(options.frames);
-
-    InitCDFile();
-    MainLoop();
-
-    int status = kExitOk;
-    if (options.screenshot != nullptr) {
-        status = Screenshot(options.screenshot);
-    }
-
-    ClockRemovePumpHook(PumpHost);
-    AudioOutputStop();
-    InputShutdown();
-    gfx::RendererShutdown();
-    WindowShutdown();
-    return status;
+PORT_OVERRIDE int main(int argc, const char **argv) {
+    return Run(argc, argv);
 }
+
+#ifdef _WIN32
+int wmain(int argc, wchar_t **wide_argv) {
+    std::vector<std::string>  args;
+    std::vector<const char *> argv;
+    for (int i = 0; i < argc; ++i) {
+        args.push_back(PathsDisplay(std::filesystem::path(wide_argv[i])));
+    }
+    for (const std::string &arg : args) {
+        argv.push_back(arg.c_str());
+    }
+    argv.push_back(nullptr);
+    return Run(argc, argv.data());
+}
+#endif

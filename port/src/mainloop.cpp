@@ -1,18 +1,16 @@
+#include "common.h"
+
+#include <libgraph.h>
+
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
-// The game headers keep MWCC's pragmas, which clang names but ignores.
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#include "mainloop.hpp"
-#include "charaviewlp.hpp"
-#include "convviewlp.hpp"
+#include "arena_root.hpp"
 #include "dataread.hpp"
-#include "dng_main.hpp"
+#include "debug_mode.hpp"
 #include "editdata.hpp"
-#include "editloop.hpp"
 #include "font.hpp"
 #include "gaiji.hpp"
 #include "gamedata.hpp"
@@ -20,331 +18,48 @@
 #include "helpmes.hpp"
 #include "inventmn.hpp"
 #include "main.hpp"
+#include "mainloop.hpp"
 #include "mainloop3.hpp"
 #include "mapselect.hpp"
-#include "mapviewlp.hpp"
-#include "menuchr.hpp"
 #include "mg_drawprim.hpp"
 #include "mg_memory.hpp"
-#include "mg_texture.hpp"
+#include "mg_memory_port.hpp"
 #include "mglib.hpp"
+#include "mglib_port.hpp"
 #include "monster.hpp"
-#include "movieviewlp.hpp"
-#include "nd_meswin.hpp"
 #include "nowload.hpp"
 #include "npccfg.hpp"
 #include "padcontrol.hpp"
-#include "platform/clock.hpp"
+#include "platform/arena.hpp"
+#include "platform/config.hpp"
+#include "platform/input.hpp"
 #include "savedata.hpp"
 #include "scene.hpp"
 #include "scenesnd.hpp"
-#include "scriptinterpreter.hpp"
 #include "snd_mngr.hpp"
-#include "sndviewlp.hpp"
-#include "subgame.hpp"
 #include "sysmes.hpp"
-#include "texviewlp.hpp"
-#include "title.hpp"
 #include "userdata.hpp"
-#include "visualmotion.hpp"
 #include "vlgr_info.hpp"
-#include "water.hpp"
-#pragma clang diagnostic pop
 
-#include "mainloop_port.hpp"
+extern int           PortNextLoopNo asm("MainLoop_NextLoopNo");
+extern int           PortLoopNo asm("MainLoop_LoopNo");
+extern int           PortPrevLoopNo asm("MainLoop_PrevLoopNo");
+extern int           PortCaptureMode asm("MainLoop_CaptureMode");
+extern int           PortCaptureScreen asm("MainLoop_CaptureScreen");
+extern int           PortPlayTimeCountFlag asm("MainLoop_PlayTimeCountFlag");
+extern CSaveData    *PortActiveSaveData asm("MainLoop_ActiveSaveData");
+extern CSubGameData *PortSubGameSaveData asm("MainLoop_SubGameSaveData");
+extern u_long128     PortSystemSeBuff[400] asm("MainLoop_SystemSeBuff");
+extern u_long128     PortInfoBuff[5000] asm("MainLoop_InfoBuff");
+void MainLoop_InitPadTable(int language);
+void MainLoop_VSyncCallBack(int unused);
+extern u_long128     main_buffer[0x1A0000];
+extern CScene        MainScene;
+extern CFont         Font;
 
-// The main loop and the state it owns, as the host can run it: every wait retail made on the PS2's
-// VSync interrupt goes through the platform clock (platform/clock.hpp) instead. The functions the
-// loop's file statics reach through (NextLoop and the accessors below) are the port's copies of
-// ps2/src/mainloop.cpp's, so they read and write the same values the loop does.
-
-extern CScene MainScene;
-extern CFont  Font;
-
-/**
- * Resource arena the loop hands the game through GetMainStack.
- */
-PORT_OVERRIDE u_long128 main_buffer[0x1A0000];
-
-namespace {
-
-/**
- * Mode entered after the current main loop finishes.
- */
-int NextLoopNo;
-/**
- * Mode active before the current main loop.
- */
-int PrevLoopNo;
-/**
- * Selected input capture or replay mode.
- */
-int CaptureMode;
-/**
- * Currently active main-loop mode.
- */
-int LoopNo;
-/**
- * Whether vertical blank advances the saved play time.
- */
-int PlayTimeCountFlag;
-/**
- * Save data used by the current game mode.
- */
-CSaveData *ActiveSaveData;
-/**
- * Save-data arena for the active extra game.
- */
-CSubGameData *SubGameSaveData;
-
-/**
- * Whether the driver asked the loop to stop; read at the frame boundary (GameRequestStop).
- */
-bool StopRequested;
-/**
- * Frames the loop has run, one per mgEndFrame it calls; GameFrameCount's unit.
- */
-s64 FrameCount;
-/**
- * Frames the loop runs before it stops on its own, or negative for no budget
- * (GameSetFrameBudget, the driver's --frames).
- */
-s64 FrameBudget = -1;
-/**
- * Driver's start mode (GameSetStartMode, the driver's --jump), or unset for retail's boot: the
- * mode the loop starts in instead of the title, the argument its LoopInit is handed, the debug
- * flag it starts with, and whether the boot's warm-up is skipped.
- */
-struct StartMode {
-    int           loop_no;
-    INIT_LOOP_ARG arg;
-    int           debug_flag;
-    bool          skip_warmup;
-    bool          set;
-};
-
-StartMode start_mode;
-
-/**
- * Memory backing the system sound-effect loader.
- */
-u_long128 SystemSeBuff[400];
-/**
- * Memory backing configuration and villager data. Retail's 5000 quadwords sized 28-byte
- * villager records; a host record is 48 bytes, so the arena is grown to fit the same tables.
- */
-u_long128 InfoBuff[0x4000];
-
-/**
- * Language-adjusted mappings from logical controls to pad buttons.
- */
-PAD_TABLE_ENTRY pad_table[] = {
-    {PAD_BTN_CONFIRM,            PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_CANCEL,             PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
-    {PAD_BTN_R1_HELD,            PAD_CTRL_TRIGGER_ON,   PAD_R1      },
-    {PAD_BTN_L1_HELD,            PAD_CTRL_TRIGGER_ON,   PAD_L1      },
-    {PAD_BTN_L2,                 PAD_CTRL_TRIGGER_DOWN, PAD_L2      },
-    {PAD_BTN_MENU,               PAD_CTRL_TRIGGER_DOWN, PAD_TRIANGLE},
-    {PAD_BTN_R2,                 PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
-    {PAD_BTN_UP,                 PAD_CTRL_TRIGGER_DOWN, PAD_UP      },
-    {PAD_BTN_DOWN,               PAD_CTRL_TRIGGER_DOWN, PAD_DOWN    },
-    {PAD_BTN_RIGHT,              PAD_CTRL_TRIGGER_DOWN, PAD_RIGHT   },
-    {PAD_BTN_LEFT,               PAD_CTRL_TRIGGER_DOWN, PAD_LEFT    },
-    {11,                         PAD_CTRL_TRIGGER_ON,   PAD_UP      },
-    {12,                         PAD_CTRL_TRIGGER_ON,   PAD_DOWN    },
-    {13,                         PAD_CTRL_TRIGGER_ON,   PAD_RIGHT   },
-    {14,                         PAD_CTRL_TRIGGER_ON,   PAD_LEFT    },
-    {PAD_BTN_START,              PAD_CTRL_TRIGGER_DOWN, PAD_START   },
-    {PAD_BTN_CONFIRM_2,          PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_CANCEL_2,           PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
-    {19,                         PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
-    {PAD_BTN_EVENT_SKIP_2,       PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_PAUSE,              PAD_CTRL_TRIGGER_DOWN, PAD_START   },
-    {PAD_BTN_EVENT_SKIP,         PAD_CTRL_TRIGGER_DOWN, PAD_TRIANGLE},
-    {PAD_BTN_QUICK_CHANGE,       PAD_CTRL_TRIGGER_DOWN, PAD_L3      },
-    {24,                         PAD_CTRL_TRIGGER_DOWN, PAD_R3      },
-    {PAD_BTN_ACTION_CONFIRM,     PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_ACTION_SQUARE,      PAD_CTRL_TRIGGER_DOWN, PAD_SQUARE  },
-    {PAD_BTN_ACTION_CANCEL,      PAD_CTRL_TRIGGER_DOWN, PAD_CROSS   },
-    {PAD_BTN_L1_HELD_2,          PAD_CTRL_TRIGGER_ON,   PAD_L1      },
-    {PAD_BTN_R1_HELD_2,          PAD_CTRL_TRIGGER_ON,   PAD_R1      },
-    {55,                         PAD_CTRL_TRIGGER_DOWN, PAD_SELECT  },
-    {PAD_BTN_ACTION_HELD,        PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
-    {PAD_BTN_EDIT_TURN_DECREASE, PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
-    {PAD_BTN_EDIT_TURN_INCREASE, PAD_CTRL_TRIGGER_DOWN, PAD_L2      },
-    {PAD_BTN_EDIT_PLACE,         PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_EDIT_REMOVE,        PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_EDIT_PAINT,         PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_EDIT_PAINT_ALL,     PAD_CTRL_TRIGGER_DOWN, PAD_SQUARE  },
-    {PAD_BTN_EDIT_WALL_NEXT,     PAD_CTRL_TRIGGER_DOWN, PAD_R2      },
-    {PAD_BTN_EDIT_WALL_PREVIOUS, PAD_CTRL_TRIGGER_DOWN, PAD_L2      },
-    {18,                         PAD_CTRL_TRIGGER_DOWN, PAD_R1      },
-    {PAD_BTN_EDIT_SWITCH,        PAD_CTRL_TRIGGER_DOWN, PAD_SELECT  },
-    {PAD_BTN_EDIT_MAGNET,        PAD_CTRL_TRIGGER_DOWN, PAD_SQUARE  },
-    {PAD_BTN_FISH_ACTION,        PAD_CTRL_TRIGGER_DOWN, PAD_CIRCLE  },
-    {PAD_BTN_FISH_REEL,          PAD_CTRL_TRIGGER_ON,   PAD_CIRCLE  },
-    {PAD_BTN_FISH_REEL_FAST,     PAD_CTRL_TRIGGER_ON,   PAD_SQUARE  },
-    {-1,                         -1,                    -1          },
-};
-/**
- * Mappings from logical analog controls to pad stick axes.
- */
-ANALOG_TABLE_ENTRY analog_table[] = {
-    {PAD_ANALOG_LEFT_X,    PAD_CTRL_AXIS_LX},
-    {PAD_ANALOG_LEFT_Y,    PAD_CTRL_AXIS_LY},
-    {PAD_ANALOG_RIGHT_X,   PAD_CTRL_AXIS_RX},
-    {PAD_ANALOG_RIGHT_Y,   PAD_CTRL_AXIS_RY},
-    {PAD_ANALOG_LEFT_Y_2,  PAD_CTRL_AXIS_LY},
-    {PAD_ANALOG_LEFT_X_2,  PAD_CTRL_AXIS_LX},
-    {PAD_ANALOG_RIGHT_X_2, PAD_CTRL_AXIS_RX},
-    {PAD_ANALOG_RIGHT_Y_2, PAD_CTRL_AXIS_RY},
-    {-1,                   -1              },
-};
-
-/**
- * Advances saved play time once per tick, the port's PlayTimeCount tick callback (retail's
- * VSyncCallBack, installed with mgInitVSyncCallBack).
- */
-int PlayTimeTick(int unused) {
-    if (PlayTimeCountFlag != 0) {
-        CSaveData *save = GetSaveData();
-        s64        ticks = save->play_time;
-        save->play_time = ticks + 1;
-    }
-
-    return 0;
-}
-
-/**
- *
- * Registers the logical controller bindings for the selected language.
- *
- */
-void InitPadTable(int language) {
-    int confirm[2] = {PAD_CIRCLE, PAD_CROSS};
-    int cancel[2] = {PAD_CROSS, PAD_CIRCLE};
-    int language_index;
-    int i;
-
-    language_index = 0;
-
-    if (language != LANG_JAPANESE) {
-        language_index = 1;
-    }
-
-    PadCtrl.Initialize();
-
-    for (i = 0; pad_table[i].no >= 0; i++) {
-        switch (pad_table[i].no) {
-            case PAD_BTN_CONFIRM:
-            case PAD_BTN_CONFIRM_2:
-            case PAD_BTN_EVENT_SKIP_2:
-            case PAD_BTN_ACTION_CONFIRM:
-            case PAD_BTN_ACTION_HELD:
-            case PAD_BTN_EDIT_PLACE:
-            case PAD_BTN_EDIT_REMOVE:
-            case PAD_BTN_EDIT_PAINT:
-            case PAD_BTN_FISH_ACTION:
-            case PAD_BTN_FISH_REEL:
-                pad_table[i].button = confirm[language_index];
-                break;
-            case PAD_BTN_CANCEL:
-            case PAD_BTN_CANCEL_2:
-            case PAD_BTN_ACTION_CANCEL:
-                pad_table[i].button = cancel[language_index];
-                break;
-        }
-
-        PadCtrl.RegisterBtn(pad_table[i].no, pad_table[i].button, pad_table[i].trigger);
-    }
-
-    for (i = 0; analog_table[i].no >= 0; i++) {
-        PadCtrl.RegisterAnalog(analog_table[i].no, analog_table[i].axis);
-    }
-}
-
-/**
- * Whether the loop leaves at this frame boundary: the driver asked for a stop, or its frame
- * budget is spent. Checked at the top of a frame and again after a mode's exit, so the frame
- * that was running when either happened ends first and the budget counts mgEndFrame calls.
- */
-bool FrameBoundaryStop() {
-    return StopRequested || (FrameBudget >= 0 && FrameCount >= FrameBudget);
-}
-
-} // namespace
-
-void PortInitializePadBindings(int language) {
-    InitPadTable(language);
-}
-
-PORT_OVERRIDE int GetCaptureMode() {
-    return CaptureMode;
-}
-
-PORT_OVERRIDE CSaveData *GetSaveData() {
-    return ActiveSaveData;
-}
-
-PORT_OVERRIDE CSubGameData *GetSubGameSaveData() {
-    return SubGameSaveData;
-}
-
-PORT_OVERRIDE void InitSaveData() {
-    GetSaveData()->Initialize();
-}
-
-PORT_OVERRIDE void NextLoop(int loop_no, INIT_LOOP_ARG arg) {
-    NextLoopNo = loop_no;
-    NextInitArg = arg;
-}
-
-PORT_OVERRIDE int GetNowLoopNo() {
-    return LoopNo;
-}
-
-PORT_OVERRIDE INIT_LOOP_ARG *GetNowInitArg() {
-    return &InitArg;
-}
-
-PORT_OVERRIDE void PlayTimeCount(int enable) {
-    PlayTimeCountFlag = enable;
-}
-
-PORT_OVERRIDE int GetPlayTimeCountFlag() {
-    return PlayTimeCountFlag;
-}
-
-void GameRequestStop() {
-    StopRequested = true;
-}
-
-bool GameStopRequested() {
-    return StopRequested;
-}
-
-s64 GameFrameCount() {
-    return FrameCount;
-}
-
-void GameSetFrameBudget(s64 frames) {
-    FrameBudget = frames;
-}
-
-void GameSetStartMode(int loop_no, INIT_LOOP_ARG arg, int debug_flag, bool skip_warmup) {
-    start_mode.loop_no = loop_no;
-    start_mode.arg = arg;
-    start_mode.debug_flag = debug_flag;
-    start_mode.skip_warmup = skip_warmup;
-    start_mode.set = true;
-}
+static constexpr int kSubGameQuads = std::max(5000, static_cast<int>((sizeof(CSubGameData) + 15) / 16));
 
 PORT_OVERRIDE void MainLoop() {
-    /**
-     *
-     * Microprogram addresses loaded when the main game loop starts.
-     *
-     */
     static u_long128 *vu_prog[16];
 
     mgCMemory        *memory;
@@ -353,72 +68,52 @@ PORT_OVERRIDE void MainLoop() {
     u_long128        *file_buffer;
     int               file_size;
     int               mode_finished;
-    uintptr_t         buffer_address;
-    int               alignment;
+    std::uintptr_t    buffer_address;
+    std::uintptr_t    alignment;
+    u_long128        *main_arena = ArenaRoot(&main_buffer, 0x1A0000, "MainBuffer");
 
     memory = GetMainStack();
-    memory->stSetBuffer(main_buffer, 0x1A0000);
+    memory->stSetBuffer(main_arena, 0x1A0000 * kArenaHeadroom);
     memory->stack_used = 0;
     memory->lock = 0;
     SaveData.Initialize();
-    ActiveSaveData = &SaveData;
-    SubGameSaveData = NULL;
+    PortActiveSaveData = &SaveData;
+    PortSubGameSaveData = NULL;
     DebugFlag = false;
     GamePad__2.Init();
     InitFileCache(NULL, 0);
     mgInit(MG_SCREEN_MODE_512X480, 3);
-    PlayTimeCountFlag = false;
-    mgInitVSyncCallBack(PlayTimeTick);
+    PortPlayTimeCountFlag = false;
+    mgInitVSyncCallBack((int (*)(int)) MainLoop_VSyncCallBack);
     LanguageCode = LANG_FRENCH;
-
-    // A driver start mode with the warm-up skipped boots straight into its mode: the language
-    // and logo screens and the pad waits go, and the mode and debug flag are set after the
-    // retail block below so nothing overwrites them.
-    if (!start_mode.set || !start_mode.skip_warmup) {
-        SCElogoFade(0, memory);
-    }
-
-    LoopNo = LOOP_TITLE;
+    SCElogoFade(0, memory);
+    PortLoopNo = LOOP_TITLE;
     DebugFlag = false;
     DebugInfo.chara_move = 0;
-    /**
-     *
-     * Whether the debug performance meter is displayed.
-     *
-     */
+
     static int pmeter_flag = false;
 
     pmeter_flag = false;
+    GamePad__2.WaitEnable();
+    sceGsSyncV(0);
+    GamePad__2.UpDate();
+    MasterDebugCode = 0;
+    DebugFlag = false;
 
-    if (!start_mode.set || !start_mode.skip_warmup) {
-        GamePad__2.WaitEnable();
-        ClockSyncV();
-        GamePad__2.UpDate();
-        MasterDebugCode = 0;
-        DebugFlag = false;
-
-        if (GamePad__2.On2(PAD_R1) && GamePad__2.On2(PAD_R2) && GamePad__2.On2(PAD_L1) && GamePad__2.On2(PAD_L2)) {
-            MasterDebugCode = MASTER_DEBUG_CODE;
-        }
-
-        GamePad__2.DebugKeyLock(1);
-        ClockSyncV();
-        GamePad__2.UpDate();
-        ClockSyncV();
-        GamePad__2.UpDate();
-        ClockSyncV();
-        GamePad__2.UpDate();
+    if (GamePad__2.On2(PAD_R1) && GamePad__2.On2(PAD_R2) && GamePad__2.On2(PAD_L1) && GamePad__2.On2(PAD_L2)) {
+        MasterDebugCode = MASTER_DEBUG_CODE;
     }
 
-    if (start_mode.set) {
-        LoopNo = start_mode.loop_no;
-        InitArg = start_mode.arg;
-        DebugFlag = start_mode.debug_flag != 0;
-    }
-
+    GamePad__2.DebugKeyLock(1);
+    sceGsSyncV(0);
+    GamePad__2.UpDate();
+    sceGsSyncV(0);
+    GamePad__2.UpDate();
+    sceGsSyncV(0);
+    GamePad__2.UpDate();
     mgSetUserVuProg(vu_prog, 16);
     mgSetUserVuProgAdr(0, Vu_prog_wtr);
-    PortInitializePadBindings(LanguageCode);
+    MainLoop_InitPadTable(LanguageCode);
     GameItemDataManage.LoadData();
     GameItemDataManage.LoadItemSystemMes(LanguageCode);
     LoadSystemMes();
@@ -428,32 +123,30 @@ PORT_OVERRIDE void MainLoop() {
     LoadFontTblBin();
     LoadFontTex2Img();
     LoadNPCCfg();
-    InfoStack.stSetBuffer(InfoBuff, 0x4000);
+    InfoStack.stSetBuffer(ArenaRoot(PortInfoBuff, 5000, "InfoStack"), 5000 * kArenaHeadroom);
     LoadGameInfo(&InfoStack);
     InitPauseData();
     InitSaveData();
     user_data = NULL;
 
-    if (ActiveSaveData != NULL) {
-        user_data = &ActiveSaveData->user_data;
+    if (PortActiveSaveData != NULL) {
+        user_data = &PortActiveSaveData->user_data;
     }
 
     LoadMonsterLanguage(LanguageCode);
-    PortInitializePadBindings(LanguageCode);
+    MainLoop_InitPadTable(LanguageCode);
     LanguageEquipChange();
     DebugGetItem(user_data, 0);
-    CaptureMode = CAPTURE_OFF;
+    PortCaptureMode = CAPTURE_OFF;
     sndInitMngr();
     MainScene.InitSnd();
     SetCurrentDir(NULL);
-    SystemSeStack.stSetBuffer(SystemSeBuff, 400);
+    SystemSeStack.stSetBuffer(ArenaRoot(PortSystemSeBuff, 400, "SystemSeStack"), 400 * kArenaHeadroom);
     SystemSeStack.stack_used = 0;
     SystemSeStack.lock = 0;
     read_memory = GetMainStack();
-    // Retail truncated the cursor to 32 bits; the host keeps the whole address, so the arena
-    // stays reachable above 4 GiB.
-    buffer_address = reinterpret_cast<uintptr_t>(read_memory->stack + read_memory->stack_used);
-    alignment = static_cast<int>(buffer_address % 64);
+    buffer_address = reinterpret_cast<std::uintptr_t>(read_memory->stack + read_memory->stack_used);
+    alignment = buffer_address % 64;
 
     if (alignment != 0) {
         buffer_address += ((64 - alignment) / 16) * 16;
@@ -462,15 +155,19 @@ PORT_OVERRIDE void MainLoop() {
     file_buffer = reinterpret_cast<u_long128 *>(buffer_address);
     SystemSND_ID = -1;
 
-    if (LoadFile2((char *) "snd2/SY_000.snd", file_buffer, NULL, 0)) {
+    char sy_path[] = "snd2/SY_000.snd";
+    char rev_path[] = "snd2/rev.bin";
+    char map_index_path[] = "snd2/MAP_index.txt";
+
+    if (LoadFile2(sy_path, file_buffer, NULL, 0)) {
         SystemSND_ID = sndLoadSound(SND_PORT_SYSTEM, (u_int *) file_buffer, &SystemSeStack);
     }
 
-    if (LoadFile2((char *) "snd2/rev.bin", file_buffer, &file_size, 0)) {
+    if (LoadFile2(rev_path, file_buffer, &file_size, 0)) {
         MainScene.LoadSndRevInfo((char *) file_buffer, file_size);
     }
 
-    if (LoadFile2((char *) "snd2/MAP_index.txt", file_buffer, &file_size, 0)) {
+    if (LoadFile2(map_index_path, file_buffer, &file_size, 0)) {
         MainScene.LoadSndFileInfo((char *) file_buffer, file_size);
     }
 
@@ -484,37 +181,35 @@ PORT_OVERRIDE void MainLoop() {
     Font.SetClearance(15, 18);
     CreateGamePadThread(&GamePad__2);
     LoadGameConfig(NULL);
+    PortApplyDebugMode(ConfigGet().debug_mode);
     SetIoErrCallBack(EmergencyMessage);
-
-    if (!start_mode.set || !start_mode.skip_warmup) {
-        SCElogoFade(1, memory);
-    }
+    SCElogoFade(1, memory);
 
     while (1) {
-        if (LoopNo == LOOP_TITLE || OmakeFlag != 0) {
-            SubGameSaveData = (CSubGameData *) main_buffer;
-            memory->stSetBuffer(&main_buffer[5000], 0x1A0000 - 5000);
+        if (PortLoopNo == LOOP_TITLE || OmakeFlag != 0) {
+            PortSubGameSaveData = (CSubGameData *) main_arena;
+            memory->stSetBuffer(&main_arena[kSubGameQuads],0x1A0000 * kArenaHeadroom - kSubGameQuads);
             memory->stack_used = 0;
             memory->lock = 0;
         }
 
         printf("main_data remain = %dkb\n", ((memory->stack_size - memory->stack_used) * 16) / 1024);
 
-        if (LoopNo < 0 || LoopNo >= LOOP_MODE_NUM) {
+        if (PortLoopNo < 0 || PortLoopNo >= LOOP_MODE_NUM) {
             break;
         }
 
-        if (DebugFlag == 0 && LoopNo == LOOP_MENU) {
-            LoopNo = LOOP_TITLE;
+        if (DebugFlag == 0 && PortLoopNo == LOOP_MENU) {
+            PortLoopNo = LOOP_TITLE;
         }
 
-        if (CaptureMode == CAPTURE_RECORD) {
+        if (PortCaptureMode == CAPTURE_RECORD) {
             GamePad__2.CaptureStart();
             srand(9999);
         }
 
-        if (CaptureMode == CAPTURE_PLAY || CaptureMode == CAPTURE_PLAY_SCREEN) {
-            if (CaptureMode != CAPTURE_OFF) {
+        if (PortCaptureMode == CAPTURE_PLAY || PortCaptureMode == CAPTURE_PLAY_SCREEN) {
+            if (PortCaptureMode != CAPTURE_OFF) {
                 GamePad__2.LoadCapture();
             }
 
@@ -523,6 +218,7 @@ PORT_OVERRIDE void MainLoop() {
         }
 
         mgFrameRate = 2;
+        PortCaptureScreen = false;
         GetMainScene()->save_data = GetSaveData();
         float now_time = GetSaveData()->now_time;
         GetMainScene()->SetTime(now_time);
@@ -535,30 +231,26 @@ PORT_OVERRIDE void MainLoop() {
             GetMainScene()->time_step = 0;
         }
 
-        if (LoopNo == LOOP_TITLE) {
+        if (PortLoopNo == LOOP_TITLE) {
             sndSeAllStop(-1);
             sndDeletePort(SND_PORT_BGM);
             MainScene.InitSnd();
         }
 
         printf("##### %d\n", mgGetVSyncCount());
-        LoopInit[LoopNo](InitArg);
+        // Single entry for every mode change: covers the LOOP_MENU->LOOP_TITLE redirect above and the PortNextLoopNo hand-off below.
+        mgPortCutInterpolation();
+        LoopInit[PortLoopNo](InitArg);
         INIT_LOOP_ARG next_arg;
 
         NextLoop(LOOP_MENU, next_arg);
 
         while (1) {
-            // Leave between frames: the frame that was running when the driver asked for a stop
-            // or spent its budget has finished, and the mode leaves through LoopExit below.
-            if (FrameBoundaryStop()) {
-                break;
-            }
-
             if (GamePad__2.On(PAD_CIRCLE)) {
                 cat_start();
             }
 
-            if (LoopNo != LOOP_MENU) {
+            if (PortLoopNo != LOOP_MENU) {
                 GetMainScene()->save_data = GetSaveData();
                 float now_time = GetSaveData()->now_time;
                 GetMainScene()->SetTime(now_time);
@@ -581,33 +273,39 @@ PORT_OVERRIDE void MainLoop() {
 
             mgPerformanceMeter(pmeter_flag);
 
-            if (GamePad__2.Down2(PAD_CIRCLE)) {
-                DebugFlag = !DebugFlag;
+            if (GamePad__2.Down2(PAD_CIRCLE) || InputHostPressed(InputHostAction::DebugMenu)) {
+                PortToggleDebugMode();
             }
 
             mgBeginFrame(NULL);
-            mode_finished = LoopMain[LoopNo]();
+            mode_finished = LoopMain[PortLoopNo]();
             sndStep(mgGetNowFrameRate());
             MainScene.StepSnd();
             GamePad__2.UpDate();
             PadCtrl.Update(&GamePad__2);
-            mgCDrawPrim frame_border;
-            frame_border.Initialize(NULL, NULL);
-            frame_border.DepthTestEnable(false);
-            frame_border.AlphaTestEnable(false);
-            frame_border.AlphaBlendEnable(false);
-            frame_border.TextureMapEnable(false);
-            frame_border.ZMask(MG_Z_MASK_MASKED);
-            frame_border.Begin(MG_PRIM_LINE_STRIP);
-            frame_border.Color(0, 0, 0, 0x80);
-            frame_border.Vertex(0, 0, 0);
-            frame_border.Vertex(mgScreenWidth - 1, 0, 0);
-            frame_border.Vertex(mgScreenWidth - 1, mgScreenHeight - 1, 0);
-            frame_border.Vertex(0, mgScreenHeight - 1, 0);
-            frame_border.Vertex(0, 0, 0);
-            frame_border.End();
+            // Retail's screen-edge outline sat on the native 4:3 boundary. In Fill mode that
+            // boundary is inside the window, so omit the obsolete outline when the viewport expands.
+            const mgPortExtent visible_extent = mgPortVisibleExtent();
+            if (visible_extent.left >= 0.0f && visible_extent.top >= 0.0f &&
+                visible_extent.right <= static_cast<float>(mgScreenWidth) &&
+                visible_extent.bottom <= static_cast<float>(mgScreenHeight)) {
+                mgCDrawPrim frame_border;
+                frame_border.Initialize(NULL, NULL);
+                frame_border.DepthTestEnable(false);
+                frame_border.AlphaTestEnable(false);
+                frame_border.AlphaBlendEnable(false);
+                frame_border.TextureMapEnable(false);
+                frame_border.ZMask(MG_Z_MASK_MASKED);
+                frame_border.Begin(MG_PRIM_LINE_STRIP);
+                frame_border.Color(0, 0, 0, 0x80);
+                frame_border.Vertex(0, 0, 0);
+                frame_border.Vertex(mgScreenWidth - 1, 0, 0);
+                frame_border.Vertex(mgScreenWidth - 1, mgScreenHeight - 1, 0);
+                frame_border.Vertex(0, mgScreenHeight - 1, 0);
+                frame_border.Vertex(0, 0, 0);
+                frame_border.End();
+            }
             mgEndFrame(NULL);
-            FrameCount++;
 
             if (mode_finished != 0) {
                 PauseCancel();
@@ -618,15 +316,10 @@ PORT_OVERRIDE void MainLoop() {
                 cat_end();
             }
 
-            switch (LoopNo) {
+            switch (PortLoopNo) {
                 case LOOP_EDIT:
                 case LOOP_DUNGEON:
                 case LOOP_TITLE: {
-                    /**
-                     *
-                     * Whether the debug frame-advance pause is enabled.
-                     *
-                     */
                     static int pause = false;
 
                     if (GamePad__2.Down2(PAD_SELECT)) {
@@ -634,7 +327,7 @@ PORT_OVERRIDE void MainLoop() {
                     }
 
                     while (pause != 0) {
-                        ClockSyncV();
+                        sceGsSyncV(0);
                         GamePad__2.UpDate();
 
                         if (GamePad__2.Down(PAD_START) || GamePad__2.Down2(PAD_SELECT)) {
@@ -661,41 +354,37 @@ PORT_OVERRIDE void MainLoop() {
             PauseCount();
         }
 
-        LoopExit[LoopNo]();
+        LoopExit[PortLoopNo]();
+        MemoryLogPeaks();
 
-        // A stop skips the mode transition and falls to the shutdown below, as quitting does.
-        if (FrameBoundaryStop()) {
-            break;
-        }
-
-        if (LoopNo != LOOP_MENU) {
-            if (CaptureMode != CAPTURE_OFF) {
+        if (PortLoopNo != LOOP_MENU) {
+            if (PortCaptureMode != CAPTURE_OFF) {
                 GamePad__2.SaveCapture();
             }
 
-            CaptureMode = CAPTURE_OFF;
+            PortCaptureMode = CAPTURE_OFF;
         }
 
-        PrevLoopNo = LoopNo;
+        PortPrevLoopNo = PortLoopNo;
         PrevInitArg = InitArg;
-        LoopNo = NextLoopNo;
+        PortLoopNo = PortNextLoopNo;
         InitArg = NextInitArg;
         GamePad__2.CaptureEnd();
-        ClockSyncV();
+        sceGsSyncV(0);
         GamePad__2.UpDate();
-        ClockSyncV();
+        sceGsSyncV(0);
         GamePad__2.UpDate();
 
-        while ((ClockSyncV() & 1) != 0) {
+        while (sceGsSyncV(0) != 0) {
         }
     }
 
     sndSeAllStop(-1);
     sndStopVoice(0);
     sndStopVoice(1);
-    ClockSyncV();
+    sceGsSyncV(0);
     sndStep(2.0f);
-    ClockSyncV();
+    sceGsSyncV(0);
     sndStep(2.0f);
     GamePad__2.Close();
 }

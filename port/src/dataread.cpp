@@ -4,6 +4,7 @@
 #include <sifdev.h>
 
 #include <algorithm>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -16,14 +17,15 @@
 #include <vector>
 
 #include "cdvd_file.hpp"
+#include "dataread_port.hpp"
 #include "platform/paths.hpp"
 
 // The disc is the extracted tree on the host. DATA.DAT holds the files DATA.HD4 indexes, and the
 // names beside it (MOVIE/*.PSS above all) are plain files. This unit serves that tree through the
 // same calls the drive had, so the rest of the game sees no change.
 //
-// Host reads are synchronous: a background read is finished before LoadFileBG returns, so the
-// queue only ever holds completed entries and ReadBG has nothing left to do per vertical sync.
+// Host reads finish before LoadFileBG returns; queue metadata preserves the game's
+// pending/completed polling transitions.
 
 namespace fs = std::filesystem;
 
@@ -44,7 +46,46 @@ int        FileCacheType;
 // wins, as the game's linear search finds it.
 std::unordered_map<std::string, cdvd::File> packed_files;
 std::unordered_map<std::string, cdvd::File> plain_files;
+std::unordered_map<std::string, cdvd::File> media_files;
 bool                                       index_loaded;
+
+char FoldChar(char c) {
+    return c >= 'A' && c <= 'Z' ? static_cast<char>(c + ('a' - 'A')) : c;
+}
+
+bool ExcludedRootEntry(std::string_view name) {
+    if (name.starts_with('.') || name.ends_with(".dc2tmp")) {
+        return true;
+    }
+    for (std::string_view excluded : {"manifest.txt", "sound"}) {
+        if (name.size() == excluded.size() &&
+            std::equal(name.begin(), name.end(), excluded.begin(), [](char a, char b) {
+                return FoldChar(a) == FoldChar(b);
+            })) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IsMoviePath(std::string_view relative) {
+    std::size_t slash = relative.find('/');
+    std::string_view first = relative.substr(0, slash);
+    constexpr std::string_view movie = "movie";
+    return first.size() == movie.size() &&
+           std::equal(first.begin(), first.end(), movie.begin(), [](char a, char b) {
+               return FoldChar(a) == FoldChar(b);
+           });
+}
+
+std::string FileKey(std::string_view path) {
+    std::string key;
+    key.reserve(path.size());
+    for (char c : path) {
+        key.push_back(FoldChar(c == '\\' ? '/' : c));
+    }
+    return key;
+}
 
 u_int Le32(const unsigned char *bytes) {
     return (u_int) bytes[0] | (u_int) bytes[1] << 8 | (u_int) bytes[2] << 16 | (u_int) bytes[3] << 24;
@@ -87,19 +128,132 @@ bool SafeRelative(std::string_view path) {
     std::fprintf(stderr,
                  "no game data: %s %s; point --data (or DC2_DATA) at the extracted disc, the "
                  "directory holding DATA.HD4 and DATA.DAT\n",
-                 root.c_str(), why);
+                 PathsDisplay(root).c_str(), why);
     std::abort();
+}
+
+// Why a read of a game file came up short, with the numbers that show it. The first
+// kMaxReportedFailures are printed in full; later ones are only counted so a failing loop cannot
+// flood stderr.
+enum class ReadFault { None, OutOfRange, NullBuffer, OpenFailed, SeekFailed, ShortRead, BackingTruncated };
+
+struct ReadReport {
+    ReadFault     fault = ReadFault::None;
+    std::uint64_t offset = 0;   // start within the logical file
+    std::uint64_t size = 0;     // bytes asked for
+    std::uint64_t extent = 0;   // the logical file's size (a DATA.HD4 record, or the file on disk)
+    std::uint64_t physical = 0; // bytes the host handed back
+    std::uint64_t backing = 0;  // size of the host file holding the extent, when it could be measured
+    int           os_error = 0;
+};
+
+constexpr unsigned kMaxReportedFailures = 16;
+unsigned           reported_failures;
+unsigned           suppressed_failures;
+std::string        last_failure;
+
+const char *FaultName(ReadFault fault) {
+    switch (fault) {
+        case ReadFault::OutOfRange: return "range outside the file's extent";
+        case ReadFault::NullBuffer: return "no destination buffer";
+        case ReadFault::OpenFailed: return "host file would not open";
+        case ReadFault::SeekFailed: return "seek to the extent failed";
+        case ReadFault::ShortRead: return "short read";
+        case ReadFault::BackingTruncated: return "backing file ends inside the extent";
+        case ReadFault::None: break;
+    }
+    return "no fault";
+}
+
+ReadReport ReadExtent(const cdvd::File &file, std::uint64_t offset, void *buffer, std::uint64_t size) {
+    ReadReport report;
+    report.offset = offset;
+    report.size = size;
+    report.extent = file.size;
+
+    if (offset > file.size || size > file.size - offset) {
+        report.fault = ReadFault::OutOfRange;
+        return report;
+    }
+
+    // A caller whose buffer pointer was never set (a struct copied at PS2 width loses its pointers) must not
+    // be told the disc failed.
+    if (size != 0 && buffer == nullptr) {
+        report.fault = ReadFault::NullBuffer;
+        return report;
+    }
+
+    std::ifstream stream(file.path, std::ios::binary);
+
+    if (!stream) {
+        report.fault = ReadFault::OpenFailed;
+        report.os_error = errno;
+        return report;
+    }
+
+    stream.seekg(static_cast<std::streamoff>(file.offset + offset));
+
+    if (!stream) {
+        report.fault = ReadFault::SeekFailed;
+        return report;
+    }
+
+    stream.read(static_cast<char *>(buffer), static_cast<std::streamsize>(size));
+    report.physical = static_cast<std::uint64_t>(stream.gcount());
+
+    if (report.physical != size) {
+        std::error_code error;
+        std::uintmax_t  backing = fs::file_size(file.path, error);
+
+        if (!error) {
+            report.backing = backing;
+        }
+
+        report.fault = !error && backing < file.offset + offset + size ? ReadFault::BackingTruncated
+                                                                      : ReadFault::ShortRead;
+    }
+
+    return report;
+}
+
+// Keeps the newest failure line for the tests and prints the first kMaxReportedFailures.
+void NoteFailure(const char *line) {
+    last_failure = line;
+
+    if (reported_failures < kMaxReportedFailures) {
+        reported_failures++;
+        std::fprintf(stderr, "%s\n", line);
+    } else if (suppressed_failures++ == 0) {
+        std::fprintf(stderr, "dataread: further read failures are counted, not printed\n");
+    }
+}
+
+// Names the request, the host file, the extent asked for and the bytes that came back.
+void ReportReadFailure(const char *name, const cdvd::File &file, const ReadReport &report) {
+    char line[1024];
+    std::snprintf(line, sizeof line,
+                  "cannot read \"%s\" (%s): %s; offset %llu size %llu of extent %llu at host offset %llu, "
+                  "physical %llu bytes, backing file %llu bytes, os error %d",
+                  name != nullptr ? name : "?", file.path.string().c_str(), FaultName(report.fault),
+                  static_cast<unsigned long long>(report.offset), static_cast<unsigned long long>(report.size),
+                  static_cast<unsigned long long>(report.extent), static_cast<unsigned long long>(file.offset),
+                  static_cast<unsigned long long>(report.physical), static_cast<unsigned long long>(report.backing),
+                  report.os_error);
+    NoteFailure(line);
 }
 
 // The drive read whole sectors into the caller's buffer, so the bytes between a file's end and
 // the sector boundary were overwritten too; they are zeroed rather than left as the caller's.
-bool ReadWhole(const cdvd::File &file, void *buffer) {
-    if (!cdvd::ReadAt(file, 0, buffer, file.size)) {
-        std::fprintf(stderr, "cannot read %s\n", file.path.string().c_str());
+// The buffer's padding is touched only after the file itself came back whole.
+bool ReadWhole(const char *name, const cdvd::File &file, void *buffer) {
+    ReadReport report = ReadExtent(file, 0, buffer, file.size);
+
+    if (report.fault != ReadFault::None) {
+        ReportReadFailure(name, file, report);
         return false;
     }
 
-    if (file.packed) {
+    {
         std::uint64_t padded = cdvd::kSector * ((file.size + cdvd::kSector - 1) / cdvd::kSector);
 
         if (padded > file.size) {
@@ -184,7 +338,7 @@ void ReadIndex(const fs::path &hd4_path, const fs::path &dat_path, const fs::pat
         u_int                file_size = Le32(record + 4);
         u_int                sector = Le32(record + 8);
 
-        // The index ends with an all-zero record; an empty name ends it too.
+        // PAL's index ends with a record that names nothing (offset into the names, size and sector 0); an all-zero record ends it too.
         if (name_offset == 0 && file_size == 0 && sector == 0) {
             break;
         }
@@ -200,17 +354,33 @@ void ReadIndex(const fs::path &hd4_path, const fs::path &dat_path, const fs::pat
             break;
         }
 
-        if (static_cast<std::uint64_t>(sector) * cdvd::kSector + file_size > dat_size) {
+        // An extent that ends past DATA.DAT cannot be read whole, so it is named and left out of the
+        // index rather than published with a size that no read can honour. Only the logical bytes
+        // must exist: the zero padding up to the sector boundary is the loader's to supply.
+        std::uint64_t    extent_end = static_cast<std::uint64_t>(sector) * cdvd::kSector + file_size;
+        std::string_view logical(name, static_cast<const char *>(end) - name);
+
+        if (extent_end > dat_size) {
             past_end++;
+
+            char line[1024];
+            std::snprintf(line, sizeof line,
+                          "dataread: DATA.HD4 record %zu \"%.*s\" sector %u size %u ends at %llu, past "
+                          "DATA.DAT's %llu bytes; not indexed",
+                          i, static_cast<int>(logical.size()), logical.data(), sector, file_size,
+                          static_cast<unsigned long long>(extent_end), static_cast<unsigned long long>(dat_size));
+            NoteFailure(line);
+
+            continue;
         }
 
         cdvd::File file{dat_path, static_cast<std::uint64_t>(sector) * cdvd::kSector, file_size, true};
-        packed_files.emplace(cdvd::Fold(std::string_view(name, static_cast<const char *>(end) - name)), file);
+        packed_files.emplace(cdvd::Fold(logical), file);
     }
 
     if (past_end != 0) {
-        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT\n", root.string().c_str(),
-                     past_end);
+        std::fprintf(stderr, "%s: DATA.HD4 lists %u files past the end of DATA.DAT; none of them indexed\n",
+                     root.string().c_str(), past_end);
     }
 }
 
@@ -228,15 +398,26 @@ std::string Fold(std::string_view path) {
         body = body.substr(colon + 1);
     }
 
-    if (std::size_t version = body.find(';'); version != std::string_view::npos) {
-        body = body.substr(0, version);
+    if (std::size_t version = body.rfind(';'); version != std::string_view::npos) {
+        std::string_view suffix = body.substr(version + 1);
+        if (!suffix.empty() && std::all_of(suffix.begin(), suffix.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+            body = body.substr(0, version);
+        }
     }
 
     std::string folded;
     folded.reserve(body.size());
 
-    for (char c : body) {
-        folded.push_back(c == '\\' ? '/' : (c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c));
+    for (unsigned char c : body) {
+        if (c == '\\') {
+            folded.push_back('/');
+        } else if (c >= 0x80 || c == '%') {
+            char escaped[4];
+            std::snprintf(escaped, sizeof escaped, "%%%02x", static_cast<unsigned>(c));
+            folded += escaped;
+        } else {
+            folded.push_back(FoldChar(static_cast<char>(c)));
+        }
     }
 
     folded.erase(0, folded.find_first_not_of('/'));
@@ -253,7 +434,8 @@ void LoadIndex() {
     std::error_code error;
 
     if (!fs::is_directory(root, error)) {
-        NoData(root, "is not a directory");
+        std::fprintf(stderr, "dataread: indexed 0 files under %s (not a directory)\n", PathsDisplay(root).c_str());
+        return;
     }
 
     auto options = fs::directory_options::follow_directory_symlink |
@@ -263,12 +445,18 @@ void LoadIndex() {
          it.increment(error)) {
         std::error_code entry_error;
 
+        if (it.depth() == 0 && ExcludedRootEntry(PathsDisplay(it->path().filename()))) {
+            it.disable_recursion_pending();
+            continue;
+        }
+
         if (it->is_regular_file(entry_error)) {
             std::uintmax_t size = it->file_size(entry_error);
 
             if (!entry_error) {
                 std::string relative = it->path().lexically_relative(root).generic_string();
-                plain_files.emplace(Fold(relative), File{it->path(), 0, size, false});
+                auto &index = IsMoviePath(relative) ? media_files : plain_files;
+                index.emplace(FileKey(relative), File{it->path(), 0, size, false});
             }
         }
     }
@@ -277,8 +465,9 @@ void LoadIndex() {
         std::fprintf(stderr, "%s: %s\n", root.string().c_str(), error.message().c_str());
     }
 
+    std::fprintf(stderr, "dataread: indexed %zu files under %s\n", plain_files.size(), PathsDisplay(root).c_str());
     if (plain_files.empty()) {
-        NoData(root, "is empty");
+        return;
     }
 
     // The index is read when both files are there; a tree whose files were already unpacked only
@@ -313,26 +502,63 @@ bool Find(std::string_view path, File &out) {
         return true;
     }
 
+    auto media = media_files.find(key);
+    if (media != media_files.end()) {
+        out = media->second;
+        return true;
+    }
+
     return false;
 }
 
 bool ReadAt(const File &file, std::uint64_t offset, void *buffer, std::uint64_t size) {
-    if (offset > file.size || size > file.size - offset) {
+    ReadReport report = ReadExtent(file, offset, buffer, size);
+
+    if (report.fault != ReadFault::None) {
+        ReportReadFailure(file.path.string().c_str(), file, report);
         return false;
     }
 
-    std::ifstream stream(file.path, std::ios::binary);
-
-    if (!stream) {
-        return false;
-    }
-
-    stream.seekg(static_cast<std::streamoff>(file.offset + offset));
-    stream.read(static_cast<char *>(buffer), static_cast<std::streamsize>(size));
-    return static_cast<std::uint64_t>(stream.gcount()) == size;
+    return true;
 }
 
 } // namespace cdvd
+
+// The last full failure line and the number of failures since the index was last built; the unit
+// tests read these, the game reads stderr.
+std::string DataReadLastFailure() {
+    return last_failure;
+}
+
+unsigned DataReadFailureCount() {
+    return reported_failures + suppressed_failures;
+}
+
+void DataReadIndex(const fs::path &root) {
+    PathsSetDataRoot(root);
+    reported_failures = 0;
+    suppressed_failures = 0;
+    last_failure.clear();
+    index_loaded = false;
+    packed_files.clear();
+    plain_files.clear();
+    media_files.clear();
+    cdvd::LoadIndex();
+}
+
+std::optional<fs::path> DataReadFind(const char *game_name) {
+    if (!game_name) {
+        return std::nullopt;
+    }
+    cdvd::LoadIndex();
+    std::string key = cdvd::Fold(game_name);
+    auto packed = packed_files.find(key);
+    if (packed != packed_files.end()) {
+        return packed->second.path;
+    }
+    auto plain = plain_files.find(key);
+    return plain == plain_files.end() ? std::nullopt : std::optional<fs::path>(plain->second.path);
+}
 
 /**
  *
@@ -419,9 +645,16 @@ static void ConvStr(char *text) {
  *
  */
 static int GetFullPath(char *path, char *out_path) {
+    const bool host0 = std::strncmp(path, "host0:", 6) == 0;
+    const std::string_view input(path);
+    const std::size_t colon = input.find(':');
+    const std::size_t separator = input.find_first_of("/\\");
+    const bool explicit_prefix = colon != std::string_view::npos &&
+                                 (separator == std::string_view::npos || colon < separator);
+    const bool anchored = path[0] == '/' || path[0] == '\\' || explicit_prefix;
     char rest[256];
     int  device = GetDevType(path, rest);
-    int  has_device = false;
+    int  has_device = explicit_prefix;
 
     if (device == FILE_DEV_DEFAULT) {
         device = DefaultFileDev;
@@ -432,7 +665,7 @@ static int GetFullPath(char *path, char *out_path) {
     char prefix[16] = "";
 
     if (device == FILE_DEV_HOST) {
-        strcpy(prefix, "host:");
+        strcpy(prefix, host0 ? "host0:" : "host:");
     }
 
     if (device == FILE_DEV_HDD) {
@@ -441,7 +674,7 @@ static int GetFullPath(char *path, char *out_path) {
 
     strcpy(out_path, prefix);
 
-    if (!has_device) {
+    if (!has_device && !anchored) {
         strcat(out_path, CurrentDir);
     }
 
@@ -498,15 +731,11 @@ PORT_OVERRIDE void ChangeDir(char *dir) {
     }
 }
 
-// Host reads finish as they are queued, but a queued read must still read as pending to the first
-// ReadBGSync: MenuCostumeInit waits with `while (ReadBGSync() == 0)`, which retail leaves at once only
-// because the read it just queued is still in flight. The second sync reports it done.
-static unsigned char bg_pending[BG_READ_MAX];
+// Host bytes are ready on return; keep the issue-then-complete states the costume loader polls.
 
 PORT_OVERRIDE void InitReadBG() {
     for (int i = 0; i < BG_READ_MAX; i++) {
         bg_read_info[i].busy = 0;
-        bg_pending[i] = 0;
     }
 }
 
@@ -522,15 +751,7 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     }
 
     char full_path[256] = "";
-    char rest[256];
-
-    strcpy(full_path, CurrentDir);
-    strcat(full_path, name);
-    int device = GetDevType(name, rest);
-
-    if (device == FILE_DEV_DEFAULT) {
-        device = DefaultFileDev;
-    }
+    int device = GetFullPath(name, full_path);
 
     info = bg_read_info;
 
@@ -551,12 +772,15 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
             return false;
         }
 
+        if (!ReadWhole(full_path, file, buffer)) {
+            return false;
+        }
+
         std::snprintf(info->name, sizeof info->name, "%s", full_path);
         info->busy = true;
         info->dev = FILE_DEV_CDROM;
-        info->issued = true;
+        info->issued = false;
         info->done = false;
-        bg_pending[info - bg_read_info] = 1;
         info->buffer = buffer;
         info->size = static_cast<int>(file.size);
         info->sector = static_cast<int>(file.offset / cdvd::kSector);
@@ -564,11 +788,6 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
 
         if (out_size != NULL) {
             *out_size = static_cast<int>(file.size);
-        }
-
-        if (!ReadWhole(file, buffer)) {
-            info->busy = false;
-            return false;
         }
 
         return true;
@@ -585,9 +804,8 @@ PORT_OVERRIDE int LoadFileBG(char *name, u_long128 *buffer, int *out_size) {
     std::snprintf(info->name, sizeof info->name, "%s", full_path);
     info->busy = true;
     info->dev = device;
-    info->issued = true;
+    info->issued = false;
     info->done = false;
-    bg_pending[info - bg_read_info] = 1;
     info->buffer = buffer;
     info->size = loaded_size;
     info->fd = loaded_size;
@@ -624,16 +842,16 @@ PORT_OVERRIDE void StartReadBG() {
 }
 
 PORT_OVERRIDE void ReadBG() {
-    for (int i = 0; i < BG_READ_MAX; i++) {
-        BG_READ_INFO *info = &bg_read_info[i];
-
-        if (info->busy && info->issued && !info->done) {
-            if (bg_pending[i] != 0) {
-                bg_pending[i]--;
-            } else {
-                info->done = true;
-            }
+    for (BG_READ_INFO &info : bg_read_info) {
+        if (!info.busy || info.done) {
+            continue;
         }
+        if (!info.issued) {
+            info.issued = true;
+        } else {
+            info.done = true;
+        }
+        return;
     }
 }
 
@@ -673,7 +891,7 @@ PORT_OVERRIDE void InitCDFile() {
 
 PORT_OVERRIDE int LoadFile(char *path, void *buffer, int *out_size) {
     if (!LoadFile2(path, buffer, out_size, LOAD_FILE_READ)) {
-        printf("File open error \"%s\"\n \n \n", path);
+        std::fprintf(stderr, "File open error \"%s\"\n", path);
         Exit__2(0);
     }
 
@@ -728,7 +946,7 @@ PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
             return 1;
         }
 
-        if (!ReadWhole(file, buffer)) {
+        if (!ReadWhole(full_path, file, buffer)) {
             return 0;
         }
 
@@ -748,6 +966,19 @@ PORT_OVERRIDE int LoadFile2(char *path, void *buffer, int *out_size, int mode) {
     int fd = sceOpen(full_path, SCE_RDONLY);
 
     if (fd < 0) {
+        if (std::strncmp(full_path, "host0:", 6) == 0) {
+            cdvd::File file;
+            if (cdvd::Find(full_path, file)) {
+                // The size is published only for a size query or once the bytes are in the buffer.
+                if (mode != LOAD_FILE_SIZE && !ReadWhole(full_path, file, buffer)) {
+                    return 0;
+                }
+                if (out_size) {
+                    *out_size = static_cast<int>(file.size);
+                }
+                return 1;
+            }
+        }
         return mode == LOAD_FILE_OPEN ? -1 : 0;
     }
 

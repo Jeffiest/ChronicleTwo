@@ -2,10 +2,8 @@
 
 #include <gtest/gtest.h>
 
-// Synthetic disc fixtures for the data tests: a DATA.DAT/DATA.HD2 pair laid out as the disc's,
+// Synthetic disc fixtures for the data tests: a DATA.DAT/DATA.HD4 pair laid out as the disc's,
 // packs in the game's 76-byte entry format, and a minimal ISO 9660 image holding the pair.
-
-#include <unistd.h>
 
 #include <cstdint>
 #include <cstring>
@@ -15,11 +13,13 @@
 #include <string>
 #include <vector>
 
-#include "../../../tools/dcdata/dcdata.hpp"
+#include "dc2data.hpp"
+#include "platform_fixture.hpp"
 
 namespace datafix {
 
 namespace fs = std::filesystem;
+namespace dcdata = dc2data;
 
 using Bytes = std::vector<unsigned char>;
 
@@ -30,13 +30,14 @@ struct File {
 
 struct Disc {
     Bytes             dat;
-    Bytes             hd2;
+    Bytes             hd4;
     std::vector<File> files;
 };
 
 // Resolved, as the working directory comes back: macOS's /var is a symlink.
 inline fs::path TempDir(const char *tag) {
-    fs::path dir = fs::canonical(fs::temp_directory_path()) / std::format("dc_{}_{}", tag, getpid());
+    fs::path dir = fs::canonical(fs::temp_directory_path()) /
+                   std::format("dc_{}_{}", tag, dc::test::ProcessId());
     fs::remove_all(dir);
     fs::create_directories(dir);
     return dir;
@@ -97,29 +98,28 @@ inline Disc MakeDisc(std::vector<File> files) {
     // The retail index counts one all-zero record after the last file, whose name offset
     // lands on the NUL that ends the name block.
     std::size_t count = disc.files.size();
-    disc.hd2.assign(32 * (count + 1), 0);
+    disc.hd4.assign(12 * (count + 1), 0);
     disc.dat.assign(dcdata::kSector, 0xCD);
     for (std::size_t i = 0; i < count; i++) {
         const File   &file = disc.files[i];
         std::uint32_t sector = static_cast<std::uint32_t>(disc.dat.size() / dcdata::kSector);
-        std::uint32_t name = static_cast<std::uint32_t>(disc.hd2.size());
-        disc.hd2.insert(disc.hd2.end(), file.name.begin(), file.name.end());
-        disc.hd2.push_back(0);
+        std::uint32_t name = static_cast<std::uint32_t>(disc.hd4.size());
+        disc.hd4.insert(disc.hd4.end(), file.name.begin(), file.name.end());
+        disc.hd4.push_back(0);
         disc.dat.insert(disc.dat.end(), file.data.begin(), file.data.end());
-        disc.dat.resize(dcdata::SectorsFor(disc.dat.size()) * dcdata::kSector, 0xCD);
-        Put32(disc.hd2, 32 * i, name);
-        Put32(disc.hd2, 32 * i + 4, 0xDEADBEEF);
-        Put32(disc.hd2, 32 * i + 16, sector * dcdata::kSector);
-        Put32(disc.hd2, 32 * i + 20, static_cast<std::uint32_t>(file.data.size()));
-        Put32(disc.hd2, 32 * i + 24, sector);
-        Put32(disc.hd2, 32 * i + 28, static_cast<std::uint32_t>(dcdata::SectorsFor(file.data.size())));
+        const std::size_t sectors = (disc.dat.size() + dcdata::kSector - 1) / dcdata::kSector;
+        disc.dat.resize(sectors * dcdata::kSector, 0xCD);
+        Put32(disc.hd4, 12 * i, name);
+        Put32(disc.hd4, 12 * i + 4, static_cast<std::uint32_t>(file.data.size()));
+        Put32(disc.hd4, 12 * i + 8, sector);
     }
-    Put32(disc.hd2, 32 * count, static_cast<std::uint32_t>(disc.hd2.size() - 1));
+    Put32(disc.hd4, 12 * count, static_cast<std::uint32_t>(disc.hd4.size()));
+    disc.hd4.push_back(0);
     return disc;
 }
 
 inline std::uint32_t SectorCount(const Bytes &data) {
-    return static_cast<std::uint32_t>(dcdata::SectorsFor(data.size()));
+    return static_cast<std::uint32_t>((data.size() + dcdata::kSector - 1) / dcdata::kSector);
 }
 
 inline Bytes DirectoryRecord(std::string_view name, std::uint32_t extent, std::size_t size, bool directory) {
@@ -184,7 +184,7 @@ inline File PackFile() {
     };
 }
 
-// The game's own paths, as DATA.HD2 spells them: backslashes, mixed case, one with a leading
+// The game's own paths, as DATA.HD4 spells them: backslashes, mixed case, one with a leading
 // separator, a later duplicate of the first, sizes on both sides of a sector, and an empty file.
 inline Disc StandardDisc() {
     return MakeDisc({

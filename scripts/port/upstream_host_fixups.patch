@@ -33,15 +33,12 @@ diff --git a/ps2/src/dng_event.cpp b/ps2/src/dng_event.cpp
 index 45d42c88..8f1995b2 100644
 --- a/ps2/src/dng_event.cpp
 +++ b/ps2/src/dng_event.cpp
-@@ -407,7 +407,11 @@ void MessageTaskManager::Initialize() {
+@@ -407,7 +407,7 @@ void MessageTaskManager::Initialize() {
      task[5].next = NULL;
  }
  
-+#ifdef PORT
+-void CRedMarkModel::Draw() {
 +int CRedMarkModel::Draw() {
-+#else
- void CRedMarkModel::Draw() {
-+#endif
      float position[4];
      float saved_position[4];
  
@@ -49,15 +46,12 @@ diff --git a/ps2/src/dng_hud.cpp b/ps2/src/dng_hud.cpp
 index fdf58527..840a159a 100644
 --- a/ps2/src/dng_hud.cpp
 +++ b/ps2/src/dng_hud.cpp
-@@ -817,7 +817,11 @@ void CDamageScore2::Step() {
+@@ -817,7 +817,7 @@ void CDamageScore2::Step() {
      }
  }
  
-+#ifdef PORT
+-void CLockOnModel::Draw() {
 +int CLockOnModel::Draw() {
-+#else
- void CLockOnModel::Draw() {
-+#endif
      float target_pos[4];
      int   top_left[4];
      int   bottom_right[4];
@@ -580,7 +574,7 @@ index 7d4424cf..67fa0501 100644
 +        // as it is here.
 +        s32 ch = ((u8 *) text)[back - 1];
 +#else
-         s32 ch = ((u8 *) (back + (s32) text))[-1];
+         s32 ch = ((u8 *) (back + (uptr) text))[-1];
 +#endif
          s32 digit = 0;
  
@@ -961,30 +955,16 @@ index 5e4bb311..7e522526 100644
          return data.val.i;
      }
  
--    fprintf(stderr, "RUNTIME ERROR: %s: operand is not integer\n", func->name);
+-    fprintf(stderr, "RUNTIME ERROR: %s: operand is not integer\n", (char *) (uptr) func->name);
 +    fprintf(stderr, "RUNTIME ERROR: %s: operand is not integer\n", RS_FUNC_NAME(func));
      exit(-1);
      return 0;
  }
-@@ -87,7 +94,13 @@ void print(RS_STACKDATA *slots, int count) {
-             if (slots->type == RS_INT) {
-                 printf("%d", slots->val.i);
-             } else if (slots->type == RS_STR) {
-+#ifdef PORT
-+                // The PS2's string value aliases the integer slot; on the host its pointer member
-+                // is read.
-+                printf("%s", slots->val.s);
-+#else
-                 printf("%s", slots->val.i);
-+#endif
-             } else if (slots->type == RS_FLOAT) {
-                 printf("%f", slots->val.f);
-             }
 @@ -493,7 +506,7 @@ void CRunScript::exe(vmcode_t *entry) {
                          rhs_f = rhs.val.i;
                          lhs_f = lhs.val.f;
                      } else {
--                        fprintf(stderr, "RUNTIME ERROR at _CMP: %s: operand is not number\n", func->name);
+-                        fprintf(stderr, "RUNTIME ERROR at _CMP: %s: operand is not number\n", (char *) (uptr) func->name);
 +                        fprintf(stderr, "RUNTIME ERROR at _CMP: %s: operand is not number\n", RS_FUNC_NAME(func));
                          exit(-1);
                      }
@@ -993,7 +973,7 @@ index 5e4bb311..7e522526 100644
                  } else if (lhs.type == RS_FLOAT && rhs.type == RS_INT) {
                      push_float(lhs.val.f + rhs.val.i);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _ADD: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _ADD: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _ADD: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1002,7 +982,7 @@ index 5e4bb311..7e522526 100644
                  } else if (lhs.type == RS_FLOAT && rhs.type == RS_INT) {
                      push_float(lhs.val.f - rhs.val.i);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _SUB: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _SUB: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _SUB: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1011,7 +991,7 @@ index 5e4bb311..7e522526 100644
                  } else if (lhs.type == RS_FLOAT && rhs.type == RS_INT) {
                      push_float(lhs.val.f * rhs.val.i);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR _MUL: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR _MUL: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR _MUL: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1020,7 +1000,7 @@ index 5e4bb311..7e522526 100644
                  } else if (lhs.type == RS_FLOAT && rhs.type == RS_INT) {
                      push_float(lhs.val.f / rhs.val.i);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _DIV: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _DIV: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _DIV: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1029,7 +1009,7 @@ index 5e4bb311..7e522526 100644
                  } else if (rhs.type == RS_FLOAT) {
                      push_float(-rhs.val.f);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _INVT: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _INVT: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _INVT: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1038,7 +1018,7 @@ index 5e4bb311..7e522526 100644
                  } else if (rhs.type == RS_FLOAT) {
                      push_float(sinf(rhs.val.f));
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _SIN: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _SIN: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _SIN: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1047,7 +1027,7 @@ index 5e4bb311..7e522526 100644
                  } else if (rhs.type == RS_FLOAT) {
                      push_float(cosf(rhs.val.f));
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _COS: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _COS: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _COS: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1056,7 +1036,7 @@ index 5e4bb311..7e522526 100644
                  if (rhs.type == RS_INT) {
                      push_int(!rhs.val.i);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR: %s: \x90\xAE\x90\x94\x82\xC5\x82\xC8\x82\xA2\x83I\x83y\x83\x89\x83\x93\x83h\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR: %s: \x90\xAE\x90\x94\x82\xC5\x82\xC8\x82\xA2\x83I\x83y\x83\x89\x83\x93\x83h\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR: %s: \x90\xAE\x90\x94\x82\xC5\x82\xC8\x82\xA2\x83I\x83y\x83\x89\x83\x93\x83h\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1065,7 +1045,7 @@ index 5e4bb311..7e522526 100644
                  } else if (rhs.type == RS_FLOAT) {
                      push_float(rhs.val.f);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _ITOF: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _ITOF: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _ITOF: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1074,7 +1054,7 @@ index 5e4bb311..7e522526 100644
                  } else if (rhs.type == RS_FLOAT) {
                      push_int((int) rhs.val.f);
                  } else {
--                    fprintf(stderr, "RUNTIME ERROR at _FTOI: %s: operand is not number\n", func->name);
+-                    fprintf(stderr, "RUNTIME ERROR at _FTOI: %s: operand is not number\n", (char *) (uptr) func->name);
 +                    fprintf(stderr, "RUNTIME ERROR at _FTOI: %s: operand is not number\n", RS_FUNC_NAME(func));
                      exit(-1);
                  }
@@ -1106,8 +1086,8 @@ index 6b40053c..fd75037d 100644
  #include "sceneload.hpp"
  #include "scenesnd.hpp"
  
--static int         LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
-+static int LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
+-static uptr        LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
++static uptr LoadMapData(SCN_LOADMAP_INFO2 &info, int deferred);
 +
 +#ifdef PORT
 +#include <chrono>
@@ -1186,7 +1166,7 @@ index eca3d995..11ece85a 100644
 +                                    // half with the PS2's strides; the member itself is used here.
 +                                    place = schedule->place[alternative][time];
 +#else
-                                     place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + alternative_offset + 8);
+                                     place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (uptr) schedule + alternative_offset + 8);
 +#endif
  
                                      if (place != NULL) {
@@ -1198,7 +1178,7 @@ index eca3d995..11ece85a 100644
 +#ifdef PORT
 +                            place = schedule->place[fallback_alternative][time];
 +#else
-                             place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (int) schedule + fallback_offset + 8);
+                             place = *(CVillagerPlaceInfo **) ((u8 *) (time * sizeof(void *)) + (uptr) schedule + fallback_offset + 8);
 +#endif
  
                              if (place != NULL && map_no >= 0 && place->map_no == map_no) {
@@ -1207,52 +1187,52 @@ diff --git a/ps2/src/water.cpp b/ps2/src/water.cpp
 index f006fb2d..073351db 100644
 --- a/ps2/src/water.cpp
 +++ b/ps2/src/water.cpp
-@@ -671,7 +671,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -671,7 +671,11 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
      int                point_count;
      int                started;
      mgCMemory         *memory;
 +#ifdef PORT
-+    u_long128         *base;
++    uptr               base;
 +#else
-     u_int              base;
+     uptr               base;
 +#endif
      WaterFinishPacket *finish;
      u_int             *counts;
      float             *previous;
-@@ -732,8 +736,14 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -732,8 +736,14 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
          slope[2][c][3] = 0.3f;
      }
  
 +#ifdef PORT
 +    // The packet is written through the host pointer; the PS2's uncached alias does not exist.
-+    base = memory->stGetTop();
-+    start = base;
++    base = (uptr) memory->stGetTop();
++    start = (u_long128 *) base;
 +#else
-     base = (u_int) memory->stGetTop();
+     base = (uptr) memory->stGetTop();
      start = (u_long128 *) (base | MG_UNCACHED);
 +#endif
      end = start;
  
      if (texture != NULL) {
-@@ -794,7 +804,11 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -794,7 +804,11 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
              positions = (u_long128 *) (strip + 1);
              vertex_count = point_count * 2;
              int bytes = point_count * 32;
 +#ifdef PORT
 +            out = (u_long128 *) ((u_char *) strip + bytes) + 3;
 +#else
-             out = (u_long128 *) (bytes + (u_int) strip) + 3;
+             out = (u_long128 *) (bytes + (uptr) strip) + 3;
 +#endif
  
              for (index = 0; index < point_count; index++) {
                  positions[0] = *(u_long128 *) position0;
-@@ -857,8 +871,13 @@ u_int CWater::CreatePacket(mgCDrawManager *draw_manager) {
+@@ -857,8 +871,13 @@ uptr CWater::CreatePacket(mgCDrawManager *draw_manager) {
      finish->ret.vif[1] = 0;
      out += 3;
      memory->Alloc(out - start);
 +#ifdef PORT
-+    packet = (u_int) (unsigned long) base;
-+    return (u_int) (unsigned long) base;
++    packet = base;
++    return base;
 +#else
      packet = base;
      return base;
@@ -1260,3 +1240,27 @@ index f006fb2d..073351db 100644
  }
  
  void CWaterFrame::SetTexture(mgCTexture *texture) {
+
+diff --git a/ps2/src/mg_frame.cpp b/ps2/src/mg_frame.cpp
+--- a/ps2/src/mg_frame.cpp
++++ b/ps2/src/mg_frame.cpp
+@@ -1190,7 +1190,7 @@ void mgCFrame::GetWorldPosition0(float *out_position) {
+     sceVu0FMATRIX lw;
+ 
+     GetLWMatrix(lw);
+-    *(u_long128 *) out_position = *(u_long128 *) lw[3];
++    std::memcpy(out_position, lw[3], sizeof(lw[3]));
+ }
+ 
+ void mgCFrame::GetWorldDir(float *out_dir, float *local_dir) {
+diff --git a/ps2/src/visualmotion.cpp b/ps2/src/visualmotion.cpp
+index de8974548384742ee1be680ebd20cdd8f2306e4e..e5aa1b1348591c94145ebb6af1a80d2462d8aa22 100644
+--- a/ps2/src/visualmotion.cpp
++++ b/ps2/src/visualmotion.cpp
+@@ -218,5 +218,5 @@ int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data,
+     frame = data->frame;
+     base_matrix = data->base_matrix;
+     frame_id = data->frame_id;
+-    CreateVertexWeight(data->weight_data, data->frame_id, work);
++    CreateVertexWeight(data->weight_data, data->frame_id, memory);
+     count = 0;

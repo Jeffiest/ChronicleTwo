@@ -384,7 +384,8 @@ Texture *LookupTexture(TextureHandle handle) {
         return nullptr;
     }
     Texture &texture = g.textures[slot];
-    if (!texture.live || texture.generation != handle >> kSlotBits || (texture.doomed && !g.replaying)) {
+    if (!texture.live || texture.generation != handle >> kSlotBits ||
+        (texture.doomed && !g.replaying && !RecordingCalls())) {
         return nullptr;
     }
     return &texture;
@@ -396,7 +397,8 @@ Mesh *LookupMesh(MeshHandle handle) {
         return nullptr;
     }
     Mesh &mesh = g.meshes[slot];
-    if (!mesh.live || mesh.generation != handle >> kSlotBits || (mesh.doomed && !g.replaying)) {
+    if (!mesh.live || mesh.generation != handle >> kSlotBits ||
+        (mesh.doomed && !g.replaying && !RecordingCalls())) {
         return nullptr;
     }
     return &mesh;

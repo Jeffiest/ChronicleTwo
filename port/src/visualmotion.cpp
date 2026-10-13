@@ -1,114 +1,66 @@
 #include "common.h"
 
-#include <cstdint>
-#include <cstring>
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
-#include "mg_texture.hpp"
-#include "mglib.hpp"
+#include "mg_math.hpp"
+#include "mg_visual_port.hpp"
 #include "visualmotion.hpp"
 
-void PortMgForgetMotionBase(const void *vertex);
+PORT_OVERRIDE int mgCVisualMotionMDT::CreateFaceMotionPacket(u_int *packet, mgCFace *face, mgCVMotionData *motion) {
+    if (face != NULL) {
+        mgVisualPortRefreshFace(this, face);
+    }
+    return 0;
+}
 
-namespace {
-
-// A motion model's face indices, kept per model. They cannot go back into the model's arena: that is
-// sized for retail's layout, the copy overran it, and CreateFace does not check Alloc for failure.
-// Loading a model again at the same address replaces its set, so the store stays bounded.
-std::unordered_map<const void *, std::vector<std::unique_ptr<int[]>>> kept_indices;
-
-// The same for the skin weights: retail builds them in the scratch arena only to fill its VU1 packets, but
-// the host skins from them every frame, and the arena is reused by the next model that loads.
-std::unordered_map<const void *, std::unique_ptr<mgVertexWeight[]>> kept_weights;
-
-} // namespace
-
-// Retail keeps the packet buffer's address in an int and hands the truncated value straight back
-// in as the packet pointer; on the host that address lands low. The address stays a pointer here;
-// only the DMA tag word, which the GS reads as a 32-bit address, keeps its low half.
-PORT_OVERRIDE int mgCVisualMotionMDT::DataAssignMotionMDT(MDT_HEADER *header, mgCVMotionData *data, mgCMemory *memory,
-                                            mgCMemory *work, mgCTextureManager *textures) {
-    mgCFace   *packet;
-    int        count;
-    int        part_count;
-    FACES_ID  *source;
-    int        i;
-    u_long128 *address;
-    int        size;
-    MDT_FACES *section;
-
-    if (work == NULL) {
-        return false;
+PORT_OVERRIDE int mgCVisualMotionMDT::CreateExtRenderInfoPacket(u_int *packet, float (*matrix)[4],
+                                                                mgRENDER_INFO *info) {
+    if (frame == NULL || base_matrix == NULL) {
+        return 0;
     }
 
-    work->stack_used = 0;
-    work->lock = 0;
-    kept_indices[this].clear();
-    kept_weights.erase(this);
-
-    if (textures == NULL) {
-        textures = &mgTexManager;
+    int slot_count = 0;
+    while (slot_count < 0x20 && bone[slot_count] >= 0) {
+        slot_count += 1;
     }
 
-    texture_manager = textures;
-    CopyMDTDataPointer(header, memory);
-    PortMgForgetMotionBase(vertex);
-    frame = data->frame;
-    base_matrix = data->base_matrix;
-    frame_id = data->frame_id;
-    CreateVertexWeight(data->weight_data, data->frame_id, work);
-
-    if (weight != NULL && weight_num > 0) {
-        auto copy = std::make_unique<mgVertexWeight[]>(weight_num);
-
-        std::memcpy(copy.get(), weight, (size_t) weight_num * sizeof(mgVertexWeight));
-        weight = copy.get();
-        kept_weights[this] = std::move(copy);
+    if (slot_count == 0) {
+        return 0;
     }
-    count = 0;
 
-    do {
-        if (bone[count] < 0) {
-            break;
+    float inverse_matrix[4][4];
+    float root_matrix[4][4];
+    float inverse_root[4][4];
+    float root_local[4][4];
+    float slot_matrix[4][4];
+    float slot_inverse[4][4];
+    float frame_matrix[4][4];
+    float bone_matrix[4][4];
+
+    mgInversMatrix(inverse_matrix, matrix);
+    frame[0]->GetLWMatrix(root_matrix);
+    mgMulMatrix(inverse_root, root_matrix, base_matrix[frame_id]);
+    mgInversMatrix(root_local, inverse_root);
+
+    gfx::Prog0Constants &prog0 = mgVisualPortCurrentProg0();
+
+    for (int i = 0; i < slot_count; i++) {
+        const int slot = bone[i];
+        if (frame[slot] == NULL) {
+            continue;
         }
 
-        count++;
-    } while (count < 0x20);
+        frame[slot]->GetLWMatrix(frame_matrix);
+        mgMulMatrix(slot_matrix, root_matrix, base_matrix[slot]);
+        mgMulMatrix(slot_matrix, root_local, slot_matrix);
+        mgInversMatrix(slot_inverse, slot_matrix);
+        mgMulMatrix(frame_matrix, inverse_matrix, frame_matrix);
+        mgMulMatrix(bone_matrix, frame_matrix, slot_inverse);
 
-    vu1_base = count * 4 + 0x3C;
-    vu1_offset = 0xB4 - (count * 4) / 2;
-    mgCMemory scratch;
-    size = work->stack_size - work->stack_used;
-    scratch.stSetBuffer(work->stGetTop(), size);
-    face_group = 0;
-    section = (MDT_FACES *) ((u_char *) header + header->faces_ofs);
-    part_count = section->prim_num;
-    source = (FACES_ID *) (section + 1);
-
-    for (i = 0; i < part_count; i++) {
-        scratch.stack_used = 0;
-        scratch.lock = 0;
-        source = CreateFace(source, memory, &scratch, &packet);
-        address = memory->stGetTop();
-        size = CreateFaceMotionPacket((u_int *) address, packet, data);
-        packet->packet_tag_word[0] = size | MG_DMA_REF;
-        packet->packet_tag_word[1] = (u_int) (uintptr_t) address;
-        packet->packet_tag_word[2] = 0;
-        packet->packet_tag_word[3] = 0;
-        memory->Alloc(size);
-
-        // Retail rebuilds each part's indices in scratch and drops them once the packet exists; the host
-        // draws from them later, by which time the next part and the skin weights have overwritten scratch.
-        if (packet->index_num > 0) {
-            auto keep = std::make_unique<int[]>(packet->index_num);
-
-            std::memcpy(keep.get(), packet->index, (size_t) packet->index_num * sizeof(int));
-            packet->index = keep.get();
-            kept_indices[this].push_back(std::move(keep));
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 4; col++) {
+                prog0.bones[i][row][col] = bone_matrix[col][row];
+            }
         }
     }
 
-    return true;
+    return 0;
 }

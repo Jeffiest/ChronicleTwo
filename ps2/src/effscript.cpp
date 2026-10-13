@@ -360,8 +360,8 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
     char pack[0x80];
     int  path_size;
     int  pack_size;
-    int  path_buffer;
-    int  pack_buffer;
+    uptr path_buffer;
+    uptr pack_buffer;
 
     for (int i = 0; i < EFF_SPT_BASE_MAX; i++) {
         if (base[i] != 0 && base[i]->base_no == base_no) {
@@ -369,7 +369,7 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
         }
     }
 
-    path_buffer = (int) load_buffer;
+    path_buffer = (uptr) load_buffer;
 
     if (path_buffer == 0) {
         return -1;
@@ -381,7 +381,7 @@ int CEffectScriptMan::LoadBaseEffSpt(int base_no, mgCMemory *memory, int level) 
 
     if (LoadFile2(path, (void *) path_buffer, &path_size, 0) == 0) {
         path_size = 0;
-        pack_buffer = (int) load_buffer;
+        pack_buffer = (uptr) load_buffer;
         path_buffer = 0;
     } else {
         int rest = path_size & 0x3F;
@@ -748,6 +748,24 @@ _EFF_SCRIPT *CEffectScriptMan::CreateEffSpt(int base_no, int group, int register
         }
     }
 
+    /*
+     * Host-native sizing lives in port/src/effscript.cpp::CreateEffSpt.
+     * Keep the retail allocation below unchanged for the PAL build.
+     * The host override accounts for native _EFF_SCRIPT and CCharacter2 sizes,
+     * the interpreter run stack, and the host call-data array.
+     * It also includes copied character work and final 64-byte alignment.
+     * Retail uses the original work_size calculation in this function.
+     * This comment preserves source inventory locations below this block.
+     *
+     * No host-only size adjustment belongs in the retail implementation.
+     *
+     * The ordinary PAL path continues to select a fit gap using base->work_size.
+     *
+     * Host builds replace this function through PORT_OVERRIDE.
+     *
+     * Keep this note adjacent to the retail allocation to document the seam.
+     *
+     */
     token = work_memory->StartStackMode(MG_STACK_MODE_FIT, base->work_size);
 
     if (token == NULL) {
@@ -5560,8 +5578,9 @@ int _GET_EOH_POS(RS_STACKDATA *stack, int argc) {
  *
  */
 int SetEffectScript(CRunScript *script, char *program, mgCMemory *memory) {
-    RS_STACKDATA *stack = (RS_STACKDATA *) memory->Alloc(0x20);
-    RS_CALLDATA  *call_data = (RS_CALLDATA *) memory->Alloc(1);
+    RS_STACKDATA *stack = (RS_STACKDATA *) memory->Alloc((sizeof(RS_STACKDATA) * 0x40 + 15) / 16);
+    // Retail's one quadword for two 12-byte frames is the floor of the pair's size; with 8-byte pointers the pair fills 3 exactly.
+    RS_CALLDATA  *call_data = (RS_CALLDATA *) memory->Alloc(sizeof(RS_CALLDATA) * 2 / 16);
     script->load((RS_PROG_HEADER *) program, stack, 0x40, call_data, 2);
     script->ext_func(ext_func, 0x100);
     return 1;

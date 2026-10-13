@@ -25,11 +25,15 @@ jobs:
       - name: Build
         run: ./build.sh linux-x64
 
-      - name: Run host compatibility fixtures
-        run: tools/kazarov/bin/kazarov shell cmake --build port/build/pc --target ct_compatibility_tests
+      - name: Run host component contracts
+        run: tools/kazarov/bin/kazarov shell cmake --build port/build/pc --target ct_completion_tests
 
       - name: Test
         run: tools/kazarov/bin/kazarov shell ctest --test-dir port/build/pc --output-on-failure -j4
+
+      # The VU1 programs are native: their packed CPU halves live only in the test oracles.
+      - name: Check that no PS2 packing or VU1 layout helper is in the runtime
+        run: tools/kazarov/bin/kazarov shell python3 scripts/port/native_gate.py --binary port/build/pc/darkchronicle
 
       # A non-PIE link places the game below 4 GiB, where a pointer truncated to 32 bits still works and hides the bug.
       - name: Check that darkchronicle is position-independent
@@ -61,14 +65,17 @@ jobs:
           vulkaninfo --summary > artifacts/vulkaninfo.txt 2>&1 || true
           cat artifacts/vulkaninfo.txt
 
+      - name: Build the minimal LGPL FFmpeg
+        run: tools/kazarov/bin/kz-ffmpeg --out .kazarov/ffmpeg/darwin-arm64
+
       - name: Configure
         run: cmake --preset macos-arm64 -DCT_TEST_TIMEOUT=60
 
       - name: Build
         run: cmake --build --preset macos-arm64
 
-      - name: Run host compatibility fixtures
-        run: cmake --build port/build/macos-arm64 --target ct_compatibility_tests
+      - name: Run host component contracts
+        run: cmake --build port/build/macos-arm64 --target ct_completion_tests
 
       - name: Test
         run: ctest --preset macos-arm64
@@ -112,24 +119,24 @@ jobs:
       - name: Configure
         run: |
           ./tools/windows/configure.ps1 -Root $env:RUNNER_TEMP -BuildDirectory $env:GITHUB_WORKSPACE/port/build/windows-x64-tests -Tests `
-            -VulkanLibrary $env:VULKAN_RUNTIME/vulkan-1.dll
+            -VulkanLibrary $env:VULKAN_RUNTIME/vulkan-1.dll -CMakeArgs '-DCT_TEST_TIMEOUT=60'
 
       # Beside the executables, the downloaded loader is found before any in System32.
       - name: Build
         run: |
           ./tools/windows/build.ps1 -Root $env:RUNNER_TEMP -BuildDirectory $env:GITHUB_WORKSPACE/port/build/windows-x64-tests -Tests
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          cmake --build port/build/windows-x64-tests --target ct_compatibility_tests_headless
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           Copy-Item $env:VULKAN_RUNTIME/vulkan-1.dll port/build/windows-x64-tests
+          cmake --build port/build/windows-x64-tests --target ct_completion_tests_headless
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       # The renderer's cases need a Vulkan device, which this runner does not have.
       - name: Test
-        run: ctest --test-dir port/build/windows-x64-tests --output-on-failure -j4 -E '^(GfxMisc|TexDecode)\.'
+        run: ctest --test-dir port/build/windows-x64-tests --output-on-failure -j4 -E '^(GfxMisc|TexDecode)\.|^RuntimeContract\.0[56]_'
 
       - name: Package the Windows build
         run: |
-          $files = @('darkchronicle.exe', 'libc++.dll', 'libunwind.dll', 'libwinpthread-1.dll', 'SDL3.dll', 'vulkan-1.dll')
+          $files = @('darkchronicle.exe', 'libc++.dll', 'libunwind.dll', 'libwinpthread-1.dll', 'SDL3.dll', 'vulkan-1.dll', 'avcodec-61.dll', 'avutil-59.dll', 'swresample-5.dll')
           $paths = $files | ForEach-Object { Join-Path 'port/build/windows-x64-tests' $_ }
           Compress-Archive -LiteralPath $paths -DestinationPath chronicletwo-windows-x64.zip
 

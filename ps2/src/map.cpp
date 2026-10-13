@@ -281,7 +281,11 @@ void CMap::SetPlacePartsBuff(mgCMemory *stack, int max) {
     unsigned int list_bytes;
     u_long128   *block = stack->Alloc(map_alloc_size((u_int) max * sizeof(CMapParts)) + 2);
     place_parts = new (block) CMapParts[max];
+#ifdef PORT
+    list_bytes = (u_int) max * sizeof(*draw_parts);
+#else
     list_bytes = max << 2;
+#endif
     block = stack->Alloc(map_alloc_size(list_bytes) + 2);
     draw_parts = (CMapParts **) new (block) char[list_bytes];
     place_parts_max = max;

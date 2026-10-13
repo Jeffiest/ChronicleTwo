@@ -1,75 +1,95 @@
 #!/usr/bin/env python3
-"""Mirror ps2/include into the build with the header fixups the port compiles against.
+"""Mirror ps2/include into the build with the header fixups the port compiles against, and fix unit copies.
 
     header_fixups.py <src_dir> <dst_dir> <stamp_file>
+    header_fixups.py --unit <copy_path>
 
 Every fixup's old text must occur exactly once in its file; anything else fails before a byte is written.
+Headers are then passed through long64, because the PS2's `long` is 64-bit and Windows' is not.
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from long64 import rewrite as rewrite_long64  # noqa: E402
+
+LONG64_SUFFIXES = (".h", ".hpp", ".hh", ".inc", ".inl")
 
 # MWCC accepts a `void` override of a base's `int` virtual and gives it a new vtable slot; clang rejects it.
 # The PS2 vtables keep those separate slots, so making them overrides here is an accepted difference until
 # rendering replaces these draws.
+# COFF has no COMDAT-vs-strong resolution, so one out-of-line definition collides with every inline copy.
+# ClsMes::Init is out-of-line only in dngmenu.cpp; making it inline everywhere leaves one definition.
+# mgVu0FBOX is not trivially copyable, so memset on it trips -Wnontrivial-memcall.
 FIXUPS = [
     ("dng_event.hpp", "    virtual void Draw();", "    virtual int Draw();"),
     ("dng_hud.hpp", "    virtual void Draw();", "    virtual int Draw();"),
-    (
-        "mg_tanime.hpp",
-        """template <>
-void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
-
-template <>
-inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }
-""",
-        """#ifdef PORT
-template <>
-void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
-#endif
-
-template <>
-inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }
-
-#ifndef PORT
-template <>
-void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);
-#endif
-""",
-    ),
-    (
-        "runscript.hpp",
-        """    u32   addr;  /**< Nonnegative byte offset of the function's first instruction in the code section. */
-    char *name;  /**< Name of the function, for runtime error messages. */
-    int   local; /**< Number of frame slots, arguments included. */
-    int   arg;   /**< Number of argument slots. */
-""",
-        """    u32 addr; /**< Nonnegative byte offset of the function's first instruction in the code section. */
-#ifdef PORT
-    // The program images were built for the PS2 and never carry a host name pointer; the field is
-    // read as the file holds it so local and arg stay at their file offsets.
-    u32 name; /**< Name field as the file holds it; only the PS2 build's error messages read it. */
-#else
-    char *name; /**< Name of the function, for runtime error messages. */
-#endif
-    int local; /**< Number of frame slots, arguments included. */
-    int arg;   /**< Number of argument slots. */
-""",
-    ),
-    (
-        "sce/sifdev.h",
-        "struct sce_stat {",
-        """#ifdef PORT
-/* glibc defines these as macros for struct stat; the SDK names its own fields. */
-#undef st_atime
-#undef st_mtime
-#undef st_ctime
-#endif
-
-struct sce_stat {""",
-    ),
+    ("nd_meswin.hpp", "#ifndef MES_WINDOW_OUT_OF_LINE_INIT", "#if 1"),
+    ("collision.hpp", "memset(&bbox, 0, sizeof(bbox));", "memset(static_cast<void *>(&bbox), 0, sizeof(bbox));"),
+    # kernel32 exports these three names on Windows; the PS2 kernel's versions take their own link names so they never bind to kernel32.
+    ("sce/eekernel.h", "int CreateThread(struct ThreadParam *param);", "int CreateThread(struct ThreadParam *param) __asm__(\"Ps2CreateThread\");"),
+    ("sce/eekernel.h", "int TerminateThread(int thread_id);", "int TerminateThread(int thread_id) __asm__(\"Ps2TerminateThread\");"),
+    ("sce/eekernel.h", "int GetThreadId(void);", "int GetThreadId(void) __asm__(\"Ps2GetThreadId\");"),
+    # InventData's mgVu0FBOX makes the union's copy assignment deleted; MWCC generated the memberwise copy
+    # GetLight and GetCharaLight assign with, so the mirror spells it out on the declaration's line.
+    ("mapload.hpp", "    CFuncPoint() {}", '    CFuncPoint() {} CFuncPoint &operator=(CFuncPoint &other) { name = other.name; type = other.type; unk_8 = other.unk_8; flag_no = other.flag_no; enable = other.enable; start = other.start; end = other.end; __builtin_memcpy(static_cast<void *>(data), other.data, reinterpret_cast<char *>(&frame) - reinterpret_cast<char *>(data)); frame = other.frame; __builtin_memcpy(position, other.position, sizeof(position)); __builtin_memcpy(rotation, other.rotation, sizeof(rotation)); __builtin_memcpy(scale, other.scale, sizeof(scale)); active = other.active; return *this; }'),
 ]
+
+# Native disk-layout and declaration-order adaptations retained from the working port.
+FIXUPS += [('mg_tanime.hpp',
+  'template <>\n'
+  'void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);\n'
+  '\n'
+  'template <>\n'
+  'inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }\n',
+  '#ifdef PORT\n'
+  'template <>\n'
+  'void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);\n'
+  '#endif\n'
+  '\n'
+  'template <>\n'
+  'inline mgRect<float>::mgRect() { Set(0, 0, 0, 0); }\n'
+  '\n'
+  '#ifndef PORT\n'
+  'template <>\n'
+  'void mgRect<float>::Set(float new_left, float new_top, float new_right, float new_bottom);\n'
+  '#endif\n'),
+ ('sce/sifdev.h',
+  'struct sce_stat {',
+  '#ifdef PORT\n'
+  '/* glibc defines these as macros for struct stat; the SDK names its own fields. */\n'
+  '#undef st_atime\n'
+  '#undef st_mtime\n'
+  '#undef st_ctime\n'
+  '#endif\n'
+  '\n'
+  'struct sce_stat {')]
+
+# The leading newline anchors each match to its line start: a copy already rewritten fails the exactly-once check
+# instead of gaining a second `inline`.
+# COFF has no inline-vs-strong resolution: map.cpp's out-of-line CMapParts::CMapParts is the single definition,
+# so the identical inline copies in editeff.cpp/editmap.cpp are blanked rather than kept.
+UNIT_FIXUPS = [
+    ("editeff.cpp", "\ninline CMapParts::CMapParts() { Initialize(); }", "\n"),
+    ("editmap.cpp", "\ninline CMapParts::CMapParts() { Initialize(); }", "\n"),
+    ("dng_debug.cpp", "\nvoid CTreasureBox::Initialize() {", "\ninline void CTreasureBox::Initialize() {"),
+]
+
+# MWCC-only pragmas. ct_port builds with -Wall and no -Wno-unknown-pragmas, so they are blanked, not silenced.
+MWCC_PRAGMA = re.compile(r"[ \t]*#[ \t]*pragma[ \t]+(?:cpp_extensions\b.*|push|pop)[ \t]*")
+
+
+def neutralise_mwcc_pragmas(text: str) -> str:
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        body = line.rstrip("\r")
+        if MWCC_PRAGMA.fullmatch(body):
+            lines[i] = line[len(body):]
+    return "\n".join(lines)
 
 
 def build_mirror(src: Path) -> dict[str, bytes]:
@@ -85,6 +105,14 @@ def build_mirror(src: Path) -> dict[str, bytes]:
         if count != 1:
             sys.exit(f"header_fixups: {rel} has {count} occurrences of {old!r}, expected exactly 1")
         files[rel] = data.replace(old.encode(), new.encode())
+
+    for rel, data in files.items():
+        if rel.endswith(LONG64_SUFFIXES):
+            text = neutralise_mwcc_pragmas(data.decode("latin-1"))
+            rewritten = rewrite_long64(text).encode("latin-1")
+            if rewritten.count(b"\n") != data.count(b"\n"):
+                sys.exit(f"header_fixups: {rel} changed its line count")
+            files[rel] = rewritten
     return files
 
 
@@ -105,13 +133,43 @@ def write_mirror(dst: Path, files: dict[str, bytes]) -> None:
             path.rmdir()
 
 
+def fixup_unit_text(name: str, text: str) -> str:
+    for unit, old, new in UNIT_FIXUPS:
+        if unit != name:
+            continue
+        count = text.count(old)
+        if count != 1:
+            sys.exit(f"header_fixups: {name} has {count} occurrences of {old!r}, expected exactly 1")
+        text = text.replace(old, new)
+    return text
+
+
+def fixup_unit(copy: Path) -> None:
+    if not copy.is_file():
+        sys.exit(f"header_fixups: {copy} is not a file")
+
+    data = copy.read_bytes()
+    fixed = fixup_unit_text(copy.name, data.decode("latin-1")).encode("latin-1")
+    if fixed != data:
+        copy.write_bytes(fixed)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("src_dir", type=Path)
-    parser.add_argument("dst_dir", type=Path)
-    parser.add_argument("stamp_file", type=Path)
+    parser.add_argument("--unit", type=Path, metavar="COPY")
+    parser.add_argument("src_dir", nargs="?", type=Path)
+    parser.add_argument("dst_dir", nargs="?", type=Path)
+    parser.add_argument("stamp_file", nargs="?", type=Path)
     args = parser.parse_args()
 
+    if args.unit is not None:
+        if any(arg is not None for arg in (args.src_dir, args.dst_dir, args.stamp_file)):
+            parser.error("--unit takes no other arguments")
+        fixup_unit(args.unit)
+        return
+
+    if any(arg is None for arg in (args.src_dir, args.dst_dir, args.stamp_file)):
+        parser.error("expected <src_dir> <dst_dir> <stamp_file>, or --unit <copy_path>")
     if not args.src_dir.is_dir():
         sys.exit(f"header_fixups: {args.src_dir} is not a directory")
 

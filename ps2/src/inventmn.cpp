@@ -1183,6 +1183,7 @@ struct INVENT_CREATED_ITEM_OLD {
 };
 
 STATIC_ASSERT(sizeof(INVENT_CREATED_ITEM_OLD) == 0xC);
+PORT_RECORD_ASSERT(sizeof(INVENT_CREATED_ITEM_OLD) == 0xC);
 
 void TranslateInventUserData(CInventUserData *old_data, CInventUserData *new_data) {
     INVENT_CREATED_ITEM_OLD *from;

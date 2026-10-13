@@ -184,7 +184,7 @@ static int htoi(char *text) {
 
     for (i = 0; i < length; i++) {
         s32 back = length - i;
-        s32 ch = ((u8 *) (back + (s32) text))[-1];
+        s32 ch = ((u8 *) (back + (uptr) text))[-1];
         s32 digit = 0;
 
         if (ch >= '0' && ch <= '9') {
@@ -679,7 +679,7 @@ mgCFrame *mgLoadMDSFile(mgLoadData *load) {
         texture_manager = &mgTexManager;
     }
 
-    if ((int) mds % 16 != 0) {
+    if ((sptr) mds % 16 != 0) {
         printf("address error!! %d \n", mds);
     }
 

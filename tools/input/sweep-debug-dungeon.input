@@ -1,0 +1,35 @@
+# Reach dungeon 2 directly from the title debug menu, bypassing the opening cutscene.
+# On a fresh debug save, the first floor box (immediately right of ENTER) is already highlighted.
+# If the marker is still on ENTER in a manual run, move right once; another right reaches a locked ?.
+# Repeat X to confirm the floor transition.
+300 circle
+306
+320 cross
+326
+900 start
+906
+1200 circle
+1206
+1500 cross
+1506
+2450 start
+2456 start select
+2462
+2500 down
+2506
+2515 down
+2521
+2530 right
+2536
+2560 circle
+2566
+3620 cross
+3626
+3650 cross
+3656
+3680 cross
+3686
+3710 cross
+3716
+3740 cross
+3746

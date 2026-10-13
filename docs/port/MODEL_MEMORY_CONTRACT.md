@@ -1,4 +1,24 @@
-# Shared model-memory work remaining
+# Shared model-memory contract
+
+## Integrated repair, 2026-10-11
+
+`MenuMemoryAdjust` now validates the complete aligned parent/child partition plan before binding
+borrowed views. Retail capacities remain unchanged. Native fixed/motion loading sizes faces,
+groups, materials and stream copies using actual runtime types and checks required allocations
+before writing. Motion loading no longer emits unused VIF packets; native draws consume retained
+CPU indices/weights, following the fixed-model path. This removes the unreserved hardware-packet
+writer instead of estimating a larger arena budget.
+
+`ct_model_storage_test` passes fixed/motion loads, scratch reset and repeated reload. Its required
+allocation negative control aborts with a diagnostic before a null write. Thirty actual PAL MDT
+geometry records load: 14 from c01fuku1, 15 from c02fuku4, one from ws050. Largest fixed/motion
+geometry totals are 10,853/6,598 blocks in the existing 39,616-block slot. Real-asset motion tests
+use empty synthetic skin weights, so they do not prove complete character/equipment budgets or
+renderer skinning equivalence. Planner exact/insufficient/alignment/alias cases also pass.
+
+Items gameplay acceptance remains pending. The sections below preserve the original diagnosis
+and design boundary; their proposed implementation is superseded by the repair above. Recording-time
+photo/effect capture remains separate work. See `EXECUTION_BATCH_2026-10-11.md` for build/log evidence.
 
 User verification: title Options and the dungeon menu open; battle movement and lock-on work. Pressing Xbox A does not attack, and choosing Items crashes. The correct PAL English attack binding is A/Cross. Its press/hold/release game-action fixture passes; the runtime combat state/script failure is not identified. First-person mode gates the combat script, but the user's reported movement and lock-on do not establish that this explains the failure.
 
