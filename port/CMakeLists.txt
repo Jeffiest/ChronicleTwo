@@ -197,6 +197,11 @@ add_library(ct_port OBJECT ${PORT_LIB_SOURCES} ${CT_SCE_SOURCES})
 target_link_libraries(ct_port PRIVATE ct_options SDL3::SDL3 Vulkan::Vulkan nlohmann_json::nlohmann_json kz_port_headers kazarov_bridge)
 add_dependencies(ct_port ps2_include)
 target_include_directories(ct_port PRIVATE ${PORT_DIR})
+# Apple's SDK hides the legacy context functions used by shared SCE thread support unless the
+# compiling target opts into the XSI interfaces. Keep this scoped to the host port target.
+if(APPLE)
+    target_compile_definitions(ct_port PRIVATE _XOPEN_SOURCE=700)
+endif()
 # Datapack PNGs use the host's decoder with ordinary PNG colour formats.
 find_path(CT_STB_IMAGE_INCLUDE_DIR stb_image.h
     PATHS ${KZ_PORT_VENDOR_DIRS} ${CMAKE_BINARY_DIR}/kz_port/vendor NO_DEFAULT_PATH REQUIRED)

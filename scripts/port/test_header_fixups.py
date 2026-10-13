@@ -4,6 +4,15 @@ import header_fixups
 
 
 class UnitFixups(unittest.TestCase):
+    def test_posix_password_prng_has_a_distinct_name_in_the_host_copy(self):
+        source = (Path(__file__).resolve().parents[2] / "ps2/src/password.cpp").read_text()
+        result = header_fixups.fixup_unit_text("password.cpp", source)
+        self.assertEqual(result.count("dc2_password_random()"), 5)
+        self.assertNotRegex(result, r"(?<![A-Za-z0-9_])random\(\)")
+        self.assertEqual(source.count("random()"), 5)
+        with self.assertRaises(SystemExit):
+            header_fixups.fixup_unit_text("password.cpp", result)
+
     def test_party_ring_uses_rgba_variant_instead_of_palette_memory(self):
         source = (Path(__file__).resolve().parents[2] / "ps2/src/menuchr.cpp").read_text()
         result = header_fixups.fixup_unit_text("menuchr.cpp", source)

@@ -140,6 +140,14 @@ def write_mirror(dst: Path, files: dict[str, bytes]) -> None:
 
 
 def fixup_unit_text(name: str, text: str) -> str:
+    if name == "password.cpp":
+        # POSIX declares random() with a different return type; rename the PAL PRNG only in the host copy.
+        random_call = re.compile(r"(?<![A-Za-z0-9_])random\(\)")
+        count = len(random_call.findall(text))
+        if count != 5:
+            sys.exit(f"header_fixups: password.cpp has {count} random() spellings, expected 5")
+        text = random_call.sub("dc2_password_random()", text)
+
     for unit, old, new in UNIT_FIXUPS:
         if unit != name:
             continue
