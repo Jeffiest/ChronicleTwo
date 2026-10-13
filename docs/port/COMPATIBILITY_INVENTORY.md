@@ -1701,13 +1701,13 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | d358d830a54d4b49 | hardware:ps2_sdk_or_thread | retail/src/actscript.cpp:2058 | if | sceVu0AddVector | none detected |
 | 226199b1ac74b12d | raw-allocation | retail/src/actscript.cpp:2612 | SetActionScript | reinterpret_cast<RS_STACKDATA *>(memory->Alloc((sizeof(RS_STACKDATA) | none detected |
 | 8fc1713dc1b972a4 | raw-allocation | retail/src/actscript.cpp:2613 | SetActionScript | reinterpret_cast<RS_CALLDATA *>(memory->Alloc((sizeof(RS_CALLDATA) | none detected |
-| 732b4b92faf188dd | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:515 | CMiniMapSymbol::DrawSymbol | sceVu0SubVector | none detected |
-| c1e840b86831c327 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:558 | CMiniMapSymbol::DrawSymbol_Chara | sceVu0SubVector | src/automap.cpp |
-| cbf9a159e7a8042d | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:604 | CMiniMapSymbol::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| 47064ec12fb9bf68 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:634 | CMiniMapSymbol::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
-| be0ea7b1dd138ac5 | raw-allocation | retail/src/automap.cpp:758 | _ROOM_SIZE | (s16 *) operator new[](bytes, nowPrisetStack->Alloc(blocks + 2) | none detected |
-| a3277c916aad70bc | raw-member-offset | retail/src/automap.cpp:1474 | CAutoMapGen::CreatTermParts | (u8 *) cells + (y + 1 | none detected |
-| bbe537691091ff29 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:1932 | CAutoMapGen::SearchHealingPoint | sceVu0AddVector | none detected |
+| fbc016c896b098ab | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:534 | CMiniMapSymbol::DrawSymbol | sceVu0SubVector | none detected |
+| e5f5eb27732eb673 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:577 | CMiniMapSymbol::DrawSymbol_Chara | sceVu0SubVector | src/automap.cpp |
+| f74c5f3497b0a425 | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:623 | CMiniMapSymbol::Draw | sceVu0CopyVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 61899705d4a31b9e | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:653 | CMiniMapSymbol::Draw | sceVu0SubVector | src/automap.cpp, src/dng_event.cpp, src/dng_hud.cpp, src/mg_drawprim.cpp, src/mg_frame.cpp, src/mg_sprite.cpp, src/mg_visual.cpp, src/outline.cpp, src/water.cpp |
+| 218e6bf3da99811f | raw-allocation | retail/src/automap.cpp:777 | _ROOM_SIZE | (s16 *) operator new[](bytes, nowPrisetStack->Alloc(blocks + 2) | none detected |
+| 2757ba38622bb3b3 | raw-member-offset | retail/src/automap.cpp:1493 | CAutoMapGen::CreatTermParts | (u8 *) cells + (y + 1 | none detected |
+| b1dfadd5827da00e | hardware:ps2_sdk_or_thread | retail/src/automap.cpp:1951 | CAutoMapGen::SearchHealingPoint | sceVu0AddVector | none detected |
 | d7e984cc41d5ec6f | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:126 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | 619628733ab9ca35 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:130 | CCameraControl::Step | sceVu0SubVector | src/sceneseq.cpp, src/snd_seseq.cpp, src/sound.cpp |
 | be19d6cc597ba3c2 | hardware:ps2_sdk_or_thread | retail/src/cameracontrol.cpp:194 | CCameraControl::MoveCamera | sceVu0AddVector | none detected |
@@ -3503,52 +3503,52 @@ Generated lexical inventory. Human status and rationale live in `compatibility_d
 | 366620b36b49e58e | hardware:ps2_sdk_or_thread | retail/src/mainloop.cpp:885 | MenuLoop | sceVif1Packet | none detected |
 | a4c1f533325b951b | hardware:ps2_sdk_or_thread | retail/src/mainloop.cpp:912 | MenuLoop | sceVif1Packet | none detected |
 | c9ba60b790fb6c5c | hardware:ps2_sdk_or_thread | retail/src/mainloop3.cpp:395 | EmergencyMessage | sceVif1Packet | none detected |
-| 924b99d68c855354 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:820 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| e747112d14bf4d0f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:821 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| 84cecdbaf2d1d46b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:822 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| f488361ad8c2249b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:849 | CMap::GetCharaLight | sceVu0SubVector | none detected |
-| 2f89b609ebb0c792 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:858 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
-| 89141d256e613101 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:860 | CMap::GetCharaLight | sceVu0Normalize | none detected |
-| 29d0ca5ad737641c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:875 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| 784ce55d48448467 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:876 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
-| 3213f53c67fc4b19 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:877 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
-| 7023afbd05cd0b6b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:888 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
-| 5cf7f8f05d161bf9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:898 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
-| efa5453ae730d057 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:905 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| e7db64bde345ee55 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:906 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
-| 5b435255078e97ba | hardware:ps2_sdk_or_thread | retail/src/map.cpp:907 | CMap::GetCharaLight | sceVu0SubVector | none detected |
-| d04c06a40f713484 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:915 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
-| 5b5b60ad8f0cdc6a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:917 | CMap::GetCharaLight | sceVu0Normalize | none detected |
-| 46d54f9d65aa304d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:927 | CMap::SetFuncPLight | sceVu0FVECTOR | none detected |
-| 37553d5dafdd6b25 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:936 | CMap::SetFuncPLight | sceVu0ScaleVector | none detected |
-| 7d33c8dee48c017f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1067 | CMap::DrawFireEffect | sceVif1Packet | none detected |
-| 2f72fadb396b9d6e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1127 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8c958d2c1b535c2f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1128 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8431f7324d7a71e1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1129 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| d45918f2d162ed4e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1153 | CMap::DrawWater | sceVu0Normalize | none detected |
-| 3e2eaaa7859593d6 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1154 | CMap::DrawWater | sceVu0ScaleVector | none detected |
-| 19ba5c841488d92a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1177 | CMap::DrawWater | sceVif1Packet | none detected |
-| 95b117c4b48ff5aa | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1183 | CMap::DrawWater | sceVu0FMATRIX | none detected |
-| 1468c747038a1810 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1184 | CMap::DrawWater | sceVu0FMATRIX | none detected |
-| 9fdf702b64362a38 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1185 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 8a43f0506a9de542 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1186 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 16c139b76d907b51 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1187 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 42d1690e72d3c29e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1241 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 78bea8bf9d869489 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1242 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| 94d4cd138feadbb9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1243 | CMap::DrawWater | sceVu0FVECTOR | none detected |
-| ab790003f3114208 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1334 | CMap::DrawTrBox | sceVif1Packet | none detected |
-| 3aaa94c924432192 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1459 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| d997515cec884836 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1473 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 3af75d1ac0b48e1f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1474 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 850b2dad3fc30176 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1475 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 1cd4d0b6913e704a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1476 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
-| 6cbd5206edc24c00 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1513 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
-| 3e3926c36345fba8 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1514 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
-| 6cf0abdb530431cd | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1516 | CMap::GetFixCameraPos | sceVu0InnerProduct | none detected |
-| 289f9361b341675a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1519 | CMap::GetFixCameraPos | sceVu0ScaleVector | none detected |
-| 7a620ec8a55462e9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2105 | CheckFuncEvent | sceVu0FMATRIX | none detected |
-| bcf2a74852954c9e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2106 | CheckFuncEvent | sceVu0FVECTOR | none detected |
-| 3544ed334dbb9cd1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2107 | CheckFuncEvent | sceVu0FVECTOR | none detected |
+| d923fe5bc922940f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:824 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| a57f07b183eb4211 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:825 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 05484de6ed10fb23 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:826 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| a20307621cfa1b0b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:853 | CMap::GetCharaLight | sceVu0SubVector | none detected |
+| 3048c1d10f9a4789 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:862 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
+| f75203e7b37716f3 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:864 | CMap::GetCharaLight | sceVu0Normalize | none detected |
+| f90a8ce6a3711da2 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:879 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 3454639dba2d408d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:880 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
+| 2714c7aada89d3a2 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:881 | CMap::GetCharaLight | sceVu0FMATRIX | none detected |
+| cfa41b89e93710a8 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:892 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
+| 5489a0976ecaa00f | hardware:ps2_sdk_or_thread | retail/src/map.cpp:902 | CMap::GetCharaLight | sceVu0ApplyMatrix | none detected |
+| 8f812d3433f1807b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:909 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| 786beb7db85ea16e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:910 | CMap::GetCharaLight | sceVu0FVECTOR | none detected |
+| bf6444d8376df813 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:911 | CMap::GetCharaLight | sceVu0SubVector | none detected |
+| a702c5c82f07386c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:919 | CMap::GetCharaLight | sceVu0ScaleVector | none detected |
+| 6e3f84b14d433fa0 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:921 | CMap::GetCharaLight | sceVu0Normalize | none detected |
+| 397d0386913f03b9 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:931 | CMap::SetFuncPLight | sceVu0FVECTOR | none detected |
+| a9ab68cf74546630 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:940 | CMap::SetFuncPLight | sceVu0ScaleVector | none detected |
+| 41f4d0e0f39a781e | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1071 | CMap::DrawFireEffect | sceVif1Packet | none detected |
+| 7b63281290a996d7 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1131 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 6b1c2b3a8c2bd50c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1132 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 8131bfe3268c832d | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1133 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| bb79e2ba43026455 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1157 | CMap::DrawWater | sceVu0Normalize | none detected |
+| bd765367cb17834b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1158 | CMap::DrawWater | sceVu0ScaleVector | none detected |
+| 84569b2e178af88b | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1181 | CMap::DrawWater | sceVif1Packet | none detected |
+| 39f59f6111aa76d1 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1187 | CMap::DrawWater | sceVu0FMATRIX | none detected |
+| 1024ca8b86b77d41 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1188 | CMap::DrawWater | sceVu0FMATRIX | none detected |
+| f0e8cffd6bdcedda | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1189 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 7343fb4ba4c0b56a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1190 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| e2889f98110059a7 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1191 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 0653eb5f5bbcdcbb | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1245 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 3f094cf9efa97174 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1246 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 46bee61f61e3fd17 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1247 | CMap::DrawWater | sceVu0FVECTOR | none detected |
+| 96abd3deef7d6a41 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1338 | CMap::DrawTrBox | sceVif1Packet | none detected |
+| 8b1dafbb935894bf | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1463 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 0854fca2b4f2c8cf | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1477 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 70356cd5b198f9f6 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1478 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 605d8ad9e147eb0c | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1479 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 8c33c461335105bc | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1480 | CMap::GetFixCameraPos | sceVu0FVECTOR | none detected |
+| 452e34afe1a0af80 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1517 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
+| 39cadc73d60de6ab | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1518 | CMap::GetFixCameraPos | sceVu0SubVector | none detected |
+| 853456cb8e34296a | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1520 | CMap::GetFixCameraPos | sceVu0InnerProduct | none detected |
+| 600fa0df456a41a3 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:1523 | CMap::GetFixCameraPos | sceVu0ScaleVector | none detected |
+| 73eef8413b7b75f4 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2109 | CheckFuncEvent | sceVu0FMATRIX | none detected |
+| 76b2425fb67ba812 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2110 | CheckFuncEvent | sceVu0FVECTOR | none detected |
+| 2dc51ec10bbe8811 | hardware:ps2_sdk_or_thread | retail/src/map.cpp:2111 | CheckFuncEvent | sceVu0FVECTOR | none detected |
 | cf23bb04c141d68a | raw-allocation | retail/src/mapinfo.cpp:226 | mapIMG | (char *) MapInfoStack->Alloc(blocks) | none detected |
 | 9a53aae0d3d3fcd6 | raw-allocation | retail/src/mapinfo.cpp:264 | mapPCP | (char *) MapInfoStack->Alloc(blocks) | none detected |
 | b016bddb32f9c83c | hardware:ps2_sdk_or_thread | retail/src/mapinfo.cpp:401 | mapLIGHT | sceVu0Normalize | none detected |
