@@ -13,13 +13,20 @@ right once, then press X (Cross) through the confirmation prompts. The input-scr
 `tools/input/sweep-debug-dungeon.input`; it reaches `map/d/d02/d02_1.stb` and selects floor 1
 without playing the opening cutscene.
 
-The current real-data run confirms the floor transition (`FLOOR 0 -> 1`) and loads
-`d02m01a.img`, but then stalls before a gameplay screenshot is produced. A temporary host trace found
-that the active map reports a 400-slot placement table whose first slot is empty; both the map and
-that placed part return zero collision polygons across the flat-position search. The `CheckHit`
-geometry test is never reached. This points to dungeon map placement/loading order or data, followed
-by the retail treasure-placement retry that does not exit when no point is found.
+The debug-menu replay confirms the floor transition (`FLOOR 0 -> 1`) and loads
+`d02m01a.img`, but its gameplay capture still needs verification. A separate, repeatable
+`--jump dungeon:1:1` replay uses `tools/input/jump-rainbow-butterfly-floor1.input` to confirm
+the floor and move Max after the scripted entry event. At frame 3300, the Windows headless
+capture shows Max, the first encounter, HUD and minimap. This verifies floor entry and movement;
+it does not yet verify a successful attack or exiting the floor.
 
 In a running dungeon, R3 opens the retail dungeon debug panel. Start+Select exits the floor. In Palm
 Brinks, R3 opens the edit debug panel. The top-level menu also includes direct map, title, character,
 texture, sound and movie views, plus language, item and save-data tools.
+
+## Jump replays
+
+See [PC test hooks](PC.md#test-hooks) for launch arguments. The direct Dungeon 2 control probe
+selects Rainbow Butterfly Wood Floor 1, waits through the entry event, then moves Max forward.
+Run it through frame 3300 with `--jump dungeon:1:1`; the replay and Windows headless screenshot
+are documented in `docs/PC.md`.
