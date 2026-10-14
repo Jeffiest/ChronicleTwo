@@ -1696,7 +1696,20 @@ CScene *MenuSnapshotScene() {
     return menu_snapshot_scene != NULL ? menu_snapshot_scene : GetMainScene();
 }
 
-bool MenuFrameCameraForSnapshot(CScene *field_scene) {
+// Set for a menu opened where the live picture does not work (a town fixed camera, inside buildings):
+// the Item pages then show the location's stored outdoor scene (port/src/menudraw.cpp).
+extern int MenuEditFixedCamera asm("EditCtrl_FixedCamera");
+bool       MenuSnapshotFallback = false;
+
+bool MenuFrameCameraForSnapshot(CScene *field_scene, bool town) {
+    MenuSnapshotFallback = town && MenuEditFixedCamera != 0;
+    if (MenuSnapshotFallback) {
+        // Inside a building: show the area's stored outdoor scene if there is one (retail backdrop otherwise).
+        extern bool MenuItemLoadScene(CScene * scene);
+        MenuItemLoadScene(field_scene != NULL ? field_scene : GetMainScene());
+        return false;
+    }
+
     CScene *scene = field_scene != NULL ? field_scene : GetMainScene();
     menu_snapshot_scene = scene;
     if (scene == NULL) {
@@ -1837,6 +1850,8 @@ bool MenuSnapshotStep() {
 
 static void MenuRestoreSnapshotCamera(CScene *exit_scene) {
     CScene *scene = menu_snapshot_scene != NULL ? menu_snapshot_scene : exit_scene;
+
+    MenuSnapshotFallback = false;
 
     // Whatever happened, the field camera must move again once the menu is gone.
     if (exit_scene != NULL && exit_scene->GetCamera(exit_scene->active_camera) != NULL) {

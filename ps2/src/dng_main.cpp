@@ -1036,7 +1036,7 @@ int LoopDungeonMain() {
             {
                 // As in town: frame the player first and let the world run until the snapshot is framed,
                 // then open the menu.
-                extern bool MenuFrameCameraForSnapshot(CScene *field_scene);
+                extern bool MenuFrameCameraForSnapshot(CScene *field_scene, bool town);
                 extern bool MenuSnapshotStep();
                 static int  snapshot_pending = 0;
 
@@ -1047,7 +1047,7 @@ int LoopDungeonMain() {
                         DngStatus.mode = DNG_STATUS_MENU;
                     }
                 } else if (DngStatus.mode == DNG_STATUS_MENU && MenuArg.open_type == MENU_OPEN_MAIN_DUNGEON &&
-                           MenuFrameCameraForSnapshot(DngMainScene)) {
+                           MenuFrameCameraForSnapshot(DngMainScene, false)) {
                     // The dungeon asks for the menu while the button is held, so every tick of the wait must
                     // put it back to the field.
                     snapshot_pending = 1;

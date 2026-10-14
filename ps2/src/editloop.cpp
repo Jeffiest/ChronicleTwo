@@ -1848,7 +1848,7 @@ int EditLoop() {
 #ifdef PORT
         {
             // Frame the player first and render one tick, so the menu's snapshot is the framed view.
-            extern bool MenuFrameCameraForSnapshot(CScene *field_scene);
+            extern bool MenuFrameCameraForSnapshot(CScene *field_scene, bool town);
             extern bool MenuSnapshotStep();
             static int  snapshot_pending = 0;
             static int  snapshot_menu_mode = 0;
@@ -1862,7 +1862,7 @@ int EditLoop() {
                     MenuInfo->open_type = MENU_OPEN_MAIN_TOWN;
                 }
             } else if (open_menu != 0 && MenuInfo->open_type == MENU_OPEN_MAIN_TOWN &&
-                       MenuFrameCameraForSnapshot(MainScene)) {
+                       MenuFrameCameraForSnapshot(MainScene, true)) {
                 snapshot_pending = 1;
                 snapshot_menu_mode = menu_mode;
                 open_menu = 0;

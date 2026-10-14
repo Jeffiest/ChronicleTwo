@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <optional>
 #include <limits>
 
 #include "menu_mouse_item.hpp"
@@ -16,16 +17,51 @@
 #include "mg_texture_port.hpp"
 #include "mglib.hpp"
 #include "mglib_port.hpp"
+#include "platform/paths.hpp"
 #include "present.hpp"
+
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <vector>
 
 PORT_OVERRIDE void MenuReloadCLUT(int index) {
     MgTextureSetDrawVariant(MenuCharaChangeBase_Tex, index == 0 ? MenuCharaChangeCLUT_Tex : nullptr);
 }
 
+bool MenuItemUsesWorldBackdrop();
+int  MenuItemWakuSide();
+float MenuPortVisibleLeft();
+
 PORT_OVERRIDE void DrawMenuWakuRect(mgCTexture *texture, mgRect<float> rect, mgRect<int> uv,
                                     int alpha, int red, int green, int blue) {
     if (texture == nullptr || uv.right <= 0) {
         return;
+    }
+
+    // Over the paused world the item page's panels split left and right. The dashed frame is many small
+    // sprites clipped to its own box; anchored one by one, a frame moving between the panels split apart and
+    // its dashes were clipped away in the gap. It moves as one instead, unanchored, with a shift that eases
+    // towards the side of the panel the selection is on, so it travels visibly across the gap.
+    std::optional<gfx::UiAnchorScope> plain;
+    if (MenuItemUsesWorldBackdrop()) {
+        static float shift = 0.0f;
+        static int   shift_tick = -1;
+        const float  edge = -MenuPortVisibleLeft();
+        const float  target = MenuItemWakuSide() > 0 ? edge : -edge;
+        if (shift_tick != MenuItemCommandCounter) {
+            if (shift_tick < 0 || MenuItemCommandCounter - shift_tick > 2) {
+                shift = target;
+            }
+            shift_tick = MenuItemCommandCounter;
+            shift += (target - shift) * 0.25f;
+            if (std::fabs(target - shift) < 0.5f) {
+                shift = target;
+            }
+        }
+        rect.left += shift;
+        plain.emplace(gfx::UiAnchor{});
     }
     const mgRect<int> outer(static_cast<int>(rect.left), static_cast<int>(rect.top),
                             static_cast<int>(rect.left + rect.right + uv.bottom),
@@ -100,15 +136,130 @@ static gfx::TextureHandle menu_display_copy = gfx::kNullTexture;
 static uint32_t           menu_display_w = 0;
 static uint32_t           menu_display_h = 0;
 
-// Paints that picture over everything the window shows; false when there is none.
+// The last outdoor picture, kept as the location's scene for menus opened where the live picture does not
+// work (inside buildings, under fixed cameras). Set by ps2/src/menumain.cpp for the menu being opened.
+extern bool               MenuSnapshotFallback;
+static gfx::TextureHandle menu_fallback_copy = gfx::kNullTexture;
+static uint32_t           menu_fallback_w = 0;
+static uint32_t           menu_fallback_h = 0;
+
+bool MenuPortFallbackValid() {
+    return menu_fallback_copy != gfx::kNullTexture && menu_fallback_w > 0 && menu_fallback_h > 0;
+}
+
+static gfx::TextureHandle MenuPortUpload(const std::vector<uint8_t> &rgba, uint32_t width, uint32_t height);
+
+// The pixels of the last outdoor picture, kept so the scene can be written to the save folder.
+static std::vector<uint8_t> menu_fallback_rgba;
+
+// One file per area in the save folder: a header with the camera and the character's spot, then the
+// picture's RGBA rows.
+struct MenuSceneHeader {
+    char     magic[8];
+    uint32_t width;
+    uint32_t height;
+    float    world_matrix[16];
+    float    camera_pos[4];
+    float    projection;
+    float    position[4];
+    float    rotation[4];
+};
+
+static std::filesystem::path MenuScenePath(int area) {
+    return PathsSaveRoot() / "menu_scenes" / ("area" + std::to_string(area) + ".scene");
+}
+
+void MenuPortStoreScene(int area, const float *world_matrix, const float *camera_pos, float projection,
+                        const float *position, const float *rotation) {
+    if (menu_fallback_rgba.empty() || menu_fallback_w == 0 || menu_fallback_h == 0) {
+        return;
+    }
+    MenuSceneHeader header{};
+    std::memcpy(header.magic, "CTSCENE1", 8);
+    header.width = menu_fallback_w;
+    header.height = menu_fallback_h;
+    std::memcpy(header.world_matrix, world_matrix, sizeof(header.world_matrix));
+    std::memcpy(header.camera_pos, camera_pos, sizeof(header.camera_pos));
+    header.projection = projection;
+    std::memcpy(header.position, position, sizeof(header.position));
+    std::memcpy(header.rotation, rotation, sizeof(header.rotation));
+
+    std::error_code error;
+    const auto      path = MenuScenePath(area);
+    std::filesystem::create_directories(path.parent_path(), error);
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        return;
+    }
+    file.write(reinterpret_cast<const char *>(&header), sizeof(header));
+    file.write(reinterpret_cast<const char *>(menu_fallback_rgba.data()),
+               static_cast<std::streamsize>(menu_fallback_rgba.size()));
+}
+
+bool MenuPortLoadScene(int area, float *world_matrix, float *camera_pos, float *projection, float *position,
+                       float *rotation) {
+    std::ifstream file(MenuScenePath(area), std::ios::binary);
+    MenuSceneHeader header{};
+    if (!file || !file.read(reinterpret_cast<char *>(&header), sizeof(header)) ||
+        std::memcmp(header.magic, "CTSCENE1", 8) != 0 || header.width == 0 || header.height == 0 ||
+        header.width > 16384 || header.height > 16384) {
+        return false;
+    }
+    std::vector<uint8_t> rgba(static_cast<size_t>(header.width) * header.height * 4);
+    if (!file.read(reinterpret_cast<char *>(rgba.data()), static_cast<std::streamsize>(rgba.size()))) {
+        return false;
+    }
+
+    if (menu_fallback_copy != gfx::kNullTexture) {
+        gfx::DestroyTexture(menu_fallback_copy);
+    }
+    menu_fallback_copy = MenuPortUpload(rgba, header.width, header.height);
+    if (menu_fallback_copy == gfx::kNullTexture) {
+        menu_fallback_w = menu_fallback_h = 0;
+        return false;
+    }
+    menu_fallback_w = header.width;
+    menu_fallback_h = header.height;
+    menu_fallback_rgba = std::move(rgba);
+    std::memcpy(world_matrix, header.world_matrix, sizeof(header.world_matrix));
+    std::memcpy(camera_pos, header.camera_pos, sizeof(header.camera_pos));
+    *projection = header.projection;
+    std::memcpy(position, header.position, sizeof(header.position));
+    std::memcpy(rotation, header.rotation, sizeof(header.rotation));
+    return true;
+}
+
+static gfx::TextureHandle MenuPortUpload(const std::vector<uint8_t> &rgba, uint32_t width, uint32_t height) {
+    gfx::TextureDesc desc;
+    desc.width = width;
+    desc.height = height;
+    desc.has_alpha = false;
+    const gfx::TextureHandle texture = gfx::CreateTexture(desc);
+    if (texture != gfx::kNullTexture && !gfx::UpdateTextureNow(texture, 0, 0, 0, width, height, rgba.data())) {
+        gfx::DestroyTexture(texture);
+        return gfx::kNullTexture;
+    }
+    return texture;
+}
+
+// Paints that picture (or the location's stored scene) over everything the window shows; false when there
+// is none.
 bool MenuPortDrawWorldCopy() {
-    if (menu_display_copy == gfx::kNullTexture || menu_display_w == 0 || menu_display_h == 0) {
+    gfx::TextureHandle source = menu_display_copy;
+    uint32_t           source_w = menu_display_w;
+    uint32_t           source_h = menu_display_h;
+    if (MenuSnapshotFallback) {
+        source = menu_fallback_copy;
+        source_w = menu_fallback_w;
+        source_h = menu_fallback_h;
+    }
+    if (source == gfx::kNullTexture || source_w == 0 || source_h == 0) {
         return false;
     }
 
     const mgPortExtent extent = mgPortVisibleExtent();
-    const float        u_right = static_cast<float>(menu_display_w);
-    const float        v_bottom = static_cast<float>(menu_display_h);
+    const float        u_right = static_cast<float>(source_w);
+    const float        v_bottom = static_cast<float>(source_h);
     const float        xy[4][4] = {
         {extent.left,  extent.top,    0.0f,    0.0f    },
         {extent.right, extent.top,    u_right, 0.0f    },
@@ -137,7 +288,7 @@ bool MenuPortDrawWorldCopy() {
     state.alpha_test = false;
     state.cull = gfx::CullMode::None;
     gfx::TextureBinding binding;
-    binding.texture = menu_display_copy;
+    binding.texture = source;
     binding.ignore_alpha = true;
     mgPortDraw2D(gfx::Primitive::TriangleStrip, strip, binding, state);
     return true;
@@ -248,16 +399,20 @@ PORT_OVERRIDE int MenuCapture(int block, mgCMemory *stack, int draw) {
         }
         menu_display_w = 0;
         menu_display_h = 0;
-        if (have_display) {
-            gfx::TextureDesc desc;
-            desc.width = display_w;
-            desc.height = display_h;
-            desc.has_alpha = false;
-            menu_display_copy = gfx::CreateTexture(desc);
-            if (menu_display_copy != gfx::kNullTexture &&
-                gfx::UpdateTextureNow(menu_display_copy, 0, 0, 0, display_w, display_h, display_rgba.data())) {
+        if (have_display && !MenuSnapshotFallback) {
+            menu_display_copy = MenuPortUpload(display_rgba, display_w, display_h);
+            if (menu_display_copy != gfx::kNullTexture) {
                 menu_display_w = display_w;
                 menu_display_h = display_h;
+
+                // Outdoors, this framed picture also becomes the location's stored scene.
+                if (menu_fallback_copy != gfx::kNullTexture) {
+                    gfx::DestroyTexture(menu_fallback_copy);
+                }
+                menu_fallback_copy = MenuPortUpload(display_rgba, display_w, display_h);
+                menu_fallback_w = menu_fallback_copy != gfx::kNullTexture ? display_w : 0;
+                menu_fallback_h = menu_fallback_copy != gfx::kNullTexture ? display_h : 0;
+                menu_fallback_rgba = display_rgba;
             }
         }
     }
