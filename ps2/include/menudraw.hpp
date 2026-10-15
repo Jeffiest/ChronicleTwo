@@ -2229,9 +2229,6 @@ void DrawMenuTilePattern(mgCDrawPrim *prim, mgCTexture *tex, float x, float y, m
  * @size 0xE0
  */
 void DrawMenuMainFrmImg(int &loaded_tex_no, mgRect<int> dest, mgRect<int> source, int red, int green, int blue, int alpha, int unused);
-#ifdef PORT
-void MenuMainFrameWorldDraw(int &loaded_tex_no);
-#endif
 
 /**
  *

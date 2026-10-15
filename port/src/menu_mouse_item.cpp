@@ -27,6 +27,7 @@
 float        MenuPortVisibleLeft();
 extern float MenuItemAnchorSplit;
 extern int   MenuItemPopupSide;
+bool MenuItemUsesWorldBackdrop();
 
 namespace menumouse {
 bool Rect::Contains(Point p) const {

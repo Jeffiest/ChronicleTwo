@@ -19,6 +19,7 @@
 #include "mglib_port.hpp"
 #include "platform/paths.hpp"
 #include "present.hpp"
+#include "stubs/menusys.hpp"
 
 #include <cstring>
 #include <filesystem>
@@ -33,6 +34,17 @@ PORT_OVERRIDE void MenuReloadCLUT(int index) {
 bool MenuItemUsesWorldBackdrop();
 int  MenuItemWakuSide();
 float MenuPortVisibleLeft();
+extern float MenuItemAnchorSplit;
+extern int MenuItemPopupSide;
+bool MenuMouseHeldItemAt(float &x, float &y);
+extern void PortRetailDrawMenuFillBox(int alpha, int red, int green, int blue);
+
+PORT_OVERRIDE void DrawMenuFillBox(int alpha, int red, int green, int blue) {
+    if (MenuItemUsesWorldBackdrop()) {
+        return;
+    }
+    PortRetailDrawMenuFillBox(alpha, red, green, blue);
+}
 
 PORT_OVERRIDE void DrawMenuWakuRect(mgCTexture *texture, mgRect<float> rect, mgRect<int> uv,
                                     int alpha, int red, int green, int blue) {
@@ -292,6 +304,28 @@ bool MenuPortDrawWorldCopy() {
     binding.ignore_alpha = true;
     mgPortDraw2D(gfx::Primitive::TriangleStrip, strip, binding, state);
     return true;
+}
+
+// The window-resolution paused-world picture (or its stored scene) replaces the retail half-size grab
+// while the Item page is open.
+void MenuMainFrameWorldDraw(int &loaded_tex_no) {
+    if (MenuFrameTex == NULL) {
+        return;
+    }
+    if (MenuPortDrawWorldCopy()) {
+        return;
+    }
+
+    MenuReloadTexture(loaded_tex_no, MenuFrameTex->block);
+    mgCDrawPrim *prim = GetMenuPrim();
+    SetSpriteEnv(prim, MENU_SPRITE_ENV_OPAQUE);
+    prim->Begin(MG_PRIM_SPRITE);
+    prim->Texture(MenuFrameTex);
+    prim->Color(0x80, 0x80, 0x80, 0x80);
+    mgRect<int> screen(0, 0, mgScreenWidth, mgScreenHeight);
+    mgRect<int> source(0, 0, mgScreenWidth / 2, mgScreenHeight / 2);
+    PrimQuad(prim, screen, source);
+    prim->End();
 }
 
 PORT_OVERRIDE int MenuCapture(int block, mgCMemory *stack, int draw) {
@@ -594,6 +628,58 @@ PORT_OVERRIDE void CMenuPosDataForm::MenuFormDraw(int &state) {
     if (MenuPanelOutsideFrame(*this)) {
         return;
     }
+
+    if (MenuItemUsesWorldBackdrop()) {
+        CMenuPosDataForm *main_frame = MenuPosData != NULL ? MenuPosData->GetFormInfo("main_bg_img") : NULL;
+        CMenuPosDataForm *menu_fill = MenuPosData != NULL ? MenuPosData->GetFormInfo("mainform_fill") : NULL;
+        CMenuPosDataForm *character_fill = CMenuItemInfoPt != NULL ? CMenuItemInfoPt->fill_form : NULL;
+        if (this == main_frame || this == menu_fill || this == character_fill ||
+            dtype == MENUFORM_DTYPE_MAINFRM || dtype == MENUFORM_DTYPE_MAINIMG) {
+            return;
+        }
+
+        float held_x = 0.0f;
+        float held_y = 0.0f;
+        if (MenuCommonInfo != NULL && this == MenuCommonInfo->cursor_form &&
+            MenuMouseHeldItemAt(held_x, held_y)) {
+            float tip_x = 0.0f;
+            float tip_y = 0.0f;
+            GetPutPosXY(const_cast<char *>("cursor0"), tip_x, tip_y);
+            const float old_x = x;
+            const float old_y = y;
+            x += held_x - 26.0f - tip_x;
+            y += held_y - 14.0f - tip_y;
+            {
+                gfx::UiAnchorScope plain(gfx::UiAnchor{});
+                int draw_x = fptosi(x), draw_y = fptosi(y);
+                MenuFormDraw(draw_x, draw_y, state);
+            }
+            x = old_x;
+            y = old_y;
+            return;
+        }
+
+        if (CMenuItemInfoPt != NULL && CMenuItemInfoPt->mode != MENU_ASK_MODE_NONE &&
+            this == CMenuItemInfoPt->ask_para.form) {
+            gfx::UiAnchor popup_anchor = gfx::UiAnchor::Side(MenuItemPopupSide, 0, true);
+            popup_anchor.max_aspect = 16.0f / 9.0f;
+            gfx::UiAnchorScope popup_layout(popup_anchor);
+            int draw_x = fptosi(x), draw_y = fptosi(y);
+            MenuFormDraw(draw_x, draw_y, state);
+            return;
+        }
+
+        float form_x = 0.0f;
+        float form_y = 0.0f;
+        GetPutPosXY(NULL, form_x, form_y);
+        gfx::UiAnchor form_anchor = gfx::UiAnchor::Side(form_x >= MenuItemAnchorSplit - 40.0f ? 1 : -1, 0, true);
+        form_anchor.max_aspect = 16.0f / 9.0f;
+        gfx::UiAnchorScope form_layout(form_anchor);
+        int draw_x = fptosi(x), draw_y = fptosi(y);
+        MenuFormDraw(draw_x, draw_y, state);
+        return;
+    }
+
     int draw_x = fptosi(x), draw_y = fptosi(y);
     MenuFormDraw(draw_x, draw_y, state);
 }

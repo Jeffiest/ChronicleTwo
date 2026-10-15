@@ -41,6 +41,10 @@ def load_port_override(path: Path):
 RETAIL_BRIDGES = {
     "editctrl.cpp": [("ResetViewMode(CScene*)", "ResetViewMode", "PortRetailResetViewMode")],
     "dng_main.cpp": [("ResetEyeView(CActionChara*)", "ResetEyeView", "PortRetailResetEyeView")],
+    "menudraw.cpp": [("DrawMenuFillBox(int,int,int,int)", "DrawMenuFillBox", "PortRetailDrawMenuFillBox")],
+    "menumain.cpp": [("MenuMainExit()", "MenuMainExit", "PortRetailMenuMainExit"),
+                     ("MenuWorldTrans()", "MenuWorldTrans", "PortRetailMenuWorldTrans")],
+    "menusys.cpp": [("MenuItemDraw()", "MenuItemDraw", "PortRetailMenuItemDraw")],
 }
 
 
