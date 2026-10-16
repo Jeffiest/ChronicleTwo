@@ -193,11 +193,6 @@ bool ApplyBindings(Config &config, const Json &bindings) {
 
 bool Apply(Config &config, std::string_view name, const Json &value) {
     HostSettings &s = config;
-    if (name == "game.tick_rate") {
-        return ReadNumber(value, s.tick_rate, [](double rate) {
-            return rate >= kConfigTickRateMin && rate <= kConfigTickRateMax;
-        });
-    }
     if (name == "game.debug_mode") {
         return ReadBool(value, config.debug_mode);
     }
@@ -245,6 +240,12 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
     }
     if (name == "audio.sound") {
         return ReadChoice(value, "stereo", "surround", s.surround);
+    }
+    if (name == "audio.robot_voice") {
+        return ReadChoice(value, "tv", "controller", config.robot_voice_controller);
+    }
+    if (name == "audio.controller_volume") {
+        return ReadNumber(value, config.controller_volume, [](float volume) { return volume >= 0.0f && volume <= 2.0f; });
     }
     if (name == "audio.soundtrack") {
         return ReadChoice(value, "ps2", "custom", s.soundtrack);
@@ -411,7 +412,6 @@ std::string ConfigSerialize(const Config &config) {
         bindings[binding.action] = binding.keys;
     }
     Json root;
-    root["game"]["tick_rate"] = s.tick_rate;
     root["game"]["debug_mode"] = config.debug_mode;
     root["video"]["present_mode"] = kPresentModeNames[static_cast<std::size_t>(s.present_mode)];
     root["video"]["interpolation"] = config.interpolation;
@@ -427,6 +427,8 @@ std::string ConfigSerialize(const Config &config) {
     root["audio"]["master_volume"] = Shortest(s.master_volume);
     root["audio"]["sound"] = s.surround ? "surround" : "stereo";
     root["audio"]["soundtrack"] = s.soundtrack ? "custom" : "ps2";
+    root["audio"]["robot_voice"] = config.robot_voice_controller ? "controller" : "tv";
+    root["audio"]["controller_volume"] = Shortest(config.controller_volume);
     root["input"]["mouse_sensitivity"] = Shortest(s.mouse_sensitivity);
     root["input"]["stick_sensitivity"] = Shortest(s.stick_sensitivity);
     root["input"]["stick_invert_x"] = s.stick_invert_x;
