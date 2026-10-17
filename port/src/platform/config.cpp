@@ -196,6 +196,21 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
     if (name == "game.debug_mode") {
         return ReadBool(value, config.debug_mode);
     }
+    if (name == "game.aerial_map") {
+        return ReadBool(value, config.aerial_map);
+    }
+    if (name == "game.aerial_map_ceiling") {
+        return ReadNumber(value, config.aerial_map_ceiling, [](float h) { return h >= 0.0f && h <= 5000.0f; });
+    }
+    if (name == "game.aerial_map_zoom") {
+        return ReadNumber(value, config.aerial_map_zoom, [](float z) { return z >= 0.5f && z <= 8.0f; });
+    }
+    if (name == "game.aerial_map_model_scale") {
+        return ReadNumber(value, config.aerial_map_model_scale, [](float z) { return z >= 0.5f && z <= 40.0f; });
+    }
+    if (name == "game.aerial_map_size") {
+        return ReadNumber(value, config.aerial_map_size, [](float z) { return z >= 0.5f && z <= 1.5f; });
+    }
     if (name == "video.present_mode") {
         return ReadEnum(value, kPresentModeNames, s.present_mode);
     }
@@ -413,6 +428,11 @@ std::string ConfigSerialize(const Config &config) {
     }
     Json root;
     root["game"]["debug_mode"] = config.debug_mode;
+    root["game"]["aerial_map"] = config.aerial_map;
+    root["game"]["aerial_map_ceiling"] = Shortest(config.aerial_map_ceiling);
+    root["game"]["aerial_map_zoom"] = Shortest(config.aerial_map_zoom);
+    root["game"]["aerial_map_model_scale"] = Shortest(config.aerial_map_model_scale);
+    root["game"]["aerial_map_size"] = Shortest(config.aerial_map_size);
     root["video"]["present_mode"] = kPresentModeNames[static_cast<std::size_t>(s.present_mode)];
     root["video"]["interpolation"] = config.interpolation;
     root["video"]["max_fps"] = s.max_fps;

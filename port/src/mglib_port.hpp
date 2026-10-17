@@ -140,6 +140,28 @@ void mgPortAdoptColorVariant(const mgCTexture *src, mgCTexture *dst);
 // Render targets
 
 gfx::TextureHandle mgPortCurrentTarget();
+// Draws into target for its lifetime: the projection and 2D mapping follow it, as for a frame buffer
+// the game selects. The previous target is put back after.
+// Draws in its lifetime write alpha whatever mask the game's state gives, so an image drawn
+// over a clear alpha can be pasted with its background see-through (the aerial map's icons).
+class mgPortAlphaWriteScope {
+public:
+    mgPortAlphaWriteScope();
+    ~mgPortAlphaWriteScope();
+    mgPortAlphaWriteScope(const mgPortAlphaWriteScope &) = delete;
+    mgPortAlphaWriteScope &operator=(const mgPortAlphaWriteScope &) = delete;
+};
+
+class mgPortTargetScope {
+public:
+    explicit mgPortTargetScope(gfx::TextureHandle target);
+    ~mgPortTargetScope();
+    mgPortTargetScope(const mgPortTargetScope &) = delete;
+    mgPortTargetScope &operator=(const mgPortTargetScope &) = delete;
+
+private:
+    gfx::TextureHandle previous_;
+};
 /**
  * Returns the host texel scale of a registered image or animation target.
  */
@@ -187,6 +209,20 @@ inline constexpr float kMgPortFrameTeleportDistance = 200.0f;
 // Tags the mesh draws made during its lifetime with `object` (the mgCFrame they are drawn under, or
 // the visual's own record outside a frame) so a display frame matches them with the previous tick's;
 // puts back the key it replaced.
+// Everything drawn in its lifetime is drawn as the tick put it, never interpolated, whatever
+// interpolation scopes the draws open themselves (a second view of the scene, such as the aerial map).
+class mgPortNoInterpolationScope {
+public:
+    mgPortNoInterpolationScope();
+    ~mgPortNoInterpolationScope();
+    mgPortNoInterpolationScope(const mgPortNoInterpolationScope &) = delete;
+    mgPortNoInterpolationScope &operator=(const mgPortNoInterpolationScope &) = delete;
+
+private:
+    gfx::InterpKey previous_key_;
+    bool           previous_no_interpolation_;
+};
+
 class mgPortInterpScope {
 public:
     mgPortInterpScope(const void *object, float teleport_distance, bool blend_vertices = false,

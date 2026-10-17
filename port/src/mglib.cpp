@@ -403,7 +403,13 @@ gfx::Rect ScaleRectangle(gfx::Rect rect, float scale) {
 /**
  * Applies the current animation target's physical scale to the draw scissor.
  */
+int force_alpha_write = 0;
+
 gfx::DrawState TargetDrawState(gfx::DrawState state) {
+    if (force_alpha_write > 0) {
+        state.color_write_mask = gfx::kWriteRgba;
+    }
+
     const float scale = TextureScale(current_target);
     auto &rect = state.scissor_rect;
     rect = {rect.x * scale, rect.y * scale, rect.w * scale, rect.h * scale};
@@ -849,6 +855,30 @@ gfx::TextureHandle mgPortCurrentTarget() {
     return current_target;
 }
 
+mgPortAlphaWriteScope::mgPortAlphaWriteScope() {
+    force_alpha_write++;
+}
+
+mgPortAlphaWriteScope::~mgPortAlphaWriteScope() {
+    force_alpha_write--;
+}
+
+mgPortTargetScope::mgPortTargetScope(gfx::TextureHandle target) : previous_(current_target) {
+    current_target = target;
+
+    if (gfx_open) {
+        gfx::SetRenderTarget(target);
+    }
+}
+
+mgPortTargetScope::~mgPortTargetScope() {
+    current_target = previous_;
+
+    if (gfx_open) {
+        gfx::SetRenderTarget(previous_);
+    }
+}
+
 float mgPortTextureScale(gfx::TextureHandle texture) {
     return TextureScale(texture);
 }
@@ -996,11 +1026,26 @@ int mgPortVuProg() {
 
 // Display lists
 
+namespace {
+int force_no_interpolation = 0;
+} // namespace
+
+mgPortNoInterpolationScope::mgPortNoInterpolationScope()
+    : previous_key_(gfx::CurrentInterpKey()), previous_no_interpolation_(gfx::CurrentNoInterpolation()) {
+    force_no_interpolation++;
+    gfx::SetInterpKey(previous_key_, true);
+}
+
+mgPortNoInterpolationScope::~mgPortNoInterpolationScope() {
+    force_no_interpolation--;
+    gfx::SetInterpKey(previous_key_, previous_no_interpolation_);
+}
+
 mgPortInterpScope::mgPortInterpScope(const void *object, float teleport_distance, bool blend_vertices,
                                      bool no_interpolation)
     : previous_key_(gfx::CurrentInterpKey()), previous_no_interpolation_(gfx::CurrentNoInterpolation()) {
-    gfx::SetInterpKey(static_cast<gfx::InterpKey>(reinterpret_cast<uintptr_t>(object)), no_interpolation,
-                      teleport_distance, blend_vertices);
+    gfx::SetInterpKey(static_cast<gfx::InterpKey>(reinterpret_cast<uintptr_t>(object)),
+                      no_interpolation || force_no_interpolation > 0, teleport_distance, blend_vertices);
 }
 
 mgPortInterpScope::~mgPortInterpScope() {
