@@ -4,6 +4,8 @@
 #include "log/game_output.hpp"
 // clang-format on
 
+// nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
+#include "moonmod/coop.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -2248,6 +2250,7 @@ void CMonsterMan::CheckDamage() {
             calcWeaponParamWhp(monster, prim);
 
             monster->life -= static_cast<int>(damage);
+            moonmod::coop::MonsterDamaged(monster->chara_type - DNG_CHARA_SLOT_MONSTER, static_cast<int>(damage)); // co-op: a guest's blow goes to the host
 
             if (monster->life <= 0) {
                 monster->life = 0;
@@ -2684,6 +2687,7 @@ void CMonsterMan::ThinkHost() {
             continue;
         }
         const auto bound_monster = active_views[i];
+        moonmod::coop::MonsterThinkBegin(i); // co-op host: this turn, the player stands at the nearest player
 
         monster->GetEntryObjectPos(CHARA_ENTRY_GROUP_TARGET, 0, monster->center_pos);
         monster->scoop.ok = false;
@@ -2972,6 +2976,7 @@ void CMonsterMan::ThinkHost() {
             monster->Step();
         }
     }
+    moonmod::coop::MonsterThinkEnd();
 
     PriorityLevelCheck();
 }

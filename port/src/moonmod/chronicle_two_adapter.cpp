@@ -1,4 +1,5 @@
 #include "moonmod/chronicle_two_adapter.hpp"
+#include "moonmod/coop.hpp"
 #include "moonmod/audio_api.hpp"
 #include "moonmod/combat_formula.hpp"
 #include "moonmod/native_resource_overrides.hpp"
@@ -1858,6 +1859,7 @@ ApiCallResult GetPlayer(const Json &args) {
         }
         result["position"] = {{"x", position[0]}, {"y", position[1]}, {"z", position[2]}};
     }
+    coop::ExtendPlayer(result);
     return {ApiCallStatus::Ok, std::move(result), {}};
 }
 
@@ -2325,6 +2327,7 @@ ApiCallResult GetWorld(const Json &args) {
         result["dungeon_id"] = dungeon_id;
         result["floor_id"] = floor_id < 0 ? Json(nullptr) : Json(floor_id);
     }
+    coop::ExtendWorld(result);
     return {ApiCallStatus::Ok, std::move(result), {}};
 }
 
@@ -6370,6 +6373,7 @@ ApiCallResult SpawnSpheda(const Json &args) {
 }
 
 ApiCallResult Call(std::string_view mod_id, const ApiOperationSpec &operation, const Json &args) {
+    if (std::optional<ApiCallResult> handled = coop::Call(mod_id, operation, args)) return std::move(*handled);
     if (operation.path == "content.list") return ListContent(args);
     if (operation.path == "content.register") return RegisterContent(mod_id, args);
     if (operation.path == "content.unregister") return UnregisterContent(mod_id, args);
@@ -6840,8 +6844,10 @@ void ConfigureChronicleTwoApi(RuntimeConfig &config) {
         g_combat_damage_formulas.RemoveOwner(mod_id);
         RestoreChronicleTwoModelReplacements(mod_id);
         DespawnOwnedChronicleTwoActors(mod_id);
+        coop::OwnerUnloaded(mod_id);
         std::erase_if(g_debug_overlays, [mod_id](const auto &entry) { return entry.second.owner == mod_id; });
     };
+    coop::AddCapabilities(config);
     ConfigureAudioApi(config);
     CompleteApiCapabilityLedger(config.game_id, config.api_capabilities);
     config.require_complete_api_capabilities = true;

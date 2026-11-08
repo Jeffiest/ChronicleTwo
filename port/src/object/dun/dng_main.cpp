@@ -1,3 +1,5 @@
+// nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
+#include "moonmod/coop.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -1769,6 +1771,7 @@ void DngMainDraw() {
     DebugMainDraw();
     dngDebugDraw();
     DrawDebugWindow();
+    moonmod::coop::Draw2D();
 }
 
 void DngStep() {
@@ -2277,6 +2280,7 @@ void IsEventRun() {
     CSceneEventData data;
 
     if (DngMainScene->GetMapEvent(pos, button, &data)) {
+        moonmod::coop::MapEventStarted(button, data); // co-op: a door or gate opened here opens for everyone
         DngMainScene->RunEvent(data.event.point_no, &data);
         return;
     }

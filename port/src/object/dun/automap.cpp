@@ -3,6 +3,8 @@
 #include "log/game_output.hpp"
 // clang-format on
 
+// nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
+#include "moonmod/coop.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -2376,7 +2378,7 @@ void CAutoMapGen::RandomMapMainProc() {
     int               n = {};
     CDngFloorManager *manager = {};
     random_map = true;
-    seed = iRand(0xFFFF);
+    seed = moonmod::coop::FloorSeed(iRand(0xFFFF)); // co-op: game.dungeon.generating, and a seed a mod set
 
     if (DebugFlag) {
         dc2::log::PrintGame("rand = %d\n", seed);

@@ -1,3 +1,5 @@
+// nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
+#include "moonmod/coop.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -80,6 +82,10 @@ static CScene *TitleScene;
  *
  */
 s16 TitlePhase;
+// MoonMod: a mod's title mode page is open (moonmod/coop.hpp), and the visit it starts is fading out.
+constexpr s16 TITLE_PHASE_MOD_PAGE = 40;
+constexpr s16 TITLE_PHASE_MOD_VISIT = 41;
+constexpr int TITLE_KEY_MOD_VISIT = 2001;
 
 /**
  *
@@ -916,6 +922,15 @@ int TitleLoop() {
                 next_loop = 1;
             }
 
+            if (result == TITLE_KEY_MOD_VISIT) {
+                result = 0;
+                if (moonmod::coop::TitleBeginVisit(MenuArg)) {
+                    next_loop = 2;
+                } else {
+                    TitleInfo->next_mode = TITLE_MODE_TITLE_RETURN;
+                }
+            }
+
             if (result == TITLE_KEY_RUSH_MOVIE) {
                 result = 0;
                 TitleInfo->next_mode = TITLE_MODE_RUSH_MOVIE;
@@ -1603,6 +1618,34 @@ static int TitleModeKey() {
 
     int fade_done = TitleScene->fade.FadeCheck();
 
+    // MoonMod: a mod's title mode page (moonmod/coop.hpp) has the keys while it is open; the visit it starts fades out.
+    if (TitlePhase == TITLE_PHASE_MOD_PAGE) {
+        TitlePushStart_AlphaPlus = 0;
+        moonmod::coop::TitlePageInput input = moonmod::coop::TitlePageInput::None;
+        if (GamePad__2.Down(PAD_UP) != 0) input = moonmod::coop::TitlePageInput::Up;
+        else if (GamePad__2.Down(PAD_DOWN) != 0) input = moonmod::coop::TitlePageInput::Down;
+        else if (push & MENU_PUSH_BUTTON_DECIDE) input = moonmod::coop::TitlePageInput::Confirm;
+        else if (push & MENU_PUSH_BUTTON_CANCEL) input = moonmod::coop::TitlePageInput::Back;
+        if (input != moonmod::coop::TitlePageInput::None) {
+            MenuSePlay(input == moonmod::coop::TitlePageInput::Back ? SYSTEM_SE_CANCEL : input == moonmod::coop::TitlePageInput::Confirm ? SYSTEM_SE_DECIDE : SYSTEM_SE_CURSOR);
+        }
+        switch (moonmod::coop::TitlePageStep(input)) {
+            case moonmod::coop::TitlePageOutcome::Stay: break;
+            case moonmod::coop::TitlePageOutcome::ReturnToTitle: TitlePhase = TITLE_PHASE_MENU; break;
+            case moonmod::coop::TitlePageOutcome::StartVisit:
+                TitlePhase = TITLE_PHASE_MOD_VISIT;
+                TitleScene->fade.FadeOut(0x1E, 0.0f, 0.0f, 0.0f);
+                break;
+        }
+        TitleInfo->idle_count = 0;
+        return TITLE_KEY_NONE;
+    }
+    if (TitlePhase == TITLE_PHASE_MOD_VISIT) {
+        TitlePushStart_AlphaPlus = 0;
+        TitleInfo->idle_count = 0;
+        return fade_done != 0 ? TITLE_KEY_MOD_VISIT : TITLE_KEY_NONE;
+    }
+
     switch (TitlePhase) {
         case TITLE_PHASE_WAIT:
             TitlePushStart_AlphaPlus = 0;
@@ -1671,14 +1714,10 @@ static int TitleModeKey() {
                 TitleInfo->select = 0;
             }
 
-            if (TitleHDDCheckFlag != 0) {
-                if (TitleInfo->select > TITLE_MENU_HDD_INSTALL) {
-                    TitleInfo->select = TITLE_MENU_HDD_INSTALL;
-                }
-            } else {
-                if (TitleInfo->select > TITLE_MENU_OPTION) {
-                    TitleInfo->select = TITLE_MENU_OPTION;
-                }
+            // MoonMod: a mod's title modes are rows under the game's own.
+            const int last_native_row = TitleHDDCheckFlag != 0 ? TITLE_MENU_HDD_INSTALL : TITLE_MENU_OPTION;
+            if (TitleInfo->select > last_native_row + moonmod::coop::TitleExtraRows()) {
+                TitleInfo->select = static_cast<s16>(last_native_row + moonmod::coop::TitleExtraRows());
             }
 
             if (old_select != TitleInfo->select) {
@@ -1727,6 +1766,9 @@ static int TitleModeKey() {
                         TitleInfo->omake_gyorace = 1;
                     }
 
+                    MenuSePlay(SYSTEM_SE_DECIDE);
+                } else if (TitleInfo->select > last_native_row && moonmod::coop::TitleOpenRow(TitleInfo->select - last_native_row - 1)) {
+                    TitlePhase = TITLE_PHASE_MOD_PAGE;
                     MenuSePlay(SYSTEM_SE_DECIDE);
                 } else {
                     MenuSePlay(SYSTEM_SE_CANCEL);
@@ -1932,6 +1974,12 @@ void TitleModeDraw() {
 
     prim.End();
 
+    // MoonMod: a mod's title modes, rows under the game's own.
+    if (TitleInfo->select >= row_num) {
+        cursor_goal_y = static_cast<float>(y + (TitleInfo->select - row_num) * 0x3A);
+    }
+    moonmod::coop::TitleDrawRows(x, y, 0x3A, TitleInfo->menu_alpha, TitleInfo->select - row_num);
+
     if (0.0f < TitleInfo->omake_alpha) {
         prim.TextureMapEnable(1);
         prim.Begin(6);
@@ -1980,6 +2028,11 @@ void TitleModeDraw() {
     if (TitleInfo->cursor_count > 10000000) {
         TitleInfo->cursor_count = 0;
     }
+
+    if (TitlePhase == TITLE_PHASE_MOD_PAGE || TitlePhase == TITLE_PHASE_MOD_VISIT) {
+        moonmod::coop::TitleDrawPage();
+    }
+    moonmod::coop::Draw2D();
 }
 
 void TitleMapDraw() {

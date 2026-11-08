@@ -32,9 +32,36 @@ was checked, and the next step, so a successor can continue.
    costumes, menu data), `DCT2<n>:` town with `MergeTown`; accounts at `<save root>/moonmod/coop_accounts.json`
    (`AccountsEnsureLoaded`/`AccountsStore`).
 
+4. **The co-op units** (`moonmod/coop.hpp`; `coop_api_moonmod.cpp` the ops, dispatched first by the adapter's `Call`;
+   `coop_world_moonmod.cpp` avatars as `CCharacter2` subclasses in scene slots, puppets, nearest-player targeting,
+   shared map events, the floor seed; `coop_ui_moonmod.cpp` the choice panel, title modes, visits). Hooks (one line
+   each, listed in docs/COOP.md). Tests `moonmod_coop_save_test.cpp`, `moonmod_coop_api_test.cpp`,
+   `moonmod_net_test.cpp`. `tools/coop/two_games.py` (two headless games through the relay). docs/COOP.md.
+5. **The mod**: MoonMod `mods/moonmod.coop` lists both games, reads `game.info.get`, names DC2's dungeons and towns,
+   uses `DCT2`, arrives by `world.get().town_map`; `tools/tests/coop/test_coop.lua` has a Chronicle Two section
+   (`lua tools/tests/coop/test_coop.lua`: 129 passed). MoonMod docs: COOP_PLAN.md "Chronicle Two", API.md
+   "Chronicle Two's co-op". (MoonMod changes are left uncommitted for the coordinator.)
+
+## Step 6 (in progress)
+
+- Disk: the session's allowance is about 40 GB; check `df -h /` during a build (stop under 1.5 GB free).
+- Build: `export CT_ROOT=/home/user/ct-coop CT_JOBS=2; . /home/user/ChronicleTwo/tools/gauntlet/env.sh` (export
+  CT_ROOT: a `CT_ROOT=... .` prefix does not survive the sourcing, and cmake then gets no -S), PATH with
+  /opt/clang20/bin and ~/.cargo/bin, `ct_configure && ct_build`; log in port/build/coop_build.log.
+- `tools/coop/two_games.py` rewritten for the real runtime: a mod has no `io`/`os` (lua_runtime.cpp
+  OpenSafeLibraries), so the script writes role, relay and the room code into each fixture's main.lua, the host's mod
+  stores the code in its storage.json for the script to read, both store their markers and `done` there, and headless
+  games are unpaced, so the script stops both when both are done (or on --timeout) instead of counting frames.
+- Built (276 steps, EXIT=0). Fixes from the first ctest run: `moonmod_coop_api_test.cpp` includes
+  `moonmod/coop_save.hpp`; `coop_world_moonmod.cpp` `OnFloor()` (loop + scene, no player body) for monster slots and
+  shared map events (`InDungeon()` wanted `MainChara__2`, so doors and puppets did nothing without one), and
+  `FloorSeed` no longer drops a seed set before the floor builds; the API test checks `mods.*` as core operations and
+  makes slot 2 a puppet before the host stops listing it (DC_Web's semantics: only puppets are removed).
+  `ctest -LE gpu -R "MoonModNet|MoonModCoop"` with the relay: 27/27.
+- Checked: gauntlet `tools/gauntlet/coop/handshake.mjs` against `node DC_Web/coop/relay/server.mjs` with game
+  `chronicle-two`: PASS (6 ok); MoonMod `lua tools/tests/coop/test_coop.lua` (gauntlet .cache Lua 5.5.1): 129 passed.
+
 ## Next
 
-4. `moonmod/coop.hpp` (written) and its three units: `coop_api_moonmod.cpp` (the ops), `coop_world_moonmod.cpp`
-   (avatars, monster mirror, shared events, floor seed), `coop_ui_moonmod.cpp` (choice panel, title modes, visit);
-   the one-line hooks (main.cpp, automap.cpp, dng_main.cpp, editloop.cpp, monster.cpp, save_slots.cpp, title.cpp);
-   the adapter's two hook lines; tests; the mod; the two-process check; docs.
+6. Full game build (`ct_build`, -j2), `ctest -R "MoonModNet|MoonModCoop"`, `tools/coop/two_games.py`, the headless
+   MoonMod smoke; fix what they show; final commit and report.

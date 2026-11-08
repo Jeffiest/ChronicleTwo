@@ -53,6 +53,7 @@
 #include "profile.hpp"
 #include "sce/threads.hpp"
 #include "test_hooks.hpp"
+#include "moonmod/coop.hpp"
 #ifdef __SWITCH__
 #include "switch_main.hpp"
 #endif
@@ -310,6 +311,7 @@ void ShutdownWindow() {
 
 void PumpMoonMod() {
     moonmod::SharedRuntime().Pump();
+    moonmod::coop::FrameStep();
 }
 
 // Starts MoonMod: packages are read from mods/ in the save directory and beside the executable.

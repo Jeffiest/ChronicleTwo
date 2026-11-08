@@ -1,3 +1,5 @@
+// nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
+#include "moonmod/coop.hpp"
 #include "common.h"
 
 #include <cstdio>
@@ -3145,6 +3147,7 @@ int EditDrawCore() {
     DrawHelpMes();
     DrawEditHelpMes();
     EventTimeDraw();
+    moonmod::coop::Draw2D();
     return 0;
 }
 } // namespace
