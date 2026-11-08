@@ -172,6 +172,22 @@ class ToolkitAndBuildTest(unittest.TestCase):
             ctx["repos"]["DC2-Toolkit"] = {"path": tmp, "present": True}
             self.assertEqual(stages.stage_toolkit(ctx)["status"], "not_run")
 
+    def test_build_passes_only_the_targets_to_ct_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = self._ctx(tmp, build_targets=["darkchronicle"])
+            fake = os.path.join(tmp, "env.sh")
+            seen = os.path.join(tmp, "args.txt")
+            with open(fake, "w") as f:
+                f.write('ct_build() { printf "%%s\\n" "$@" > "%s"; }\n' % seen)
+            ctx["env_sh"] = fake
+            os.makedirs(ctx["build_dir"])
+            with open(os.path.join(ctx["build_dir"], "CMakeCache.txt"), "w") as f:
+                f.write("")
+            result = stages.stage_build(ctx)
+            self.assertEqual(result["status"], "pass")
+            with open(seen) as f:
+                self.assertEqual(f.read().split(), ["darkchronicle"])
+
     def test_no_build_reports_the_binary_age(self):
         with tempfile.TemporaryDirectory() as tmp:
             ctx = self._ctx(tmp, no_build=True)

@@ -302,7 +302,7 @@ def stage_build(ctx):
         if configure["exit"] != 0:
             return report.stage("build", "G0", "fail", "configure failed: " + util.tail(configure["output"], 3), total,
                                 " && ".join(commands), configure["log"], evidence)
-    result = util.run(["bash", "-c", '. "$1" && ct_build "$@"', "_", env_sh] + ctx["options"]["build_targets"],
+    result = util.run(["bash", "-c", '. "$1" && shift && ct_build "$@"', "_", env_sh] + ctx["options"]["build_targets"],
                       log=os.path.join(out, "build.log"), cwd=ctx["root"], env={"CT_BUILD_DIR": build},
                       timeout=ctx["options"]["build_timeout"])
     total += result["duration"]

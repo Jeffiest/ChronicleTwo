@@ -90,6 +90,7 @@ ct_configure() {
 }
 
 ct_build() {
+    set -- $(for target in "$@"; do printf -- '--target %s ' "$target"; done)
     cmake --build "$CT_BUILD_DIR" --parallel "$CT_JOBS" "$@"
 }
 

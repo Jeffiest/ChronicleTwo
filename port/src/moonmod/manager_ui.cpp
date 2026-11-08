@@ -716,14 +716,14 @@ bool HandleManagerInput(const ManagerInput &input) {
     }
 
     if (g_state.settings_focus && skill_tab && input.mouse_left) {
-        if(input.mouse_x>=56 && input.mouse_x<592 && input.mouse_y>=128 && input.mouse_y<278) {
+        if(input.mouse_x>=56 && input.mouse_x<592 && input.mouse_y>=155 && input.mouse_y<155+4*55) {
             std::vector<std::string> branches;
             for(const auto &skill:skill_list) {
                 auto tree=skill.value("tree_title",std::string{});
                 if(std::find(branches.begin(),branches.end(),tree)==branches.end()) branches.push_back(tree);
             }
             const int col=std::clamp(int((input.mouse_x-56)/(536/int(branches.size()))),0,int(branches.size())-1);
-            int row=0,target=int((input.mouse_y-128)/50);
+            int row=0,target=int((input.mouse_y-155)/55);
             for(int i=0;i<int(skill_list.size());++i) if(skill_list[i].value("tree_title",std::string{})==branches[col] && row++==target) {g_state.selected_skill=i;break;}
             Reconcile();
         }
