@@ -1,13 +1,14 @@
-// The browser smoke run (web workflow): the page from a plain static server, as GitHub Pages serves it, in
-// headless Chromium. It waits for sw.js to isolate the page, stores the archive given as a URL in the origin
-// private file system as the page would, starts the game and saves what it printed.
+// The browser smoke run (tools/web/smoke.sh): the page from a plain static server, as GitHub Pages serves it, in
+// headless Chromium. It waits for sw.js to isolate the page, stores the archive and the data.json given as URLs in
+// the origin private file system as the page would (an empty archive url stores nothing: the game then reports
+// the missing data and exits), starts the game and saves what it printed.
 //
-//   node browser_smoke.mjs <page url> <archive url> <log file> [game arguments...]
+//   node browser_smoke.mjs <page url> <archive url or ''> <data.json url or ''> <log file> [game arguments...]
 
 import {writeFile} from 'node:fs/promises';
 import {chromium} from 'playwright';
 
-const [pageUrl, archiveUrl, logFile, ...gameArgs] = process.argv.slice(2);
+const [pageUrl, archiveUrl, markerUrl, logFile, ...gameArgs] = process.argv.slice(2);
 const lines = [];
 const note = (text) => {
     lines.push(text);
@@ -32,19 +33,29 @@ try {
         || !document.getElementById('ready').hidden, null, {timeout: 60000});
     note(`isolated: ${await page.evaluate(() => self.crossOriginIsolated)}`);
 
-    await page.evaluate(async (archive) => {
-        const bytes = await (await fetch(archive)).arrayBuffer();
-        const root = await navigator.storage.getDirectory();
-        const dir = await root.getDirectoryHandle('chronicle', {create: true});
-        const writable = await (await dir.getFileHandle('data.zip', {create: true})).createWritable();
-        await writable.write(bytes);
-        await writable.close();
-    }, archiveUrl);
-    await page.reload();
-    await page.waitForSelector('#ready:not([hidden])', {timeout: 60000});
-    note(`status: ${await page.textContent('#status')}`);
-
-    await page.click('#start');
+    if (archiveUrl) {
+        await page.evaluate(async ([archive, marker]) => {
+            const root = await navigator.storage.getDirectory();
+            const dir = await root.getDirectoryHandle('chronicletwo', {create: true});
+            for (const [name, url] of [['data.zip', archive], ['data.json', marker]]) {
+                if (!url) {
+                    continue;
+                }
+                const bytes = await (await fetch(url)).arrayBuffer();
+                const writable = await (await dir.getFileHandle(name, {create: true})).createWritable();
+                await writable.write(bytes);
+                await writable.close();
+            }
+        }, [archiveUrl, markerUrl]);
+        await page.reload();
+        await page.waitForSelector('#ready:not([hidden])', {timeout: 60000});
+        note(`status: ${await page.textContent('#status')}`);
+        await page.click('#start');
+    } else {
+        // Nothing stored: start the game all the same, as the page's Start would.
+        note(`status: ${await page.textContent('#status')}`);
+        await page.evaluate(() => start());
+    }
     try {
         await page.waitForFunction(() => /^(exit=|abort:)/m.test(document.getElementById('log').textContent),
             null, {timeout: 180000});

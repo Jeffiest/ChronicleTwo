@@ -190,7 +190,8 @@ public:
     mgCFace *next;         /**< Following primitive of the same material, or NULL. */
 };
 
-static_assert(sizeof(mgCFace) == 0x20);
+// Two pointers wide: 32 bytes on a 64-bit host, 20 on wasm32.
+static_assert(sizeof(mgCFace) == (sizeof(void *) == 8 ? 0x20 : 0x14));
 
 /**
  *

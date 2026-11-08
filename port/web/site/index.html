@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dark Cloud</title>
+<title>Dark Chronicle</title>
 <style>
   :root { color-scheme: dark; --bg: #0d0d12; --panel: #17171f; --fg: #e6e6ea; --dim: #8a8a96; --accent: #c9a24a; }
   html, body { height: 100%; }
@@ -23,39 +23,6 @@
   input[type=file] { display: none; }
   progress { width: 100%; margin-top: 12px; }
   code { color: var(--fg); }
-
-  /* The mods: a switch for each, its settings folded under it. */
-  #mod-list { list-style: none; margin: 12px 0 0; padding: 0; }
-  #mod-list > li { border-top: 1px solid #262630; padding: 10px 0; }
-  #mod-list.off > li { opacity: 0.5; }
-  .mod-head { display: flex; align-items: center; gap: 10px; }
-  .mod-head label { flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
-  .mod-head small, .mod-note { color: var(--dim); }
-  .mod-head button { padding: 2px 8px; }
-  .mod-note { margin: 4px 0 0 26px; font-size: 13px; }
-  .mod-note.warn { color: #e0a060; }
-  #mod-list details { margin: 6px 0 0 26px; }
-  #mod-list summary { cursor: pointer; color: var(--accent); font-size: 14px; }
-  .settings { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center;
-    margin-top: 8px; font-size: 14px; }
-  .settings .name small { display: block; color: var(--dim); font-size: 12px; }
-  .settings .value { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
-  .settings input[type=range] { width: min(160px, 30vw); accent-color: var(--accent); }
-  .settings output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
-  .settings select, .settings input[type=text], .settings input[type=number] { background: #24242d; color: var(--fg);
-    border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px; font: inherit; max-width: 40vw; }
-  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
-  #pc-mod-list { list-style: none; margin: 12px 0 0; padding: 0; }
-  #pc-mod-list > li { border-top: 1px solid #262630; padding: 10px 0; }
-  #pc-mod-list .row { margin-top: 8px; }
-  #pc-mod-list .row a.button { text-decoration: none; }
-  #pc a:not(.button) { color: var(--accent); }
-  #pc-builtin-list { padding-left: 20px; }
-  #pc-mod-list a.button.unpublished { opacity: 0.45; pointer-events: none; }
-  #pc-mod-list details { margin-top: 6px; font-size: 14px; }
-  #pc-mod-list summary { cursor: pointer; color: var(--accent); }
-  #pc-system { background: #24242d; color: var(--fg); border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px;
-    font: inherit; }
 
   /* The game: the whole window, the canvas scaled to fit. */
   #game { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
@@ -94,7 +61,7 @@
 </head>
 <body>
 <main id="setup">
-  <h1>Dark Cloud</h1>
+  <h1>Dark Chronicle</h1>
   <p id="status">Starting…</p>
   <button id="last-log-toggle" class="secondary" hidden>Previous run's log</button>
   <pre id="last-log" hidden style="max-height: 50vh; overflow: auto; white-space: pre-wrap; word-break: break-all;
@@ -102,15 +69,18 @@
 
   <div id="pick" class="card" hidden>
     <h2>Game data</h2>
-    <p>Use your own PAL disc of Dark Cloud. The data is copied into this browser's storage once and never leaves
-      your computer.</p>
+    <p>Use your own PAL disc of Dark Chronicle. What you choose is copied into this browser's storage once and never
+      leaves your computer.</p>
     <div class="row">
-      <label class="button">Disc image (.iso) or data.zip<input id="file" type="file" accept=".iso,.zip"></label>
+      <label class="button">Disc image (.iso), or data.zip with data.json<input id="file" type="file"
+        accept=".iso,.zip,.json" multiple></label>
       <label class="button secondary">A folder<input id="folder" type="file" webkitdirectory></label>
     </div>
-    <p style="margin-top: 12px">A folder can be the disc's files (<code>DATA.DAT</code> and <code>DATA.HD2</code>) or a
-      <code>data</code> folder dcdata extracted. A disc is read in place; the game prepares a few files from it when it
-      first starts.</p>
+    <p style="margin-top: 12px">A disc image is extracted by the game when it first starts, as <code>dc2data</code> does
+      on a PC; that takes a while and the page shows its progress. A folder can be the disc's files
+      (<code>DATA.HD4</code>, <code>DATA.DAT</code>, <code>SOUND.HD3</code> and <code>SOUND.DAT</code>), or a PC
+      extraction: the folder holding <code>data.zip</code> and <code>data.json</code>, or <code>data/</code> beside
+      <code>data.json</code>.</p>
     <progress id="progress" hidden></progress>
   </div>
 
@@ -120,51 +90,7 @@
       <button id="start">Start</button>
       <button id="forget" class="secondary">Remove the game data</button>
     </div>
-  </div>
-  <div id="mods" class="card" hidden>
-    <h2>Mods</h2>
-    <p>MoonMod mods load when the game starts. MoonMod's own mods are built in: they are installed here for you, off
-      until you turn them on. Add others as a mod's folder (the one holding <code>mod.json</code>), a folder of mods,
-      or a <code>.zip</code> of either. They are kept in this browser's storage with your saves. Turn each on or off
-      and change its settings here before you start; the game's own Mods menu changes them too.</p>
-    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
-      <input id="mods-on" type="checkbox" checked> Start the game with mods
-    </label>
-    <ul id="mod-list"></ul>
-    <div class="row">
-      <label class="button secondary">Add a mod folder<input id="mod-folder" type="file" webkitdirectory></label>
-      <label class="button secondary">Add a .zip<input id="mod-zip" type="file" accept=".zip"></label>
-      <button id="mod-restore" class="secondary" hidden>Restore the built-in mods</button>
-      <a class="button secondary" href="anim/" style="text-decoration: none">Animation editor</a>
-    </div>
-    <progress id="mod-progress" hidden></progress>
-  </div>
-  <div id="pc" class="card">
-    <h2>Play on your PC</h2>
-    <p>The same game, built for your own computer from this page's code, with MoonMod's mods. The game data still
-      comes from your own disc (<a href="https://github.com/Jeffiest/DC_Web/blob/main/docs/PC.md">how to set it
-      up</a>).</p>
-    <label>Your system <select id="pc-system">
-      <option value="windows">Windows (x64)</option>
-      <option value="linux">Linux (Flatpak, x86_64)</option>
-      <option value="macos">macOS (Apple silicon)</option>
-    </select></label>
-    <div class="row" style="margin-top: 12px">
-      <a id="pc-build" class="button" style="text-decoration: none">The game</a>
-      <a id="pc-mods-all" class="button secondary" style="text-decoration: none" hidden>All the mods (.zip)</a>
-    </div>
-    <p id="pc-build-note" class="mod-note" style="margin-left: 0"></p>
-    <p id="pc-install" class="mod-note" style="margin-left: 0"></p>
-    <details id="pc-builtin" hidden>
-      <summary>Each mod on its own</summary>
-      <ul id="pc-builtin-list"></ul>
-    </details>
-  </div>
-  <div id="pc-mods" class="card" hidden>
-    <h2>More mods for your PC</h2>
-    <p>Each mod here was confirmed with one build of the game: download that build and the mod, and unzip the mod
-      into the game's mods folder, as above.</p>
-    <ul id="pc-mod-list"></ul>
+    <p style="margin-top: 12px">Saves and settings stay in this browser's storage when the data is removed.</p>
   </div>
 </main>
 
@@ -203,7 +129,6 @@
     <img id="captured-image" alt="The captured frames">
   </div>
 </div>
-<script src="zip.js"></script>
 <script src="shell.js"></script>
 </body>
 </html>

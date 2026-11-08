@@ -1,4 +1,4 @@
-// Kazarov's renderer tests in the browser (web workflow, docs/WEB.md): its gfx_*_test.cpp cases against Vulkan on
+// Kazarov's renderer tests in the browser (docs/WEB.md): its gfx_*_test.cpp cases against Vulkan on
 // WebGPU, offscreen, as headless Chromium on SwiftShader loses the device once a canvas presents. The page
 // (gfx_tests.html) passes GoogleTest's arguments, e.g. ?args=--gtest_filter=GfxMisc.*; --no-clip-distances runs them
 // on the layer's fallback for adapters without WebGPU's clip distances, and --mali as the layer runs on Arm's GPUs.
@@ -11,8 +11,8 @@
 #include "platform/settings.hpp"
 
 int main(int argc, char **argv) {
-    SettingsSetEnvPrefix("DC");
-    setenv("DC_GFX_OFFSCREEN", "1", 0);
+    SettingsSetEnvPrefix("DC2");
+    setenv("DC2_GFX_OFFSCREEN", "1", 0);
     int kept = 1;
     for (int i = 1; i < argc; i++) {
         if (std::strcmp(argv[i], "--no-clip-distances") == 0) {

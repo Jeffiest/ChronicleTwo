@@ -85,6 +85,12 @@ add_custom_command(OUTPUT ${CT_WGSL}
     COMMENT "Embedding the WGSL shaders"
     VERBATIM)
 
+# What every unit of the port compiles with on the web, beside ct_options: include/ shadows clang's x86gprintrin.h
+# for quill (include/x86gprintrin.h).
+function(ct_web_options target)
+    target_include_directories(${target} SYSTEM INTERFACE ${CT_WEB_DIR}/include)
+endfunction()
+
 # Kazarov's host library with the arena memory replaced (Emscripten's mmap has no reservations or guard
 # pages).
 function(ct_web_host target)
