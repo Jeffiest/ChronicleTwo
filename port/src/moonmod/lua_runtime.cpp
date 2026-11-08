@@ -2496,7 +2496,8 @@ struct LuaMod::Impl {
             return PushApiResult(lua, {ApiCallStatus::InvalidArgument, nullptr, "API arguments are not valid JSON"});
         }
         ApiCallResult result = self->InvokeApi(path, arguments);
-        bool resource_payload = path == "resources.resolve";
+        // The catalogue (api.list) outgrew the plain limit with the co-op operations, as in DC_Web.
+        bool resource_payload = path == "resources.resolve" || path == "api.list" || path == "compat.list";
         if (path == "api.call" && arguments.size() >= 1 && arguments[0].is_string()) {
             resource_payload = arguments[0].get_ref<const std::string &>() == "resources.resolve";
         }

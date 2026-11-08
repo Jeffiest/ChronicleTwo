@@ -58,10 +58,24 @@ was checked, and the next step, so a successor can continue.
   `FloorSeed` no longer drops a seed set before the floor builds; the API test checks `mods.*` as core operations and
   makes slot 2 a puppet before the host stops listing it (DC_Web's semantics: only puppets are removed).
   `ctest -LE gpu -R "MoonModNet|MoonModCoop"` with the relay: 27/27.
-- Checked: gauntlet `tools/gauntlet/coop/handshake.mjs` against `node DC_Web/coop/relay/server.mjs` with game
-  `chronicle-two`: PASS (6 ok); MoonMod `lua tools/tests/coop/test_coop.lua` (gauntlet .cache Lua 5.5.1): 129 passed.
+- `^MoonMod` (CPU) needed two more fixes: `lua_runtime.cpp` lets `api.list`/`compat.list` answer up to the resource
+  limit (384 KiB; the catalogue with the co-op operations passed 64 KiB, as DC_Web found), and `moonmod_api_test.cpp`'s
+  probe mod has `net.session` and lists `mods.*` as core (DC_Web's test does both).
+- Results (all in port/build/pc, DC2_DATA/DC2_SAVE empty temp dirs, SDL_VIDEO_DRIVER=offscreen, DC2_AUDIO=off,
+  DC2_COOP_RELAY=ws://127.0.0.1:<relay port>):
+  - `ctest -LE gpu -R "MoonModNet|MoonModCoop"`: 27/27 (the relay case ran, not skipped).
+  - `ctest -LE gpu -R '^MoonMod' -j2`: 106/107; the one failure, `MoonModManagerUi.ChangesTypedSettingsNotifiesMods
+    AndSurvivesReload`, is in the gauntlet baseline (baselines/linux-x86_64.json).
+  - `ctest -R '^MoonMod.HeadlessProbe$'` (gpu label, the headless game smoke): passed.
+  - `python3 -I tools/coop/two_games.py`: PASS (host 7 markers, guest 6, all 8 checks ok).
+  - gauntlet `tools/gauntlet/coop/handshake.mjs` (copied beside the relay's node_modules) against
+    `node DC_Web/coop/relay/server.mjs` with game `chronicle-two`: PASS (5 ok).
+  - MoonMod `lua tools/tests/coop/test_coop.lua` (gauntlet .cache Lua 5.5.1): 129 passed.
 
 ## Next
 
-6. Full game build (`ct_build`, -j2), `ctest -R "MoonModNet|MoonModCoop"`, `tools/coop/two_games.py`, the headless
-   MoonMod smoke; fix what they show; final commit and report.
+- The gauntlet's coop stage (`tools/gauntlet/run.py --coop-build /home/user/ct-coop/port/build/pc`, G4) on this
+  build, by the coordinator (it writes under ChronicleTwo/tools/gauntlet).
+- Play-testing on a disc: avatars, puppets, shared doors and visits are only unit-tested without data (the headless
+  games stay in the logo fade). COOP.md "What is not finished" lists the known gaps.
+- The MoonMod changes (mods/moonmod.coop, tools/tests/coop, docs) are uncommitted, for the coordinator.
