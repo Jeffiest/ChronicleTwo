@@ -1,6 +1,10 @@
 #include "moonmod/chronicle_two_adapter.hpp"
 #include "moonmod/audio_api.hpp"
 #include "moonmod/combat_formula.hpp"
+#include "moonmod/content_characters.hpp"
+#include "moonmod/content_georama.hpp"
+#include "moonmod/content_items.hpp"
+#include "moonmod/content_npcs.hpp"
 #include "moonmod/native_resource_overrides.hpp"
 #include "moonmod/runtime.hpp"
 
@@ -480,7 +484,7 @@ Json ItemJson(const ModItem &item) {
              {"native_item_no", item.native_item_no < 0 ? Json(nullptr) : Json(item.native_item_no)},
              {"status", item.native_item_no < 0 ? "pending" : "registered"},
              {"mod_owned", true},
-             {"assets", Json::object()} };
+             {"assets", ChronicleTwoContentAssetsJson(item.id)} };
 }
 
 std::string BoundedString(const char *text, std::size_t capacity);
@@ -572,7 +576,7 @@ Json ModWeaponJson(const ModWeapon &weapon) {
                     {"stack_size", weapon.stack_num},
                     {"native_item_no", weapon.native_item_no < 0 ? Json(nullptr) : Json(weapon.native_item_no)},
                     {"status", weapon.native_item_no < 0 ? "pending" : "registered"},
-                    {"assets", Json::object()} };
+                    {"assets", ChronicleTwoContentAssetsJson(weapon.id)} };
     return result;
 }
 
@@ -634,7 +638,8 @@ Json GeoramaPieceJson(const ModGeoramaPiece &piece, int town_id = -1) {
             {"template_part_id", piece.template_part_id},
             {"native_part_id", native_part_id < 0 ? Json(nullptr) : Json(native_part_id)},
             {"status", native_part_id >= 0 ? "registered" : (reason.empty() ? "pending" : "failed")},
-            {"reason", reason}};
+            {"reason", reason},
+            {"extras", ChronicleTwoGeoramaExtrasJson(piece.id)}};
 }
 
 std::string BoundedString(const char *text, std::size_t capacity) {
@@ -853,7 +858,7 @@ const char *PlayerCharacterName(int character_id) {
         case USER_CHARA_MONICA: return "monica";
         case USER_CHARA_ROBO: return "ridepod";
         case USER_CHARA_MONSTER: return "monster";
-        default: return nullptr;
+        default: return ChronicleTwoRegisteredCharacterIdText(character_id); // a registered hero's id, or null
     }
 }
 
@@ -1459,8 +1464,11 @@ ApiCallResult RegisterCharacter(std::string_view mod_id, const Json &args) {
     const std::string &name = name_it->get_ref<const std::string &>();
     if (name.empty() || name.size() > 31) return Invalid("enemy name must contain 1-31 UTF-8 bytes for the native table");
     const auto kind_it = definition.find("kind");
+    if (kind_it != definition.end() && kind_it->is_string() && kind_it->get<std::string>() == "npc") {
+        return RegisterChronicleTwoNpc(mod_id, definition);
+    }
     if (kind_it != definition.end() && (!kind_it->is_string() || kind_it->get<std::string>() != "enemy")) {
-        return Invalid("Chronicle Two data-defined characters currently support kind = 'enemy'");
+        return Invalid("Chronicle Two data-defined characters support kind = 'enemy' or 'npc'");
     }
     const auto assets_it = definition.find("assets");
     if (assets_it != definition.end() &&
@@ -1562,7 +1570,7 @@ bool ReadCharacterId(const Json &selector, int &character_id) {
     else if (id == "monica") character_id = USER_CHARA_MONICA;
     else if (id == "ridepod") character_id = USER_CHARA_ROBO;
     else if (id == "monster") character_id = USER_CHARA_MONSTER;
-    else return false;
+    else if (!ChronicleTwoRegisteredCharacterIndex(id, character_id)) return false;
     return true;
 }
 
@@ -1576,10 +1584,12 @@ ApiCallResult ListCharacters(const Json &args) {
     for (int character_id = USER_CHARA_MAX; character_id <= USER_CHARA_MONSTER; ++character_id) {
         result.push_back(CharacterDefinitionJson(*user_data, character_id, active_character_id, party_mask));
     }
+    for (const Json &hero : ChronicleTwoRegisteredCharactersJson(active_character_id)) result.push_back(hero);
     for (const auto &[id, character] : g_characters) {
         (void)id;
         result.push_back(ModCharacterJson(character));
     }
+    for (const Json &npc : ChronicleTwoNpcsJson()) result.push_back(npc);
     for (const auto &[handle, spawn] : g_character_spawns) {
         (void)spawn;
         ApiCallResult instance = GetCharacter(Json::array({Json{{"id", handle}}}));
@@ -1626,18 +1636,27 @@ ApiCallResult GetCharacter(const Json &args) {
             }
             return {ApiCallStatus::Ok, std::move(result), {}};
         }
+        if (int hero_index = -1; ChronicleTwoRegisteredCharacterIndex(stable_id, hero_index)) {
+            CUserDataManager *user_data = GetUserDataMan();
+            return {ApiCallStatus::Ok,
+                    ChronicleTwoRegisteredCharacterJson(hero_index, user_data == nullptr ? -1 : user_data->GetActiveChrNo()), {}};
+        }
+        if (Json npc = ChronicleTwoNpcJson(stable_id); !npc.is_null()) return {ApiCallStatus::Ok, std::move(npc), {}};
         const auto found = g_characters.find(stable_id);
         if (found == g_characters.end()) return Invalid("expected a known stable character id");
         return {ApiCallStatus::Ok, ModCharacterJson(found->second), {}};
     }
     int character_id = -1;
     if (!ReadCharacterId(args[0], character_id)) {
-        return Invalid("expected a Chronicle Two character id: max, monica, ridepod, or monster");
+        return Invalid("expected a Chronicle Two character id: max, monica, ridepod, monster, or a registered playable id");
     }
     CUserDataManager *user_data = GetUserDataMan();
     if (user_data == nullptr) return Failed("the game has no active save data");
     const int active_character_id = user_data->GetActiveChrNo();
     const int party_mask = user_data->GetNowPartyMember();
+    if (character_id > USER_CHARA_MONSTER) {
+        return {ApiCallStatus::Ok, ChronicleTwoRegisteredCharacterJson(character_id, active_character_id), {}};
+    }
     return {ApiCallStatus::Ok,
             CharacterDefinitionJson(*user_data, character_id, active_character_id, party_mask), {}};
 }
@@ -1878,7 +1897,7 @@ bool ReadPlayerHealthTarget(const Json &definition, CUserDataManager &user_data,
     if (target == "max") character_id = USER_CHARA_MAX;
     else if (target == "monica") character_id = USER_CHARA_MONICA;
     else if (target == "ridepod") character_id = USER_CHARA_ROBO;
-    else return false;
+    else if (!ChronicleTwoRegisteredCharacterIndex(target, character_id)) return false;
     hp = user_data.GetCharaHpGage(character_id);
     return hp != nullptr;
 }
@@ -2192,6 +2211,9 @@ ApiCallResult ListParty(const Json &args) {
             result.push_back(PartyMemberJson(character_id, active_character_id));
         }
     }
+    for (const Json &hero : ChronicleTwoRegisteredCharactersJson(active_character_id)) {
+        if (hero.value("in_party", false)) result.push_back(hero);
+    }
     for (int npc_id = 1; npc_id <= 32; ++npc_id) {
         const int npc_status = user_data->GetPartyCharaStatus(npc_id);
         if ((npc_status & (PARTY_CHARA_STATUS_IN_PARTY | PARTY_CHARA_STATUS_JOINED | PARTY_CHARA_STATUS_IN_HOUSE |
@@ -2225,6 +2247,11 @@ ApiCallResult SetActivePartyMember(const Json &args) {
     if (id == "max") target_id = USER_CHARA_MAX;
     else if (id == "monica") target_id = USER_CHARA_MONICA;
     else if (id == "ridepod") target_id = USER_CHARA_ROBO;
+    else if (int hero_index = -1; ChronicleTwoRegisteredCharacterIndex(id, hero_index)) {
+        return {ApiCallStatus::Unsupported, nullptr,
+                "switching the active character to a registered playable character is unsupported: the dungeon battle "
+                "code (CBattleCharaInfo, menuchr) keys on the native ids 0-3; see port/docs/CONTENT.md"};
+    }
     else return Invalid("Chronicle Two only supports switching to max, monica, or ridepod");
 
     CUserDataManager *user_data = GetUserDataMan();
@@ -2988,9 +3015,9 @@ ApiCallResult RegisterGeoramaPiece(std::string_view mod_id, const Json &args) {
         ((!assets_it->is_object() && !assets_it->is_array()) || !assets_it->empty())) {
         return Invalid("Georama piece variants inherit the native template model and collision; asset overrides are unsupported");
     }
-    const std::size_t expected_fields = assets_it == definition.end() ? 3u : 4u;
+    const std::size_t expected_fields = (assets_it == definition.end() ? 3u : 4u) + ChronicleTwoGeoramaExtraKeyCount(definition);
     if (definition.size() != expected_fields) {
-        return Invalid("piece definition accepts only id, name, template_part_id, and optional empty assets");
+        return Invalid("piece definition accepts only id, name, template_part_id, town_id, stock, model, territory, and optional empty assets");
     }
 
     std::string local_id = id_it->get<std::string>();
@@ -3011,6 +3038,8 @@ ApiCallResult RegisterGeoramaPiece(std::string_view mod_id, const Json &args) {
         return Failed("Chronicle Two's current Georama adapter supports up to 32 mod piece variants");
     }
 
+    std::string extras_error;
+    if (!ChronicleTwoGeoramaParseExtras(mod_id, qualified_id, definition, extras_error)) return Invalid(extras_error);
     ModGeoramaPiece piece;
     piece.id = qualified_id;
     piece.owner = mod_id;
@@ -3079,6 +3108,7 @@ ApiCallResult UnregisterContent(std::string_view mod_id, const Json &args) {
         if (found->second.native_item_no >= 0) {
             return Failed("item is already materialized in native tables and cannot be unregistered safely");
         }
+        ChronicleTwoContentForgetExtras(id);
         g_items.erase(found);
         return removed();
     }
@@ -3090,6 +3120,7 @@ ApiCallResult UnregisterContent(std::string_view mod_id, const Json &args) {
         if (found->second.native_item_no >= 0) {
             return Failed("weapon is already materialized in native tables and cannot be unregistered safely");
         }
+        ChronicleTwoContentForgetExtras(id);
         g_weapons.erase(found);
         return removed();
     }
@@ -3118,6 +3149,7 @@ ApiCallResult UnregisterContent(std::string_view mod_id, const Json &args) {
         if (materialized) {
             return Failed("Georama piece is already materialized in a town and cannot be unregistered safely");
         }
+        ChronicleTwoGeoramaForgetExtras(id);
         g_georama_pieces.erase(found);
         return removed();
     }
@@ -3733,6 +3765,8 @@ ApiCallResult RegisterItem(std::string_view mod_id, const Json &args) {
         return Failed("Chronicle Two's current item adapter supports up to 32 mod items");
     }
 
+    std::string extras_error;
+    if (!ChronicleTwoContentParseExtras(mod_id, item.id, definition, false, extras_error)) return Invalid(extras_error);
     const std::string id = item.id;
     g_items.emplace(id, std::move(item));
     Json result = ItemJson(g_items.at(id));
@@ -3826,6 +3860,8 @@ ApiCallResult RegisterWeapon(std::string_view mod_id, const Json &args) {
         return Failed("Chronicle Two's current weapon adapter supports up to 32 mod weapons");
     }
 
+    std::string extras_error;
+    if (!ChronicleTwoContentParseExtras(mod_id, weapon.id, definition, true, extras_error)) return Invalid(extras_error);
     const std::string id = weapon.id;
     g_weapons.emplace(id, std::move(weapon));
     return {ApiCallStatus::Ok, ModWeaponJson(g_weapons.at(id)), {}};
@@ -6442,6 +6478,7 @@ ApiCallResult Call(std::string_view mod_id, const ApiOperationSpec &operation, c
     if (operation.path == "animations.play") return PlayAnimation(mod_id, args);
     if (operation.path == "animations.stop") return StopAnimation(mod_id, args);
     if (operation.path == "characters.register") return RegisterCharacter(mod_id, args);
+    if (operation.path == "characters.register_playable") return RegisterChronicleTwoPlayable(mod_id, args);
     if (operation.path == "models.resolve") return ResolveModel(args);
     if (operation.path == "characters.spawn") return SpawnCharacter(mod_id, args);
     if (operation.path == "world.register_dungeon") {
@@ -6792,6 +6829,7 @@ void ConfigureChronicleTwoApi(RuntimeConfig &config) {
         config.api_capabilities.push_back({path, true, {}});
     }
     config.api_capabilities.push_back({"characters.register", true, {}});
+    config.api_capabilities.push_back({"characters.register_playable", true, {}});
     config.api_capabilities.push_back({"render.camera_get", true, {}});
     config.api_capabilities.push_back({"render.camera_set", true, {}});
     config.api_capabilities.push_back({"render.layer_register", true, {}});
@@ -6840,6 +6878,8 @@ void ConfigureChronicleTwoApi(RuntimeConfig &config) {
         g_combat_damage_formulas.RemoveOwner(mod_id);
         RestoreChronicleTwoModelReplacements(mod_id);
         DespawnOwnedChronicleTwoActors(mod_id);
+        UnloadChronicleTwoNpcs(mod_id);
+        UnloadChronicleTwoRegisteredCharacters(mod_id);
         std::erase_if(g_debug_overlays, [mod_id](const auto &entry) { return entry.second.owner == mod_id; });
     };
     ConfigureAudioApi(config);
@@ -6875,6 +6915,7 @@ void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory) {
     std::vector<PendingPiece> pending;
     for (auto &[id, piece] : g_georama_pieces) {
         (void)id;
+        if (!ChronicleTwoGeoramaPieceAppliesToTown(piece.id, static_cast<int>(town_id))) continue;
         int &native_id = piece.native_part_ids[town_id];
         if (native_id >= 0) {
             CEditPartsInfo *already_applied = manager.GetePartsInfoAtID(native_id);
@@ -6894,15 +6935,10 @@ void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory) {
             piece.apply_errors[town_id] = "the piece name conflicts with a native Georama definition";
             continue;
         }
-        int selected_native_id = -1;
-        for (int candidate = 1; candidate < 0x80; ++candidate) {
-            if (manager.GetePartsInfoAtID(candidate) == nullptr) {
-                selected_native_id = candidate;
-                break;
-            }
-        }
+        std::string slot_error;
+        const int selected_native_id = ChronicleTwoGeoramaPersistentPartId(piece.id, manager, slot_error);
         if (selected_native_id < 0) {
-            piece.apply_errors[town_id] = "the native Georama menu has no free piece id below 128";
+            piece.apply_errors[town_id] = slot_error.empty() ? "the native Georama menu has no free piece id below 128" : slot_error;
             continue;
         }
         pending.push_back({&piece, source, selected_native_id});
@@ -6945,6 +6981,7 @@ void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory) {
         std::memcpy(&copy, entry.source, sizeof(CEditPartsInfo));
         copy.id = entry.native_id;
         copy.edit_name = names[index];
+        ChronicleTwoGeoramaApplyExtras(entry.piece->id, copy, *map, *memory, static_cast<int>(town_id));
         entry.piece->native_part_ids[town_id] = entry.native_id;
         entry.piece->apply_errors[town_id].clear();
     }
@@ -6966,6 +7003,11 @@ void ApplyChronicleTwoContent() {
         }
         int item_no = -1;
         char error[160] = {};
+        std::string slot_error;
+        if (!ChronicleTwoContentReserveItemNumber(id, false, item_no, slot_error)) {
+            std::fprintf(stderr, "moonmod: could not reserve an item number for %s: %s\n", id.c_str(), slot_error.c_str());
+            continue;
+        }
         if (!GameItemDataManage.RegisterMoonModItem(item.template_item, item.name.c_str(), item.max_num,
                                                     item.stack_num, item.effect_flags, item.effect_amount,
                                                     &item_no, error, sizeof(error))) {
@@ -6973,6 +7015,7 @@ void ApplyChronicleTwoContent() {
             continue;
         }
         item.native_item_no = item_no;
+        ChronicleTwoContentApplyExtras(id, item_no);
         std::fprintf(stderr, "moonmod: registered item %s as game item %d (vanilla assets from %d)\n", id.c_str(),
                      item_no, item.template_item);
     }
@@ -6982,6 +7025,11 @@ void ApplyChronicleTwoContent() {
         }
         int item_no = -1;
         char error[160] = {};
+        std::string slot_error;
+        if (!ChronicleTwoContentReserveItemNumber(id, true, item_no, slot_error)) {
+            std::fprintf(stderr, "moonmod: could not reserve an item number for %s: %s\n", id.c_str(), slot_error.c_str());
+            continue;
+        }
         const int *attributes = weapon.has_attributes ? weapon.attributes.data() : NULL;
         const int *attribute_caps = weapon.has_attributes ? weapon.attribute_caps.data() : NULL;
         if (!GameItemDataManage.RegisterMoonModWeapon(weapon.template_item, weapon.name.c_str(), weapon.max_num,
@@ -6993,6 +7041,7 @@ void ApplyChronicleTwoContent() {
             continue;
         }
         weapon.native_item_no = item_no;
+        ChronicleTwoContentApplyExtras(id, item_no);
         std::fprintf(stderr, "moonmod: registered weapon %s as game item %d (vanilla assets from %d)\n", id.c_str(),
                      item_no, weapon.template_item);
     }
@@ -7144,6 +7193,10 @@ void ResetChronicleTwoContentForTests() {
     g_weapons.clear();
     g_characters.clear();
     g_models.clear();
+    ResetChronicleTwoContentItemsForTests();
+    ResetChronicleTwoContentGeoramaForTests();
+    ResetChronicleTwoNpcsForTests();
+    ResetChronicleTwoRegisteredCharactersForTests();
     g_character_spawns.clear();
     g_enemy_defeat_event_generations.fill(0);
     ResetMoonModMonsterVariants();

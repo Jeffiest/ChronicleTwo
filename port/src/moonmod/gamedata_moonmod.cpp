@@ -25,7 +25,26 @@ char local_moonmod_item_names[kMoonModItemCapacity][kMoonModItemNameSize];
 int  local_moonmod_item_count;
 char local_moonmod_weapon_names[kMoonModWeaponCapacity][kMoonModItemNameSize];
 int  local_moonmod_weapon_count;
+int  local_moonmod_next_item_no = -1; /**< Item number the next registration takes when free; -1 for the top-down scan. */
+
+/** The item number a registration takes: the requested one when it is free, else the highest free number. */
+int PickMoonModItemNo() {
+    int item_no = local_moonmod_next_item_no;
+    local_moonmod_next_item_no = -1;
+    if (item_no > 0 && item_no < ITEM_NO_MAX && local_itemdatano_converttable[item_no] < 0) {
+        return item_no;
+    }
+    item_no = ITEM_NO_MAX - 1;
+    while (item_no > 0 && local_itemdatano_converttable[item_no] >= 0) {
+        --item_no;
+    }
+    return item_no;
+}
 } // namespace
+
+void SetMoonModNextItemNo(int item_no) {
+    local_moonmod_next_item_no = item_no;
+}
 
 void ResetMoonModGameData() {
     memset(local_itemdatano_converttable, -1, sizeof(local_itemdatano_converttable));
@@ -33,6 +52,7 @@ void ResetMoonModGameData() {
     memset(local_moonmod_item_names, 0, sizeof(local_moonmod_item_names));
     local_moonmod_weapon_count = 0;
     memset(local_moonmod_weapon_names, 0, sizeof(local_moonmod_weapon_names));
+    local_moonmod_next_item_no = -1;
 }
 
 bool CGameData::RegisterMoonModItem(int template_item_no, const char *display_name, int max_num, int stack_num,
@@ -93,10 +113,7 @@ bool CGameData::RegisterMoonModItem(int template_item_no, const char *display_na
         return fail("item name is longer than 95 bytes");
     }
 
-    int item_no = ITEM_NO_MAX - 1;
-    while (item_no > 0 && local_itemdatano_converttable[item_no] >= 0) {
-        --item_no;
-    }
+    int item_no = PickMoonModItemNo();
     if (item_no <= 0) {
         return fail("no free item numbers remain");
     }
@@ -197,10 +214,7 @@ bool CGameData::RegisterMoonModWeapon(int template_item_no, const char *display_
         return fail("template must be a weapon with a native weapon-data record");
     }
 
-    int item_no = ITEM_NO_MAX - 1;
-    while (item_no > 0 && local_itemdatano_converttable[item_no] >= 0) {
-        --item_no;
-    }
+    int item_no = PickMoonModItemNo();
     if (item_no <= 0) {
         return fail("no free item numbers remain");
     }

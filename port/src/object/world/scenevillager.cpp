@@ -23,6 +23,7 @@
 #include "userdata.hpp"
 #include "villagermngr.hpp"
 #include "vlgr_info.hpp"
+#include "moonmod/content_npcs.hpp"
 
 /**
  *
@@ -748,6 +749,7 @@ int CScene::LoadVillager(int map_no, int texb) {
         }
     }
 
+    count += moonmod::ChronicleTwoLoadModVillagers(this, map_no, texb, stack, loaded); // the mods' villagers after the game's
     villager_time = GetNowVillagerTime();
     dc2::log::PrintGame("remain %dkByte\n", stack->stGetRest() * 16 / 1024);
     return count;

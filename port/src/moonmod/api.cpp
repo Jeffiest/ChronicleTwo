@@ -151,7 +151,8 @@ constexpr ApiOperationSpec kApiCatalog[] = {
     {"inventions.craft", "inventions", "craft", "simulation", "game.write", "Craft an unlocked native or mod-registered invention through native inventory and material rules."},
     {"characters.list", "characters", "list", "any", "game.read", "List character definitions and visible instances."},
     {"characters.get", "characters", "get", "any", "game.read", "Read character stats, state, and stable handle."},
-    {"characters.register", "characters", "register", "content", "content.register", "Register a data-defined character or enemy."},
+    {"characters.register", "characters", "register", "content", "content.register", "Register a data-defined enemy or town villager (kind = 'npc')."},
+    {"characters.register_playable", "characters", "register_playable", "content", "content.register", "Register a playable character past the game's own (pack, portrait, the character he fights as); never in a save."},
     {"characters.spawn", "characters", "spawn", "simulation", "game.write", "Spawn a registered character or enemy."},
     {"quests.get", "quests", "get", "any", "game.read", "Read this mod's quest definitions and objective progress."},
     {"quests.register", "quests", "register", "content", "content.register", "Register namespaced quest objectives and optional currency, item, or weapon rewards."},
@@ -246,6 +247,7 @@ constexpr EventSpec kEventCatalog[] = {
     {"game.floor.cleared", "dungeons", "both", "A dungeon floor was cleared or its restriction rules changed."},
     {"game.party.active_changed", "party", "both", "The active party member changed through a supported API."},
     {"game.party.recruited", "party", "chronicle-two", "A townsperson joined or replaced the current companion."},
+    {"game.npc.talk", "characters", "both", "The player pressed talk at a town villager the mod registered (characters.register kind = 'npc') that has no native talk event."},
     {"game.story_flag_changed", "world", "both", "A native story flag changed through a supported API."},
     {"game.story_value_changed", "world", "both", "A native story counter changed through a supported API."},
     {"game.map_flag_changed", "world", "both", "A native map flag changed through a supported API."},
@@ -390,7 +392,7 @@ std::string UnsupportedReason(std::string_view game_id, const ApiOperationSpec &
             return "Chronicle Two can spawn registered enemies only while an active dungeon manager and inherited game assets are available.";
         }
         if (game_id == "chronicle-two" && operation.operation == "register") {
-            return "Chronicle Two can register data-defined enemy variants that inherit a native model and AI script.";
+            return "Chronicle Two can register data-defined enemy variants that inherit a native model and AI script, and town villagers (kind = 'npc').";
         }
         return "Playable-character records are readable, but mod-defined characters and spawn routines are not bound yet.";
     }

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "mainloop.hpp"
+#include "moonmod/content_items.hpp"
 #include "nd_meswin.hpp"
 
 namespace dc2::text {
@@ -543,7 +544,9 @@ std::span<const u16> Lookup(dc2::text::MessageTable table, int line_id) {
         return original;
     }
     if (original.empty()) {
-        return Added(line_id);
+        // The port's own lines first, then a mod item's or weapon's description (moonmod content_items.cpp).
+        const auto added = Added(line_id);
+        return added.empty() ? moonmod::ChronicleTwoModMessageLine(line_id) : added;
     }
     const KnownFile *known = Identify(table);
     if (!known) {
@@ -566,6 +569,12 @@ std::span<const u16> Lookup(dc2::text::MessageTable table, int line_id) {
 }
 
 } // namespace
+
+namespace dc2::text {
+std::vector<std::uint16_t> EncodeMessageText(std::string_view text) {
+    return Encode(text, {});
+}
+} // namespace dc2::text
 
 std::span<const u16> ClsMes::GetTextLineDataTop(int line_id) {
     return Lookup(buff, line_id);

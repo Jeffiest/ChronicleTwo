@@ -25,6 +25,7 @@
 #include "scenesnd.hpp"
 #include "text/bounded.hpp"
 #include "userdata.hpp"
+#include "moonmod/content_characters.hpp"
 
 /**
  *
@@ -1471,6 +1472,7 @@ int CGameDataUsed::GetModelNo() {
 }
 
 std::optional<std::string> MainCharaModelName(int character_index, int alternate) {
+    if (auto pack = moonmod::ChronicleTwoRegisteredCharacterPack(character_index, alternate)) return pack;
     if (character_index != USER_CHARA_MAX && character_index != USER_CHARA_MONICA) {
         return std::nullopt;
     }
@@ -2468,6 +2470,7 @@ void CUserDataManager::Initialize() {
 
     int i = {};
     memset(this, 0, sizeof(CUserDataManager));
+    moonmod::ChronicleTwoResetRegisteredCharacterState(); // a new game starts the registered heroes afresh too
     active_chr_no = USER_CHARA_MAX;
     party_member = 0;
     chara_change = 0;
@@ -2539,7 +2542,7 @@ CHARA_DATA *CUserDataManager::GetCharaDataPtr(int chara_no) {
         return &chara_data[chara_no];
     }
 
-    return nullptr;
+    return moonmod::ChronicleTwoRegisteredCharaData(chara_no); // a registered hero's record, kept outside the save
 }
 
 COMMON_GAGE *CUserDataManager::GetCharaHpGage(int chara_no) {
@@ -2557,6 +2560,7 @@ COMMON_GAGE *CUserDataManager::GetCharaHpGage(int chara_no) {
         return &robo_data.hp;
     }
 
+    if (CHARA_DATA *hero = moonmod::ChronicleTwoRegisteredCharaData(chara_no)) return &hero->hp;
     return nullptr;
 }
 
