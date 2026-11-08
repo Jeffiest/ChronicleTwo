@@ -40,6 +40,7 @@
 #include "swordeffect.hpp"
 #include "text/bounded.hpp"
 #include "userdata.hpp"
+#include "moonmod/content_characters.hpp"
 
 std::string dc2::character::ModelAssetPath(std::string_view directory, std::string_view name,
                                            bool add_gltf_extension) {
@@ -165,8 +166,11 @@ int SetupMainUnit(std::span<u8> read_buffer, mgCMemory *memory, mgCMemory *stack
         parts[character_index]->Initialize(nullptr);
     }
 
-    if (chara_type == USER_CHARA_MAX) {
-        const auto model_name = MainCharaModelName(USER_CHARA_MAX, edit_mode);
+    int body = chara_type; // a registered hero (moonmod) is built as the character he fights as, from his own record
+    moonmod::ChronicleTwoRegisteredCharacterBody(chara_type, body);
+
+    if (body == USER_CHARA_MAX) {
+        const auto model_name = MainCharaModelName(chara_type, edit_mode);
         if (!model_name || model_name->empty()) {
             return false;
         }
@@ -244,8 +248,8 @@ int SetupMainUnit(std::span<u8> read_buffer, mgCMemory *memory, mgCMemory *stack
         parts[0]->move_type = ACTION_MOVE_HUMAN;
     }
 
-    if (chara_type == USER_CHARA_MONICA) {
-        const auto model_name = MainCharaModelName(USER_CHARA_MONICA, edit_mode);
+    if (body == USER_CHARA_MONICA) {
+        const auto model_name = MainCharaModelName(chara_type, edit_mode);
         if (!model_name || model_name->empty()) {
             return false;
         }

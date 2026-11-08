@@ -20,6 +20,7 @@
 #include "platform/game_loop_state.hpp"
 #include "mg_memory.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
+#include "moonmod/content_georama.hpp"
 #include "scriptinterpreter.hpp"
 #include "scenesnd.hpp"
 #include "savedata.hpp"
@@ -577,7 +578,11 @@ TEST(MoonModGeoramaApi, RegistersDataOnlyPieceVariantIntoNativeBuildDefinitions)
     EXPECT_NE(unregister_materialized.message.find("already materialized"), std::string::npos);
 
     ASSERT_EQ(map.info_mngr.parts_info_num, 2);
-    CEditPartsInfo *custom = map.info_mngr.GetePartsInfoAtID(1);
+    // The variant takes its persistent definition id (content_georama.hpp), handed out from 0x7F downward.
+    const int pillar_id = moonmod::ChronicleTwoGeoramaNativePartId("test.moonmod.georama-pieces:moonstone-pillar", 3);
+    ASSERT_GE(pillar_id, moonmod::kModGeoramaPartIdBottom);
+    ASSERT_LE(pillar_id, moonmod::kModGeoramaPartIdTop);
+    CEditPartsInfo *custom = map.info_mngr.GetePartsInfoAtID(pillar_id);
     ASSERT_NE(custom, nullptr);
     EXPECT_STREQ(custom->edit_name, "Moonstone Pillar");
     EXPECT_EQ(custom->parts, source_table[0].parts);
@@ -586,7 +591,7 @@ TEST(MoonModGeoramaApi, RegistersDataOnlyPieceVariantIntoNativeBuildDefinitions)
     EXPECT_EQ(custom->polyn[0], 3);
     EXPECT_EQ(custom->attr & EDIT_PARTS_ATR_NO_REFUND, 0u);
     EXPECT_EQ(map.info_mngr.GetePartsInfoAtID(7), &map.info_mngr.parts_info[0]);
-    EXPECT_EQ(moonmod::ChronicleTwoGeoramaNativePartId("test.moonmod.georama-pieces:moonstone-pillar", 3), 1);
+    EXPECT_EQ(moonmod::ChronicleTwoGeoramaNativePartId("test.moonmod.georama-pieces:moonstone-pillar", 3), pillar_id);
     EXPECT_EQ(moonmod::ChronicleTwoGeoramaNativePartId("test.moonmod.georama-pieces:moonstone-pillar", 2), -1);
     EXPECT_EQ(moonmod::ChronicleTwoGeoramaNativePartId("test.moonmod.georama-pieces:missing-template", 3), -1);
 
@@ -607,7 +612,7 @@ TEST(MoonModGeoramaApi, RegistersDataOnlyPieceVariantIntoNativeBuildDefinitions)
                                            [](const moonmod::Json &entry) { return entry.at("id").get<std::string>(); });
     ASSERT_NE(applied, town.value.at("mod_pieces").end());
     EXPECT_EQ(applied->value("status", ""), "registered");
-    EXPECT_EQ(applied->value("native_part_id", -1), 1);
+    EXPECT_EQ(applied->value("native_part_id", -1), pillar_id);
     const auto missing = std::ranges::find(town.value.at("mod_pieces"),
                                            "test.moonmod.georama-pieces:missing-template",
                                            [](const moonmod::Json &entry) { return entry.at("id").get<std::string>(); });
@@ -700,7 +705,8 @@ TEST(MoonModGeoramaApi, PlacesRegisteredPieceWithNativeRulesAndPersistsSavedLayo
         "test.moonmod.georama-place", *register_piece, moonmod::Json::array({definition}));
     ASSERT_EQ(registered.status, moonmod::ApiCallStatus::Ok) << registered.message;
     moonmod::ApplyChronicleTwoGeorama(&map, &scene_memory);
-    const int native_id = 1;
+    const int native_id = moonmod::ChronicleTwoGeoramaNativePartId(registered.value.at("id").get<std::string>(), 3);
+    ASSERT_GE(native_id, moonmod::kModGeoramaPartIdBottom) << "a persistent definition id (content_georama.hpp)";
     ASSERT_NE(map.GetePartsInfoAtID(native_id), nullptr);
     save->SetBuildPartsNum(native_id, 1);
 

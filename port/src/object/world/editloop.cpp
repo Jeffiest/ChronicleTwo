@@ -53,6 +53,7 @@
 #include "userdata.hpp"
 #include "vlgr_info.hpp"
 #include "wavetable.hpp"
+#include "moonmod/content_npcs.hpp"
 
 void EditModeChgStep(CScene *scene);
 
@@ -1509,7 +1510,8 @@ int EditLoop() {
                                 talk_position[3] = talk_height[1];
                                 CSceneEventData talk_event;
 
-                                if (MainScene->GetTalkEvent(talk_position, &talk_event) != 0) {
+                                if (MainScene->GetTalkEvent(talk_position, &talk_event) != 0 &&
+                                    !moonmod::ChronicleTwoModVillagerTalk(MainScene, &talk_event)) { // a mod's villager answers itself
                                     MainScene->RunEvent(1000, &talk_event);
                                     dc2::log::PrintGame("chara No = %d\n", talk_event.chara_no);
                                 }

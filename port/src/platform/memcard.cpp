@@ -2161,6 +2161,7 @@ dc2::memory::ArenaBuffer SubGameOmakeTempBuffer;
 #include "savedatadungeon.hpp"
 #include "title.hpp"
 #include "userdata.hpp"
+#include "moonmod/content_characters.hpp"
 
 namespace {
 CMemoryCardManager *active_manager;
@@ -2207,13 +2208,15 @@ bool WriteMoonModDungeonSaveExtension(const CSaveData &keyed_save, unsigned long
         FilesCreateDirectory(moonmod_root / "dungeon-saves") == FilesResult::kFailed) {
         return false;
     }
-    return FilesWrite(MoonModDungeonSavePath(keyed_save, unique_counter), &extension, sizeof(extension), true) ==
-           FilesResult::kWritten;
+    const auto path = MoonModDungeonSavePath(keyed_save, unique_counter);
+    moonmod::ChronicleTwoRegisteredCharactersSave(path.stem().string()); // registered heroes, beside the save
+    return FilesWrite(path, &extension, sizeof(extension), true) == FilesResult::kWritten;
 }
 
 bool ReadMoonModDungeonSaveExtension(CSaveData &save, unsigned long long unique_counter) {
     auto           *owner = &save.save_dungeon;
     const auto      path = MoonModDungeonSavePath(save, unique_counter);
+    moonmod::ChronicleTwoRegisteredCharactersLoad(path.stem().string()); // registered heroes, beside the save
     std::error_code error;
     if (!std::filesystem::exists(path, error)) {
         ResetMoonModDungeonSaveExtension(owner);

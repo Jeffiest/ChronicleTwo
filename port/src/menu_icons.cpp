@@ -12,6 +12,7 @@
 #include "object/menu/menu_presentation.hpp"
 #include "render/texture_runtime.hpp"
 #include "userdata.hpp"
+#include "moonmod/content_items.hpp"
 
 void CMenuPosDataManage::MallocPallet(mgCMemory * /*unused*/) {
     // Native atlases are RGBA, so the retail icon colour modes are built from their pixels rather
@@ -42,6 +43,11 @@ mgCTexture *GetMenuItemIconTexInfo(int item_no, int mode) {
     PortIconSheet = item->icon_texture_no;
     // A plain icon may use the item's own model; the dimmed and spectrum variants come from the sheet's pixels.
     if (mode == 0) {
+        // A mod's own icon for its registered item or weapon comes before the model-drawn one.
+        if (mgCTexture *override = moonmod::ChronicleTwoItemIconOverride(item_no)) {
+            PortIconUV[PortIconSheet] = {.left = 0, .top = 0, .right = 32, .bottom = 32};
+            return override;
+        }
         if (mgCTexture *model = ItemIcon3DTexture(item_no)) {
             PortIconUV[PortIconSheet] = {.left = 0, .top = 0, .right = 32, .bottom = 32};
             return model;
