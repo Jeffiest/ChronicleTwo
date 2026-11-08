@@ -136,7 +136,8 @@ endfunction()
 set(CT_WEB_PORT_EXCLUDE "/platform/firstrun\\.cpp$|/video/player\\.cpp$|/crash/(crash|crash_dialog|crash_report|crash_symbols)\\.cpp$")
 function(ct_web_port target)
     target_sources(${target} PRIVATE ${CT_WEB_DIR}/src/firstrun.cpp ${CT_WEB_DIR}/src/movie.cpp
-        ${CT_WEB_DIR}/src/crash.cpp ${CT_WEB_DIR}/src/storage.cpp ${CT_WEB_DIR}/src/exit.cpp ${CT_WEB_DIR}/src/touch.cpp)
+        ${CT_WEB_DIR}/src/crash.cpp ${CT_WEB_DIR}/src/storage.cpp ${CT_WEB_DIR}/src/exit.cpp ${CT_WEB_DIR}/src/touch.cpp
+        ${CT_WEB_DIR}/src/threads.cpp)
 endfunction()
 
 # The page around the game (site/): copied beside darkchronicle.js, so the build directory serves as is.

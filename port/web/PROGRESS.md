@@ -51,6 +51,10 @@ for whoever continues it: what was done, what failed and why, and what was chang
   the session header), `runtime.cpp` (`LIBC_NOEXCEPT` for musl), `platform/gamedata.cpp` (an iterator, not a pointer,
   from `std::ranges::find_if` over a `std::array`: libc++'s hardened mode wraps it), `include/mg_visual.hpp`
   (`sizeof(mgCFace)` is 20 on wasm32).
+- `port/web/src/threads.cpp`: `pthread_setname_np`/`pthread_getname_np` (a thread-local name) and
+  `sched_setaffinity` (`ENOSYS`) for quill's backend, which Emscripten's libc leaves out.
+- `tools/web/build.sh` (configure and build with `CT_DEPS_DIR`), `tools/web/serve.py` (a static server with COOP/COEP
+  and `application/wasm`), `tools/web/smoke.sh` (the Node and Chromium smoke runs without game data, below).
 - `port/web/include/x86gprintrin.h`: shadows clang's for quill 13's `Rdtsc.h`, which includes it on every non-Arm
   platform and clang ships for every target; `__rdtsc` is the steady clock. The port's logger uses `ClockSourceType::User`.
 
@@ -73,6 +77,12 @@ tools/web/build.sh build darkchronicle
 - `mg_visual.hpp`: `static_assert(sizeof(mgCFace) == 0x20)` -> pointer-size aware.
 - `platform/gamedata.cpp`: `const auto *` from `std::ranges::find_if` -> `const auto`.
 - `port/CMakeLists.txt`: `set_property` on the alias `SDL3::Headers` -> resolve `ALIASED_TARGET`.
+- `config_loaders.cpp`, `luau_runtime.cpp`: the same `const auto *const` from `std::ranges::find_if` over a
+  `std::array` -> `const auto` (libc++'s hardened `__wrap_iter`; the tree holds no other).
+- Link: `pthread_setname_np`, `pthread_getname_np` and `sched_setaffinity` undefined, called by quill's backend
+  (`BackendUtilities.h`, `ThreadUtilities.h`). Emscripten's libc declares them but skips musl's two
+  `pthread_*name_np.c` (emscripten #12216) and has no `sched_setaffinity` -> `port/web/src/threads.cpp` defines
+  them: a per-thread name for the thread itself, affinity `ENOSYS`.
 
 ## Not done
 
