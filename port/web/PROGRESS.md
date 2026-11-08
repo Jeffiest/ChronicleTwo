@@ -84,6 +84,53 @@ tools/web/build.sh build darkchronicle
   `pthread_*name_np.c` (emscripten #12216) and has no `sched_setaffinity` -> `port/web/src/threads.cpp` defines
   them: a per-thread name for the thread itself, affinity `ENOSYS`.
 
+## Built and run here
+
+- `tools/web/build.sh build darkchronicle` (`cmake --build --preset web --target darkchronicle`, -j3): links
+  `port/build/web/darkchronicle.js` (662 KB), `darkchronicle.wasm` (26.3 MB) and `darkchronicle.data` (37.8 MB:
+  glyphs, fonts, Luau scripts). The link step alone (wasm-ld, then wasm-opt with Asyncify) takes about 3 min 15 s
+  and wasm-opt peaks at several GB; the Rust standard library build for wasm32 is cached under
+  `port/build/web/cargo` after the first build. No "function signature mismatch" in the link log.
+- Chromium smoke (`tools/web/smoke.sh browser`; Playwright's HeadlessChrome 153 on SwiftShader with
+  `--enable-unsafe-webgpu --enable-features=Vulkan --use-vulkan=swiftshader --use-webgpu-adapter=swiftshader
+  --disable-vulkan-surface --enable-unsafe-swiftshader`, the page from `tools/web/serve.py`): the page isolates
+  (`isolated: true`), stores the stand-in `data.zip` under `chronicletwo/`, shows "Ready.", starts
+  `darkchronicle.js` (the log's second line: `darkchronicle --run-dir /opfs/chronicletwo --headless --offscreen
+  --frames 30 (WebGPU, ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero))...)`), and the game prints the
+  missing-data message and exits: `exit=3`. Driver exit 0, no `abort:`/`RuntimeError`/`pageerror`.
+- The same with `--with-marker` (a current `data.json` beside the stand-in archive, so the data check passes): the
+  game indexes the archive (`dataread: indexed 1 files`), creates the WebGPU device (`Vulkan: using WebGPU google
+  swiftshader (Vulkan 1.3.0), offscreen`), compiles its 21860 pipeline descriptions in 0.26 s, allocates the
+  `MainBuffer` arena (104 MiB), logs `config: map/map2.cfg.json: native configuration document missing` (the
+  archive is not the game's), reaches frame 30 and exits with 0 (`exit=0` on the page) -- and the exit then aborts:
+  `webgpu: vkDeviceWaitIdle off the device's thread: WebGPU objects belong to the thread that made the device`,
+  `abort:`. `std::exit` runs the atexit handlers (`ShutdownRenderer` -> `gfx::RendererShutdown` ->
+  `vkDeviceWaitIdle`) on the thread that called it, which the layer says is not the thread that created the device.
+  Open: which thread calls `std::exit(status)` at `frame_count == exit_frames` (`port/src/render/mglib.cpp`) on the
+  web, or whether `g_device_thread` (captured in `vkCreateDevice`, `port/web/vulkan/device.cpp`) differs for
+  another reason. DC_Web ends the web's asserts through `WebQuickExit` (no atexit handlers); the frames exit and
+  `PumpHost`'s may need the same under `__EMSCRIPTEN__`, or `RendererShutdown` skipped on the web. This happens
+  after the game's exit code is reported, so the smoke runs pass; with real data the same abort would end every
+  `--frames` run and a closed tab's exit (`PumpHost`).
+
+## Gauntlet mismatch
+
+`tools/gauntlet/web/browser_smoke.cjs` (in /home/user/ChronicleTwo) stores `data.zip` under the OPFS directory
+`chronicle` (DC_Web's) and waits for `#ready`; this page keeps the data under `chronicletwo` (`HOME` in
+`shell.js`, `--run-dir /opfs/chronicletwo`), so with that driver the page stays on `#pick` and the stage times
+out. One-word fix in the driver: `getDirectoryHandle('chronicletwo', ...)`. Everything else matches: `#pick`,
+`#ready`, `#status`, `#start`, `#log`, the `exit=<code>` and `abort:` markers, exit codes 0 and 3, the fatal
+patterns `abort:`, `RuntimeError`, `pageerror`. The `web-node` stage's command (`node darkchronicle.js --headless
+--offscreen --frames 30 --save DIR` from the build directory) is what `tools/web/smoke.sh node` runs.
+
 ## Not done
 
-See docs/WEB.md "Status" and the end of this file as the work goes on.
+See docs/WEB.md "Status" and "Not done". Next steps, in order:
+
+1. Settle the exit-path abort above (browser smoke with `--with-marker` reproduces it without a disc).
+2. `darkchronicle_gl` (`tools/web/build.sh build darkchronicle_gl`) and `tools/web/smoke.sh browser --renderer gl`.
+3. `kazarov_gfx_tests` / `kazarov_gfx_tests_gl` in Chromium (`port/web/test/gfx_tests.mjs`), the layer's conformance
+   suite against this tree's renderer.
+4. A run with a PAL disc: the page's extraction (`extract:` progress), the title screen, a save.
+5. MoonMod's Mods card on the page (DC_Web's `site/` has it, with `zip.js`), co-op (work package D), a Pages
+   workflow.

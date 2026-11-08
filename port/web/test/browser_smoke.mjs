@@ -5,8 +5,24 @@
 //
 //   node browser_smoke.mjs <page url> <archive url or ''> <data.json url or ''> <log file> [game arguments...]
 
+import {execSync} from 'node:child_process';
 import {writeFile} from 'node:fs/promises';
-import {chromium} from 'playwright';
+import {createRequire} from 'node:module';
+import path from 'node:path';
+
+// Playwright as Node's require finds it (NODE_PATH, a global install), which an import from this file would not;
+// then from NPM_GLOBAL_ROOT or `npm root -g`, as tools/gauntlet's driver does.
+function loadPlaywright() {
+    const require = createRequire(import.meta.url);
+    try {
+        return require('playwright');
+    } catch (error) {
+        const root = process.env.NPM_GLOBAL_ROOT || execSync('npm root -g', {encoding: 'utf8'}).trim();
+        return require(path.join(root, 'playwright'));
+    }
+}
+
+const {chromium} = loadPlaywright();
 
 const [pageUrl, archiveUrl, markerUrl, logFile, ...gameArgs] = process.argv.slice(2);
 const lines = [];

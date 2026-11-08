@@ -170,7 +170,10 @@ set(CT_WEB_LINK_OPTIONS
     -sEXIT_RUNTIME=1
     -sENVIRONMENT=web,worker,node
     -sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV
+    "SHELL:--pre-js ${CT_WEB_DIR}/src/node_canvas.js"
     -Wl,--error-limit=0)
+# The link reruns when the pre-js changes (emcc reads it at link time, outside CMake's dependency scan).
+set(CT_WEB_LINK_DEPENDS ${CT_WEB_DIR}/src/node_canvas.js)
 
 # The WebGPU probe (probe/): what the renderer's WebGPU backend relies on, with the game's thread model.
 add_executable(webgpu_probe EXCLUDE_FROM_ALL ${CT_WEB_DIR}/probe/webgpu_probe.cpp)
