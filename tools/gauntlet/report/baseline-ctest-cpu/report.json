@@ -1,0 +1,147 @@
+{
+ "gauntlet_version": 1,
+ "created": "2026-11-08T03:07:30+00:00",
+ "host": {
+  "hostname": "vm",
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "memory_gb": 15.7,
+  "python": "3.13.18"
+ },
+ "repos": {
+  "ChronicleTwo": {
+   "path": "/home/user/ChronicleTwo",
+   "present": true,
+   "git": true,
+   "head": "cb6ae0f3ab9d292ce1270ee9fd01ddc2e596ac34",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC2-Toolkit": {
+   "path": "/home/user/DC2-Toolkit",
+   "present": true,
+   "git": true,
+   "head": "b5dc75ee755eb5ad5264d1bf2ab52426fb43a4d8",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "MoonMod": {
+   "path": "/home/user/MoonMod",
+   "present": true,
+   "git": true,
+   "head": "875a2350f71a709dc7af55ac4e02d144f1b975fe",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  },
+  "DC_Web": {
+   "path": "/home/user/DC_Web",
+   "present": true,
+   "git": true,
+   "head": "49d71f750e2502970470100abf8de71fb1026f02",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  }
+ },
+ "arguments": [
+  "--stage",
+  "ctest",
+  "--update-baseline",
+  "--report-dir",
+  "tools/gauntlet/report/baseline-ctest-cpu"
+ ],
+ "options": {
+  "clean": false,
+  "gpu": false,
+  "update_baseline": true,
+  "approve_golden": false,
+  "jobs": 4,
+  "timeout": 3600,
+  "build_timeout": 14400,
+  "build_targets": [],
+  "data": null,
+  "iso": null,
+  "web_build": null,
+  "keep_going": false
+ },
+ "stages": [
+  {
+   "name": "ctest",
+   "gate": "G0",
+   "status": "fail",
+   "duration_s": 263.47,
+   "summary": "2420 cases: 2378 passed, 21 failed, 21 not run; 21 new failure(s), 0 known, 0 fixed against linux-x86_64.json",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/baseline-ctest-cpu/ctest/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -LE gpu",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/baseline-ctest-cpu/ctest/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/baseline-ctest-cpu/ctest/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/baseline-ctest-cpu/ctest/ctest.xml"
+   ],
+   "baseline": {
+    "new": [
+     "Crash.abort",
+     "Crash.assert",
+     "Crash.audio-thread",
+     "Crash.segv",
+     "Crash.stackoverflow",
+     "Crash.terminate",
+     "Crash.unimplemented",
+     "DataRead.ExtractedItemConfigLoadsWhenPresent",
+     "DataRead.RealDataIndexesTheDiscFiles",
+     "DataRead.RetailAttachmentJsonPreservesEveryRecordValue",
+     "GfxValidation.LayerIsInstalled",
+     "Log.SessionIdIsDateTimeAndFourHexDigits",
+     "LogFiles.PruningKeepsTheNewestSessions",
+     "LogFiles.SessionFileHasTimeLevelThreadAndCategory",
+     "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
+     "NativeCharacterRetail.LoadsConvertedC01ProfileAndEvaluatesItsNativeMotion",
+     "SaveSlotTest.LocalizedSavePromptsContainRetailText",
+     "SaveSlotTest.NewSaveAndFinnyPromptsUseRetailMessagesInEveryPalLanguage",
+     "SaveSlotTest.NoFishAndOperationFailuresUseRetailNotices",
+     "SoundRealData.PublishedBanksAndSequencesLoad",
+     "TextureBundleRetail.EveryDungeonLanguageContainsTheExpectedSharedAtlases"
+    ],
+    "known": [],
+    "fixed": [],
+    "unseen": [],
+    "has_baseline": false,
+    "written": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+   },
+   "details": {
+    "counts": {
+     "total": 2420,
+     "passed": 2378,
+     "failed": 21,
+     "notrun": 21
+    },
+    "failures": [
+     "DataRead.RealDataIndexesTheDiscFiles",
+     "DataRead.ExtractedItemConfigLoadsWhenPresent",
+     "DataRead.RetailAttachmentJsonPreservesEveryRecordValue",
+     "Log.SessionIdIsDateTimeAndFourHexDigits",
+     "LogFiles.PruningKeepsTheNewestSessions",
+     "LogFiles.SessionFileHasTimeLevelThreadAndCategory",
+     "NativeCharacterRetail.LoadsConvertedC01ProfileAndEvaluatesItsNativeMotion",
+     "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
+     "SaveSlotTest.NewSaveAndFinnyPromptsUseRetailMessagesInEveryPalLanguage",
+     "SaveSlotTest.NoFishAndOperationFailuresUseRetailNotices",
+     "SaveSlotTest.LocalizedSavePromptsContainRetailText",
+     "TextureBundleRetail.EveryDungeonLanguageContainsTheExpectedSharedAtlases",
+     "GfxValidation.LayerIsInstalled",
+     "SoundRealData.PublishedBanksAndSequencesLoad",
+     "Crash.segv",
+     "Crash.abort",
+     "Crash.assert",
+     "Crash.unimplemented",
+     "Crash.terminate",
+     "Crash.stackoverflow",
+     "Crash.audio-thread"
+    ]
+   }
+  }
+ ],
+ "verdict": "fail",
+ "exit_code": 1,
+ "build_dir": "/home/user/ChronicleTwo/port/build/pc",
+ "baseline": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+}

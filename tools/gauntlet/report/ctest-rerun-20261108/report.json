@@ -1,0 +1,131 @@
+{
+ "gauntlet_version": 1,
+ "created": "2026-11-08T10:07:08+00:00",
+ "host": {
+  "hostname": "vm",
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "memory_gb": 15.7,
+  "python": "3.13.18"
+ },
+ "repos": {
+  "ChronicleTwo": {
+   "path": "/home/user/ChronicleTwo",
+   "present": true,
+   "git": true,
+   "head": "58dd0868a899bd5e97a12ccd8629466c403cf34f",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC2-Toolkit": {
+   "path": "/home/user/DC2-Toolkit",
+   "present": true,
+   "git": true,
+   "head": "b5dc75ee755eb5ad5264d1bf2ab52426fb43a4d8",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "MoonMod": {
+   "path": "/home/user/MoonMod",
+   "present": true,
+   "git": true,
+   "head": "875a2350f71a709dc7af55ac4e02d144f1b975fe",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  },
+  "DC_Web": {
+   "path": "/home/user/DC_Web",
+   "present": true,
+   "git": true,
+   "head": "49d71f750e2502970470100abf8de71fb1026f02",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  }
+ },
+ "arguments": [
+  "--stage",
+  "ctest",
+  "--report-dir",
+  "tools/gauntlet/report/ctest-rerun-20261108"
+ ],
+ "options": {
+  "clean": false,
+  "no_build": false,
+  "gpu": false,
+  "update_baseline": false,
+  "approve_golden": false,
+  "jobs": 4,
+  "timeout": 3600,
+  "build_timeout": 14400,
+  "build_targets": [],
+  "data": null,
+  "iso": null,
+  "web_build": null,
+  "keep_going": false
+ },
+ "stages": [
+  {
+   "name": "ctest",
+   "gate": "G0",
+   "status": "error",
+   "duration_s": 60.0,
+   "summary": "darkchronicle_tests was replaced during the run (2365 case(s) could not find the executable; binary linked 2026-11-08T04:49:01 at the start, 2026-11-08T10:07:51 at the end): rerun when the build is quiet; 2430 cases: 44 passed, 11 failed, 2375 not run",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun-20261108/ctest/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -LE gpu",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun-20261108/ctest/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun-20261108/ctest/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun-20261108/ctest/ctest.xml"
+   ],
+   "baseline": null,
+   "details": {
+    "counts": {
+     "total": 2430,
+     "passed": 44,
+     "failed": 11,
+     "notrun": 2375
+    },
+    "failures": [
+     "CtArena.RootRebindCannotClaimBeyondPreviousRootOrInteriorTail",
+     "SaveSlotTest.ImportsBothCardsAndArchivesCompleteOriginalEntries",
+     "SaveSlotTest.CatalogHasNoRetailSlotLimitAndOnlyOneNewRow",
+     "NativeArchitecture.Check",
+     "Crash.segv",
+     "Crash.abort",
+     "Crash.assert",
+     "Crash.unimplemented",
+     "Crash.terminate",
+     "Crash.stackoverflow",
+     "Crash.audio-thread"
+    ],
+    "tests_binary": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T04:49:01",
+     "newer_sources": 1,
+     "newer_sample": [
+      "port/src/tests/capacity_test.cpp"
+     ],
+     "stale": true
+    },
+    "tests_binary_after": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T10:07:51",
+     "newer_sources": 0,
+     "newer_sample": [],
+     "stale": false
+    },
+    "could_not_find_executable": 2365,
+    "lock": {
+     "lock_dir": "/tmp/claude-0/-home-user/14c1cbb1-4170-5568-a0ba-a53f372cbb96/scratchpad",
+     "tag": "F",
+     "waited_s": 0.0,
+     "waited_for": []
+    }
+   }
+  }
+ ],
+ "verdict": "fail",
+ "exit_code": 1,
+ "build_dir": "/home/user/ChronicleTwo/port/build/pc",
+ "baseline": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+}

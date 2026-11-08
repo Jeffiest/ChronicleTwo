@@ -1,0 +1,12 @@
+# Clones, the built Lua, the relay's node_modules, extracted retail data.
+.cache/
+# Report directories are evidence: each run's small report.json, report.md and env/ are kept; the logs,
+# JUnit files, screenshots and save roots beside them are not (GAUNTLET.md "The report").
+report/*
+!report/*/
+report/*/*
+!report/*/report.json
+!report/*/report.md
+!report/*/env/
+# The approved golden screenshots are game imagery and stay out of git.
+golden/*.png

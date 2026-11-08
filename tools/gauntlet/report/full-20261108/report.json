@@ -1,0 +1,675 @@
+{
+ "gauntlet_version": 1,
+ "created": "2026-11-08T04:44:30+00:00",
+ "host": {
+  "hostname": "vm",
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "memory_gb": 15.7,
+  "python": "3.13.18"
+ },
+ "repos": {
+  "ChronicleTwo": {
+   "path": "/home/user/ChronicleTwo",
+   "present": true,
+   "git": true,
+   "head": "58dd0868a899bd5e97a12ccd8629466c403cf34f",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC2-Toolkit": {
+   "path": "/home/user/DC2-Toolkit",
+   "present": true,
+   "git": true,
+   "head": "b5dc75ee755eb5ad5264d1bf2ab52426fb43a4d8",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "MoonMod": {
+   "path": "/home/user/MoonMod",
+   "present": true,
+   "git": true,
+   "head": "875a2350f71a709dc7af55ac4e02d144f1b975fe",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  },
+  "DC_Web": {
+   "path": "/home/user/DC_Web",
+   "present": true,
+   "git": true,
+   "head": "49d71f750e2502970470100abf8de71fb1026f02",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  }
+ },
+ "arguments": [
+  "--no-build",
+  "--keep-going",
+  "--report-dir",
+  "tools/gauntlet/report/full-20261108"
+ ],
+ "options": {
+  "clean": false,
+  "no_build": true,
+  "gpu": false,
+  "update_baseline": false,
+  "approve_golden": false,
+  "jobs": 4,
+  "timeout": 3600,
+  "build_timeout": 14400,
+  "build_targets": [],
+  "data": null,
+  "iso": null,
+  "web_build": null,
+  "keep_going": true
+ },
+ "stages": [
+  {
+   "name": "env",
+   "gate": "G0",
+   "status": "pass",
+   "duration_s": 1.23,
+   "summary": "23 checks; optional absent: lua",
+   "command": "python3 -I tools/gauntlet/run.py --stage env",
+   "log": null,
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/env/env.json",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/env/env.txt"
+   ],
+   "baseline": null,
+   "details": {
+    "checks": [
+     {
+      "name": "clang",
+      "required": true,
+      "ok": true,
+      "detail": "Ubuntu clang version 20.1.8 (++20250804090239+87f0227cb601-1~exp1~20250804210352.139)"
+     },
+     {
+      "name": "libc++",
+      "required": true,
+      "ok": true,
+      "detail": "compiles <string> with -stdlib=libc++"
+     },
+     {
+      "name": "lld",
+      "required": true,
+      "ok": true,
+      "detail": "Ubuntu LLD 20.1.8 (compatible with GNU linkers)"
+     },
+     {
+      "name": "cmake",
+      "required": true,
+      "ok": true,
+      "detail": "cmake version 3.28.3"
+     },
+     {
+      "name": "ninja",
+      "required": true,
+      "ok": true,
+      "detail": "1.11.1"
+     },
+     {
+      "name": "rustc",
+      "required": true,
+      "ok": true,
+      "detail": "rustc 1.99.1 (58cf8f9c3 2026-10-13)"
+     },
+     {
+      "name": "cargo",
+      "required": true,
+      "ok": true,
+      "detail": "cargo 1.99.1 (5f94df478 2026-08-27)"
+     },
+     {
+      "name": "sdl3",
+      "required": true,
+      "ok": true,
+      "detail": "pkg-config 3.4.18; /usr/local/lib/cmake/SDL3"
+     },
+     {
+      "name": "vulkan-headers",
+      "required": true,
+      "ok": true,
+      "detail": "/tmp/claude-0/-home-user/14c1cbb1-4170-5568-a0ba-a53f372cbb96/scratchpad/Vulkan-Headers/include (1.4.363)"
+     },
+     {
+      "name": "vulkan-loader",
+      "required": true,
+      "ok": true,
+      "detail": "/usr/lib/x86_64-linux-gnu/libvulkan.so"
+     },
+     {
+      "name": "glslangValidator",
+      "required": true,
+      "ok": true,
+      "detail": "Glslang Version: 11:15.1.0"
+     },
+     {
+      "name": "lavapipe",
+      "required": false,
+      "ok": true,
+      "detail": "llvmpipe (LLVM 20.1.2, 256 bits)"
+     },
+     {
+      "name": "libavformat",
+      "required": true,
+      "ok": true,
+      "detail": "libavformat major 60 (/opt/ffmpeg-sys/include/libavformat/version_major.h); Kazarov's movie_mux.c needed a typedef for FFmpeg 6.1's non-const write callback"
+     },
+     {
+      "name": "ffmpeg-tree",
+      "required": true,
+      "ok": true,
+      "detail": "/opt/ffmpeg-sys/lib: all five archives (linker scripts)"
+     },
+     {
+      "name": "CXXFLAGS",
+      "required": true,
+      "ok": true,
+      "detail": "env.sh exports CXXFLAGS='-stdlib=libc++' CXXSTDLIB='c++' for kazarov_core's cc-rs build"
+     },
+     {
+      "name": "fetchcontent-sources",
+      "required": true,
+      "ok": true,
+      "detail": "/opt/deps"
+     },
+     {
+      "name": "emcc",
+      "required": false,
+      "ok": true,
+      "detail": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 6.0.13-git (e13ee988ce3d87a738dd8f3661d02223308c412a) (EM_CONFIG=/root/.emscripten)"
+     },
+     {
+      "name": "node",
+      "required": true,
+      "ok": true,
+      "detail": "v22.23.4"
+     },
+     {
+      "name": "playwright",
+      "required": false,
+      "ok": true,
+      "detail": "playwright ok"
+     },
+     {
+      "name": "xvfb-run",
+      "required": false,
+      "ok": true,
+      "detail": "/usr/bin/xvfb-run"
+     },
+     {
+      "name": "PIL",
+      "required": false,
+      "ok": true,
+      "detail": "PIL 12.3.0"
+     },
+     {
+      "name": "lua",
+      "required": false,
+      "ok": false,
+      "detail": "none on PATH: MoonMod's vendored 5.5.1 is built into .cache"
+     },
+     {
+      "name": "python",
+      "required": true,
+      "ok": true,
+      "detail": "3.13.18"
+     }
+    ]
+   }
+  },
+  {
+   "name": "build",
+   "gate": "G0",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "skipped by --no-build; the stages test the existing binaries; binary linked 2026-11-08T04:43:21",
+   "command": ". tools/gauntlet/env.sh && ct_build",
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {
+    "tests": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T04:43:21",
+     "newer_sources": 0,
+     "newer_sample": [],
+     "stale": false
+    },
+    "game": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle",
+     "linked": "2026-11-08T04:35:42",
+     "newer_sources": 1,
+     "newer_sample": [
+      "port/src/tests/capacity_test.cpp"
+     ],
+     "stale": true
+    }
+   }
+  },
+  {
+   "name": "ctest",
+   "gate": "G0",
+   "status": "fail",
+   "duration_s": 204.45,
+   "summary": "2430 cases: 1271 passed, 21 failed, 1138 not run; 14 new failure(s), 7 known, 0 fixed against linux-x86_64.json; binary linked 2026-11-08T04:43:21",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/ctest/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -LE gpu",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/ctest/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/ctest/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/ctest/ctest.xml"
+   ],
+   "baseline": {
+    "new": [
+     "Capacity.InventoryPlacesFillAndReadBackThroughTheManager",
+     "Capacity.SaveRoundTripsTheRaisedCountsAndLoadsRetailCounts",
+     "CtArenaPlacement.RetailRunsAgainstHostSizes",
+     "GeoramaParts.ModelsMoveToNewHeapsAndFreeFromTheirOwn",
+     "MoonModDungeonRegistration.ConfiguresProceduralDungeonLayoutLimits",
+     "NativeArchitecture.Check",
+     "NativeConfigLoaders.NpcRecordsKeepTheTableBoundsAndNullTexts",
+     "NativeDungeon.MonsterFloorsFillOnlyTheCurrentFloor",
+     "SaveJson.RandomImagesRoundTripByteForByte",
+     "SaveJson.TextFieldsAreReadableAndOddBytesSurvive",
+     "SaveJson.VersionsKeysAndValuesAreChecked",
+     "SaveSlotTest.CatalogHasNoRetailSlotLimitAndOnlyOneNewRow",
+     "SaveSlotTest.MenuScrollsPastThirteenAndClampsItsVisibleWindow",
+     "TestHooks.JumpAcceptsModesAndBounds"
+    ],
+    "known": [
+     "Crash.abort",
+     "Crash.assert",
+     "Crash.audio-thread",
+     "Crash.segv",
+     "Crash.stackoverflow",
+     "Crash.terminate",
+     "Crash.unimplemented"
+    ],
+    "fixed": [],
+    "unseen": [
+     "DataRead.ExtractedItemConfigLoadsWhenPresent",
+     "DataRead.RealDataIndexesTheDiscFiles",
+     "DataRead.RetailAttachmentJsonPreservesEveryRecordValue",
+     "GfxValidation.LayerIsInstalled",
+     "Log.SessionIdIsDateTimeAndFourHexDigits",
+     "LogFiles.PruningKeepsTheNewestSessions",
+     "LogFiles.SessionFileHasTimeLevelThreadAndCategory",
+     "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
+     "NativeCharacterRetail.LoadsConvertedC01ProfileAndEvaluatesItsNativeMotion",
+     "SaveSlotTest.LocalizedSavePromptsContainRetailText",
+     "SaveSlotTest.NewSaveAndFinnyPromptsUseRetailMessagesInEveryPalLanguage",
+     "SaveSlotTest.NoFishAndOperationFailuresUseRetailNotices",
+     "SoundRealData.PublishedBanksAndSequencesLoad",
+     "TextureBundleRetail.EveryDungeonLanguageContainsTheExpectedSharedAtlases"
+    ],
+    "has_baseline": true
+   },
+   "details": {
+    "counts": {
+     "total": 2430,
+     "passed": 1271,
+     "failed": 21,
+     "notrun": 1138
+    },
+    "failures": [
+     "CtArenaPlacement.RetailRunsAgainstHostSizes",
+     "Capacity.InventoryPlacesFillAndReadBackThroughTheManager",
+     "Capacity.SaveRoundTripsTheRaisedCountsAndLoadsRetailCounts",
+     "GeoramaParts.ModelsMoveToNewHeapsAndFreeFromTheirOwn",
+     "MoonModDungeonRegistration.ConfiguresProceduralDungeonLayoutLimits",
+     "NativeConfigLoaders.NpcRecordsKeepTheTableBoundsAndNullTexts",
+     "NativeDungeon.MonsterFloorsFillOnlyTheCurrentFloor",
+     "SaveJson.RandomImagesRoundTripByteForByte",
+     "SaveJson.TextFieldsAreReadableAndOddBytesSurvive",
+     "SaveJson.VersionsKeysAndValuesAreChecked",
+     "SaveSlotTest.CatalogHasNoRetailSlotLimitAndOnlyOneNewRow",
+     "SaveSlotTest.MenuScrollsPastThirteenAndClampsItsVisibleWindow",
+     "TestHooks.JumpAcceptsModesAndBounds",
+     "NativeArchitecture.Check",
+     "Crash.segv",
+     "Crash.abort",
+     "Crash.assert",
+     "Crash.unimplemented",
+     "Crash.terminate",
+     "Crash.stackoverflow",
+     "Crash.audio-thread"
+    ],
+    "tests_binary": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T04:43:21",
+     "newer_sources": 0,
+     "newer_sample": [],
+     "stale": false
+    }
+   }
+  },
+  {
+   "name": "capacity",
+   "gate": "G1",
+   "status": "fail",
+   "duration_s": 1.92,
+   "summary": "10 cases: 9 passed, 1 failed, 0 not run; failing: Capacity.SaveRoundTripsTheRaisedCountsAndLoadsRetailCounts; binary linked 2026-11-08T04:47:45",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/capacity/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -R ^Capacity",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/capacity/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/capacity/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/capacity/ctest.xml"
+   ],
+   "baseline": null,
+   "details": {
+    "counts": {
+     "total": 10,
+     "passed": 9,
+     "failed": 1,
+     "notrun": 0
+    },
+    "failures": [
+     "Capacity.SaveRoundTripsTheRaisedCountsAndLoadsRetailCounts"
+    ],
+    "tests_binary": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T04:47:45",
+     "newer_sources": 0,
+     "newer_sample": [],
+     "stale": false
+    }
+   }
+  },
+  {
+   "name": "toolkit",
+   "gate": "G1",
+   "status": "fail",
+   "duration_s": 297.91,
+   "summary": "toolkit: env pass, fmt pass, clippy pass (0 new, 1 known, 0 fixed), cargo-test fail (4 new, 0 known, 0 fixed), tool-tests pass, port-tests pass, port-golden not_run, event-sweep not_run; cargo-test: 796 tests in 4 crates: 792 passed, 4 failed, 36 ignored; 4 new, 0 known, 0 fixed against linux-x86_64.json",
+   "command": "(cd /home/user/DC2-Toolkit && CHRONICLE_TWO=/home/user/ChronicleTwo python3 -I tools/gauntlet/run.py --gate G0 --gate G5)",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/runner.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/report.json",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/report.md",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/env/env.json",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/env/env.txt",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/fmt/fmt.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/clippy/dc2tk-disc.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/clippy/dc2tk-script.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/clippy/dc2tk-assets.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/clippy/dc2tk.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/cargo-test/dc2tk-disc.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/cargo-test/dc2tk-script.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/cargo-test/dc2tk-assets.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/cargo-test/dc2tk.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/tool-tests/test_engine_mods.py.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/tool-tests/test_native_prepare.py.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/port-tests/port-tests.log"
+   ],
+   "baseline": null,
+   "details": {
+    "toolkit_report": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit/toolkit/report.json",
+    "stages": [
+     {
+      "name": "env",
+      "gate": "G0",
+      "status": "pass",
+      "summary": "9 checks; optional absent: dc2-debug, disc",
+      "baseline": null
+     },
+     {
+      "name": "fmt",
+      "gate": "G0",
+      "status": "pass",
+      "summary": "cargo fmt --check clean",
+      "baseline": null
+     },
+     {
+      "name": "clippy",
+      "gate": "G0",
+      "status": "pass",
+      "summary": "4 crate(s), 1 lint(s); 0 new, 1 known, 0 fixed against linux-x86_64.json",
+      "baseline": {
+       "new": [],
+       "known": [
+        "dc2tk-assets::single_element_loop@crates/dc2tk-assets/src/map_export.rs"
+       ],
+       "fixed": [],
+       "unseen": [],
+       "has_baseline": true
+      }
+     },
+     {
+      "name": "cargo-test",
+      "gate": "G0",
+      "status": "fail",
+      "summary": "796 tests in 4 crates: 792 passed, 4 failed, 36 ignored; 4 new, 0 known, 0 fixed against linux-x86_64.json",
+      "baseline": {
+       "new": [
+        "dc2tk-assets::dungeon_data::tests::a_floors_monsters_are_bounded_by_the_profile",
+        "dc2tk-assets::dungeon_layout::tests::rooms_and_cells_are_bounded_by_the_profile",
+        "dc2tk-assets::georama_data::tests::the_georama_tables_limits_are_the_profiles",
+        "dc2tk-assets::item_data::tests::item_numbers_and_records_are_bounded_by_the_profile"
+       ],
+       "known": [],
+       "fixed": [],
+       "unseen": [],
+       "has_baseline": true
+      }
+     },
+     {
+      "name": "tool-tests",
+      "gate": "G0",
+      "status": "pass",
+      "summary": "2 test scripts, 0 failed",
+      "baseline": null
+     },
+     {
+      "name": "port-tests",
+      "gate": "G0",
+      "status": "pass",
+      "summary": "24 native checks: 24 passed, 0 failed; 0 new, 0 known, 0 fixed against linux-x86_64.json",
+      "baseline": {
+       "new": [],
+       "known": [],
+       "fixed": [],
+       "unseen": [],
+       "has_baseline": true
+      }
+     },
+     {
+      "name": "port-golden",
+      "gate": "G5",
+      "status": "not_run",
+      "summary": "no retail disc (dc2.iso at the root, DC2_ISO or --iso)",
+      "baseline": null
+     },
+     {
+      "name": "event-sweep",
+      "gate": "G5",
+      "status": "not_run",
+      "summary": "no retail disc (dc2.iso at the root, DC2_ISO or --iso)",
+      "baseline": null
+     }
+    ],
+    "exit": 1
+   }
+  },
+  {
+   "name": "toolkit-limits",
+   "gate": "G1",
+   "status": "fail",
+   "duration_s": 0.24,
+   "summary": "toolkit: limits fail; limits: 8 limit test(s), 1 failed: georama_data::tests::the_georama_tables_limits_are_the_profiles",
+   "command": "(cd /home/user/DC2-Toolkit && CHRONICLE_TWO=/home/user/ChronicleTwo python3 -I tools/gauntlet/run.py --stage limits)",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit-limits/runner.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit-limits/toolkit/report.json",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit-limits/toolkit/report.md",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit-limits/toolkit/limits/limits.log"
+   ],
+   "baseline": null,
+   "details": {
+    "toolkit_report": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/toolkit-limits/toolkit/report.json",
+    "stages": [
+     {
+      "name": "limits",
+      "gate": "G1",
+      "status": "fail",
+      "summary": "8 limit test(s), 1 failed: georama_data::tests::the_georama_tables_limits_are_the_profiles",
+      "baseline": null
+     }
+    ],
+    "exit": 1
+   }
+  },
+  {
+   "name": "content",
+   "gate": "G2",
+   "status": "fail",
+   "duration_s": 10.19,
+   "summary": "80 cases: 79 passed, 1 failed, 0 not run; failing: MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload; binary linked 2026-11-08T04:49:01",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/content/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -R ^MoonMod -E '^MoonMod\\.HeadlessProbe$'",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/content/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/content/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/content/ctest.xml"
+   ],
+   "baseline": null,
+   "details": {
+    "counts": {
+     "total": 80,
+     "passed": 79,
+     "failed": 1,
+     "notrun": 0
+    },
+    "failures": [
+     "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload"
+    ],
+    "tests_binary": {
+     "path": "/home/user/ChronicleTwo/port/build/pc/darkchronicle_tests",
+     "linked": "2026-11-08T04:49:01",
+     "newer_sources": 0,
+     "newer_sample": [],
+     "stale": false
+    }
+   }
+  },
+  {
+   "name": "lua-harness",
+   "gate": "G2",
+   "status": "pass",
+   "duration_s": 4.54,
+   "summary": "10 harness(es) with /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua, 0 failed",
+   "command": "(cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/challenges/test_challenges.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/coop/test_coop.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/living-towns/test_living_towns.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/modern-cloud/test_modern_cloud.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/randomizer/test_randomizer.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/roguelike/test_runs.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/roguelike/test_standalone.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/rpg/test_rpg.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/sirfancybacon/test_pack.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/vigil/test_vigil.lua)",
+   "log": null,
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_challenges_test_challenges.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_coop_test_coop.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_living-towns_test_living_towns.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_modern-cloud_test_modern_cloud.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_randomizer_test_randomizer.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_roguelike_test_runs.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_roguelike_test_standalone.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_rpg_test_rpg.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_sirfancybacon_test_pack.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/lua-harness/tools_tests_vigil_test_vigil.lua.log"
+   ],
+   "baseline": null,
+   "details": {
+    "failed": [],
+    "lua": "/home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua"
+   }
+  },
+  {
+   "name": "web-node",
+   "gate": "G3",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no web build at /home/user/ChronicleTwo/port/build/web (work package C)",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "web-browser",
+   "gate": "G3",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no web build at /home/user/ChronicleTwo/port/build/web (work package C)",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "coop",
+   "gate": "G4",
+   "status": "not_run",
+   "duration_s": 0.46,
+   "summary": "relay host/join handshake OK on ws://127.0.0.1:41973; no engine co-op tests ('MoonModNet|MoonModCoop') in the build yet (work package D)",
+   "command": "(cd /home/user/ChronicleTwo/tools/gauntlet/.cache/relay && node server.mjs --port 41973 --host 127.0.0.1 &) ; (cd /home/user/ChronicleTwo/tools/gauntlet/.cache/relay && node handshake.mjs ws://127.0.0.1:41973) ; ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/coop/ctest.xml --output-on-failure --parallel 1 --no-tests=ignore --timeout 600 -R 'MoonModNet|MoonModCoop' (with DC2_COOP_RELAY=ws://127.0.0.1:41973)",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/coop/handshake.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/coop/relay.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/coop/handshake.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/full-20261108/coop/ctest.log"
+   ],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-title",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-smokes",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-determinism",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-golden",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  }
+ ],
+ "verdict": "fail",
+ "exit_code": 1,
+ "build_dir": "/home/user/ChronicleTwo/port/build/pc",
+ "baseline": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+}

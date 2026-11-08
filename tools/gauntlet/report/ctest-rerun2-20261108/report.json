@@ -1,0 +1,87 @@
+{
+ "gauntlet_version": 1,
+ "created": "2026-11-08T10:32:40+00:00",
+ "host": {
+  "hostname": "vm",
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "memory_gb": 15.7,
+  "python": "3.13.18"
+ },
+ "repos": {
+  "ChronicleTwo": {
+   "path": "/home/user/ChronicleTwo",
+   "present": true,
+   "git": true,
+   "head": "58dd0868a899bd5e97a12ccd8629466c403cf34f",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC2-Toolkit": {
+   "path": "/home/user/DC2-Toolkit",
+   "present": true,
+   "git": true,
+   "head": "b5dc75ee755eb5ad5264d1bf2ab52426fb43a4d8",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "MoonMod": {
+   "path": "/home/user/MoonMod",
+   "present": true,
+   "git": true,
+   "head": "875a2350f71a709dc7af55ac4e02d144f1b975fe",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC_Web": {
+   "path": "/home/user/DC_Web",
+   "present": true,
+   "git": true,
+   "head": "49d71f750e2502970470100abf8de71fb1026f02",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  }
+ },
+ "arguments": [
+  "--stage",
+  "ctest",
+  "--report-dir",
+  "tools/gauntlet/report/ctest-rerun2-20261108"
+ ],
+ "options": {
+  "clean": false,
+  "no_build": false,
+  "gpu": false,
+  "update_baseline": false,
+  "approve_golden": false,
+  "jobs": 4,
+  "timeout": 3600,
+  "build_timeout": 14400,
+  "build_targets": [],
+  "data": null,
+  "iso": null,
+  "web_build": null,
+  "keep_going": false
+ },
+ "stages": [
+  {
+   "name": "ctest",
+   "gate": "G0",
+   "status": "error",
+   "duration_s": 203.74,
+   "summary": "ctest wrote no results: \t2762 - Luau.Prune (Failed)\n\t2766 - Matrix.Runner (Failed)\n\t2767 - PalTiming.IdentitySelfTest (Failed)\n\t2778 - dc2data_bridge (Subprocess aborted)\nErrors while running CTest",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun2-20261108/ctest/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -LE gpu",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun2-20261108/ctest/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/ctest-rerun2-20261108/ctest/ctest.log"
+   ],
+   "baseline": null,
+   "details": {}
+  }
+ ],
+ "verdict": "fail",
+ "exit_code": 1,
+ "build_dir": "/home/user/ChronicleTwo/port/build/pc",
+ "baseline": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+}

@@ -1,0 +1,37 @@
+{
+ "ctest-cpu": {
+  "updated": "2026-11-08T03:11:54+00:00",
+  "head": "cb6ae0f3ab9d292ce1270ee9fd01ddc2e596ac34",
+  "note": "written by run.py --update-baseline",
+  "totals": {
+   "total": 2420,
+   "passed": 2378,
+   "failed": 21,
+   "notrun": 21
+  },
+  "failures": [
+   "Crash.abort",
+   "Crash.assert",
+   "Crash.audio-thread",
+   "Crash.segv",
+   "Crash.stackoverflow",
+   "Crash.terminate",
+   "Crash.unimplemented",
+   "DataRead.ExtractedItemConfigLoadsWhenPresent",
+   "DataRead.RealDataIndexesTheDiscFiles",
+   "DataRead.RetailAttachmentJsonPreservesEveryRecordValue",
+   "GfxValidation.LayerIsInstalled",
+   "Log.SessionIdIsDateTimeAndFourHexDigits",
+   "LogFiles.PruningKeepsTheNewestSessions",
+   "LogFiles.SessionFileHasTimeLevelThreadAndCategory",
+   "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
+   "NativeCharacterRetail.LoadsConvertedC01ProfileAndEvaluatesItsNativeMotion",
+   "SaveSlotTest.LocalizedSavePromptsContainRetailText",
+   "SaveSlotTest.NewSaveAndFinnyPromptsUseRetailMessagesInEveryPalLanguage",
+   "SaveSlotTest.NoFishAndOperationFailuresUseRetailNotices",
+   "SoundRealData.PublishedBanksAndSequencesLoad",
+   "TextureBundleRetail.EveryDungeonLanguageContainsTheExpectedSharedAtlases"
+  ]
+ },
+ "platform": "linux-x86_64"
+}

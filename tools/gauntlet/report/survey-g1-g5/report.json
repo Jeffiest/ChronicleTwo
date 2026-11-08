@@ -1,0 +1,252 @@
+{
+ "gauntlet_version": 1,
+ "created": "2026-11-08T03:13:31+00:00",
+ "host": {
+  "hostname": "vm",
+  "os": "Linux-6.18.44-fc-v310-x86_64-with-glibc2.39",
+  "machine": "x86_64",
+  "cpus": 4,
+  "memory_gb": 15.7,
+  "python": "3.13.18"
+ },
+ "repos": {
+  "ChronicleTwo": {
+   "path": "/home/user/ChronicleTwo",
+   "present": true,
+   "git": true,
+   "head": "cb6ae0f3ab9d292ce1270ee9fd01ddc2e596ac34",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "DC2-Toolkit": {
+   "path": "/home/user/DC2-Toolkit",
+   "present": true,
+   "git": true,
+   "head": "b5dc75ee755eb5ad5264d1bf2ab52426fb43a4d8",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": true
+  },
+  "MoonMod": {
+   "path": "/home/user/MoonMod",
+   "present": true,
+   "git": true,
+   "head": "875a2350f71a709dc7af55ac4e02d144f1b975fe",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  },
+  "DC_Web": {
+   "path": "/home/user/DC_Web",
+   "present": true,
+   "git": true,
+   "head": "49d71f750e2502970470100abf8de71fb1026f02",
+   "branch": "claude/dark-cloud-2-engine-yr3rlk",
+   "dirty": false
+  }
+ },
+ "arguments": [
+  "--gate",
+  "G1",
+  "--gate",
+  "G2",
+  "--gate",
+  "G3",
+  "--gate",
+  "G4",
+  "--gate",
+  "G5",
+  "--keep-going",
+  "--report-dir",
+  "tools/gauntlet/report/survey-g1-g5"
+ ],
+ "options": {
+  "clean": false,
+  "gpu": false,
+  "update_baseline": false,
+  "approve_golden": false,
+  "jobs": 4,
+  "timeout": 3600,
+  "build_timeout": 14400,
+  "build_targets": [],
+  "data": null,
+  "iso": null,
+  "web_build": null,
+  "keep_going": true
+ },
+ "stages": [
+  {
+   "name": "capacity",
+   "gate": "G1",
+   "status": "not_run",
+   "duration_s": 0.1,
+   "summary": "no Capacity* tests in the build yet (work package A adds them)",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/capacity/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -R ^Capacity",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/capacity/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/capacity/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/capacity/ctest.xml"
+   ],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "toolkit-limits",
+   "gate": "G1",
+   "status": "pass",
+   "duration_s": 227.33,
+   "summary": "5 test(s) matched, 0 failed",
+   "command": "cargo test --release -p dc2tk-assets limits",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/toolkit-limits/cargo-test.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/toolkit-limits/cargo-test.log"
+   ],
+   "baseline": null,
+   "details": {
+    "failed": []
+   }
+  },
+  {
+   "name": "content",
+   "gate": "G2",
+   "status": "fail",
+   "duration_s": 10.61,
+   "summary": "80 cases: 79 passed, 1 failed, 0 not run; failing: MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
+   "command": "ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/content/ctest.xml --output-on-failure --parallel 4 --no-tests=ignore --timeout 600 -R ^MoonMod -E '^MoonMod\\.HeadlessProbe$'",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/content/ctest.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/content/ctest.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/content/ctest.xml"
+   ],
+   "baseline": null,
+   "details": {
+    "counts": {
+     "total": 80,
+     "passed": 79,
+     "failed": 1,
+     "notrun": 0
+    },
+    "failures": [
+     "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload"
+    ]
+   }
+  },
+  {
+   "name": "lua-harness",
+   "gate": "G2",
+   "status": "pass",
+   "duration_s": 3.82,
+   "summary": "10 harness(es) with /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua, 0 failed",
+   "command": "(cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/challenges/test_challenges.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/coop/test_coop.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/living-towns/test_living_towns.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/modern-cloud/test_modern_cloud.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/randomizer/test_randomizer.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/roguelike/test_runs.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/roguelike/test_standalone.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/rpg/test_rpg.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/sirfancybacon/test_pack.lua) ; (cd /home/user/MoonMod && /home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua tools/tests/vigil/test_vigil.lua)",
+   "log": null,
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_challenges_test_challenges.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_coop_test_coop.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_living-towns_test_living_towns.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_modern-cloud_test_modern_cloud.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_randomizer_test_randomizer.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_roguelike_test_runs.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_roguelike_test_standalone.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_rpg_test_rpg.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_sirfancybacon_test_pack.lua.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/lua-harness/tools_tests_vigil_test_vigil.lua.log"
+   ],
+   "baseline": null,
+   "details": {
+    "failed": [],
+    "lua": "/home/user/ChronicleTwo/tools/gauntlet/.cache/lua/lua"
+   }
+  },
+  {
+   "name": "web-node",
+   "gate": "G3",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no web build at /home/user/ChronicleTwo/port/build/web (work package C)",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "web-browser",
+   "gate": "G3",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no web build at /home/user/ChronicleTwo/port/build/web (work package C)",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "coop",
+   "gate": "G4",
+   "status": "not_run",
+   "duration_s": 0.6,
+   "summary": "relay host/join handshake OK on ws://127.0.0.1:56501; no engine co-op tests ('MoonModNet|MoonModCoop') in the build yet (work package D)",
+   "command": "(cd /home/user/ChronicleTwo/tools/gauntlet/.cache/relay && node server.mjs --port 56501 --host 127.0.0.1 &) ; (cd /home/user/ChronicleTwo/tools/gauntlet/.cache/relay && node handshake.mjs ws://127.0.0.1:56501) ; ctest --test-dir /home/user/ChronicleTwo/port/build/pc --output-junit /home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/ctest.xml --output-on-failure --parallel 1 --no-tests=ignore --timeout 600 -R 'MoonModNet|MoonModCoop' (with DC2_COOP_RELAY=ws://127.0.0.1:56501)",
+   "log": "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/handshake.log",
+   "evidence": [
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/npm-install.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/relay.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/handshake.log",
+    "/home/user/ChronicleTwo/tools/gauntlet/report/survey-g1-g5/coop/ctest.log"
+   ],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-title",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-smokes",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-determinism",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  },
+  {
+   "name": "retail-golden",
+   "gate": "G5",
+   "status": "not_run",
+   "duration_s": 0.0,
+   "summary": "no retail data: set DC2_DATA to an extracted root, or DC2_ISO / rom/pal/*.iso to a disc image",
+   "command": null,
+   "log": null,
+   "evidence": [],
+   "baseline": null,
+   "details": {}
+  }
+ ],
+ "verdict": "fail",
+ "exit_code": 1,
+ "build_dir": "/home/user/ChronicleTwo/port/build/pc",
+ "baseline": "/home/user/ChronicleTwo/tools/gauntlet/baselines/linux-x86_64.json"
+}

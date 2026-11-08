@@ -1,0 +1,137 @@
+{
+  "comment": "Filters and names the gauntlet stages read; change these here, not in run.py.",
+  "ctest": {
+    "cpu_label_exclude": "gpu",
+    "gpu_probe_regex": "^Smoke\\.HeadlessFramesScreenshot$|^GfxMisc\\.PipelineCache$",
+    "fixture_dirs": [
+      "moonfactory-native-fixture/data",
+      "moonfactory-native-fixture/save"
+    ]
+  },
+  "capacity": {
+    "ctest_regex": "^Capacity"
+  },
+  "toolkit": {
+    "comment": "DC2-Toolkit's own runner, run from its checkout beside this tree with CHRONICLE_TWO set; the toolkit stage runs its G0 (fmt, clippy, cargo-test, tool-tests, port-tests) and its disc gate, toolkit-limits its limits stage.",
+    "runner": "tools/gauntlet/run.py",
+    "args": [
+      "--gate",
+      "G0",
+      "--gate",
+      "G5"
+    ],
+    "limits_args": [
+      "--stage",
+      "limits"
+    ]
+  },
+  "content": {
+    "ctest_regex": "^MoonMod",
+    "ctest_exclude": "^MoonMod\\.HeadlessProbe$",
+    "lua_tests_glob": "tools/tests/*/test_*.lua",
+    "lua_vendor": "vendor/lua-5.5.1/src"
+  },
+  "web": {
+    "build_dir": "port/build/web",
+    "game_js": [
+      "darkchronicle.js",
+      "darkcloud.js"
+    ],
+    "node_args": [
+      "--headless",
+      "--offscreen",
+      "--frames",
+      "30"
+    ],
+    "renderers": [
+      {
+        "name": "webgpu",
+        "query": "",
+        "game_js": "darkchronicle.js"
+      },
+      {
+        "name": "gl",
+        "query": "?renderer=gl",
+        "game_js": "darkchronicle_gl.js"
+      }
+    ],
+    "node_exit_codes": [
+      0,
+      3
+    ],
+    "browser_exit_codes": [
+      0,
+      3
+    ],
+    "fatal_patterns": [
+      "abort:",
+      "RuntimeError",
+      "pageerror"
+    ]
+  },
+  "coop": {
+    "relay_dirs": [
+      "coop/relay",
+      "../DC_Web/coop/relay"
+    ],
+    "ws_version": "8.18.3",
+    "ctest_regex": "MoonModNet|MoonModCoop",
+    "relay_env": [
+      "DC2_COOP_RELAY",
+      "RELAY_URL",
+      "MOONMOD_COOP_RELAY"
+    ],
+    "two_games": "tools/coop/two_games.py",
+    "comment": "--coop-build DIR tests package D's build (its tree's tools/coop/two_games.py runs too) until it is merged; without it this tree's build."
+  },
+  "retail": {
+    "iso_glob": "rom/pal/*.iso",
+    "data_marker": "data.json",
+    "window": "960x720",
+    "seed": "1234",
+    "smokes": [
+      {
+        "name": "title",
+        "args": [
+          "--jump",
+          "title",
+          "--fast-load",
+          "--frames",
+          "120"
+        ]
+      },
+      {
+        "name": "town",
+        "args": [
+          "--jump",
+          "town:10",
+          "--fast-load",
+          "--frames",
+          "600"
+        ]
+      },
+      {
+        "name": "dungeon",
+        "args": [
+          "--jump",
+          "dungeon:0:1",
+          "--fast-load",
+          "--frames",
+          "2300",
+          "--input",
+          "tools/input/jump-dungeon-floor1.input"
+        ]
+      }
+    ],
+    "determinism_smoke": "title",
+    "marker_prefixes": [
+      "MOONMOD_API_STATUS|",
+      "MOONMOD_HEADLESS_",
+      "MOONFACTORY_",
+      "dataread: indexed",
+      "mglib: frame"
+    ],
+    "min_markers": 2,
+    "process_timeout": 900
+  }
+}
