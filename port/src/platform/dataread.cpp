@@ -153,6 +153,7 @@ DataReadPathNameExt DivPathNameExt(std::string_view path) {
 #include "dataread.hpp"
 #include "log/log.hpp"
 #include "luau_runtime.hpp"
+#include "moonmod/native_resource_overrides.hpp"
 #include "platform/archive_mount.hpp"
 #include "platform/config_catalog.hpp"
 #include "platform/datapacks.hpp"
@@ -197,6 +198,11 @@ namespace {
 
 constexpr std::size_t kSector = DATAREAD_SECTOR_SIZE;
 constexpr std::size_t kExpectedFiles = 10240;
+// The dungeon loader reads model files into BuffReadData, which holds 200,000 quadwords.
+// Three MiB plus a sector tail remains below that native destination capacity.
+constexpr std::size_t kVirtualMonsterAssetLimit = 3 * 1024 * 1024;
+// Map files use the same bounded native read buffers as other streamed game assets.
+constexpr std::size_t kVirtualMapAssetLimit = 3 * 1024 * 1024;
 
 // The index replaces DATA.HD4, which never listed these: manifest.txt and the movie/ and sound/ trees
 // are converted data that their own subsystems read, not dataread.
@@ -423,9 +429,99 @@ bool IsHostName(std::string_view name) {
     return name.starts_with("host:") || name.starts_with("host0:");
 }
 
+// MoonMod: package-backed model identities bypass current_dir because CMonsterMan constructs these exact
+// root-relative names. The override registry uses the same root-relative form.
+std::string DirectGamePathKey(std::string_view name) {
+    const std::size_t colon = name.find(':');
+    const std::size_t separator = name.find_first_of("/\\");
+    if (colon != std::string_view::npos && (separator == std::string_view::npos || colon < separator)) {
+        name.remove_prefix(colon + 1);
+    }
+    while (!name.empty() && (name.front() == '/' || name.front() == '\\')) {
+        name.remove_prefix(1);
+    }
+    if (const std::size_t semicolon = name.rfind(';'); semicolon != std::string_view::npos) {
+        const std::string_view version = name.substr(semicolon + 1);
+        if (!version.empty() && std::ranges::all_of(version, [](char c) { return c >= '0' && c <= '9'; })) {
+            name = name.substr(0, semicolon);
+        }
+    }
+    std::string key;
+    key.reserve(name.size());
+    for (unsigned char c : name) {
+        if (c == '\\') {
+            c = '/';
+        }
+        if (c == '/' && (key.empty() || key.back() == '/')) {
+            continue;
+        }
+        if (c >= 0x80 || c == '%') {
+            char hex[4];
+            std::snprintf(hex, sizeof hex, "%%%02x", static_cast<unsigned>(c));
+            key += hex;
+        } else {
+            key.push_back(FoldChar(static_cast<char>(c)));
+        }
+    }
+    return key;
+}
+
+// MoonMod: a monster model a mod package supplies under a name the disc does not have.
+bool IsVirtualMonsterAssetPath(std::string_view path) {
+    constexpr std::string_view prefix = "dungeon/monster/";
+    if (!path.starts_with(prefix)) {
+        return false;
+    }
+    path.remove_prefix(prefix.size());
+    if (path.find('/') != std::string_view::npos) {
+        return false;
+    }
+    const std::size_t extension = path.rfind('.');
+    if (extension == std::string_view::npos || path.substr(extension) != ".chr") {
+        return false;
+    }
+    const std::string_view stem = path.substr(0, extension);
+    return !stem.empty() && stem.size() <= 15 && std::ranges::all_of(stem, [](unsigned char character) {
+               return (character >= 'a' && character <= 'z') || (character >= '0' && character <= '9') ||
+                      character == '_' || character == '-' || character == '.';
+           });
+}
+
+// MoonMod: a map file a mod package supplies under a name the disc does not have.
+bool IsVirtualMapAssetPath(std::string_view path) {
+    constexpr std::string_view prefix = "map/";
+    if (!path.starts_with(prefix)) {
+        return false;
+    }
+    if (path.ends_with(".json")) {
+        path.remove_suffix(5);
+    }
+    const std::size_t extension = path.rfind('.');
+    if (extension == std::string_view::npos) {
+        return false;
+    }
+    const std::string_view suffix = path.substr(extension);
+    return suffix == ".cfg" || suffix == ".efp" || suffix == ".ipk" || suffix == ".map" || suffix == ".mpk" ||
+           suffix == ".sky";
+}
+
 // A host name and the disc name it indexes to can be different files, so they never share a cache slot.
+// A MoonMod resource override or path alias gets its own slot, so the native file's cached bytes are not reused.
 std::string CacheKey(std::string_view name) {
     std::string key = IndexKey(name);
+    if (!IsHostName(name)) {
+        if (const std::optional<fs::path> override = moonmod::FindNativeResourceOverride(key)) {
+            return "moonmod:" + key + ":" + override->generic_string();
+        }
+        const std::string direct_key = DirectGamePathKey(name);
+        const std::string source_key = TextureSourceResolveAlias(direct_key);
+        if (source_key != direct_key) {
+            if (const std::optional<fs::path> override = moonmod::FindNativeResourceOverride(source_key)) {
+                return "moonmod-alias:" + direct_key + ":" + override->generic_string();
+            }
+            return "asset-alias:" + direct_key + ":" + source_key;
+        }
+    }
     return IsHostName(name) ? "host:" + key : key;
 }
 
@@ -579,6 +675,64 @@ int ResolveFile(const char *name, const std::string &key, void *buffer, bool siz
         }
     }
 
+    // MoonMod resource overrides: a package file stands in for a native one no larger than it, or supplies a
+    // monster model or map file the disc does not have. Scripts are Luau modules, which overrides do not replace.
+    const bool         host_name = IsHostName(name);
+    const IndexedFile *indexed_file = host_name ? nullptr : Lookup(key);
+    const std::string  direct_key = host_name ? key : DirectGamePathKey(name);
+    const std::string  source_key = host_name ? key : TextureSourceResolveAlias(direct_key);
+    const bool         used_asset_alias = source_key != direct_key;
+    // limit bounds the padded size of a new file; max_size the exact size of one standing in for a native file.
+    const auto read_override = [&](const fs::path &path, const std::string &source, std::size_t limit,
+                                   std::optional<int> max_size = std::nullopt) -> int {
+        const IndexedFile override_file{.file = vfs::HostFile(path), .replaced = true, .relative = source};
+        const std::optional<int> size = FileSize(override_file);
+        if (!size || *size == 0 || PaddedSize(static_cast<std::size_t>(*size)) > limit || (max_size && *size > *max_size)) {
+            return -1;
+        }
+        if (size_only) {
+            return *size;
+        }
+        const int read = ReadWhole(override_file, buffer, std::min(capacity, limit));
+        if (read >= 0) {
+            TextureSourceRegister(buffer, source, static_cast<std::size_t>(read));
+        }
+        return read;
+    };
+    // A replacement is read only when it is no larger than the native file it stands in for.
+    const auto replacement_limit = [](const IndexedFile &original) { return FileSize(original); };
+    if (!host_name && !key.ends_with(".stb")) {
+        if (indexed_file == nullptr && (IsVirtualMonsterAssetPath(direct_key) || IsVirtualMapAssetPath(direct_key))) {
+            if (const std::optional<fs::path> override = moonmod::FindNativeResourceOverride(direct_key)) {
+                const std::size_t limit = IsVirtualMapAssetPath(direct_key) ? kVirtualMapAssetLimit : kVirtualMonsterAssetLimit;
+                return read_override(*override, direct_key, limit);
+            }
+        }
+        if (indexed_file != nullptr) {
+            if (const std::optional<fs::path> override = moonmod::FindNativeResourceOverride(key)) {
+                if (const auto limit = replacement_limit(*indexed_file)) {
+                    const int size = read_override(*override, key, PaddedSize(static_cast<std::size_t>(*limit)), *limit);
+                    if (size >= 0) {
+                        return size;
+                    }
+                }
+                CT_LOG_WARN(Data, "moonmod: ignored oversized or unreadable native resource override for {}", key);
+            }
+        } else if (used_asset_alias) {
+            if (const IndexedFile *aliased = Lookup(source_key)) {
+                if (const std::optional<fs::path> override = moonmod::FindNativeResourceOverride(source_key)) {
+                    if (const auto limit = replacement_limit(*aliased)) {
+                        const int size = read_override(*override, direct_key, PaddedSize(static_cast<std::size_t>(*limit)), *limit);
+                        if (size >= 0) {
+                            return size;
+                        }
+                    }
+                    CT_LOG_WARN(Data, "moonmod: ignored oversized or unreadable aliased native resource override for {}", source_key);
+                }
+            }
+        }
+    }
+
     // A script loads as a handle naming its Luau module, which CRunScript::load runs; one without a module is missing.
     if (key.ends_with(".stb")) {
         const auto module = luau_runtime::ModuleForScript(key);
@@ -596,7 +750,11 @@ int ResolveFile(const char *name, const std::string &key, void *buffer, bool siz
         return static_cast<int>(handle.size());
     }
 
-    const IndexedFile *file = Lookup(key);
+    const IndexedFile *file = indexed_file != nullptr ? indexed_file : Lookup(key);
+    if (file == nullptr && used_asset_alias) {
+        // A MoonMod directory alias reads the native directory's file.
+        file = Lookup(source_key);
+    }
     if (!file) {
         return -1;
     }

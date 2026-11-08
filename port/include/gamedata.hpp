@@ -1441,6 +1441,13 @@ public:
      */
     int LoadData();
 
+    bool RegisterMoonModItem(int template_item_no, const char *display_name, int max_num, int stack_num,
+                             int effect_flags, int effect_amount, int *out_item_no, char *error, size_t error_size);
+    bool RegisterMoonModWeapon(int template_item_no, const char *display_name, int max_num, int stack_num,
+                               int attack, int durability_stat, int attack_cap, int durability_cap,
+                               int durability_capacity, int levelup_exp, const int *attributes,
+                               const int *attribute_caps, int *out_item_no, char *error, size_t error_size);
+
     /**
      *
      * Reads the item name script of one language.

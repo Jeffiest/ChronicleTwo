@@ -2098,7 +2098,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
         grid_cells[static_cast<std::size_t>(cell)].Initialize();
     }
 
-    for (room = 0; room < 8; room++) {
+    for (room = 0; room < AUTOMAP_ROOM_MAX; room++) {
         AutoMapGen.room[room].no_door = 0;
     }
 
@@ -2218,7 +2218,17 @@ void PrepareMonsterMemory(CMonsterMan &manager) {
     }
 }
 
+namespace {
+/** The dungeon scene whose monster manager has finished loading, so mods may spawn into it. */
+CScene *g_ready_monster_manager_scene = nullptr;
+} // namespace
+
+bool IsMonsterManagerReadyForModSpawn(const CScene *scene) {
+    return scene != nullptr && g_ready_monster_manager_scene == scene;
+}
+
 void LoadMonsterFile() {
+    g_ready_monster_manager_scene = nullptr;
     if (!ActiveMonster) {
         return;
     }
@@ -2251,6 +2261,8 @@ void LoadMonsterFile() {
             ActiveMonster->EntryRefer(id, memory);
         }
     }
+    moonmod::PreloadChronicleTwoCharacterTemplates(ActiveMonster, memory);
+    g_ready_monster_manager_scene = DngMainScene;
 }
 
 void LoadMonsterFile(int monster_id, int initialize) {
@@ -2262,6 +2274,7 @@ void LoadMonsterFile(int monster_id, int initialize) {
     }
 
     if (initialize != 0) {
+        g_ready_monster_manager_scene = nullptr;
         manager->Initialize(scene);
         scene->AssignStack(3);
         scene->ClearStack(3);
@@ -2276,6 +2289,7 @@ void LoadMonsterFile(int monster_id, int initialize) {
         // Retail places these at +4 with a 0x30 stride; host pointers enlarge both fields.
         PrepareMonsterMemory(*manager);
         sndInitPort(5);
+        g_ready_monster_manager_scene = scene;
     }
 
     if (manager->SearchBaseIndex(monster_id) < 0) {
@@ -2478,6 +2492,11 @@ bool dc2::dungeon::LoadTreasureBoxInfo(TRESURE_BOX_FLOOR_INFO &table, std::strin
         const auto count = std::min(source.group_id.size(), std::size(floor.group_id));
         std::copy_n(source.group_id.begin(), count, floor.group_id);
         floor.group_num = static_cast<int>(count);
+    }
+    // A mod floor inherits its source floor's treasure.
+    const int dungeon = DngSaveDataDungeon != nullptr ? DngSaveDataDungeon->stage_id : -1;
+    if (dungeon >= 0 && dungeon < SAVE_DUNGEON_NUM) {
+        moonmod::InheritChronicleTwoTreasureFloor(&table, dungeon, DngSaveDataDungeon->floor_id[dungeon]);
     }
     return true;
 }

@@ -21,6 +21,8 @@
 #include "automap.hpp"
 #include "collision.hpp"
 #include "dng_main.hpp"
+#include "dng_object.hpp"
+#include "editmap.hpp"
 #include "editloop.hpp"
 #include "event.hpp"
 #include "event_func.hpp"
@@ -35,6 +37,7 @@
 #include "mg_camera.hpp"
 #include "mg_math.hpp"
 #include "monster.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
 #include "options/screen.hpp"
 #include "platform/config.hpp"
 #include "platform/game_loop_state.hpp"
@@ -54,6 +57,10 @@ extern unsigned char PortGameBootInit asm("Title_GameBootInit");
 namespace {
 std::optional<GameJump>      target;
 std::vector<int>             gifts;
+std::optional<int>           pickup_item;
+bool                         pickup_spawned = false;
+std::optional<GameGeoramaStockGrant> georama_stock;
+bool                         georama_stock_granted = false;
 bool                         fast_load = false;
 bool                         skip_events = false;
 bool                         invincible = false;
@@ -1556,6 +1563,55 @@ bool GameParseGive(std::string_view text, std::vector<int> &items) {
     return true;
 }
 
+bool GameParsePickup(std::string_view text, int &item) {
+    int parsed = 0;
+    if (!Number(text, parsed, ITEM_NO_MAX - 1) || parsed == 0) {
+        return false;
+    }
+    item = parsed;
+    return true;
+}
+
+bool GameParseGeoramaStock(std::string_view text, GameGeoramaStockGrant &grant) {
+    const std::size_t first = text.find(':');
+    const std::size_t last = text.rfind(':');
+    if (first == std::string_view::npos || last == first || last == text.size() - 1) {
+        return false;
+    }
+    int town_id = -1;
+    int count = 0;
+    if (!Number(text.substr(0, first), town_id, 4) || !Number(text.substr(last + 1), count, SAVE_BUILD_PARTS_NUM_MAX) ||
+        count == 0) {
+        return false;
+    }
+    const std::string_view piece_id = text.substr(first + 1, last - first - 1);
+    if (piece_id.empty() || piece_id.size() > 128 || piece_id.find_first_of(" \t\r\n") != std::string_view::npos) {
+        return false;
+    }
+    grant = {.town_id = town_id, .piece_id = std::string(piece_id), .count = count};
+    return true;
+}
+
+bool GameSetPickup(std::string_view text) {
+    int parsed = 0;
+    if (!GameParsePickup(text, parsed)) {
+        return false;
+    }
+    pickup_item = parsed;
+    pickup_spawned = false;
+    return true;
+}
+
+bool GameSetGeoramaStock(std::string_view text) {
+    GameGeoramaStockGrant parsed;
+    if (!GameParseGeoramaStock(text, parsed)) {
+        return false;
+    }
+    georama_stock = std::move(parsed);
+    georama_stock_granted = false;
+    return true;
+}
+
 bool GameSetJump(std::string_view text) {
     GameJump parsed;
     if (!GameParseJump(text, parsed)) {
@@ -1764,6 +1820,9 @@ void GamePrepareJump(int &mode, INIT_LOOP_ARG &arg) {
     for (int item : gifts) {
         RequireKnownItem(item);
     }
+    if (pickup_item) {
+        RequireKnownItem(*pickup_item);
+    }
     const char *stress_option = std::getenv("DC2_PERF_DUNGEON_STRESS");
     const bool  stress_requested = stress_option != nullptr && std::string_view(stress_option) == "1";
     if (stress_option != nullptr && *stress_option != '\0' && std::string_view(stress_option) != "0" && !stress_requested) {
@@ -1874,6 +1933,50 @@ void GameGiveOnArrival(int mode) {
             user.GetItem(item, 1);
         }
     }
+    if (mode != LOOP_DUNGEON || !pickup_item || pickup_spawned || DngMainScene == nullptr) {
+        return;
+    }
+    CCharacter2 *player = DngMainScene->GetCharacter(0);
+    CPullItem   *pickup = PullItemMan.GetList(0);
+    if (player == nullptr || pickup == nullptr) {
+        CT_LOG_ERROR(Main, "bad --pickup: dungeon player or native pickup slot is unavailable");
+        LogFlush();
+        std::exit(2);
+    }
+    float position[4] = {};
+    float velocity[4] = {};
+    player->GetPosition(position);
+    position[0] += 60.0f;
+    position[3] = 1.0f;
+    pickup->SetItem(position, velocity, PULL_ITEM_ITEM);
+    pickup->item_no = *pickup_item;
+    pickup->state = PULL_ITEM_STATE_COLLECT;
+    pickup->can_get = true;
+    pickup->angle = PI;
+    pickup->get_delay = 0;
+    sceVu0CopyVector(pickup->draw_pos, position);
+    pickup_spawned = true;
+    std::fprintf(stderr, "MOONFACTORY_TEST_ITEM_PICKUP|%d\n", *pickup_item);
+}
+
+void GameGrantGeoramaStockForTest(CEditMap *map) {
+    if (map == nullptr || !georama_stock || georama_stock_granted || map->area_no != georama_stock->town_id) {
+        return;
+    }
+    CSaveData *save = GetSaveData();
+    if (save == nullptr) {
+        return;
+    }
+    const int native_id = moonmod::ChronicleTwoGeoramaNativePartId(georama_stock->piece_id, georama_stock->town_id);
+    if (native_id < 0) {
+        CT_LOG_ERROR(Main, "bad --georama-stock: mod piece is not registered in the requested town");
+        LogFlush();
+        std::exit(2);
+    }
+    save->AddBuildPartsNum(native_id, georama_stock->count);
+    georama_stock_granted = true;
+    std::fprintf(stderr, "MOONFACTORY_TEST_GEORAMA_STOCK|%d|%s|%d|%d\n", georama_stock->town_id,
+                 georama_stock->piece_id.c_str(), native_id, save->GetBuildPartsNum(native_id));
 }
 
 bool GameDeveloperMenuRequested(int mode) {

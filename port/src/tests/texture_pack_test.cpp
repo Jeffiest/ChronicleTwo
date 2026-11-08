@@ -16,6 +16,7 @@
 #include "gfx/gfx.hpp"
 #include "platform/datapacks.hpp"
 #include "platform/texture_catalog.hpp"
+#include "texture_source.hpp"
 
 namespace {
 
@@ -142,4 +143,22 @@ TEST_F(TextureDocumentFixture, ResolvesNestedTextureByExplicitJsonPath) {
     EXPECT_EQ(source->entries[0].variants[0].levels[0].path, "dungeon/eff_script/e211aex_knife_0.png");
     EXPECT_TRUE(std::filesystem::equivalent(*vfs::HostPath(source->entries[0].variants[0].levels[0].file), native / "dungeon/eff_script/e211aex_knife_0.png"));
     EXPECT_EQ(texture_catalog::Find("dungeon/eff_script/e211aex_knife.chr#offset:80"), nullptr);
+}
+
+TEST(TextureSourceAlias, MoonModDirectoryRegistersUnderTheNativeSourceItReuses) {
+    struct Clear {
+        ~Clear() {
+            TextureSourceAliasesClear();
+            TextureSourceClear();
+        }
+    } clear;
+    ASSERT_TRUE(TextureSourceAliasRegister("map/m/moo/npr/moonprobe.ipk", "map/i/i01/h01/i01h01.ipk"));
+    EXPECT_TRUE(TextureSourceAliasRegister("MAP\\M\\MOO\\NPR\\MOONPROBE.IPK", "map/i/i01/h01/i01h01.ipk"));
+    EXPECT_FALSE(TextureSourceAliasRegister("map/m/moo/npr/moonprobe.ipk", "map/i/i01/h01/other.ipk"));
+    EXPECT_EQ(TextureSourceResolveAlias("map/m/moo/npr/moonprobe.ipk/room.img"), "map/i/i01/h01/i01h01.ipk/room.img");
+    EXPECT_EQ(TextureSourceResolveAlias("map/m/moo/npr/moonprobe.ipkx"), "map/m/moo/npr/moonprobe.ipkx");
+
+    alignas(16) std::array<unsigned char, 32> buffer{};
+    TextureSourceRegister(buffer.data(), "map/m/moo/npr/moonprobe.ipk");
+    EXPECT_EQ(TextureSourceLookup(buffer.data()), "map/i/i01/h01/i01h01.ipk");
 }

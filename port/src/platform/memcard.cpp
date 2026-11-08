@@ -2140,17 +2140,25 @@ s16 NowProgramLoopNo = -1;
 dc2::memory::ArenaBuffer SubGameOmakeTempBuffer;
 
 #include <algorithm>
+#include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <limits>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
+
+#include "log/log.hpp"
+#include "platform/files.hpp"
+#include "platform/paths.hpp"
 
 #include "mainloop.hpp"
 #include "memcard.hpp"
 #include "play_time.hpp"
 #include "save_slots.hpp"
+#include "savedatadungeon.hpp"
 #include "title.hpp"
 #include "userdata.hpp"
 
@@ -2165,6 +2173,63 @@ int Digit(const CSaveData &save, std::size_t size) {
         digit += bytes[i * 64] % 255;
     }
     return digit;
+}
+
+// MoonMod floor progress lives in a sidecar beside the save, keyed by the save's dungeon progress and its counter,
+// so the retail save format stays unchanged and an older save never pairs with newer mod progress. Saves are JSON
+// documents whose round trip does not keep every byte of CSaveData, so the key covers only CSaveDataDungeon.
+std::uint64_t SaveFingerprint(const CSaveData &save) {
+    const auto   *bytes = reinterpret_cast<const unsigned char *>(&save.save_dungeon);
+    std::uint64_t hash = 14695981039346656037ull;
+    for (std::size_t index = 0; index < sizeof(save.save_dungeon); ++index) {
+        hash ^= bytes[index];
+        hash *= 1099511628211ull;
+    }
+    return hash;
+}
+
+std::filesystem::path MoonModDungeonSavePath(const CSaveData &save, unsigned long long unique_counter) {
+    char identity[34];
+    std::snprintf(identity, sizeof(identity), "%016llx-%016llx", static_cast<unsigned long long>(SaveFingerprint(save)),
+                  unique_counter);
+    return PathsSaveRoot() / "moonmod" / "dungeon-saves" / (std::string(identity) + ".bin");
+}
+
+// Writes the running game's mod floor records for the save image whose payload is keyed_save.
+bool WriteMoonModDungeonSaveExtension(const CSaveData &keyed_save, unsigned long long unique_counter) {
+    MOONMOD_DUNGEON_SAVE_EXTENSION extension{};
+    const CSaveData               *live = GetSaveData();
+    if (live == nullptr || !ExportMoonModDungeonSaveExtension(&live->save_dungeon, &extension)) {
+        return false;
+    }
+    const auto moonmod_root = PathsSaveRoot() / "moonmod";
+    if (FilesCreateDirectory(moonmod_root) == FilesResult::kFailed ||
+        FilesCreateDirectory(moonmod_root / "dungeon-saves") == FilesResult::kFailed) {
+        return false;
+    }
+    return FilesWrite(MoonModDungeonSavePath(keyed_save, unique_counter), &extension, sizeof(extension), true) ==
+           FilesResult::kWritten;
+}
+
+bool ReadMoonModDungeonSaveExtension(CSaveData &save, unsigned long long unique_counter) {
+    auto           *owner = &save.save_dungeon;
+    const auto      path = MoonModDungeonSavePath(save, unique_counter);
+    std::error_code error;
+    if (!std::filesystem::exists(path, error)) {
+        ResetMoonModDungeonSaveExtension(owner);
+        return !error;
+    }
+    if (error || std::filesystem::file_size(path, error) != sizeof(MOONMOD_DUNGEON_SAVE_EXTENSION) || error) {
+        ResetMoonModDungeonSaveExtension(owner);
+        return false;
+    }
+    MOONMOD_DUNGEON_SAVE_EXTENSION extension{};
+    if (FilesRead(path, &extension, sizeof(extension)) != sizeof(extension) ||
+        !ImportMoonModDungeonSaveExtension(owner, &extension)) {
+        ResetMoonModDungeonSaveExtension(owner);
+        return false;
+    }
+    return true;
 }
 
 u64 MaxUniqueCounter(const SaveSlotList &list) {
@@ -2258,6 +2323,9 @@ bool SaveSlotWriteAutosave(int program_loop_no, const AutosaveSpawn *spawn) {
     if (program_loop_no == LOOP_DUNGEON) {
         // Only the counter belongs to the write; the save data, the towns' layouts and the header are the entry's.
         floor_entry->image.unique_counter = newest + 1;
+        if (!WriteMoonModDungeonSaveExtension(floor_entry->image.save_data, floor_entry->image.unique_counter)) {
+            return false;
+        }
         return SaveSlotWrite(SaveSlotAutosavePath(), *floor_entry, true) == FilesResult::kWritten;
     }
     auto document = BuildDocument(program_loop_no, newest);
@@ -2267,6 +2335,9 @@ bool SaveSlotWriteAutosave(int program_loop_no, const AutosaveSpawn *spawn) {
         }
         document->spawn = *spawn;
         document->spawn->counter = document->image.unique_counter;
+    }
+    if (!WriteMoonModDungeonSaveExtension(document->image.save_data, document->image.unique_counter)) {
+        return false;
     }
     return SaveSlotWrite(SaveSlotAutosavePath(), *document, true) == FilesResult::kWritten;
 }
@@ -2401,6 +2472,12 @@ int CMemoryCardManager::SaveToMc(int row) {
     const auto document = BuildDocument(NowProgramLoopNo, newest);
     std::memcpy(static_cast<void *>(save_buffer), &document->image, sizeof(*save_buffer));
 
+    // Writing the MoonMod sidecar first means a failed save cannot leave an older slot paired with newer mod progress.
+    if (!WriteMoonModDungeonSaveExtension(document->image.save_data, document->image.unique_counter)) {
+        error.code = MC_ERROR_FILE;
+        return MC_STEP_DONE;
+    }
+
     std::filesystem::path path;
     FilesResult           result = FilesResult::kFailed;
     if (SaveSlotNew) {
@@ -2469,6 +2546,9 @@ int CMemoryCardManager::LoadFromMc(int row) {
     if (SaveSlots.saves[row].autosave && image.program_loop_no == LOOP_EDIT && document->spawn &&
         document->spawn->map_no == image.map_no) {
         SaveSlotSetPendingSpawn(document->spawn);
+    }
+    if (!ReadMoonModDungeonSaveExtension(*save, image.unique_counter)) {
+        CT_LOG_WARN(Save, "moonmod: ignored invalid dungeon save extension for this save");
     }
     if (save->tour.base_day <= 0 && save->GetBitFlag(SAVE_FLAG_FISHING_CONTEST_UNLOCKED)) {
         save->tour.base_day = 7;

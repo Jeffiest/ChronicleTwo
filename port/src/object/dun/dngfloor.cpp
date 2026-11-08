@@ -37,6 +37,8 @@
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 #include "monster.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
+#include "moonmod/dngfloor_moonmod.hpp"
 #include "quest.hpp"
 #include "savedata.hpp"
 #include "savedatadungeon.hpp"
@@ -143,6 +145,7 @@ void CDngFloorManager::Initialize() {
     glid_num = 0;
     glid_w = 0;
     glid_h = 0;
+    ResetMoonModDngFloors();
 }
 
 /**
@@ -159,7 +162,8 @@ static int _TREE_MAPINFO(dc2::script::TagArguments stack, int argc) {
         count > std::numeric_limits<s16>::max()) {
         return 0;
     }
-    auto *cells = dc2::memory::NewArray<GLID_INFO>(*tree_spi_stack, static_cast<std::size_t>(count));
+    // MoonMod floors append their cells after the map's, so the grid is allocated with room for them.
+    auto *cells = dc2::memory::NewArray<GLID_INFO>(*tree_spi_stack, static_cast<std::size_t>(count + MOONMOD_FLOOR_CELL_CAPACITY));
     if (cells == nullptr) {
         return 0;
     }
@@ -168,6 +172,7 @@ static int _TREE_MAPINFO(dc2::script::TagArguments stack, int argc) {
     tree_dngmap->glid_info = cells;
     tree_dngmap->glid_num = count;
     tree_glid_info = cells;
+    MoonModDngFloorMapInfo(tree_dngmap, count + MOONMOD_FLOOR_CELL_CAPACITY);
     tree_spi_rootinfo = nullptr;
     tree_spi_roominfo = nullptr;
     menu_dng_debug_glidcnt = 0;
@@ -1497,12 +1502,15 @@ void ApplyMapRoom(DNGMAP_ROOM_INFO &info, const MapRoom &room, mgCMemory *memory
  */
 void ApplyDungeonMap(CDngFloorManager &manager, const DungeonMap &map, mgCMemory *memory) {
     const auto count = static_cast<int>(map.cells.size());
-    const u32  bytes = static_cast<u32>(count) * sizeof(GLID_INFO);
+    // MoonMod floors append their cells after the map's, so the grid is allocated with room for them.
+    const int  capacity = count + MOONMOD_FLOOR_CELL_CAPACITY;
+    const u32  bytes = static_cast<u32>(capacity) * sizeof(GLID_INFO);
     manager.glid_w = static_cast<s16>(map.glid_w);
     manager.glid_h = static_cast<s16>(map.glid_h);
     const u32 blocks = (bytes & 0xF) != 0 ? (bytes >> 4) + 1 : bytes >> 4;
-    manager.glid_info = new (memory->Alloc(static_cast<int>(blocks) + 2)) GLID_INFO[count];
+    manager.glid_info = new (memory->Alloc(static_cast<int>(blocks) + 2)) GLID_INFO[capacity];
     manager.glid_num = count;
+    MoonModDngFloorMapInfo(&manager, capacity);
 
     for (int i = 0; i < count; ++i) {
         const MapCell &cell = map.cells[i];
@@ -1640,4 +1648,7 @@ void CDngFloorManager::LoadDataTable(int dungeon, mgCMemory *memory) {
     if (size > 0) {
         AnalyzeFile(reinterpret_cast<char *>(data), size, memory);
     }
+
+    // The mods' floors are added once the native tables are read.
+    moonmod::ApplyChronicleTwoDungeons(this);
 }

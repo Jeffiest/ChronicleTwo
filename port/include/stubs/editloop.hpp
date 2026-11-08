@@ -13,3 +13,10 @@ extern int ActiveCharaNo asm("EditLoop_ActiveCharaNo");
 class mgCFrame;
 extern mgCFrame *RedBicMark asm("EditLoop_RedBicMark");
 extern mgCFrame *BlueBicMark asm("EditLoop_BlueBicMark");
+
+class CEditMap;
+class mgCMemory;
+void GameGrantGeoramaStockForTest(::CEditMap *map);
+namespace moonmod {
+void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory);
+}

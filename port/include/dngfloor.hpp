@@ -268,6 +268,10 @@ public:
      */
     void LoadDataTable(int dungeon, mgCMemory *memory);
 
+    bool RegisterMoonModFloor(int source_floor, const char *title, const char *stable_id, int *out_floor_id, char *error,
+                              size_t error_size);
+    bool IsMoonModFloor(int floor_id, const char *title) const;
+
     /**
      *
      * Gives the room cell standing for a floor, or NULL.

@@ -13,6 +13,8 @@
 #include "menumain.hpp"
 #include "menuop.hpp"
 #include "menusys.hpp"
+#include "moonmod/manager_ui.hpp"
+#include "options/mod_manager_ui.hpp"
 #include "options/rows.hpp"
 #include "options/screen.hpp"
 #include "platform/display.hpp"
@@ -107,7 +109,9 @@ void Activate(const Hit &hit) {
             break;
         case HitKind::Row:
             g_screen.row[g_screen.page] = hit.index;
-            if (!CurrentRow().action.empty()) {
+            if (CurrentRow().activate) {
+                CurrentRow().activate();
+            } else if (!CurrentRow().action.empty()) {
                 BeginBinding();
             } else {
                 Change(hit.direction);
@@ -176,6 +180,27 @@ bool Run() {
             g_wait_source.clear();
             g_repeat.Reset();
         }
+        return true;
+    }
+    if (moonmod::ManagerOpen()) {
+        const auto point = PointerPosition();
+        const int cancel = LanguageCode > 0 ? PAD_CIRCLE : PAD_CROSS;
+        const int confirm = LanguageCode > 0 ? PAD_CROSS : PAD_CIRCLE;
+        moonmod::HandleManagerInput({
+            .up = (pressed & PAD_UP) != 0,
+            .down = (pressed & PAD_DOWN) != 0,
+            .left = (pressed & PAD_LEFT) != 0,
+            .right = (pressed & PAD_RIGHT) != 0,
+            .confirm = (pressed & confirm) != 0,
+            .cancel = (pressed & cancel) != 0,
+            .next_focus = (pressed & PAD_R1) != 0,
+            .previous_focus = (pressed & PAD_L1) != 0,
+            .mouse_left = (pressed_mouse & kMouseLeft) != 0,
+            .mouse_right = (pressed_mouse & kMouseRight) != 0,
+            .mouse_x = point.x * 1.25f,
+            .mouse_y = point.y,
+            .wheel = mouse.wheel,
+        });
         return true;
     }
     const int cancel = LanguageCode > 0 ? PAD_CIRCLE : PAD_CROSS;
@@ -255,7 +280,9 @@ bool Run() {
         } else if (pressed & PAD_RIGHT) {
             Change(1);
         } else if (pressed & confirm) {
-            if (!CurrentRow().action.empty()) {
+            if (CurrentRow().activate) {
+                CurrentRow().activate();
+            } else if (!CurrentRow().action.empty()) {
                 BeginBinding();
             } else {
                 Change(1);

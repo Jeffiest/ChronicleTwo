@@ -36,8 +36,17 @@ struct RoomStorage;
 #define MINIMAP_INFO_NUM 18
 /** Number of preset room layouts that a room script can hold. */
 #define AUTOMAP_ROOM_INFO_MAX 64
-/** Number of rooms that a generated floor can hold. */
-#define AUTOMAP_ROOM_MAX 8
+/** Floor grid side and room limit: retail 30 x 30 and 8 rooms; the PC port enlarges the room limit for mods. */
+#define DNG_GRID         30
+#define AUTOMAP_ROOM_MAX 64
+#define DNG_ROOM_MAX     AUTOMAP_ROOM_MAX
+extern int DngLayoutRooms;   /**< Rooms to try to place, 2..DNG_ROOM_MAX. */
+extern int DngLayoutArea;    /**< Side of the random floor grid, 8..DNG_GRID. */
+extern int DngLayoutRoomMin; /**< Smallest room side, 2..6. */
+extern int DngLayoutRoomMax; /**< Largest room side, DngLayoutRoomMin..6. */
+#define DNG_BUILD_AREA      (DngLayoutArea > 0 ? DngLayoutArea : 14)
+#define DNG_BUILD_ROOM_MIN  (DngLayoutRoomMax > 0 ? DngLayoutRoomMin : 3)
+#define DNG_BUILD_ROOM_SPAN (DngLayoutRoomMax > 0 ? DngLayoutRoomMax - DngLayoutRoomMin + 1 : 2)
 /** Number of random stones that a floor places. */
 #define AUTOMAP_RANDOM_STONE_MAX 12
 /** Frames that the healing point waits after healing before it can heal again. */
@@ -776,7 +785,7 @@ public:
     void UpdateNaviMap(float *pos, int depth);
 };
 
-STATIC_ASSERT(sizeof(CAutoMapGen) == 0x2A0);
+STATIC_ASSERT(sizeof(CAutoMapGen) == 0x2A0 + (AUTOMAP_ROOM_MAX - 8) * sizeof(AUTOMAP_ROOM));
 
 /**
  *

@@ -40,6 +40,7 @@
 #include "play_time.hpp"
 #include "save_json.hpp"
 #include "save_slots.hpp"
+#include "savedatadungeon.hpp"
 #include "scene.hpp"
 #include "scoped_global_object.hpp"
 
@@ -906,6 +907,36 @@ TEST_F(SaveSlotTest, EligibleAutosaveLoadsDirectlyFromFinnyFrenzyMenu) {
     rig.Idle();
     rig.Press(PAD_CROSS);
     EXPECT_EQ(rig.menu.phase, SAVE_LIST_PHASE_LOADING);
+}
+
+TEST_F(SaveSlotTest, ModDungeonProgressRoundTripsBesideTheUnchangedNativeSave) {
+    live->save_dungeon.Initialize();
+    ASSERT_TRUE(RegisterMoonModDungeonSaveRecord(&live->save_dungeon, 0, 9, "test.moonmod:moon-vault.annex"));
+    DNG_FLOOR_SAVE *floor = live->save_dungeon.GetFloorInfoPtr(0, 9);
+    ASSERT_NE(floor, nullptr);
+    floor->flag = DNG_FLOOR_FLAG_OPEN | DNG_FLOOR_FLAG_CLEAR;
+    floor->visit_count = 4;
+    floor->kill_count = 21;
+
+    manager.GetAllSaveFileInfo();
+    SaveSlotNew = true;
+    ASSERT_EQ(manager.SaveToMc(0), MC_STEP_DONE);
+    ASSERT_EQ(manager.error.code, MC_ERROR_NONE);
+    ASSERT_TRUE(fs::is_regular_file(SaveSlotPath(0)));
+    const fs::path sidecars = root / "moonmod" / "dungeon-saves";
+    ASSERT_TRUE(fs::exists(sidecars));
+    ASSERT_EQ(std::distance(fs::directory_iterator(sidecars), fs::directory_iterator()), 1);
+
+    live->save_dungeon.Initialize();
+    manager.GetAllSaveFileInfo();
+    ASSERT_EQ(manager.LoadFromMc(0), MC_STEP_DONE);
+    ASSERT_EQ(manager.error.code, MC_ERROR_NONE);
+    ASSERT_TRUE(RegisterMoonModDungeonSaveRecord(&live->save_dungeon, 0, 9, "test.moonmod:moon-vault.annex"));
+    floor = live->save_dungeon.GetFloorInfoPtr(0, 9);
+    ASSERT_NE(floor, nullptr);
+    EXPECT_EQ(floor->flag, DNG_FLOOR_FLAG_OPEN | DNG_FLOOR_FLAG_CLEAR);
+    EXPECT_EQ(floor->visit_count, 4);
+    EXPECT_EQ(floor->kill_count, 21);
 }
 
 TEST_F(SaveSlotTest, FailedLoadDoesNotPartiallyReplaceLiveStateOrDeleteFile) {

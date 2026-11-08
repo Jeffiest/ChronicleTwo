@@ -228,6 +228,9 @@ void LoadMapName(int language, u_long128 *buffer);
  */
 static MAP_NAME_INFO *GetMapNameInfo(int map_no) {
 
+    if (map_no >= MapNameNum) {
+        return GetMoonModMapNameInfo(map_no - MapNameNum);
+    }
     if (map_no < 0 || map_no >= MapNameNum) {
         return nullptr;
     }
@@ -327,6 +330,15 @@ int SearchMapNo(char *name) {
         MAP_NAME_INFO *info = &map_name[search.no];
 
         if (info->name != nullptr && strcmp(info->name, search.name) == 0) {
+            return search.no;
+        }
+    }
+
+    // Then the map identities mods appended after the native catalog.
+    for (; search.no < GetMapNameCount(); search.no++) {
+        const MAP_NAME_INFO *info = GetMoonModMapNameInfo(search.no - MapNameNum);
+
+        if (info != nullptr && info->name != nullptr && strcmp(info->name, search.name) == 0) {
             return search.no;
         }
     }

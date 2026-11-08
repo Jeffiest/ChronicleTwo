@@ -19,6 +19,7 @@
 #include "gfx/gfx.hpp"
 #include "log/log.hpp"
 #include "menu_mouse.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
 #include "platform/clock.hpp"
 #include "platform/frame_timing.hpp"
 #include "platform/input.hpp"
@@ -410,15 +411,32 @@ void PollFpsToggle() {
     }
 }
 
-// Records the host overlay of a presented frame: the FPS counter when asked, then the menu pointer.
+// The overlay's text line: the FPS counter when asked, then any debug text a MoonMod package shows.
+std::string HostOverlayText(bool fps) {
+    std::string       text = fps ? PresentFpsText() : std::string{};
+    const std::string debug_text = moonmod::ChronicleTwoDebugOverlayText();
+    if (!debug_text.empty()) {
+        if (!text.empty()) {
+            text += " / ";
+        }
+        text += debug_text;
+    }
+    return text;
+}
+
+bool ModOverlayVisible() {
+    return !moonmod::ChronicleTwoDebugOverlayText().empty();
+}
+
+// Records the host overlay of a presented frame: the FPS counter when asked and any mod debug text, then the menu pointer.
 gfx::DisplayListRef RecordHostOverlay(bool fps) {
     gfx::BeginRecording(gfx::RecordingKind::Overlay);
     if (!gfx::Recording()) {
         return nullptr;
     }
-    if (fps) {
+    if (const std::string text = HostOverlayText(fps); !text.empty()) {
         const int pixel = OverlayPixelSize(gfx::GetPresentationMapping());
-        OverlayDrawText(PresentFpsText(), gfx::GetPresentationMapping(true), pixel,
+        OverlayDrawText(text, gfx::GetPresentationMapping(true), pixel,
                         pixel * kOverlayPadding, pixel * kOverlayPadding);
     }
     MenuMouseDraw();
@@ -433,7 +451,7 @@ const gfx::DisplayList *DisplayOverlayList() {
         InputPoll();
     }
     MouseSetPointerCursor(MenuMousePointerVisible());
-    if (!overlay.on && !MenuMousePointerVisible()) {
+    if (!overlay.on && !MenuMousePointerVisible() && !ModOverlayVisible()) {
         return nullptr;
     }
     overlay.list = RecordHostOverlay(overlay.on);
@@ -544,7 +562,7 @@ void RepublishMouse() {
     const bool pointer = MenuMousePointerVisible();
     MouseSetPointerCursor(pointer);
     gfx::DisplayListRef overlay_list;
-    if (overlay.on || pointer) {
+    if (overlay.on || pointer || ModOverlayVisible()) {
         // Recording shares the renderer's state with the worker's display frames.
         gfx::RenderLease lease;
         overlay_list = RecordHostOverlay(overlay.on);
@@ -1110,7 +1128,7 @@ TickPublication PrepareTick(int start, int frames, bool canonical_endpoint_allow
     // The game thread records the host overlay and reads the mouse, as DisplayOverlayList does for a display.
     tick.pointer = MenuMousePointerVisible();
     MouseSetPointerCursor(tick.pointer);
-    if (overlay.on || tick.pointer) {
+    if (overlay.on || tick.pointer || ModOverlayVisible()) {
         tick.overlay = RecordHostOverlay(overlay.on);
     }
 

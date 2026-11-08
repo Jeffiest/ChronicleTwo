@@ -2335,6 +2335,8 @@ int EditMapJump(int map_no) {
         }
 
         map->area_no = MainScene->now_map_no;
+        moonmod::ApplyChronicleTwoGeorama(map, main_data);
+        GameGrantGeoramaStockForTest(map);
         map->ClearAllParts();
         used_quads = main_data->stack_used - used_before;
         used_kb = (used_quads * 0x10) / 0x400;

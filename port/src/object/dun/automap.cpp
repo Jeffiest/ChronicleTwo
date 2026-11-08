@@ -33,6 +33,18 @@
 #include "scenesnd.hpp"
 #include "scriptinterpreter.hpp"
 
+#include <algorithm>
+#include <utility>
+
+#include "dng_event.hpp"
+#include "gfx/gfx.hpp"
+#include "monster.hpp"
+#include "platform/config.hpp"
+#include "render/renderer.hpp"
+
+// aerial_keys.cpp: the F-key tuning of the aerial map, apart from the game headers SDL clashes with.
+void AerialTuneKeys();
+
 /**
  *
  * Names and connection flags of parts for generated dungeon cells.
@@ -462,6 +474,416 @@ std::span<CAutoMapParts> CAutoMapGen::GridCells() const { return LiveGridCells(g
 
 std::span<CAutoMapParts> CMiniMapSymbol::GridCells() const { return LiveGridCells(grid_storage, grid_w, grid_h); }
 
+namespace {
+
+// ---- Aerial map ------------------------------------------------------------------------------
+//
+// The dungeon map is the live floor seen from straight above the player. The near clip plane sits
+// aerial_map_ceiling above the player's feet, so ceilings, roofs and upper walls are cut away. Only
+// the cells the retail map would show are copied onto the map; monsters and chests appear as their
+// own models under the same rule the retail symbols follow (revealed cell or the reveal item).
+
+constexpr float kAerialHeight = 8000.0f; // camera height above the player
+constexpr float kAerialDepth = 4000.0f;  // how far below the player the floor is still drawn
+constexpr float kRetailCellPixels = 16.0f;
+
+struct AerialFrame {
+    bool  valid = false;
+    float cell_x = 0.0f; // target logical pixels per cell along X
+    float cell_y = 0.0f; // and along Z
+    float center_x = 0.0f;
+    float center_y = 0.0f;
+    float zoom = 1.0f;
+};
+
+AerialFrame aerial;
+u_long128   aerial_buffer[0x10000] __attribute__((aligned(64)));
+mgCMemory   aerial_memory;
+
+bool AerialEnabled() {
+    return ConfigGet().aerial_map;
+}
+
+bool CellRevealed(const CMiniMapSymbol &mm, const float *pos) {
+    if (BattleAreaScene->minimap_reveal & MINIMAP_REVEAL_SYMBOLS) {
+        return true;
+    }
+
+    const CAutoMapParts *grid = mm.GridCells().data();
+    const auto           point = GridPoint(pos, mm.cell_w, mm.cell_d, mm.grid_w, mm.grid_h);
+
+    if (grid == nullptr || !point) {
+        return false;
+    }
+
+    return grid[(*point)[1] * mm.grid_w + (*point)[0]].visible != 0;
+}
+
+// ---- Models ----------------------------------------------------------------------------------
+//
+// Monsters, chests and the player are drawn into the floor image itself, so the floor and the
+// models share one camera and stay together. As on the first game's port, each is drawn through a
+// copy of the aerial camera scaled about the model, so it reads at map size without rescaling the
+// model. The pivot is the model's drawn root (its frame's local-to-world translation, cached by
+// the scene draw this frame), not its logical position: a gap between the two would be magnified.
+
+sceVu0FMATRIX aerial_view;
+sceVu0FVECTOR aerial_eye;
+
+// mgSetViewMatrix(view * T(pivot) * S(scale) * T(-pivot)); pivot NULL puts the plain camera back.
+void SetAerialView(const float *pivot, float scale) {
+    sceVu0FMATRIX view;
+    sceVu0CopyMatrix(view, aerial_view);
+
+    if (pivot != NULL) {
+        for (int row = 0; row < 3; row++) {
+            float moved = aerial_view[0][row] * pivot[0] + aerial_view[1][row] * pivot[1] + aerial_view[2][row] * pivot[2];
+
+            for (int col = 0; col < 3; col++) {
+                view[col][row] = aerial_view[col][row] * scale;
+            }
+
+            view[3][row] = aerial_view[3][row] + moved * (1.0f - scale);
+        }
+    }
+
+    mgSetViewMatrix(view, aerial_eye);
+}
+
+// The drawn root of a model, falling back to its position before its first draw.
+void ModelPivot(CCharacter2 *chara, float *out) {
+    chara->GetPosition(out);
+    mgCFrame *root = chara->GetFrame();
+
+    if (root != NULL) {
+        sceVu0FMATRIX lw;
+        root->GetLWMatrix(lw);
+        out[0] = lw[3][0];
+        out[1] = lw[3][1];
+        out[2] = lw[3][2];
+    }
+}
+
+void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
+    mgCTextureManager *tex_man = &mgTexManager;
+    int                old = mgActiveLighting(1, 1);
+    sceVu0FMATRIX      ld;
+    sceVu0FMATRIX      lc;
+    sceVu0FVECTOR      amb;
+    float              pos[4];
+    float              pivot[4];
+
+    mgGetLight(ld, lc);
+    mgGetAmbient(amb);
+    DngMainScene->GetCharaLighting(lc, amb);
+    mgSetLight(ld, lc);
+    mgSetAmbient(amb);
+
+    if (TreasureBoxMan != NULL) {
+        tex_man->ReloadTexture(TreasureBoxMan->tex_block, (sceVif1Packet *) NULL);
+
+        for (int i = 0; i < TREASURE_BOX_MAX; i++) {
+            CTreasureBox *slot = &TreasureBoxMan->box[i];
+
+            if (slot->state != TREASURE_BOX_STATE_UNOPENED || slot->frame == NULL || slot->model == NULL) {
+                continue;
+            }
+
+            slot->GetPosition(pos);
+
+            if (!CellRevealed(mm, pos)) {
+                continue;
+            }
+
+            SetAerialView(pos, scale);
+            // Its own position as the view position passes CTreasureBox::Draw's distance test.
+            slot->Draw(pos);
+        }
+    }
+
+    if (ActiveMonster != NULL && !(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_DRAW)) {
+        int show_all = (BattleAreaScene->minimap_reveal & MINIMAP_REVEAL_SYMBOLS) != 0;
+
+        for (int i = 0; i < MONSTER_ACTIVE_MAX; i++) {
+            CActiveMonster *monster = ActiveMonster->GetActiveMonster(i);
+
+            // CMonsterMan::DrawMiniMapSymbol's test, then DrawSymbol's revealed-cell test.
+            if (monster == NULL || monster->chara_kind != ACTION_KIND_SCRIPT ||
+                monster->catch_state == ACTION_CATCH_HELD ||
+                !(monster->target_dist <= monster->clip_dist || show_all)) {
+                continue;
+            }
+
+            monster->GetPosition(pos);
+
+            if (!CellRevealed(mm, pos)) {
+                continue;
+            }
+
+            tex_man->ReloadTexture(monster->refer_no + MONSTER_TEXB_REFER, (sceVif1Packet *) NULL);
+            ModelPivot(monster, pivot);
+            SetAerialView(pivot, scale);
+            monster->DrawDirect();
+        }
+    }
+
+    if (MainChara__2 != NULL && DngMainScene->CheckDrawChara(0)) {
+        tex_man->ReloadTexture(16, (sceVif1Packet *) NULL);
+        ModelPivot(MainChara__2, pivot);
+        SetAerialView(pivot, scale);
+        MainChara__2->DrawDirect();
+    }
+
+    SetAerialView(NULL, 1.0f);
+    mgActiveLighting(old, 0);
+}
+
+// Renders the floor around center from above into the "aerial_map" target.
+gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, float screen_zoom, float render_zoom) {
+    aerial.valid = false;
+
+    CMap *main_map = dc2::dungeon::MainMap().Get();
+
+    if (!mgPortRendererReady() || !mgPortFrameOpen() || main_map == nullptr ||
+        (BattleAreaScene->pause_flag & DNG_PAUSE_MAP_DRAW)) {
+        return gfx::kNullTexture;
+    }
+
+    const Config &config = ConfigGet();
+    const uint32_t width = static_cast<uint32_t>(mgScreenWidth);
+    const uint32_t height = static_cast<uint32_t>(mgScreenHeight);
+    gfx::TextureHandle target = gfx::NamedRenderTarget("aerial_map", width, height, true, false);
+
+    if (target == gfx::kNullTexture) {
+        return gfx::kNullTexture;
+    }
+
+    alignas(16) static unsigned char saved_info[sizeof(mgRENDER_INFO)];
+    std::memcpy(saved_info, (const void *) &mgRenderInfo, sizeof saved_info);
+    const mgPortGsState saved_gs = mgPortGs();
+
+    aerial.zoom = screen_zoom;
+    // Pixels per world unit at the floor: eye / height. A cell is zoom * 16 pixels on the map; the
+    // target keeps two cells of margin past the large map.
+    const float cell_pixels = kRetailCellPixels * render_zoom;
+    const float eye = cell_pixels * kAerialHeight / mm.cell_w;
+    const float near_dist = kAerialHeight - config.aerial_map_ceiling;
+    mgSetRenderInfo(eye, near_dist > 1.0f ? near_dist : 1.0f, kAerialHeight + kAerialDepth);
+
+    sceVu0FMATRIX view_mat;
+    sceVu0FVECTOR cam_pos = {center[0], center[1] + kAerialHeight, center[2], 1.0f};
+    sceVu0FVECTOR dir = {0.0f, -1.0f, 0.0f, 0.0f};
+    sceVu0FVECTOR down = {0.0f, 0.0f, 1.0f, 0.0f}; // screen down is +Z, as on the retail map
+    sceVu0CameraMatrix(view_mat, cam_pos, dir, down);
+    mgSetViewMatrix(view_mat, cam_pos);
+    sceVu0CopyMatrix(aerial_view, view_mat);
+    sceVu0CopyVector(aerial_eye, cam_pos);
+
+    // The floor is kAerialHeight from this camera, past where the scene's fog is full. Fog stays
+    // on (the map meshes read their fog from these distances either way) but starts beyond the floor,
+    // so the floor gets the near value, as it has around the player. mgRenderInfo is restored after.
+    mgSetFogParam(kAerialHeight * 4.0f, kAerialHeight * 5.0f, mgRenderInfo.fog.r, mgRenderInfo.fog.g,
+                  mgRenderInfo.fog.b, mgRenderInfo.fog.values[1], mgRenderInfo.fog.values[2]);
+
+    {
+    mgPortTargetScope target_scope(target);
+    // Where the floor lands in the image, through the world-to-clip transform the renderer draws
+    // this target with: the camera centre, then one cell along X and one along Z. A negative step
+    // is a mirrored axis.
+    {
+        float                     clip[16];
+        const gfx::LogicalMapping mapping = gfx::GetLogicalMapping(target);
+        mgPortWorldToClip(clip);
+        const auto project = [&](float wx, float wy, float wz, float &lx, float &ly) {
+            const float cx = clip[0] * wx + clip[4] * wy + clip[8] * wz + clip[12];
+            const float cy = clip[1] * wx + clip[5] * wy + clip[9] * wz + clip[13];
+            const float cw = clip[3] * wx + clip[7] * wy + clip[11] * wz + clip[15];
+            const float px = (cx / cw + 1.0f) * 0.5f * (float) mapping.pixel_width;
+            const float py = (cy / cw + 1.0f) * 0.5f * (float) mapping.pixel_height;
+            lx = (px - mapping.offset_x) / mapping.scale_x;
+            ly = (py - mapping.offset_y) / mapping.scale_y;
+        };
+        float step_x, step_y, unused;
+        project(center[0], center[1], center[2], aerial.center_x, aerial.center_y);
+        project(center[0] + mm.cell_w, center[1], center[2], step_x, unused);
+        project(center[0], center[1], center[2] + mm.cell_d, unused, step_y);
+        aerial.cell_x = step_x - aerial.center_x;
+        aerial.cell_y = step_y - aerial.center_y;
+
+        static int logged = 0;
+
+        if (logged < 3) {
+            logged++;
+            std::fprintf(stderr, "aerial_map: center %.1f,%.1f cell %.2f x %.2f (eye %.1f, cell_w %.1f)\n",
+                         aerial.center_x, aerial.center_y, aerial.cell_x, aerial.cell_y, eye, mm.cell_w);
+        }
+    }
+    // The aerial draws are not matched with the scene's draws of the same objects between ticks.
+    mgPortNoInterpolationScope interp_scope;
+    const uint8_t black[4] = {0, 0, 0, 0x80};
+    gfx::Clear(true, black, true, 0.0f);
+
+    aerial_memory.stSetBuffer(aerial_buffer, sizeof aerial_buffer / sizeof aerial_buffer[0]);
+    aerial_memory.stReset();
+    int list[16];
+
+    for (int i = 0; i < 15; i++) {
+        list[i] = i;
+    }
+
+    list[15] = -1;
+    mgBeginDraw(&aerial_memory, list, NULL);
+    float view[4] = {center[0], center[1], center[2], 0.0f};
+    // The occluders are set up for the follow camera; seen from above they can hide the floor.
+    const s32 saved_occlusion = main_map->occlusion_num;
+    main_map->occlusion_num = 0;
+    // Each part far-clips by its distance from the camera, which is kAerialHeight here: lift the
+    // near and far distances and the fade for this pass only, then put them back.
+    struct PartClip {
+        float far_dist, near_dist, fade_alpha;
+        s32   fade;
+    };
+    static PartClip saved_clip[1024];
+    const int clip_num = main_map->place_parts_num < 1024 ? main_map->place_parts_num : 1024;
+
+    for (int i = 0; i < clip_num; i++) {
+        CMapParts *part = &main_map->place_parts[i];
+        saved_clip[i] = {part->far_dist, part->near_dist, part->fade_alpha, part->fade};
+        part->far_dist = 0.0f;
+        part->near_dist = 0.0f;
+        part->fade = 0;
+    }
+
+    main_map->PreDraw(view);
+    const int parts_listed = main_map->draw_parts_num;
+    const int parts_drawn = main_map->Draw();
+    main_map->occlusion_num = saved_occlusion;
+
+    for (int i = 0; i < clip_num; i++) {
+        CMapParts *part = &main_map->place_parts[i];
+        part->far_dist = saved_clip[i].far_dist;
+        part->near_dist = saved_clip[i].near_dist;
+        part->fade_alpha = saved_clip[i].fade_alpha;
+        part->fade = saved_clip[i].fade;
+    }
+
+    {
+        static int logged = 0;
+
+        if (logged < 3) {
+            logged++;
+            std::fprintf(stderr, "aerial_map: parts placed %d listed %d drawn %d (occluders %d)\n",
+                         main_map->place_parts_num, parts_listed, parts_drawn, (int) saved_occlusion);
+        }
+    }
+    mgPreEndDraw(NULL);
+
+    for (int g = 0; g < 6; g++) {
+        int blocks[128];
+        int num = DngMainScene->GetTextureBlockNo(g, blocks, 128);
+
+        for (int b = 0; b < num; b++) {
+            int block = blocks[num - b - 1];
+            mgEndDrawReloadTexture(block, NULL);
+            mgEndDraw(block, NULL);
+        }
+    }
+
+    mgSetPkTextureRepeat(0);
+    DrawFloorModels(mm, config.aerial_map_model_scale);
+    }
+
+    std::memcpy((void *) &mgRenderInfo, saved_info, sizeof saved_info);
+    mgPortGs() = saved_gs;
+    aerial.valid = true;
+    return target;
+}
+
+// Copies the revealed cells of the aerial image onto the map, one retail tile at a time.
+void CompositeAerial(const CMiniMapSymbol &mm, gfx::TextureHandle target, int dimmed, uint8_t alpha) {
+    const float zoom = aerial.zoom;
+    const float tile = kRetailCellPixels * zoom;
+    const float map_left = (float) (mm.x - mm.w / 2);
+    const float map_top = (float) (mm.y - mm.h / 2);
+    // The player sits at the retail map's (x + 8, y + 8).
+    const float origin_x = (float) mm.x + 8.0f;
+    const float origin_y = (float) mm.y + 8.0f;
+
+    gfx::TextureBinding binding;
+    binding.texture = target;
+    binding.filter = gfx::Filter::Linear;
+    binding.ignore_alpha = true;
+
+    gfx::DrawState state;
+    state.blend = alpha < 0x80;
+    state.scissor = true;
+    state.scissor_rect = {map_left, map_top, (float) mm.w, (float) mm.h};
+
+    std::vector<gfx::Vertex2D> quads;
+    const CAutoMapParts       *grid = mm.GridCells().data();
+    float                      part_pos[4];
+
+    for (CMapParts &part : mm.PlacedParts()) {
+        CMapParts *parts = &part;
+
+        if (parts->name[0] == 0 || parts->minimap_tile == -1) {
+            continue;
+        }
+
+        parts->GetPosition(part_pos);
+        uint8_t shade = 0x80;
+
+        if (grid != nullptr) {
+            const auto point = GridPoint(part_pos, mm.cell_w, mm.cell_d, mm.grid_w, mm.grid_h, false);
+
+            if (!point) {
+                continue;
+            }
+
+            const CAutoMapParts *cell = &grid[mm.grid_w * (*point)[1] + (*point)[0]];
+
+            if (cell->attr & AUTOMAP_ATTR_HIDE) {
+                continue;
+            }
+
+            if (!cell->visible) {
+                if (!dimmed) {
+                    continue;
+                }
+
+                shade = 0x30;
+            }
+        }
+
+        const float rate_x = (part_pos[0] - mm.center[0]) / mm.cell_w;
+        const float rate_z = (part_pos[2] - mm.center[2]) / mm.cell_d;
+        const float dx = origin_x + tile * rate_x - tile / 2.0f;
+        const float dy = origin_y + tile * rate_z - tile / 2.0f;
+        const float u = aerial.center_x + aerial.cell_x * rate_x - aerial.cell_x / 2.0f;
+        const float v = aerial.center_y + aerial.cell_y * rate_z - aerial.cell_y / 2.0f;
+        const float uw = aerial.cell_x;
+        const float vh = aerial.cell_y;
+
+        if (dx > map_left + mm.w || dy > map_top + mm.h || dx + tile < map_left || dy + tile < map_top) {
+            continue;
+        }
+
+        const gfx::Vertex2D corners[4] = {
+            {dx, dy, 0.0f, u, v, {shade, shade, shade, alpha}},
+            {dx + tile, dy, 0.0f, u + uw, v, {shade, shade, shade, alpha}},
+            {dx + tile, dy + tile, 0.0f, u + uw, v + vh, {shade, shade, shade, alpha}},
+            {dx, dy + tile, 0.0f, u, v + vh, {shade, shade, shade, alpha}},
+        };
+        quads.insert(quads.end(), corners, corners + 4);
+    }
+
+    if (!quads.empty()) {
+        mgPortDraw2D(gfx::Primitive::Quads, quads, binding, state);
+    }
+}
+
+} // namespace
+
 void CMiniMapSymbol::DrawSymbol(float *pos, int symbol) {
     auto *grid = GridCells().data();
     if (grid_w > 0 && grid_h > 0 && grid == nullptr) {
@@ -472,8 +894,16 @@ void CMiniMapSymbol::DrawSymbol(float *pos, int symbol) {
         !std::isfinite(cell_w) || !std::isfinite(cell_d) || cell_w <= 0.0f || cell_d <= 0.0f) {
         return;
     }
-    const double screen_x = x + 16.0 * (static_cast<double>(pos[0]) - center[0]) / cell_w;
-    const double screen_y = y + 16.0 * (static_cast<double>(pos[2]) - center[2]) / cell_d;
+
+    // The models of monsters and chests are in the aerial image; their markers stay hidden.
+    if (aerial.valid && (symbol == MINIMAP_SYMBOL_MONSTER || symbol == MINIMAP_SYMBOL_MONSTER_BLINK ||
+                         symbol == MINIMAP_SYMBOL_TREASURE_BOX)) {
+        return;
+    }
+
+    const double cell_pixels = aerial.valid ? kRetailCellPixels * aerial.zoom : kRetailCellPixels;
+    const double screen_x = x + cell_pixels * (static_cast<double>(pos[0]) - center[0]) / cell_w;
+    const double screen_y = y + cell_pixels * (static_cast<double>(pos[2]) - center[2]) / cell_d;
     int          revealed = false;
     const auto   point = GridPoint(pos, cell_w, cell_d, grid_w, grid_h);
     if (grid != nullptr && point && grid[(*point)[1] * grid_w + (*point)[0]].visible) {
@@ -555,6 +985,7 @@ int CAutoMapGen::CreatRoom(int x, int y, int room_no, int info_no) {
             })) {
             return false;
         }
+        int tries = 0;
         for (;;) {
             pick = iRand(room_info_num);
             const int roll = iRand(100);
@@ -562,7 +993,12 @@ int CAutoMapGen::CreatRoom(int x, int y, int room_no, int info_no) {
                 continue;
             }
             const auto &preset = presets[static_cast<std::size_t>(pick)];
-            if (preset.fixed <= 0 && preset.rate >= roll && preset.table != nullptr && preset.w > 0 && preset.h > 0) {
+            // MoonMod layouts can narrow the room sizes; after 64 rejected picks any size is accepted.
+            const bool size_allowed = DngLayoutRoomMax <= 0 || tries >= 64 ||
+                                      (preset.w >= DNG_BUILD_ROOM_MIN && preset.w <= DNG_BUILD_ROOM_MIN + DNG_BUILD_ROOM_SPAN - 1 &&
+                                       preset.h >= DNG_BUILD_ROOM_MIN && preset.h <= DNG_BUILD_ROOM_MIN + DNG_BUILD_ROOM_SPAN - 1);
+            tries++;
+            if (size_allowed && preset.fixed <= 0 && preset.rate >= roll && preset.table != nullptr && preset.w > 0 && preset.h > 0) {
                 info_no = pick;
                 break;
             }
@@ -1373,9 +1809,9 @@ void CAutoMapGen::CreatDoorRoom() {
         return;
     }
 
-    int candidates[8];
+    int candidates[AUTOMAP_ROOM_MAX];
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < AUTOMAP_ROOM_MAX; i++) {
         candidates[i] = -1;
     }
 
@@ -1974,6 +2410,9 @@ void CAutoMapGen::RandomMapMainProc() {
 
     rooms = 2;
     goal = iRand(3) + 4;
+    if (DngLayoutRooms > 0) {
+        goal = DngLayoutRooms;
+    }
     round = 0;
 
     while (rooms < goal) {
@@ -2132,14 +2571,14 @@ void CAutoMapGen::Build() {
     }
 
     if (mode & AUTOMAP_GEN_FIXED_START) {
-        grid_w = 20;
-        grid_h = 16;
+        grid_w = DngLayoutArea > 20 ? DngLayoutArea : 20;
+        grid_h = DngLayoutArea > 16 ? DngLayoutArea : 16;
         RandomMapMainProc();
         return;
     }
 
-    grid_w = 14;
-    grid_h = 14;
+    grid_w = DNG_BUILD_AREA;
+    grid_h = DNG_BUILD_AREA;
     RandomMapMainProc();
     map = DngMainScene->GetMap(0);
 
@@ -2746,6 +3185,12 @@ void CMiniMapSymbol::DrawSymbol_Chara(CCharacter2 *chara) {
 
     chara->GetPosition(pos);
     chara->GetRotation(rot);
+
+    // The player's model, in the aerial image, replaces the arrow.
+    if (aerial.valid) {
+        return;
+    }
+
     sceVu0SubVector(pos, pos, center);
     int        screen_x = x + static_cast<int>(16.0f * (pos[0] / cell_w)) + 8;
     int        screen_y = y + static_cast<int>(16.0f * (pos[2] / cell_d)) + 8;
@@ -2804,6 +3249,82 @@ void CMiniMapSymbol::Draw(float *pos) {
     sceVu0CopyVector(center, pos);
     const bool dimmed = (BattleAreaScene->minimap_reveal & MINIMAP_REVEAL_ROOMS) != 0;
 
+    if (AerialEnabled()) {
+        AerialTuneKeys();
+        // The caller sets x, y, w and h every frame, so this scales them only for this frame.
+        const Config &config = ConfigGet();
+        const float   size = config.aerial_map_size;
+        float         screen_zoom = config.aerial_map_zoom;
+        float         render_zoom = screen_zoom;
+        uint8_t       alpha = 0x80;
+
+        if (large) {
+            // As the first game's full map: the whole explored floor, fitted to most of the screen,
+            // centred on the floor, see-through over the scene.
+            float lo_x = 1e30f, lo_z = 1e30f, hi_x = -1e30f, hi_z = -1e30f;
+            float part_pos[4];
+
+            for (CMapParts &part : live_parts) {
+                if (part.name[0] == 0 || part.minimap_tile == -1) {
+                    continue;
+                }
+
+                part.GetPosition(part_pos);
+
+                if (grid != nullptr) {
+                    const auto point = GridPoint(part_pos, cell_w, cell_d, grid_w, grid_h, false);
+
+                    if (!point) {
+                        continue;
+                    }
+
+                    const CAutoMapParts *cell = &grid[grid_w * (*point)[1] + (*point)[0]];
+
+                    if ((cell->attr & AUTOMAP_ATTR_HIDE) || !(cell->visible || dimmed)) {
+                        continue;
+                    }
+                }
+
+                lo_x = std::min(lo_x, part_pos[0]);
+                hi_x = std::max(hi_x, part_pos[0]);
+                lo_z = std::min(lo_z, part_pos[2]);
+                hi_z = std::max(hi_z, part_pos[2]);
+            }
+
+            const float box_w = (mgScreenWidth - 64) * size;
+            const float box_h = (mgScreenHeight - 96) * size;
+
+            if (lo_x <= hi_x) {
+                const float span_x = (hi_x - lo_x) / cell_w + 1.0f;
+                const float span_z = (hi_z - lo_z) / cell_d + 1.0f;
+                screen_zoom = std::min(box_w / span_x, box_h / span_z) / kRetailCellPixels;
+                screen_zoom = std::min(screen_zoom, config.aerial_map_zoom * 2.0f);
+                // The image is the screen's size; a floor wider than that is rendered smaller and stretched.
+                render_zoom = std::min(screen_zoom, std::min((mgScreenWidth - 32) / span_x,
+                                                             (mgScreenHeight - 32) / span_z) / kRetailCellPixels);
+                center[0] = (lo_x + hi_x) / 2.0f;
+                center[2] = (lo_z + hi_z) / 2.0f;
+            }
+
+            x = (s16) (mgScreenWidth / 2 - 8);
+            y = (s16) (mgScreenHeight / 2 - 8);
+            w = (s16) box_w;
+            h = (s16) box_h;
+            alpha = 0x60;
+        } else {
+            w = (s16) (w * size);
+            h = (s16) (h * size);
+        }
+
+        gfx::TextureHandle target = RenderAerial(*this, center, screen_zoom, render_zoom);
+
+        if (target != gfx::kNullTexture) {
+            CompositeAerial(*this, target, dimmed, alpha);
+            return;
+        }
+    }
+
+    aerial.valid = false;
     CPreSprite sprite;
     CPreSprite spare;
     float      part_pos[4];
@@ -2903,3 +3424,9 @@ bool CAutoMapGen::SetupRoomInfo(std::string_view path) {
     room_info_num = static_cast<int>(count);
     return true;
 }
+
+// Random floor layout knobs that mods set; 0 keeps retail's layout (declared in automap.hpp).
+int DngLayoutRooms = 0;
+int DngLayoutArea = 0;
+int DngLayoutRoomMin = 0;
+int DngLayoutRoomMax = 0;

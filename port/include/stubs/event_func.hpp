@@ -11,3 +11,6 @@ ClsMes *GetMes(int id) asm("EventFunc_GetMes");
 // The monster slot limits of the current floor (port/src/monster.cpp).
 int PortMonsterLatchLimits();
 int PortMonsterActiveLimit();
+
+// Mod event notifications raised from the floor script opcodes.
+#include "moonmod/native_events.hpp"

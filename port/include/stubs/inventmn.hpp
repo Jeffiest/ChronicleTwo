@@ -22,3 +22,6 @@ extern mgCTexture  *Tex_Hatsumei asm("Inventmn_InventionTexture");
 extern CMenuInvent *CMenuInventPt asm("Inventmn_Menu");
 extern char        *NetaMemoStr[512] asm("Inventmn_MemoNames");
 extern short        NetaMemoID[512] asm("Inventmn_MemoIds");
+
+// MoonMod: reports a created invention with its recipe's three ideas (port/src/moonmod/inventmn_moonmod.cpp).
+void MoonModNotifyInventionCreated(int item_id);

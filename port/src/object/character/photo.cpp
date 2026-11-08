@@ -14,6 +14,7 @@
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 #include "padcontrol.hpp"
+#include "moonmod/native_events.hpp"
 #include "photo.hpp"
 #include "snd_mngr.hpp"
 #include "text/bounded.hpp"
@@ -247,6 +248,9 @@ void SetTookPhotoData(USER_PICTURE_INFO *photo) {
         if (invent->LevelCheck(photo) != 0) {
             ShowLevelUpCnt = 60;
         }
+    }
+    if (photo != nullptr) {
+        moonmod::ChronicleTwoPhotoTaken(photo->neta_id, photo->map_no, photo->npc_no, photo->monster_no, photo->used != 0);
     }
 }
 

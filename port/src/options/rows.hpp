@@ -35,6 +35,7 @@ struct Row {
     std::function<void(Config &, int)>         step;
     std::string                                action;
     bool                                       pad = false; /**< Selects the action's controller binding. */
+    std::function<void()>                      activate;    /**< Runs instead of stepping the value, such as opening a page. */
 };
 
 struct Page {

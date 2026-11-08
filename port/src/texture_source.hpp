@@ -10,6 +10,18 @@
  */
 void TextureSourceRegister(const void *buffer, std::string source, std::size_t size = 0);
 /**
+ * Lets a MoonMod directory reuse a native directory's converted textures; false on a conflicting alias.
+ */
+bool TextureSourceAliasRegister(std::string source, std::string catalog_source);
+/**
+ * Maps a source through the registered MoonMod aliases, or returns it unchanged.
+ */
+std::string TextureSourceResolveAlias(std::string source);
+/**
+ * Forgets every MoonMod alias.
+ */
+void TextureSourceAliasesClear();
+/**
  * Drops the source identity associated with one native buffer.
  */
 void TextureSourceForget(const void *buffer);

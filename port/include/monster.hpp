@@ -40,6 +40,8 @@ enum MONSTER_MAN_SIZE {
     MONSTER_SHARE_MAX = 128  /**< Variables that every monster's script shares. */
 };
 
+extern int MonsterActiveLimit; /**< Maximum nearest monsters allowed in sight at once (1..MONSTER_ACTIVE_MAX). */
+
 /**
  *
  * Kinds of monster that the code singles out by number.
@@ -580,6 +582,15 @@ public:
     CActiveMonster *SetActiveMonster(int refer_no, float *pos, float *rot, int param);
 
     /**
+     * Removes a live mod-spawned monster without running the native kill, reward, or gate-drop path.
+     *
+     * @param slot Active monster slot.
+     * @param generation Entity generation that must still own the slot.
+     * @return true when the matching live monster was safely removed.
+     */
+    bool DespawnMoonModMonster(int slot, unsigned int generation);
+
+    /**
      *
      * Draws the monsters on the mini-map.
      *
@@ -748,6 +759,21 @@ extern BASE_MONSTER_TBL base_monster_define[344];
  * @size 0x40
  */
 BASE_MONSTER_TBL *GetMonsterTable(int id);
+
+/**
+ * Registers a port-owned enemy definition by copying a native template and overriding safe
+ * numeric fields. The variant reuses the template's model, script, drops, and other behavior.
+ */
+bool RegisterMoonModMonsterVariant(int template_id, const char *display_name, int hp, int attack,
+                                   int defense, int reward_exp, int reward_money,
+                                   const char *model, const char *script, int *out_id);
+void ResetMoonModMonsterVariants();
+unsigned int GetMoonModMonsterSlotGeneration(int slot);
+unsigned int EnsureMoonModMonsterSlotGeneration(int slot);
+/** Invalidates every mod handle for a slot's previous monster; CMonsterLocateInfo::SetPutFlag calls it per spawn. */
+void BumpMoonModMonsterSlotGeneration(int slot);
+/** Gives a registered mod variant's definition, or null. */
+BASE_MONSTER_TBL *FindMoonModMonsterVariant(int monster_id);
 
 /**
  *

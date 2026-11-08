@@ -3037,7 +3037,9 @@ int _SET_DEAD_START(dc2::script::RunArguments args, int argc) {
         return 0;
     }
 
+    const bool first_death_transition = nowMonster->state != ACTIVE_MONSTER_DEAD;
     nowMonster->state = ACTIVE_MONSTER_DEAD;
+    if (first_death_transition) moonmod::ChronicleTwoEnemyDefeated(nowMonster, nullptr);
     pallet = &nowMonster->script_pallet;
     pallet->duration = 0;
     pallet->elapsed = 0;

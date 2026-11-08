@@ -7,6 +7,8 @@
 #include "font.hpp"
 #include "mainloop.hpp"
 #include "menudraw.hpp"
+#include "moonmod/manager_ui.hpp"
+#include "options/mod_manager_ui.hpp"
 #include "options/rows.hpp"
 #include "options/screen.hpp"
 #include "platform/display.hpp"
@@ -84,6 +86,10 @@ void Draw() {
     // Retail owns the textured background, gold frame, title and transitions. Cover only its
     // contents while on the PC page; no form or message state is rewritten.
     ResetMenuScissor();
+    if (moonmod::ManagerOpen()) {
+        mod_manager_ui::Draw();
+        return;
+    }
     const auto &config = ConfigGet();
     const auto  point = PointerPosition();
     const auto  hit = Pointing() ? HitTest(g_screen, point.x, point.y) : Hit{};

@@ -1,0 +1,125 @@
+# Links FFmpeg's format, codec, resampling and scaling libraries as kz::ffmpeg: the static tree kz-ffmpeg builds
+# (Linux, macOS), or its windows-x64 DLLs (Windows). Only LGPL builds are acceptable
+# inputs; a GPL or nonfree libavcodec must never reach a Kazarov consumer.
+
+include_guard(GLOBAL)
+
+function(_kz_ffmpeg_default_dir out)
+    string(TOLOWER "${CMAKE_SYSTEM_NAME}" os)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|x64)$")
+        set(arch x64)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
+        set(arch arm64)
+    else()
+        string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" arch)
+    endif()
+    set(${out} "${CMAKE_SOURCE_DIR}/.kazarov/ffmpeg/${os}-${arch}" PARENT_SCOPE)
+endfunction()
+
+function(_kz_ffmpeg_import)
+    if(DEFINED ENV{KZ_FFMPEG_DIR})
+        set(default "$ENV{KZ_FFMPEG_DIR}")
+    else()
+        _kz_ffmpeg_default_dir(default)
+    endif()
+    set(KZ_FFMPEG_DIR "${default}" CACHE PATH "FFmpeg tree: include/, lib/ and on Windows bin/")
+
+    if(NINTENDO_SWITCH)
+        set(stamp "${KZ_FFMPEG_DIR}/kz-ffmpeg.json")
+        if(NOT EXISTS "${stamp}")
+            message(FATAL_ERROR "Switch FFmpeg requires Kazarov's LGPL-only build stamp; run kz-ffmpeg --target switch-arm64.")
+        endif()
+        file(READ "${stamp}" build_stamp)
+        string(JSON build_license GET "${build_stamp}" license)
+        if(NOT build_license STREQUAL "License: LGPL version 2.1 or later" OR
+           build_stamp MATCHES "--enable-(gpl|nonfree|version3)")
+            message(FATAL_ERROR "Switch FFmpeg must be built without GPL, nonfree or version-3-only components.")
+        endif()
+    endif()
+
+    if(NOT EXISTS "${KZ_FFMPEG_DIR}/include/libavcodec/avcodec.h")
+        message(FATAL_ERROR "kz_ffmpeg: no include/libavcodec/avcodec.h under ${KZ_FFMPEG_DIR}. "
+            "Linux: the Kazarov image provides /opt/kazarov/ffmpeg. "
+            "macOS: run tools/kazarov/scripts/build/kz-ffmpeg --out <dir>. "
+            "Windows: run tools/windows/acquire.ps1 and pass -DKZ_FFMPEG_DIR=<dir>.")
+    endif()
+
+    if(WIN32)
+        set(runtime_dlls "")
+        foreach(lib avutil swresample swscale avcodec avformat)
+            file(GLOB dll "${KZ_FFMPEG_DIR}/bin/${lib}-*.dll")
+            list(LENGTH dll count)
+            if(NOT count EQUAL 1)
+                message(FATAL_ERROR "kz_ffmpeg: expected one bin/${lib}-*.dll under ${KZ_FFMPEG_DIR}, found ${count}")
+            endif()
+            if(NOT EXISTS "${KZ_FFMPEG_DIR}/lib/lib${lib}.dll.a")
+                message(FATAL_ERROR "kz_ffmpeg: ${KZ_FFMPEG_DIR}/lib/lib${lib}.dll.a is missing")
+            endif()
+            add_library(kz::${lib} SHARED IMPORTED GLOBAL)
+            set_target_properties(kz::${lib} PROPERTIES
+                IMPORTED_LOCATION "${dll}"
+                IMPORTED_IMPLIB "${KZ_FFMPEG_DIR}/lib/lib${lib}.dll.a")
+            include(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/KazarovWindowsImports.cmake)
+            kz_windows_import_library(kz::${lib})
+            list(APPEND runtime_dlls "${dll}")
+        endforeach()
+        # The extraction program uses the bundled FFmpeg command and all its shared components.
+        file(GLOB runtime_dlls "${KZ_FFMPEG_DIR}/bin/*.dll")
+        if(NOT EXISTS "${KZ_FFMPEG_DIR}/bin/ffmpeg.exe")
+            message(FATAL_ERROR "kz_ffmpeg: the MP4 extractor requires bin/ffmpeg.exe")
+        endif()
+        list(APPEND runtime_dlls "${KZ_FFMPEG_DIR}/bin/ffmpeg.exe")
+        set_property(GLOBAL PROPERTY KZ_FFMPEG_RUNTIME_DLLS "${runtime_dlls}")
+    else()
+        foreach(lib avutil swresample swscale avcodec avformat)
+            if(NOT EXISTS "${KZ_FFMPEG_DIR}/lib/lib${lib}.a")
+                message(FATAL_ERROR "kz_ffmpeg: ${KZ_FFMPEG_DIR}/lib/lib${lib}.a is missing")
+            endif()
+            add_library(kz::${lib} STATIC IMPORTED GLOBAL)
+            set_target_properties(kz::${lib} PROPERTIES
+                IMPORTED_LOCATION "${KZ_FFMPEG_DIR}/lib/lib${lib}.a")
+        endforeach()
+        # The archives reference pthreads and libm; they must follow libavutil on the link line.
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            find_package(Threads REQUIRED)
+            set_property(TARGET kz::avutil PROPERTY INTERFACE_LINK_LIBRARIES Threads::Threads m)
+        elseif(NINTENDO_SWITCH)
+            set_property(TARGET kz::avutil PROPERTY INTERFACE_LINK_LIBRARIES nx pthread m)
+        endif()
+    endif()
+
+    set_property(TARGET kz::avcodec PROPERTY INTERFACE_LINK_LIBRARIES kz::avutil)
+    set_property(TARGET kz::avformat PROPERTY INTERFACE_LINK_LIBRARIES kz::avcodec)
+    set_property(TARGET kz::swresample PROPERTY INTERFACE_LINK_LIBRARIES kz::avutil)
+    set_property(TARGET kz::swscale PROPERTY INTERFACE_LINK_LIBRARIES kz::avutil)
+
+    add_library(kz::ffmpeg INTERFACE IMPORTED GLOBAL)
+    set_property(TARGET kz::ffmpeg PROPERTY INTERFACE_LINK_LIBRARIES "kz::avformat;kz::avcodec;kz::swscale;kz::swresample")
+    if(NINTENDO_SWITCH)
+        # User include paths precede devkitPro's broad system path, which also contains FFmpeg headers.
+        set_property(TARGET kz::ffmpeg PROPERTY SYSTEM FALSE)
+        target_include_directories(kz::ffmpeg INTERFACE "${KZ_FFMPEG_DIR}/include")
+    else()
+        target_include_directories(kz::ffmpeg SYSTEM INTERFACE "${KZ_FFMPEG_DIR}/include")
+    endif()
+
+    message(STATUS "Kazarov: FFmpeg from ${KZ_FFMPEG_DIR}")
+endfunction()
+
+function(kz_ffmpeg target)
+    set(scope PUBLIC)
+    if(ARGC GREATER 1)
+        set(scope "${ARGV1}")
+    endif()
+    if(NOT "${scope}" MATCHES "^(PUBLIC|PRIVATE|INTERFACE)$")
+        message(FATAL_ERROR "kz_ffmpeg: scope must be PUBLIC, PRIVATE or INTERFACE, got '${scope}'")
+    endif()
+
+    if(NOT TARGET kz::ffmpeg)
+        _kz_ffmpeg_import()
+    endif()
+    if(NINTENDO_SWITCH)
+        target_include_directories(${target} BEFORE ${scope} "${KZ_FFMPEG_DIR}/include")
+    endif()
+    target_link_libraries(${target} ${scope} kz::ffmpeg)
+endfunction()

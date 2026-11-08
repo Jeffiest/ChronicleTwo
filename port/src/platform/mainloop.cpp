@@ -1344,6 +1344,7 @@ ClsMes PauseMes;
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <optional>
 #include <print>
 #include <utility>
@@ -1372,6 +1373,8 @@ ClsMes PauseMes;
 #include "mg_memory.hpp"
 #include "mglib.hpp"
 #include "monster.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
+#include "moonmod/runtime.hpp"
 #include "nowload.hpp"
 #include "npccfg.hpp"
 #include "object/character/quick_change_presentation.hpp"
@@ -1579,6 +1582,18 @@ void MainLoop() {
     std::uintptr_t    buffer_address = 0;
     std::uintptr_t    alignment = 0;
     u_long128        *main_arena = ArenaRoot(&main_buffer, 0x1A0000, "MainBuffer");
+    int               announced_scene_mode = -1;
+    // MoonMod scene events: will_enter before a mode starts loading, entered once its LoopInit has run.
+    const auto publish_scene_event = [](const char *event_name, int mode) {
+        const char *scene_id = mode == LOOP_TITLE     ? "title"
+                               : mode == LOOP_EDIT    ? "town"
+                               : mode == LOOP_DUNGEON ? "dungeon"
+                               : mode == LOOP_MENU    ? "menu"
+                                                      : "other";
+        moonmod::SharedRuntime().Publish(event_name, {{"scene_id", scene_id},
+                                                      {"native_mode", mode},
+                                                      {"frame", moonmod::SharedRuntime().Frame()}});
+    };
 
     memory = GetMainStack();
     memory->stSetBuffer(main_arena, 0x1A0000 * kArenaHeadroom);
@@ -1595,10 +1610,14 @@ void MainLoop() {
     mgInitVSyncCallBack(PortPlayTimeVSyncCallback);
     LanguageCode = GameHasJump() ? LANG_ENGLISH : LANG_FRENCH;
     CrashContextSet(CrashKey::Loop, "boot");
+    PortLoopNo = LOOP_TITLE;
+    // The map catalog is read before the first scene event, so mods that list or register locations see it.
+    LoadMapName(LanguageCode, nullptr);
     if (!GameHasJump()) {
+        publish_scene_event("game.scene.will_enter", PortLoopNo);
+        announced_scene_mode = PortLoopNo;
         SCElogoFade(0, memory);
     }
-    PortLoopNo = LOOP_TITLE;
     DebugFlag = false;
     DebugInfo.chara_move = 0;
 
@@ -1628,6 +1647,8 @@ void MainLoop() {
     PortInitPadTable(LanguageCode);
     GameItemDataManage.LoadData();
     GameItemDataManage.LoadItemSystemMes(LanguageCode);
+    // The mods' locations extend the map catalog read above; their items and weapons extend the item tables.
+    moonmod::ApplyChronicleTwoContent();
     LoadSystemMes();
     CreateSystemMes();
     LoadFontTexture();
@@ -1685,7 +1706,6 @@ void MainLoop() {
     }
 
     LoadHelpMes();
-    LoadMapName(LanguageCode, file_buffer);
     LoadEditAnalyzeData(LanguageCode, file_buffer);
     LoadFilePictureName();
     Font.Init();
@@ -1699,6 +1719,10 @@ void MainLoop() {
         SCElogoFade(1, memory);
     }
     GamePrepareJump(PortLoopNo, InitArg);
+    if (PortLoopNo != announced_scene_mode) {
+        publish_scene_event("game.scene.will_enter", PortLoopNo);
+        announced_scene_mode = PortLoopNo;
+    }
 
     while (true) {
         if (PortLoopNo == LOOP_TITLE || OmakeFlag != 0) {
@@ -1719,6 +1743,11 @@ void MainLoop() {
 
         if (DebugFlag == 0 && PortLoopNo == LOOP_MENU) {
             PortLoopNo = LOOP_TITLE;
+        }
+
+        if (PortLoopNo != announced_scene_mode) {
+            publish_scene_event("game.scene.will_enter", PortLoopNo);
+            announced_scene_mode = PortLoopNo;
         }
 
         if (PortCaptureMode == CAPTURE_RECORD) {
@@ -1762,6 +1791,8 @@ void MainLoop() {
         PortQuickLoadoutReset();
         ItemIcons3DReset();
         RecordCrashContext(PortLoopNo, InitArg);
+        const int           entered_loop = PortLoopNo;
+        const INIT_LOOP_ARG entered_arg = InitArg;
         LoopInit[PortLoopNo](InitArg);
         GameGiveOnArrival(PortLoopNo);
         PortAutosaveResetArrival();
@@ -1769,7 +1800,14 @@ void MainLoop() {
         DebugModeDiscardMenuKey();
         INIT_LOOP_ARG next_arg;
 
-        NextLoop(LOOP_MENU, next_arg);
+        // A LoopInit that queued its own transition (a MoonMod world transition) keeps it.
+        const bool init_queued_transition =
+            PortNextLoopNo != entered_loop || std::memcmp(&NextInitArg, &entered_arg, sizeof(INIT_LOOP_ARG)) != 0;
+        if (!init_queued_transition) {
+            NextLoop(LOOP_MENU, next_arg);
+        }
+        publish_scene_event("game.scene.entered", PortLoopNo);
+        moonmod::SharedRuntime().ObserveWorldLocationNow();
 
         bool developer_menu_requested = false;
         auto request_developer_menu = [&] {

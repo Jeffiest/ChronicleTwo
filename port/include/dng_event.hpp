@@ -1027,3 +1027,5 @@ int CheckObjectPutArea(float *pos);
  * @size 0x64
  */
 void CreatMonsterFloorInfo(char *script, int length);
+
+#include "moonmod/dng_event_moonmod.hpp"

@@ -80,6 +80,16 @@ struct Config : HostSettings {
     float haptics_strength = 1.0f;
     // log.*: the logger's level, file, retention, console and per-category levels (docs/LOGGING.md).
     LogConfig log;
+    // Dungeon map drawn as a top-down render of the live floor instead of the retail tiles.
+    bool  aerial_map = true;
+    // World units above the player's feet where the aerial map cuts the ceiling away.
+    float aerial_map_ceiling = 120.0f;
+    // Aerial map magnification over the retail 16 pixels per cell.
+    float aerial_map_zoom = 2.0f;
+    // Size of monsters, chests and the player on the aerial map relative to the floor.
+    float aerial_map_model_scale = 2.5f;
+    // Size of the map box relative to the retail small and large maps.
+    float aerial_map_size = 1.0f;
 
     bool operator==(const Config &) const = default;
 };

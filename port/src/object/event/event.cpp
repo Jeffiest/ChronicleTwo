@@ -28,6 +28,7 @@
 #include "mg_memory.hpp"
 #include "mg_texture.hpp"
 #include "mglib.hpp"
+#include "moonmod/runtime.hpp"
 #include "nd_meswin.hpp"
 #include "padcontrol.hpp"
 #include "runscript.hpp"
@@ -135,7 +136,20 @@ void InitEvent(CScene *scene) {
 int RunEvent(int event_no, CScene *scene) {
     EventScene = scene;
     ++event_script_generation;
-    return EventScript.run(event_no);
+    // Mods may observe or replace an event program; the dispatcher runs the native program when none does.
+    const moonmod::Json payload = {{"game", "chronicle-two"}, {"program_no", event_no},
+                                   {"frame", moonmod::SharedRuntime().Frame()}};
+    const moonmod::ApiCallResult hooked = moonmod::SharedRuntime().DispatchNativeScriptHook(
+        "native.event.run", payload, [event_no]() {
+            return moonmod::ApiCallResult{moonmod::ApiCallStatus::Ok,
+                                          {{"run_status", EventScript.run(event_no)}}, {}};
+        });
+    if (hooked.status == moonmod::ApiCallStatus::Ok && hooked.value.is_object() &&
+        hooked.value.contains("run_status") && hooked.value["run_status"].is_number_integer()) {
+        return hooked.value["run_status"].get<int>();
+    }
+    // The dispatcher owns native fall-through. Re-entering here could run an event twice.
+    return -1;
 }
 
 int EventDoorLoop(int frame, int use_scene_se) {

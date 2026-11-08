@@ -14,6 +14,11 @@
 static short limmit_table[7] = {9, 16, 25, 21, 23, 29, 39};
 
 DNG_FLOOR_SAVE *CSaveDataDungeon::GetFloorInfoPtr(int dungeon, int floor) {
+    // Floors registered by mods resolve to the save extension records; native floors keep retail's layout.
+    if (DNG_FLOOR_SAVE *mod_floor = GetMoonModDungeonSaveRecord(this, dungeon, floor)) {
+        return mod_floor;
+    }
+
     if (dungeon < 0 || dungeon >= 7) {
         return nullptr;
     }
@@ -34,6 +39,7 @@ DNG_FLOOR_SAVE *CSaveDataDungeon::GetFloorInfoPtr(int dungeon, int floor) {
 }
 
 void CSaveDataDungeon::Initialize() {
+    ResetMoonModDungeonSaveExtension(this);
     memset(floor_info, 0, sizeof(floor_info));
 
     for (int i = 0; i < 7; i++) {

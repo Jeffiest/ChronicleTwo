@@ -2839,6 +2839,7 @@ int CMenuInvent::IsCreateObject(int mode, int keys) {
                         if (0 < this->create_item_id) {
                             this->create_success = true;
                             InventUserDataPtr->SetCreateItemFlag(this->card_cursor, this->create_item_id);
+                            MoonModNotifyInventionCreated(this->create_item_id);
                         } else {
                             s32 recipe_index = {};
                             this->create_partial_match = false;

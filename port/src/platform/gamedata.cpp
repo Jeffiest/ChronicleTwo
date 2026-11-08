@@ -480,21 +480,21 @@ CGameData GameItemDataManage;
  * Common records for the master item catalog.
  *
  */
-CDataCommon local_com_itemdata[ITEM_COMMON_DATA_MAX];
+CDataCommon local_com_itemdata[ITEM_COMMON_DATA_MAX + MOONMOD_ITEM_CAPACITY + MOONMOD_WEAPON_CAPACITY];
 
 /**
  *
  * Usable item records loaded from item data scripts.
  *
  */
-CDataItem local_itemdata[162];
+CDataItem local_itemdata[162 + MOONMOD_ITEM_CAPACITY];
 
 /**
  *
  * Weapon records loaded from weapon data scripts.
  *
  */
-CDataWeapon local_weapondata[116];
+CDataWeapon local_weapondata[116 + MOONMOD_WEAPON_CAPACITY];
 
 /**
  *
@@ -616,6 +616,7 @@ void CGameData::Initialize() {
     robo_num = 0;
     fish_data = local_fishdata;
     fish_num = 0;
+    ResetMoonModGameData();
     InitItemMes(1, 1);
 }
 

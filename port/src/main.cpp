@@ -30,6 +30,8 @@
 #include "kazarov/data_version.hpp"
 #include "log/log.hpp"
 #include "mainloop.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
+#include "moonmod/runtime.hpp"
 #include "platform/clock.hpp"
 #include "platform/config.hpp"
 #include "platform/display.hpp"
@@ -63,6 +65,8 @@ constexpr float kLogicalHeight = 480.0f;
 struct Options {
     const char           *jump = nullptr;
     const char           *give = nullptr;
+    const char           *pickup = nullptr;        // test-only: --pickup ITEM
+    const char           *georama_stock = nullptr; // test-only: --georama-stock TOWN:MOD:PIECE:COUNT
     const char           *log_level = nullptr;
     bool                  fast_load = false;
     int                   perf_seconds = 0;
@@ -88,7 +92,7 @@ Options g_options;
 
 [[noreturn]] void Usage(const char *program) {
     CT_LOG_ERROR(Main,
-                 "usage: {} [--data DIR] [--run-dir DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps]\n          [--log-level SPEC]\n  --jump MODE[:ARG]  start in town:<map>, georama:<0-4>, dungeon:<n>[:<floor>], event:<id>, title, opening, menu (DC2_JUMP)\n  --fast-load        shorten loading-screen holds (DC2_FAST_LOAD=1)\n  --give ITEM,...    give missing items and weapons on arrival (DC2_GIVE)\n  --skip-events      enter a jumped dungeon floor directly; skip skippable dungeon scenes (DC2_SKIP_EVENTS=1)\n  --invincible       the dungeon character takes no hits (DC2_INVINCIBLE=1)\n  --seed N           reseed the random generator with N as each dungeon floor is built (DC2_SEED)\n  --perf-seconds N   once the scene has control and a second has passed, log N one-second windows of presented\n                     frames and tick times, then exit (DC2_PERF_ZONES=1 adds per-zone times)\n  --run-dir DIR      game root containing data.zip and saves/\n                     (default: the per-user chronicletwo app data directory)\n  --data DIR         override the extracted data/ subdirectory (DC2_DATA)\n  --save DIR         override the saves/ subdirectory (DC2_SAVE)\n  --headless         render offscreen (SDL offscreen driver, VK_EXT_headless_surface)\n  --offscreen        --headless without a Vulkan surface: render to an image only\n  --frames N         exit after frame N of the game's main loop (N a positive integer)\n  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n                     beside PATH, as PATH-display-K.png for K = 0..N-1\n  --screenshot-fps   with --screenshot: draw the FPS counter and menu pointer into the written image\n  --input SCRIPT     drive the pads from an input script; live input is ignored\n  --window WxH       window size in pixels (default: config.json, then the monitor's)\n  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n  --show-fps         draw the FPS counter on presented frames, headless too\n  --log-fps          print the FPS counter's text on stderr every second\n  --log-level SPEC   trace, debug, info, warning, error, critical or off, and/or CATEGORY=LEVEL,\n                     comma-separated (DC2_LOG; default: config.json's log.level)",
+                 "usage: {} [--data DIR] [--run-dir DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps]\n          [--log-level SPEC]\n  --jump MODE[:ARG]  start in town:<map>, georama:<0-4>, dungeon:<n>[:<floor>], event:<id>, title, opening, menu (DC2_JUMP)\n  --fast-load        shorten loading-screen holds (DC2_FAST_LOAD=1)\n  --give ITEM,...    give missing items and weapons on arrival (DC2_GIVE)\n  --pickup ITEM      test-only: spawn one native dungeon item pickup on arrival\n  --georama-stock TOWN:MOD:PIECE:COUNT  test-only stock for a registered Georama piece\n  --skip-events      enter a jumped dungeon floor directly; skip skippable dungeon scenes (DC2_SKIP_EVENTS=1)\n  --invincible       the dungeon character takes no hits (DC2_INVINCIBLE=1)\n  --seed N           reseed the random generator with N as each dungeon floor is built (DC2_SEED)\n  --perf-seconds N   once the scene has control and a second has passed, log N one-second windows of presented\n                     frames and tick times, then exit (DC2_PERF_ZONES=1 adds per-zone times)\n  --run-dir DIR      game root containing data.zip and saves/\n                     (default: the per-user chronicletwo app data directory)\n  --data DIR         override the extracted data/ subdirectory (DC2_DATA)\n  --save DIR         override the saves/ subdirectory (DC2_SAVE)\n  --headless         render offscreen (SDL offscreen driver, VK_EXT_headless_surface)\n  --offscreen        --headless without a Vulkan surface: render to an image only\n  --frames N         exit after frame N of the game's main loop (N a positive integer)\n  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n                     beside PATH, as PATH-display-K.png for K = 0..N-1\n  --screenshot-fps   with --screenshot: draw the FPS counter and menu pointer into the written image\n  --input SCRIPT     drive the pads from an input script; live input is ignored\n  --window WxH       window size in pixels (default: config.json, then the monitor's)\n  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n  --show-fps         draw the FPS counter on presented frames, headless too\n  --log-fps          print the FPS counter's text on stderr every second\n  --log-level SPEC   trace, debug, info, warning, error, critical or off, and/or CATEGORY=LEVEL,\n                     comma-separated (DC2_LOG; default: config.json's log.level)",
                  program);
     LogFlush();
     std::exit(kExitUsage);
@@ -141,6 +145,10 @@ Options ParseOptions(int argc, const char **argv) {
             options.jump = OptionValue(argc, argv, i);
         } else if (arg == "--give") {
             options.give = OptionValue(argc, argv, i);
+        } else if (arg == "--pickup") {
+            options.pickup = OptionValue(argc, argv, i);
+        } else if (arg == "--georama-stock") {
+            options.georama_stock = OptionValue(argc, argv, i);
         } else if (arg == "--log-level") {
             options.log_level = OptionValue(argc, argv, i);
             if (!LogSpecValid(options.log_level)) {
@@ -300,6 +308,34 @@ void ShutdownWindow() {
     }
 }
 
+void PumpMoonMod() {
+    moonmod::SharedRuntime().Pump();
+}
+
+// Starts MoonMod: packages are read from mods/ in the save directory and beside the executable.
+void StartMoonMod() {
+    moonmod::RuntimeConfig config;
+    config.game_id = "chronicle-two";
+    config.game_name = "Chronicle Two";
+    config.framework_api = 1;
+    config.mod_directories = {PathsSaveRoot() / "mods", PathsExecutable().parent_path() / "mods"};
+    config.save_root = PathsSaveRoot();
+    moonmod::ConfigureChronicleTwoApi(config);
+    config.log = [](std::string_view level, std::string_view mod, std::string_view message) {
+        if (level == "error") {
+            CT_LOG_ERROR(Main, "moonmod[{}]: {}", mod, message);
+        } else if (level == "warn" || level == "warning") {
+            CT_LOG_WARN(Main, "moonmod[{}]: {}", mod, message);
+        } else {
+            CT_LOG_INFO(Main, "moonmod[{}][{}]: {}", level, mod, message);
+        }
+    };
+    std::string error;
+    if (!moonmod::SharedRuntime().Start(std::move(config), error)) {
+        CT_LOG_ERROR(Main, "moonmod: {}", error);
+    }
+}
+
 // A closed window ends the process here: the game has no stop request to ask its loop to return.
 void PumpHost() {
     if (!WindowPollEvents()) {
@@ -397,7 +433,9 @@ int Run(int argc, const char **argv) {
     const char *jump = options.jump ? options.jump : SettingsEnv("JUMP");
     const char *give = options.give ? options.give : SettingsEnv("GIVE");
     if ((jump && (options.jump || *jump) && !GameSetJump(jump)) ||
-        (give && (options.give || *give) && !GameSetGive(give))) {
+        (give && (options.give || *give) && !GameSetGive(give)) ||
+        (options.pickup && !GameSetPickup(options.pickup)) ||
+        (options.georama_stock && !GameSetGeoramaStock(options.georama_stock))) {
         Usage(argv[0]);
     }
     PortAutosave = !options.headless && !GameHasJump() && options.input.empty();
@@ -513,6 +551,8 @@ int Run(int argc, const char **argv) {
     ClockSetTickRate(kConfigTickRateDefault);
     ClockSetUnbounded(options.headless);
     ClockAddPumpHook(PumpHost);
+    StartMoonMod();
+    ClockAddPumpHook(PumpMoonMod);
     ClockSetTickCallback(dc2::timing::OnVerticalBlank);
     ConfigSetChangeHook(ApplyConfigChange);
 
@@ -528,7 +568,9 @@ int Run(int argc, const char **argv) {
     CT_PROFILE_THREAD("Game / host");
     MainLoop();
 
+    ClockRemovePumpHook(PumpMoonMod);
     ClockRemovePumpHook(PumpHost);
+    moonmod::SharedRuntime().Stop();
     ConfigSetChangeHook(nullptr);
     ShutdownInput();
     AudioShutdown();

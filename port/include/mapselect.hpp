@@ -366,3 +366,5 @@ namespace dc2::debug {
  */
 std::span<const EVENT_VIEW_INFO> EventViewEntries();
 } // namespace dc2::debug
+
+#include "moonmod/mapselect_moonmod.hpp"

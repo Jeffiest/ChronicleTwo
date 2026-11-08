@@ -288,6 +288,21 @@ bool Apply(Config &config, std::string_view name, const Json &value) {
         s.present_mode = vsync ? ConfigPresentMode::Fifo : ConfigPresentMode::Immediate;
         return true;
     }
+    if (name == "game.aerial_map") {
+        return ReadBool(value, config.aerial_map);
+    }
+    if (name == "game.aerial_map_ceiling") {
+        return ReadNumber(value, config.aerial_map_ceiling, [](float h) { return h >= 0.0f && h <= 5000.0f; });
+    }
+    if (name == "game.aerial_map_zoom") {
+        return ReadNumber(value, config.aerial_map_zoom, [](float z) { return z >= 0.5f && z <= 8.0f; });
+    }
+    if (name == "game.aerial_map_model_scale") {
+        return ReadNumber(value, config.aerial_map_model_scale, [](float z) { return z >= 0.5f && z <= 40.0f; });
+    }
+    if (name == "game.aerial_map_size") {
+        return ReadNumber(value, config.aerial_map_size, [](float z) { return z >= 0.5f && z <= 1.5f; });
+    }
     if (name == "video.present_mode") {
         // Older files chose a present mode; anything but FIFO turns V-Sync off.
         ConfigPresentMode mode = ConfigPresentMode::Fifo;
@@ -571,6 +586,11 @@ std::string ConfigSerialize(const Config &config) {
     root["game"]["transformation_stats"] = config.transformation_stats;
     root["game"]["transformation_exp"] = config.transformation_exp;
     root["game"]["shared_badge_exp"] = config.shared_badge_exp;
+    root["game"]["aerial_map"] = config.aerial_map;
+    root["game"]["aerial_map_ceiling"] = Shortest(config.aerial_map_ceiling);
+    root["game"]["aerial_map_zoom"] = Shortest(config.aerial_map_zoom);
+    root["game"]["aerial_map_model_scale"] = Shortest(config.aerial_map_model_scale);
+    root["game"]["aerial_map_size"] = Shortest(config.aerial_map_size);
     root["video"]["vsync"] = s.present_mode == ConfigPresentMode::Fifo;
     root["video"]["interpolation"] = config.interpolation;
     root["video"]["render_thread"] = kRenderThreadNames[static_cast<std::size_t>(config.render_thread)];

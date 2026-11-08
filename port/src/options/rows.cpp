@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "moonmod/manager_ui.hpp"
 #include "platform/input.hpp"
 
 namespace options {
@@ -321,9 +322,17 @@ bool PcOnly(std::string_view key) {
     return std::ranges::find(keys, key) != std::end(keys);
 }
 
+Row ModManagerAction() {
+    Row row{.key = "mod_manager", .label = "Mod Manager", .help = "Manage local mods, settings, and load order."};
+    row.value = [](const Config &) { return std::string("Open"); };
+    row.activate = moonmod::OpenManager;
+    return row;
+}
+
 std::vector<Page> MakePages() {
     std::vector<Page> pages{
         {.name = "Display",  .rows = {
+                                ModManagerAction(),
                                 Choice<&Config::fullscreen>("video.fullscreen", "Window mode", "Applies immediately. Fullscreen uses the desktop.", {"Windowed", "Fullscreen"}),
                                 Resolution(),
                                 VSync(),

@@ -11,6 +11,7 @@
 #include "mainloop.hpp"
 #include "mglib.hpp"
 #include "platform/clock.hpp"
+#include "platform/input.hpp"
 #include "platform/input_script.hpp"
 #include "sce/threads.hpp"
 
@@ -68,6 +69,14 @@ TEST(PlatformPad, InitReachesAnalogReadyOnBothPorts) {
     EXPECT_EQ(GamePad__2.GetLX(), 0);
     EXPECT_EQ(GamePad__2.GetRX2(), 0);
     InputScriptInstall({});
+}
+
+TEST(PlatformPad, TriggerAxisNormalization) {
+    EXPECT_EQ(InputTriggerByte(-32768), 0);
+    EXPECT_EQ(InputTriggerByte(0), 0);
+    EXPECT_EQ(InputTriggerByte(16384), 128);
+    EXPECT_EQ(InputTriggerByte(32767), 255);
+    EXPECT_EQ(InputTriggerByte(32768), 255);
 }
 
 TEST(PlatformPad, ScriptedPressReadsOnFirstPortAndReleases) {

@@ -4,11 +4,13 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "mainloop.hpp"
 
+class CEditMap;
 class mgCCamera;
 class mgCFrame;
 struct CCPoly;
@@ -28,6 +30,13 @@ struct GameJump {
     int      map = 10;
     int      floor = 1;
     int      event = 0;
+};
+
+/** A MoonMod test stock grant: count of a registered Georama piece in a town (--georama-stock). */
+struct GameGeoramaStockGrant {
+    int         town_id = -1;
+    std::string piece_id;
+    int         count = 0;
 };
 
 namespace dc2::debug {
@@ -167,6 +176,13 @@ bool GameParseJump(std::string_view text, GameJump &jump);
 bool GameParseGive(std::string_view text, std::vector<int> &items);
 bool GameSetJump(std::string_view text);
 bool GameSetGive(std::string_view text);
+bool GameParsePickup(std::string_view text, int &item);
+bool GameParseGeoramaStock(std::string_view text, GameGeoramaStockGrant &grant);
+/** Test-only: spawns one native dungeon item pickup beside the player on arrival (--pickup). */
+bool GameSetPickup(std::string_view text);
+/** Test-only: grants stock of a registered MoonMod Georama piece when its town loads (--georama-stock). */
+bool GameSetGeoramaStock(std::string_view text);
+void GameGrantGeoramaStockForTest(CEditMap *map);
 bool GameHasJump();
 bool GameDebugEnabled();
 void GameSetFastLoad(bool fast);

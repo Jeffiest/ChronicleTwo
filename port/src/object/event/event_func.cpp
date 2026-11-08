@@ -5190,6 +5190,7 @@ static int _DNG_SET_FLOOR_ID(dc2::script::RunArguments stack) {
         return false;
     }
 
+    floor_id = moonmod::ChronicleTwoRequestedDungeonEntryFloor(floor_id);
     dungeon->SetFloorID(floor_id);
     return true;
 }
@@ -17167,12 +17168,22 @@ static int _SET_FLOOR_INFO(dc2::script::RunArguments stack) {
         case 3:
             info->unk_a = dc2::script::RunInteger(stack);
             break;
-        case 4:
-            info->spheda_clear = dc2::script::RunInteger(stack);
+        case 4: {
+            const u16 previous = info->spheda_clear;
+            info->spheda_clear = static_cast<u16>(dc2::script::RunInteger(stack));
+            if (previous == 0 && info->spheda_clear != 0) {
+                moonmod::ChronicleTwoSphedaCompleted(dungeon_no, floor_no, info->spheda_clear);
+            }
             break;
-        case 5:
+        }
+        case 5: {
+            const u16 previous = info->flag;
             info->flag |= static_cast<u16>(dc2::script::RunInteger(stack));
+            if ((previous & DNG_FLOOR_FLAG_SPHEDA_CLEAR) == 0 && (info->flag & DNG_FLOOR_FLAG_SPHEDA_CLEAR) != 0) {
+                moonmod::ChronicleTwoSphedaCompleted(dungeon_no, floor_no, info->spheda_clear);
+            }
             break;
+        }
         case 6:
             info->kill_count = dc2::script::RunInteger(stack);
             break;

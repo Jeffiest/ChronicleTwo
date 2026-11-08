@@ -721,6 +721,11 @@ void CActiveMonster::Initialize() {
 }
 
 BASE_MONSTER_TBL *GetMonsterTable(int monster_id) {
+    // MoonMod's data-only variants resolve first.
+    if (BASE_MONSTER_TBL *variant = FindMoonModMonsterVariant(monster_id)) {
+        return variant;
+    }
+
     BASE_MONSTER_TBL *entry = base_monster_define;
 
     while (entry->name[0] != 0) {
@@ -735,13 +740,26 @@ BASE_MONSTER_TBL *GetMonsterTable(int monster_id) {
 }
 
 void CMonsterLocateInfo::SetPutFlag(int slot, int put) {
+    // CMonsterMan::SetActiveMonster calls this once per spawn, right after claiming the slot: a new generation
+    // invalidates every handle mods hold for the slot's previous monster.
+    if (slot < 0 || slot >= MONSTER_ACTIVE_MAX) {
+        return;
+    }
     if (put != 0) {
-        if (put_num < num) {
-            put_flag |= 1 << slot;
+        BumpMoonModMonsterSlotGeneration(slot);
+    }
+    // put_flag has a bit for the first 32 slots only. There each slot is counted once, so a mod despawn and the
+    // native death of the same monster cannot both release it; the slots past it count as retail counted them.
+    const bool tracked = slot < 32;
+    const u32  mask = tracked ? 1u << slot : 0u;
+    const bool was_put = tracked && (put_flag & mask) != 0;
+    if (put != 0) {
+        if ((!tracked || !was_put) && put_num < num) {
+            put_flag |= mask;
             put_num += 1;
         }
-    } else if (put_num > 0) {
-        put_flag &= ~(1 << slot);
+    } else if ((!tracked || was_put) && put_num > 0) {
+        put_flag &= ~mask;
         put_num -= 1;
     }
 }
@@ -775,6 +793,10 @@ void CMonsterMan::Initialize(CScene *scene) {
     textures = &mgTexManager;
     effect_man = FxScriptMan;
     priority_limit = PortMonsterLatchLimits();
+    // A MoonMod package can set how many of the nearest monsters show and act.
+    if (MonsterActiveLimit > 0) {
+        priority_limit = static_cast<s16>(std::min<int>(MonsterActiveLimit, MONSTER_ACTIVE_MAX));
+    }
 
     for (i = 0; i < MONSTER_ACTIVE_MAX; i++) {
         active_views[i] = scene->GetCharacterView(DNG_CHARA_SLOT_MONSTER + i);
@@ -994,6 +1016,11 @@ int CMonsterMan::GetMonsterNum(float limit) {
 }
 
 BASE_MONSTER_TBL *CMonsterMan::GetReferPtr2(int monster_id) {
+    // Retail searches base_monster_define alone; MoonMod's variants must resolve here too.
+    if (BASE_MONSTER_TBL *variant = FindMoonModMonsterVariant(monster_id)) {
+        return variant;
+    }
+
     BASE_MONSTER_TBL *entry = base_monster_define;
 
     while (entry->name[0] != 0) {
@@ -2215,6 +2242,8 @@ void CMonsterMan::CheckDamage() {
             if (guard) {
                 damage *= 0.01f * static_cast<float>(prim->param->critical_rate);
             }
+
+            damage = moonmod::ApplyChronicleTwoCombatDamageFormula(damage);
 
             calcWeaponParamWhp(monster, prim);
 

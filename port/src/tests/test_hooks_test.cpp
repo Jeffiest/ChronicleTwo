@@ -125,6 +125,31 @@ TEST(TestHooks, GiveRejectsMalformedListsWithoutChangingThePreviousList) {
     }
 }
 
+TEST(TestHooks, PickupAcceptsOnePositiveNativeItemNumber) {
+    int item = 0;
+    ASSERT_TRUE(GameParsePickup("274", item));
+    EXPECT_EQ(item, 274);
+    for (auto bad : {"", "0", "-1", "32768", "1junk", "2,3", " 2"}) {
+        SCOPED_TRACE(bad);
+        EXPECT_FALSE(GameParsePickup(bad, item));
+        EXPECT_EQ(item, 274);
+    }
+}
+
+TEST(TestHooks, GeoramaStockGrantParsesNamespacedPieceIdsAndBounds) {
+    GameGeoramaStockGrant grant;
+    ASSERT_TRUE(GameParseGeoramaStock("0:moonfactory.retail-georama-probe:retail-moonstone-variant:1", grant));
+    EXPECT_EQ(grant.town_id, 0);
+    EXPECT_EQ(grant.piece_id, "moonfactory.retail-georama-probe:retail-moonstone-variant");
+    EXPECT_EQ(grant.count, 1);
+    for (auto bad : {"", "0::1", "0:mod:piece:0", "0:mod:piece:10000", "5:mod:piece:1",
+                     "0: mod:piece:1", "0:mod:piece:1junk", "0:mod:piece"}) {
+        SCOPED_TRACE(bad);
+        EXPECT_FALSE(GameParseGeoramaStock(bad, grant));
+        EXPECT_EQ(grant.piece_id, "moonfactory.retail-georama-probe:retail-moonstone-variant");
+    }
+}
+
 TEST_F(GamePadSingleDebug, ModifierRoutesEdgesAndHeldButtonsPastThePad2Lock) {
     CGamePad pad{};
     pad.key_lock2 = 1;

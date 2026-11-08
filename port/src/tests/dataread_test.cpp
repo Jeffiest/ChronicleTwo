@@ -27,6 +27,7 @@
 
 #include "asset_directory.hpp"
 #include "assets/data_registry.hpp"
+#include "moonmod/native_resource_overrides.hpp"
 #include "character_motion.hpp"
 #include "dataread.hpp"
 #include "gamedata.hpp"
@@ -310,6 +311,247 @@ TEST_F(DataRead, PaddedLoadForgetsMotionSetBeyondTheReservation) {
     ASSERT_EQ(channel->key_count, 0u);
     EXPECT_TRUE(character_motion::Actions(motion).empty());
     character_motion::Clear();
+}
+
+TEST_F(DataRead, NativeResourceOverrideLoadsThroughDataReaderAndRestoresIndexedAsset) {
+    DataReadIndex(root);
+    const fs::path package = base / "mods" / "test.asset-override";
+    const auto replacement = MakeBytes(900, 0x44);
+    WriteBytes(package / "resources" / "replacement.bin", replacement);
+    moonmod::ResetNativeResourceOverridesForTests();
+    struct ResetOverrides {
+        ~ResetOverrides() { moonmod::ResetNativeResourceOverridesForTests(); }
+    } reset;
+
+    const moonmod::ApiCallResult registered = moonmod::RegisterNativeResourceOverride(
+        "test.asset-override", package,
+        moonmod::Json::array({{{"path", "resources/replacement.bin"}, {"game_path", "dir/sub/file.bin"}}}));
+    ASSERT_EQ(registered.status, moonmod::ApiCallStatus::Ok) << registered.message;
+
+    const moonmod::ApiCallResult competing_owner = moonmod::RegisterNativeResourceOverride(
+        "test.foreign", package,
+        moonmod::Json::array({{{"path", "resources/replacement.bin"}, {"game_path", "dir/sub/file.bin"}}}));
+    EXPECT_EQ(competing_owner.status, moonmod::ApiCallStatus::PermissionDenied);
+
+    const moonmod::ApiCallResult foreign_remove = moonmod::RemoveNativeResourceOverride(
+        "test.foreign", moonmod::Json::array({{{"game_path", "dir/sub/file.bin"}}}));
+    EXPECT_EQ(foreign_remove.status, moonmod::ApiCallStatus::PermissionDenied);
+
+    char path[] = "cdrom0:\\DIR\\SUB\\FILE.BIN;1";
+    int size = 0;
+    ASSERT_EQ(LoadFile2(path, {}, &size, LOAD_FILE_SIZE), 1);
+    EXPECT_EQ(size, static_cast<int>(replacement.size()));
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    EXPECT_EQ(size, static_cast<int>(replacement.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), replacement.data(), replacement.size()), 0);
+
+    const moonmod::ApiCallResult removed = moonmod::RemoveNativeResourceOverride(
+        "test.asset-override", moonmod::Json::array({{{"game_path", "dir/sub/file.bin"}}}));
+    ASSERT_EQ(removed.status, moonmod::ApiCallStatus::Ok) << removed.message;
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    const auto retail = MakeBytes(kFileSize, 7);
+    EXPECT_EQ(size, static_cast<int>(retail.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), retail.data(), retail.size()), 0);
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.asset-override", package,
+                  moonmod::Json::array({{{"path", "resources/replacement.bin"},
+                                         {"game_path", "dir/sub/file.bin"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    moonmod::RemoveNativeResourceOverridesByOwner("test.asset-override");
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    EXPECT_EQ(size, static_cast<int>(retail.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), retail.data(), retail.size()), 0);
+}
+
+TEST_F(DataRead, NativeResourceOverrideCanSupplyBoundedUnindexedMonsterAssets) {
+    DataReadIndex(root);
+    const fs::path package = base / "mods" / "test.virtual-model";
+    const auto model = MakeBytes(900, 0x53);
+    const auto oversized = MakeBytes(3 * 1024 * 1024 + 1, 0x74);
+    WriteBytes(package / "resources" / "model.chr", model);
+    WriteBytes(package / "resources" / "oversized.chr", oversized);
+    moonmod::ResetNativeResourceOverridesForTests();
+    struct ResetOverrides {
+        ~ResetOverrides() { moonmod::ResetNativeResourceOverridesForTests(); }
+    } reset;
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-model", package,
+                  moonmod::Json::array({{{"path", "resources/model.chr"},
+                                         {"game_path", "dungeon/monster/moon_probe.chr"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char path[] = "cdrom0:\\DUNGEON\\MONSTER\\MOON_PROBE.CHR;1";
+    int size = 0;
+    ASSERT_EQ(LoadFile2(path, {}, &size, LOAD_FILE_SIZE), 1);
+    EXPECT_EQ(size, static_cast<int>(model.size()));
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    EXPECT_EQ(size, static_cast<int>(model.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), model.data(), model.size()), 0);
+
+    char current_directory[] = "unrelated/";
+    ChangeDir(current_directory);
+    char relative_path[] = "dungeon/monster/moon_probe.chr";
+    size = 0;
+    ASSERT_EQ(LoadFile2(relative_path, {}, &size, LOAD_FILE_SIZE), 1);
+    EXPECT_EQ(size, static_cast<int>(model.size()));
+    ASSERT_EQ(Load(relative_path, BufferBytes(), &size), 1);
+    EXPECT_EQ(size, static_cast<int>(model.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), model.data(), model.size()), 0);
+    ChangeDir(nullptr);
+    SetCurrentDir(nullptr);
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-model", package,
+                  moonmod::Json::array({{{"path", "resources/model.chr"},
+                                         {"game_path", "dungeon/other/moon_probe.chr"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char unsupported[] = "dungeon/other/moon_probe.chr";
+    size = 99;
+    EXPECT_EQ(LoadFile2(unsupported, {}, &size, LOAD_FILE_SIZE), 0);
+    EXPECT_EQ(size, 0);
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-model", package,
+                  moonmod::Json::array({{{"path", "resources/oversized.chr"},
+                                         {"game_path", "dungeon/monster/too_large.chr"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char too_large[] = "dungeon/monster/too_large.chr";
+    size = 99;
+    EXPECT_EQ(LoadFile2(too_large, {}, &size, LOAD_FILE_SIZE), 0);
+    EXPECT_EQ(size, 0);
+}
+
+TEST_F(DataRead, NativeResourceOverrideCanSupplyBoundedUnindexedMapAssets) {
+    DataReadIndex(root);
+    const fs::path package = base / "mods" / "test.virtual-map";
+    const auto map = MakeBytes(900, 0x3a);
+    const auto oversized = MakeBytes(3 * 1024 * 1024 + 1, 0x4b);
+    WriteBytes(package / "resources" / "new.map", map);
+    WriteBytes(package / "resources" / "oversized.map", oversized);
+    WriteBytes(package / "resources" / "wrong-extension.bin", MakeBytes(64, 0x5c));
+    moonmod::ResetNativeResourceOverridesForTests();
+    struct ResetOverrides {
+        ~ResetOverrides() { moonmod::ResetNativeResourceOverridesForTests(); }
+    } reset;
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-map", package,
+                  moonmod::Json::array({{{"path", "resources/new.map"},
+                                         {"game_path", "map/m/m00/new.map"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char path[] = "cdrom0:\\MAP\\M\\M00\\NEW.MAP;1";
+    int size = 0;
+    ASSERT_EQ(LoadFile2(path, {}, &size, LOAD_FILE_SIZE), 1);
+    EXPECT_EQ(size, static_cast<int>(map.size()));
+    std::memset(Buffer(), 0x7d, kPadded);
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    EXPECT_EQ(size, static_cast<int>(map.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), map.data(), map.size()), 0);
+    const std::size_t sector_padded =
+        (map.size() + DATAREAD_SECTOR_SIZE - 1) / DATAREAD_SECTOR_SIZE * DATAREAD_SECTOR_SIZE;
+    const auto *loaded = reinterpret_cast<const unsigned char *>(Buffer());
+    EXPECT_TRUE(std::all_of(loaded + map.size(), loaded + sector_padded,
+                            [](unsigned char byte) { return byte == 0; }));
+
+    // Scripts are Luau modules, which the data reader resolves without reading .stb files.
+    for (const char *extension : {".cfg", ".efp", ".ipk", ".mpk", ".sky", ".cfg.json"}) {
+        std::string game_path = std::string("map/m/m00/probe") + extension;
+        ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                      "test.virtual-map", package,
+                      moonmod::Json::array({{{"path", "resources/new.map"}, {"game_path", game_path}}})).status,
+                  moonmod::ApiCallStatus::Ok)
+            << game_path;
+        int registered_size = 0;
+        EXPECT_EQ(LoadFile2(game_path.data(), {}, &registered_size, LOAD_FILE_SIZE), 1)
+            << game_path;
+        EXPECT_EQ(registered_size, static_cast<int>(map.size())) << game_path;
+    }
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-map", package,
+                  moonmod::Json::array({{{"path", "resources/wrong-extension.bin"},
+                                         {"game_path", "map/m/m00/new.bin"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char unsupported_extension[] = "map/m/m00/new.bin";
+    size = 99;
+    EXPECT_EQ(LoadFile2(unsupported_extension, {}, &size, LOAD_FILE_SIZE), 0);
+    EXPECT_EQ(size, 0);
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-map", package,
+                  moonmod::Json::array({{{"path", "resources/wrong-extension.bin"},
+                                         {"game_path", "unregistered/new.map"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char unsupported_root[] = "unregistered/new.map";
+    size = 99;
+    EXPECT_EQ(LoadFile2(unsupported_root, {}, &size, LOAD_FILE_SIZE), 0);
+    EXPECT_EQ(size, 0);
+
+    ASSERT_EQ(moonmod::RegisterNativeResourceOverride(
+                  "test.virtual-map", package,
+                  moonmod::Json::array({{{"path", "resources/oversized.map"},
+                                         {"game_path", "map/m/m00/large.map"}}})).status,
+              moonmod::ApiCallStatus::Ok);
+    char too_large[] = "map/m/m00/large.map";
+    size = 99;
+    EXPECT_EQ(LoadFile2(too_large, {}, &size, LOAD_FILE_SIZE), 0);
+    EXPECT_EQ(size, 0);
+}
+
+TEST_F(DataRead, PersistentNativeDefinitionKeepsItsPackageAssetsAfterOwnerUnload) {
+    const fs::path package = base / "mods" / "test.persistent-location";
+    WriteBytes(package / "resources" / "map.map", MakeBytes(64, 0x31));
+    moonmod::ResetNativeResourceOverridesForTests();
+    struct ResetOverrides {
+        ~ResetOverrides() { moonmod::ResetNativeResourceOverridesForTests(); }
+    } reset;
+
+    const moonmod::ApiCallResult registered = moonmod::RegisterNativeResourceOverride(
+        "test.persistent-location", package,
+        moonmod::Json::array({{{"path", "resources/map.map"}, {"game_path", "map/m/m00/probe.map"}}}));
+    ASSERT_EQ(registered.status, moonmod::ApiCallStatus::Ok) << registered.message;
+    ASSERT_TRUE(moonmod::SetNativeResourceOverridePersistent(
+        "test.persistent-location", "map/m/m00/probe.map", true));
+
+    moonmod::RemoveNativeResourceOverridesByOwner("test.persistent-location");
+    EXPECT_TRUE(moonmod::NativeResourceOverrideOwnedBy("test.persistent-location", "map/m/m00/probe.map"));
+    EXPECT_TRUE(moonmod::FindNativeResourceOverride("map/m/m00/probe.map").has_value());
+    const moonmod::ApiCallResult rejected_removal = moonmod::RemoveNativeResourceOverride(
+        "test.persistent-location", moonmod::Json::array({{{"game_path", "map/m/m00/probe.map"}}}));
+    EXPECT_EQ(rejected_removal.status, moonmod::ApiCallStatus::PermissionDenied);
+
+    ASSERT_TRUE(moonmod::SetNativeResourceOverridePersistent(
+        "test.persistent-location", "map/m/m00/probe.map", false));
+    moonmod::RemoveNativeResourceOverridesByOwner("test.persistent-location");
+    EXPECT_FALSE(moonmod::FindNativeResourceOverride("map/m/m00/probe.map").has_value());
+}
+
+TEST_F(DataRead, NativeResourceOverrideRejectsPathTraversalAndFallsBackForOversizedFiles) {
+    DataReadIndex(root);
+    const fs::path package = base / "mods" / "test.asset-override-oversized";
+    const auto oversized = MakeBytes(kFileSize + 1, 0x62);
+    WriteBytes(package / "resources" / "oversized.bin", oversized);
+    moonmod::ResetNativeResourceOverridesForTests();
+    struct ResetOverrides {
+        ~ResetOverrides() { moonmod::ResetNativeResourceOverridesForTests(); }
+    } reset;
+
+    const moonmod::ApiCallResult invalid_path = moonmod::RegisterNativeResourceOverride(
+        "test.asset-override-oversized", package,
+        moonmod::Json::array({{{"path", "resources/oversized.bin"}, {"game_path", "../outside.bin"}}}));
+    EXPECT_EQ(invalid_path.status, moonmod::ApiCallStatus::InvalidArgument);
+    const moonmod::ApiCallResult registered = moonmod::RegisterNativeResourceOverride(
+        "test.asset-override-oversized", package,
+        moonmod::Json::array({{{"path", "resources/oversized.bin"}, {"game_path", "dir/sub/file.bin"}}}));
+    ASSERT_EQ(registered.status, moonmod::ApiCallStatus::Ok) << registered.message;
+
+    char path[] = "cdrom0:\\DIR\\SUB\\FILE.BIN;1";
+    int size = 0;
+    ASSERT_EQ(Load(path, BufferBytes(), &size), 1);
+    const auto retail = MakeBytes(kFileSize, 7);
+    EXPECT_EQ(size, static_cast<int>(retail.size()));
+    EXPECT_EQ(std::memcmp(Buffer(), retail.data(), retail.size()), 0);
 }
 
 TEST_F(DataRead, DatapacksOverrideIndexedFilesWithReplacementSizesAndSparseFallback) {

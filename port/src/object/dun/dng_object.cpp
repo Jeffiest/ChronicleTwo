@@ -1462,7 +1462,7 @@ void CPullItem::Step() {
                     }
 
                     MsgTaskMan.Print(item_message, 45, 8, 0);
-                    DngUserData->GetItem(item_no, 1);
+                    moonmod::ChronicleTwoNativeItemPickedUp(item_no, DngUserData->GetItem(item_no, 1));
                     state = PULL_ITEM_STATE_FREE;
                 }
             }
@@ -1480,7 +1480,7 @@ void CPullItem::Step() {
             } else {
                 std::snprintf(key_message, sizeof(key_message), dung_progtxt_gkey_get[LanguageCode], GetItemMessage(item_no));
                 MsgTaskMan.Print(key_message, 90, 8, 0);
-                DngUserData->GetItem(item_no, 1);
+                moonmod::ChronicleTwoNativeItemPickedUp(item_no, DngUserData->GetItem(item_no, 1));
                 state = PULL_ITEM_STATE_GOT;
                 get_delay = 60;
                 bob_height = 30.0f;
@@ -1499,7 +1499,7 @@ void CPullItem::Step() {
             } else {
                 std::snprintf(stolen_message, sizeof(stolen_message), dung_progtxt_steal[LanguageCode], GetItemMessage(item_no));
                 MsgTaskMan.Print(stolen_message, 90, 8, 0);
-                DngUserData->GetItem(item_no, 1);
+                moonmod::ChronicleTwoNativeItemPickedUp(item_no, DngUserData->GetItem(item_no, 1));
                 state = PULL_ITEM_STATE_GOT;
                 get_delay = 60;
                 bob_height = 30.0f;
