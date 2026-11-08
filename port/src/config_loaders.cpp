@@ -131,7 +131,7 @@ std::vector<GameSetupStep> ParseGameSetup(const native_config::Json &document) {
     std::vector<GameSetupStep> steps;
     for (const auto &entry : Array(document, "actions")) {
         const auto        name = Text(entry, "action");
-        const auto *const kind = std::ranges::find_if(kSetupKinds, [&](const SetupKind &item) { return name == item.name; });
+        const auto        kind = std::ranges::find_if(kSetupKinds, [&](const SetupKind &item) { return name == item.name; });
         if (kind == kSetupKinds.end()) {
             throw std::runtime_error("unknown game setup action " + name);
         }

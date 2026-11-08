@@ -32,6 +32,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ${NINTENDO_SWITCH})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if(EMSCRIPTEN)
+    # WebAssembly has one statically linked module; position-independent code would ask for dynamic linking.
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+endif()
 option(CT_BUILD_TESTS "Build darkchronicle_tests" ON)
 
 set(KZ_ROOT ${CMAKE_SOURCE_DIR}/tools/kazarov)
@@ -61,6 +65,11 @@ file(CONFIGURE OUTPUT ${CMAKE_BINARY_DIR}/generated/include/icon/chronicletwo.hp
     CONTENT "#pragma once\n#include <cstdint>\ninline constexpr int kIconSize = 128;\ninline constexpr std::uint8_t kIconRgba[] = {${icon_bytes}};\n")
 
 include(${KZ_ROOT}/cmake/KazarovPort.cmake)
+if(EMSCRIPTEN)
+    # The browser build (docs/WEB.md): SDL3 and Vulkan's headers from source, the Vulkan layers on WebGPU and
+    # WebGL2, the Rust core for wasm, and what of the desktop's it turns off.
+    include(${CMAKE_CURRENT_SOURCE_DIR}/web/web.cmake)
+endif()
 if(NINTENDO_SWITCH)
     set(KZ_SWITCH_APPLICATION_NAME "Dark Chronicle")
     set(KZ_SWITCH_LOG_FILE "darkchronicle.log")
@@ -124,6 +133,9 @@ endif()
 kz_port_host_library(ct_host)
 if(NINTENDO_SWITCH)
     kz_switch_host(ct_host)
+elseif(EMSCRIPTEN)
+    ct_web_host(ct_host)
+    ct_web_vulkan(ct_host)
 endif()
 set_property(SOURCE
     ${KZ_ROOT}/src/cpp/platform/arena.cpp
@@ -303,6 +315,9 @@ if(NINTENDO_SWITCH)
 else()
     list(FILTER PORT_SOURCES EXCLUDE REGEX "/switch/")
 endif()
+if(EMSCRIPTEN)
+    list(FILTER PORT_SOURCES EXCLUDE REGEX "/ios/|${CT_WEB_PORT_EXCLUDE}")
+endif()
 
 # Some retail units use declarations supplied by a per-unit native compatibility header.
 file(GLOB NATIVE_COMPATIBILITY_HEADERS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/stubs/*.hpp)
@@ -330,6 +345,9 @@ endif()
 # arm64 clang fuses a*b+c into one rounding by default and x86-64 has no FMA in its baseline; off
 # everywhere so the game's arithmetic rounds the same on both.
 target_compile_options(ct_options INTERFACE -ffp-contract=off)
+if(EMSCRIPTEN)
+    ct_web_options(ct_options)
+endif()
 
 if(WIN32 AND (NOT MINGW OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
     message(FATAL_ERROR "The Windows build requires clang/llvm-mingw")
@@ -372,6 +390,10 @@ if(NOT WIN32)
 endif()
 add_library(ct_port OBJECT ${PORT_LIB_SOURCES} ${CT_SCE_SOURCES})
 add_library(ct_port_bridge OBJECT ${PORT_BRIDGE_SOURCES})
+if(EMSCRIPTEN)
+    # The web's units (web/web.cmake); the first run calls the Rust extractor, so it is a bridge unit.
+    ct_web_port(ct_port_bridge)
+endif()
 # SDK implementations are dependencies even when they are linked into the port object target.
 set_property(SOURCE ${CT_SCE_SOURCES} APPEND PROPERTY COMPILE_OPTIONS -w)
 if(NINTENDO_SWITCH)
@@ -410,7 +432,10 @@ endif()
 
 # Shared by the game and its tests. The native game sources and host code are linked into
 # a position-independent executable; pointer-width conversions are handled in port code.
-if(NINTENDO_SWITCH)
+if(EMSCRIPTEN)
+    set(CT_LINK_OPTIONS ${CT_WEB_LINK_OPTIONS})
+    set(CT_LINK_DEPENDS ${CT_WEB_LINK_DEPENDS})
+elseif(NINTENDO_SWITCH)
     set(CT_LINK_OPTIONS -Wl,--gc-sections)
 elseif(WIN32)
     set(CT_LINK_OPTIONS -fuse-ld=lld -Wl,--gc-sections -Wl,--error-limit=0)
@@ -438,6 +463,9 @@ function(ct_link_game target)
     endif()
     target_include_directories(${target} PRIVATE ${PORT_DIR})
     target_link_options(${target} PRIVATE ${CT_LINK_OPTIONS})
+    if(CT_LINK_DEPENDS)
+        set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS ${CT_LINK_DEPENDS})
+    endif()
     if(WIN32)
         # The Rust host UI uses Windows input, theme, OpenGL and desktop-composition APIs.
         target_link_libraries(${target} PRIVATE imm32 uxtheme opengl32 dwmapi)
@@ -449,6 +477,22 @@ endfunction()
 add_executable(darkchronicle ${PORT_DIR}/main.cpp)
 set_target_properties(darkchronicle PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 ct_link_game(darkchronicle)
+if(EMSCRIPTEN)
+    # The WebGPU build, and the same game on WebGL2 (web/web.cmake); the link pool keeps the two links one at a time.
+    ct_web_link_vulkan(darkchronicle webgpu)
+    add_executable(darkchronicle_gl ${PORT_DIR}/main.cpp)
+    set_target_properties(darkchronicle_gl PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    ct_link_game(darkchronicle_gl)
+    ct_web_link_vulkan(darkchronicle_gl gl)
+    add_dependencies(darkchronicle ct_web_site)
+    add_dependencies(darkchronicle_gl ct_web_site)
+    # Each link takes minutes and several GiB: the WebGL2 build is built on request unless asked for with all.
+    option(CT_WEB_GL_IN_ALL "Build darkchronicle_gl with the default target" OFF)
+    if(NOT CT_WEB_GL_IN_ALL)
+        set_target_properties(darkchronicle_gl PROPERTIES EXCLUDE_FROM_ALL TRUE)
+    endif()
+    ct_web_gfx_tests(ct_host)
+endif()
 if(NINTENDO_SWITCH)
     kz_switch_nro(darkchronicle NAME "Dark Chronicle" AUTHOR "ChronicleTwo contributors" VERSION "0.1.0"
         ICON ${CMAKE_CURRENT_SOURCE_DIR}/assets/icon/chronicletwo-switch.jpg)
@@ -514,6 +558,9 @@ foreach(asset_dir IN ITEMS glyphs fonts)
     endforeach()
     add_custom_target(ct_${asset_dir} DEPENDS ${asset_copies})
     add_dependencies(darkchronicle ct_${asset_dir})
+    if(TARGET darkchronicle_gl)
+        add_dependencies(darkchronicle_gl ct_${asset_dir})
+    endif()
     install(DIRECTORY assets/${asset_dir}/ DESTINATION ${CMAKE_INSTALL_BINDIR}/${asset_dir})
 endforeach()
 
@@ -524,6 +571,10 @@ endif()
 file(GLOB ct_stream_cmake CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/*.cmake)
 foreach(f IN LISTS ct_stream_cmake)
     if(NINTENDO_SWITCH AND f MATCHES "/(crash|data)\\.cmake$")
+        continue()
+    endif()
+    # The browser has no cpptrace, no FFmpeg and no dc2data command (web/web.cmake replaces the units they serve).
+    if(EMSCRIPTEN AND f MATCHES "/(crash|data|movies)\\.cmake$")
         continue()
     endif()
     include(${f})
@@ -556,7 +607,12 @@ foreach(dependency IN ITEMS cpptrace fastgltf googletest libdwarf luau nlohmann_
 endforeach()
 # SDL's package marks its headers as non-system.
 if(TARGET SDL3::Headers)
-    set_property(TARGET SDL3::Headers PROPERTY SYSTEM TRUE)
+    # Built from source (the web), SDL3::Headers is an alias, which cannot take a property.
+    get_target_property(ct_sdl_headers SDL3::Headers ALIASED_TARGET)
+    if(NOT ct_sdl_headers)
+        set(ct_sdl_headers SDL3::Headers)
+    endif()
+    set_property(TARGET ${ct_sdl_headers} PROPERTY SYSTEM TRUE)
 endif()
 
 if(WIN32)

@@ -3,8 +3,8 @@ project(chronicletwo NONE)
 
 # PLATFORM picks what is built: PS2 builds and verifies the retail executable
 # (ps2/CMakeLists.txt), PC builds the x64 port (port/CMakeLists.txt).
-set(PLATFORM PS2 CACHE STRING "Platform to build: PS2, PC or SWITCH")
-set_property(CACHE PLATFORM PROPERTY STRINGS PS2 PC SWITCH)
+set(PLATFORM PS2 CACHE STRING "Platform to build: PS2, PC, SWITCH or WEB")
+set_property(CACHE PLATFORM PROPERTY STRINGS PS2 PC SWITCH WEB)
 if(PLATFORM STREQUAL "PS2")
     add_subdirectory(ps2)
 elseif(PLATFORM STREQUAL "PC" OR PLATFORM STREQUAL "SWITCH")
@@ -15,6 +15,12 @@ elseif(PLATFORM STREQUAL "PC" OR PLATFORM STREQUAL "SWITCH")
     # Here rather than in port so ctest finds the tests from the top of the build tree.
     enable_testing()
     add_subdirectory(port)
+elseif(PLATFORM STREQUAL "WEB")
+    # The browser build (docs/WEB.md): port/web/web.cmake, with Emscripten's toolchain.
+    if(NOT EMSCRIPTEN)
+        message(FATAL_ERROR "PLATFORM WEB requires Emscripten's toolchain (the web preset, or emcmake)")
+    endif()
+    add_subdirectory(port)
 else()
-    message(FATAL_ERROR "PLATFORM must be PS2, PC or SWITCH, not ${PLATFORM}")
+    message(FATAL_ERROR "PLATFORM must be PS2, PC, SWITCH or WEB, not ${PLATFORM}")
 endif()

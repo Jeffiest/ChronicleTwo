@@ -1463,7 +1463,8 @@ constexpr std::array kItemTableKinds{
 ItemTable ParseItemTable(const native_config::Json &document) {
     const auto        found = document.is_object() ? document.find("kind") : document.end();
     const auto        kind = found != document.end() && found->is_string() ? found->get<std::string>() : std::string();
-    const auto *const entry = std::ranges::find_if(kItemTableKinds, [&](const ItemTableKind &item) { return kind == item.kind; });
+    // An iterator, not a pointer: libc++'s hardened std::array (the web) iterates with a wrapper.
+    const auto        entry = std::ranges::find_if(kItemTableKinds, [&](const ItemTableKind &item) { return kind == item.kind; });
     if (entry == kItemTableKinds.end()) {
         native_config::CheckKind(document, "item table");
         throw std::runtime_error("configuration is not an item table document");

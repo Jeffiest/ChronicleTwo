@@ -56,6 +56,10 @@
 #include "scenesnd.hpp"
 #include "test_hooks.hpp"
 
+#ifdef __EMSCRIPTEN__
+[[noreturn]] void WebExit(int status); // port/web/src/exit.cpp
+#endif
+
 mgRENDER_INFO     mgRenderInfo;
 mgCTextureManager mgTexManager;
 mgCDrawManager    mgDrawManager;
@@ -2418,7 +2422,11 @@ void mgEndFrame(mgCDrawManager *manager) {
             }
         }
 
+#ifdef __EMSCRIPTEN__
+        WebExit(status); // port/web/src/exit.cpp: the atexit handlers on this thread, not the page's
+#else
         std::exit(status);
+#endif
     }
 
     if (GamePerfEnabled()) {

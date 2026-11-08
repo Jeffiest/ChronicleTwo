@@ -8,6 +8,8 @@ if(DEFINED ENV{KZ_CORROSION_SOURCE_DIR} AND
 endif()
 if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(Rust_CARGO_TARGET x86_64-pc-windows-gnullvm CACHE STRING "Rust target for llvm-mingw" FORCE)
+elseif(EMSCRIPTEN)
+    set(Rust_CARGO_TARGET wasm32-unknown-emscripten CACHE STRING "Rust target for Emscripten" FORCE)
 endif()
 FetchContent_Declare(corrosion
     URL https://github.com/corrosion-rs/corrosion/archive/refs/tags/v0.6.1.zip
@@ -20,6 +22,18 @@ get_filename_component(KZ_RUST_MANIFEST "${CMAKE_CURRENT_LIST_DIR}/../Cargo.toml
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
     # The desktop setup window (eframe, rfd) does not target iOS, which extracts without it.
     corrosion_import_crate(MANIFEST_PATH ${KZ_RUST_MANIFEST} CRATES kazarov_core NO_DEFAULT_FEATURES LOCKED)
+elseif(EMSCRIPTEN)
+    # Nor the browser. The game there runs on pthreads (shared memory), which every wasm object linked into it
+    # must be built for, Rust's standard library included: the prebuilt one for wasm32-unknown-emscripten is not,
+    # so cargo builds it (-Zbuild-std, which stable cargo runs with RUSTC_BOOTSTRAP=1 and the rust-src component)
+    # with atomics and bulk memory, and with panics aborting: Rust's unwinding there is WebAssembly's own
+    # exceptions, which Asyncify does not take. The C and C++ the crates compile (zstd, cxx) take the same thread
+    # model through cc's CFLAGS.
+    corrosion_import_crate(MANIFEST_PATH ${KZ_RUST_MANIFEST} CRATES kazarov_core NO_DEFAULT_FEATURES LOCKED
+        FLAGS -Zbuild-std=std,panic_abort)
+    corrosion_add_target_rustflags(kazarov_core -Ctarget-feature=+atomics,+bulk-memory,+mutable-globals -Cpanic=abort)
+    corrosion_set_env_vars(kazarov_core RUSTC_BOOTSTRAP=1
+        "CFLAGS_wasm32_unknown_emscripten=-pthread -O2" "CXXFLAGS_wasm32_unknown_emscripten=-pthread -fexceptions -O2")
 else()
     corrosion_import_crate(MANIFEST_PATH ${KZ_RUST_MANIFEST} CRATES kazarov_core LOCKED)
 endif()
@@ -28,8 +42,11 @@ set(KZ_GAMEPLAY_ARCHIVE "${CMAKE_BINARY_DIR}/assets/data.zip")
 corrosion_set_env_vars(kazarov_core "KAZAROV_GAMEPLAY_ARCHIVE=${KZ_GAMEPLAY_ARCHIVE}")
 include(GNUInstallDirs)
 install(FILES "${KZ_GAMEPLAY_ARCHIVE}" DESTINATION ${CMAKE_INSTALL_BINDIR})
-include("${CMAKE_CURRENT_LIST_DIR}/KazarovFfmpeg.cmake")
-kz_ffmpeg(kazarov_core INTERFACE)
+# The browser has no FFmpeg: the game there plays no movies, and the extraction leaves them out (publish.rs).
+if(NOT EMSCRIPTEN)
+    include("${CMAKE_CURRENT_LIST_DIR}/KazarovFfmpeg.cmake")
+    kz_ffmpeg(kazarov_core INTERFACE)
+endif()
 if(DEFINED KAZAROV_GAMEPLAY_ROOT)
     corrosion_set_env_vars(kazarov_core "KAZAROV_GAMEPLAY_ROOT=${KAZAROV_GAMEPLAY_ROOT}")
 else()
@@ -38,12 +55,14 @@ else()
         corrosion_set_env_vars(kazarov_core "KAZAROV_GAMEPLAY_ROOT=${KZ_GAMEPLAY_ROOT}")
     endif()
 endif()
-find_program(KZ_FFMPEG_EXECUTABLE NAMES ffmpeg.exe ffmpeg HINTS "${KZ_FFMPEG_DIR}/bin")
-if(KZ_FFMPEG_EXECUTABLE)
-    corrosion_set_env_vars(kazarov_core "KAZAROV_FFMPEG=${KZ_FFMPEG_EXECUTABLE}")
-endif()
-if(KZ_FFMPEG_DIR)
-    corrosion_set_env_vars(kazarov_core "KAZAROV_FFMPEG_INCLUDE=${KZ_FFMPEG_DIR}/include" "KAZAROV_FFMPEG_LIB=${KZ_FFMPEG_DIR}/lib")
+if(NOT EMSCRIPTEN)
+    find_program(KZ_FFMPEG_EXECUTABLE NAMES ffmpeg.exe ffmpeg HINTS "${KZ_FFMPEG_DIR}/bin")
+    if(KZ_FFMPEG_EXECUTABLE)
+        corrosion_set_env_vars(kazarov_core "KAZAROV_FFMPEG=${KZ_FFMPEG_EXECUTABLE}")
+    endif()
+    if(KZ_FFMPEG_DIR)
+        corrosion_set_env_vars(kazarov_core "KAZAROV_FFMPEG_INCLUDE=${KZ_FFMPEG_DIR}/include" "KAZAROV_FFMPEG_LIB=${KZ_FFMPEG_DIR}/lib")
+    endif()
 endif()
 corrosion_add_cxxbridge(kazarov_bridge CRATE kazarov_core FILES rust/lib.rs rust/host_jobs.rs rust/host_models.rs)
 get_target_property(kz_bridge_generated_include_dirs kazarov_bridge INTERFACE_INCLUDE_DIRECTORIES)

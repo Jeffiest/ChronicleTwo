@@ -1,0 +1,172 @@
+# The web build
+
+ChronicleTwo builds its port to WebAssembly with Emscripten (`PLATFORM=WEB`, preset `web`), on the layer DC_Web built
+for Dark Cloud: Vulkan on WebGPU and on WebGL2, WasmFS on the browser's storage, PS2 threads as fibers under
+Asyncify, a page with an on-screen gamepad. This page records how it is built, what it changes, what of it is
+Chronicle Two's own, and where it stands. `port/web/PROGRESS.md` is the working log behind it.
+
+## Building
+
+```bash
+export EMSCRIPTEN_ROOT=/path/to/emsdk/upstream/emscripten   # Emscripten 6.0.13, as DC_Web pins; or source emsdk_env.sh
+rustup component add rust-src                              # the standard library is built for wasm32 (below)
+rustup target add wasm32-unknown-emscripten
+tools/web/build.sh configure                               # cmake --preset web
+tools/web/build.sh build darkchronicle                     # cmake --build --preset web --target darkchronicle
+tools/web/serve.py                                         # http://127.0.0.1:8000/, with the headers the page needs
+```
+
+`tools/web/build.sh` finds Emscripten from `EMSCRIPTEN_ROOT`, then `EMSDK`, then `emcc` on PATH, and passes each
+subdirectory of `CT_DEPS_DIR` (pre-cloned `corrosion`, `simdjson`, `fastgltf`, `luau`, `quill`, `googletest`,
+`SDL3`, `vulkanheaders`) as `FETCHCONTENT_SOURCE_DIR_<NAME>` for machines that cannot download archives;
+`CT_WEB_JOBS` sets the compile jobs. The build needs `glslangValidator` on the host (the Vulkan shaders are still
+compiled to SPIR-V) and Node, which `.emscripten` names.
+
+The output is `port/build/web/darkchronicle.js`, `darkchronicle.wasm` and `darkchronicle.data` (`glyphs/`, `fonts/`
+and the Luau `scripts/`, preloaded), the game drawing with WebGPU, with the page (`port/web/site/`: `index.html`,
+`shell.js`, `sw.js`) copied beside them, so the build directory is the site. `darkchronicle_gl`, the same game
+drawing with WebGL2, is a second target (`-DCT_WEB_GL_IN_ALL=ON` builds it with `all`). Linking is the heavy step:
+Asyncify and `wasm-opt` over the whole game take several minutes and most of the memory, so link one target at a
+time (`web.cmake` puts the links in a job pool of one).
+
+Kazarov's renderer tests for the two layers are `kazarov_gfx_tests` and `kazarov_gfx_tests_gl`
+(`port/web/test/gfx_tests.html`), not built by default.
+
+### Smoke runs
+
+`tools/web/smoke.sh` runs the build without game data, as CI would:
+
+- `node`: `node darkchronicle.js --headless --offscreen --frames 30 --save <dir>` under Node, which runs the
+  runtime, WasmFS, the fibers and the host's setup up to the game data check, where the game logs what to put in
+  the browser and exits with 3 (`kExitNoData`, `port/src/exitcodes.hpp`).
+- `browser`: the page in headless Chromium (Playwright) on SwiftShader's WebGPU, from `tools/web/serve.py`; the
+  driver (`port/web/test/browser_smoke.mjs`) stores a stand-in `data.zip` in the origin private file system as the
+  page would, starts the game and waits for the page's `exit=<code>` line. `--renderer gl` runs `darkchronicle_gl.js`;
+  `--with-marker` stores a current `data.json` too, so the game gets past the data check, creates its device,
+  compiles its pipelines and runs the frames on the stand-in data (exit 0).
+
+Both check the exit code (0 or 3), the log's session header and missing-data message, and that no `abort:`,
+`RuntimeError`, `pageerror` or "signature mismatch" was printed. `tools/gauntlet` (GAUNTLET.md) runs the same two
+checks as its `web-node` and `web-browser` stages.
+
+## What the web build changes
+
+All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCRIPTEN)`:
+
+- **CMake**: `PLATFORM=WEB` in the top-level `CMakeLists.txt` with the `web` presets (`port/build/web`, Release,
+  tests, Tracy, LTO and split symbols off) and `port/web/toolchain.cmake`; `port/web/web.cmake` builds SDL3 3.4.18
+  and takes Vulkan-Headers 1.4.366 from git, generates the Vulkan stubs and the WGSL embed, defines the
+  `ct_vk_webgpu` and `ct_vk_gl` object libraries, the link options, the page copy, the WebGPU probe and the
+  renderer tests. `port/cmake/data.cmake` (dc2data), `crash.cmake` (cpptrace) and `movies.cmake` (FFmpeg) are
+  skipped on the web; `web.cmake` includes `KazarovRust.cmake` itself.
+- **Vulkan on WebGPU** (`port/web/vulkan/`) and **Vulkan on WebGL2** (`port/web/gl/`), DC_Web's layers: the Vulkan
+  commands Kazarov's renderer calls, implemented on WebGPU (Emscripten's `emdawnwebgpu` port) and on WebGL2, so the
+  renderer runs unchanged; weak stubs that fail stand for every other command. DC_Web's `docs/WEB.md` describes
+  both layers (the dynamic-state pipeline variants, push constants as a storage buffer, the swapchain copy, the
+  hand-ported WGSL and GLSL ES shaders, Mali's waits, the `_noclip` variants). The one shader that changed
+  between the Kazarov DC_Web ports and this tree's (`draw_body.glsl`: the palette slot as an AEM mask, flag 2048,
+  and alpha function 8, RGB-only source-over) is ported in both. When a GLSL shader in Kazarov's `gfx/shaders/`
+  changes, its WGSL and GLSL ES ports must follow.
+- **PS2 threads** (`sce/eekernel_threads.cpp`) are Emscripten fibers, each with a 256 KiB Asyncify stack
+  (`-sASYNCIFY`).
+- **The game runs on a pthread** (`-sPROXY_TO_PTHREAD`), so its blocking waits do not stall the page, and the
+  renderer stays on it (render thread off): WebGPU's objects belong to the thread that made the device. Hosting
+  needs cross-origin isolation (COOP/COEP headers, which `tools/web/serve.py` sends, or `sw.js` on hosts that
+  cannot, GitHub Pages among them). The canvas is handed to the game's thread as an OffscreenCanvas.
+- **Arenas** are heap blocks (`port/web/src/memory.cpp`); WebAssembly has no page protection. `WidenNear`
+  returns the low word on 32-bit pointers (`platform/arena.hpp`).
+- **Kazarov's Rust core** is built for `wasm32-unknown-emscripten` with cargo building the standard library
+  (`-Zbuild-std=std,panic_abort`, `RUSTC_BOOTSTRAP=1`, `+atomics,+bulk-memory,+mutable-globals`): the prebuilt
+  std has no atomics and wasm-ld refuses it in a `-pthread` link. Rust unwinds with WebAssembly exceptions, which
+  Asyncify does not take, hence `panic=abort`. No default features (no eframe, rfd or FFmpeg).
+- **Exceptions** are Emscripten's JavaScript-based ones (`-fexceptions`); native wasm exceptions do not work with
+  Asyncify.
+- **Game data** is the player's own, from their PAL disc. The page copies what they choose into the origin
+  private file system under `chronicletwo/` once: a disc image (`disc.iso`), the disc's `DATA.HD4`, `DATA.DAT`,
+  `SOUND.HD3` and `SOUND.DAT` (`disc/`), or a PC extraction (`data.zip` with `data.json`, or `data/` beside
+  `data.json`). The game mounts that file system at `/opfs` through WasmFS (`port/web/src/storage.cpp`) and starts
+  with `--run-dir /opfs/chronicletwo`, so `data.zip` is read in place and saves, `config.json` and the logs live
+  beside it. A disc is extracted at the game's first start by Kazarov's extractor, as `dc2data` does on a PC, on a
+  thread of its own with progress on stdout as `extract: <percent> <stage>`, which the page shows over the canvas
+  (`port/web/src/firstrun.cpp`). Movies are left out of the extraction and `MoviePlayer` is a no-op
+  (`port/web/src/movie.cpp`): the browser has no FFmpeg. OPFS needs Chromium or Firefox.
+- **Saves**: Kazarov's `FilesWrite` commits a new file with an exclusive rename or a hard link, neither of which
+  WasmFS has; on the web it checks the name is free and renames (`platform/files.cpp`).
+- **Crashes** exit through `WebQuickExit` (`port/web/src/crash.cpp`, the Switch stub's shape); there is no
+  cpptrace.
+- **On-screen gamepad**: on a touch screen (`pointer: coarse`) the page draws a PS2 pad over the game and hands
+  its state to the game as Android's overlay does (`port/web/src/touch.cpp`, `KZ_TOUCH_OVERLAY`,
+  `WebTouchOverlayPoll` from `main.cpp`'s pump). The game says when to show it.
+- **The page** (`port/web/site/`): `shell.js` stores the data and starts the game, which fills the window, scaled to
+  fit, with Fullscreen, Log and Capture buttons and the extraction's progress over it; the previous run's last
+  lines are kept in `localStorage` for a tab the browser killed. `?args=--headless+--frames+30` passes extra
+  arguments and `--env NAME=VALUE` among them sets an environment variable (`DC2_LOG=debug`, say), as a browser has
+  no other way to. The page starts `darkchronicle_gl.js` where there is no WebGPU and on Arm's Mali GPUs, and
+  `darkchronicle.js` elsewhere; `?renderer=gl` or `?renderer=webgpu` chooses, and the log's first lines say which
+  ran on what GPU.
+- **Libraries**: quill's `Rdtsc.h` includes `x86gprintrin.h` on every non-Arm target, which clang ships but wasm32
+  cannot use; `port/web/include/x86gprintrin.h` shadows it and the port's logger uses quill's user clock. quill's
+  backend calls `pthread_setname_np`, `pthread_getname_np` and `sched_setaffinity`, which Emscripten's libc declares
+  but leaves out; `port/web/src/threads.cpp` defines them. `runtime.cpp` defines `LIBC_NOEXCEPT` for musl.
+- **32-bit pointers**: `sizeof(mgCFace)` is 20 (`mg_visual.hpp`); `std::ranges::find_if` over a `std::array`
+  returns libc++'s wrapped iterator in hardened mode, not a pointer (`gamedata.cpp`, `config_loaders.cpp`,
+  `luau_runtime.cpp`).
+
+## What is Chronicle Two's own
+
+Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
+
+- **The data**: a Dark Chronicle PAL disc, `DATA.HD4`/`DATA.DAT`/`SOUND.HD3`/`SOUND.DAT` or a `dc2data` extraction
+  (`data.zip` with `data.json`, whose `data_version` must be current), stored under `chronicletwo/`, with the game
+  started by `--run-dir`; a disc is extracted by Kazarov's Rust extractor in the browser (DC_Web's game reads Dark
+  Cloud's disc in place instead). The extractor is why the Rust core is linked into the game, and why the
+  standard library is built for wasm32 with atomics.
+- **Kazarov** is this tree's vendored copy (`tools/kazarov`, upstream `fd72338a` plus MoonMod's patch), newer than
+  DC_Web's; its Emscripten patches were re-applied to it (`port/web/PROGRESS.md` lists each). `draw_body`'s
+  shader ports carry the newer AEM mask and alpha function.
+- **No movies** on the web (`movie.cpp`), where DC_Web had none to stub.
+- **MoonMod** is applied in-tree, so its Luau mods load as on the desktop; the page has no Mods card yet (below).
+- **Left out** of DC_Web's page: the Mods, PC downloads and animation editor cards, the built-in mods, the co-op
+  transport (work package D).
+
+## Status
+
+| Stage | State |
+| :-- | :-- |
+| Compiles and links to wasm (`darkchronicle`, WebGPU) | Done: `darkchronicle.wasm` 26.3 MB, `.js` 662 KB, `.data` 37.8 MB; the link about 3 min 15 s |
+| `darkchronicle_gl` (WebGL2) | Done: `darkchronicle_gl.wasm` 26.2 MB, `.js` 639 KB; its Chromium smoke passes (`--renderer gl`), and with `--with-marker` it runs 30 frames and exits 0 cleanly |
+| Smoke run under Node without data (exit 3) | Passes (`tools/web/smoke.sh node`; a stand-in canvas lets the game's thread start, `port/web/src/node_canvas.js`) |
+| Smoke run in headless Chromium (SwiftShader) | Passes on WebGPU (`tools/web/smoke.sh browser`): the page isolates, stores the archive, the game reports the missing data, `exit=3`. With a current `data.json` (`--with-marker`) the game creates the WebGPU device, compiles 21860 pipelines and runs 30 frames on the stand-in data |
+| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Page and first run written; not run with a disc here (none present) |
+| Renderer on WebGPU / WebGL2 with the game's frames | Not checked: needs game data |
+| Kazarov's renderer tests in the browser (`kazarov_gfx_tests`) | Not built here yet |
+| Saves in the browser's storage | Written (WasmFS on OPFS); not checked with a save |
+| Mods on the page (MoonMod's Mods card), co-op | Not done |
+| Hosting (GitHub Pages workflow) | Not done |
+
+## Not done, and the next steps
+
+- **The exit path.** Emscripten's `exit()` runs the C `atexit` handlers on the page's main thread
+  (`exitRuntime`), not the game's; the host's shutdown is those handlers, and the renderer's ran off the device's
+  thread (`webgpu: vkDeviceWaitIdle off the device's thread`, an abort after the exit code was reported). On the
+  web the frames exit (`mglib.cpp`) and a closed window (`main.cpp`, `PumpHost`) call `WebExit`
+  (`port/web/src/exit.cpp`), which runs the handlers on the game's thread first. Checked by the `--with-marker`
+  smoke: both layers now end `exit=0` with no abort. Other `std::exit` calls (usage errors, the
+  missing-data exit) happen before the renderer exists and are left as they are.
+- **A disc.** Nothing here was run with game data: the page's extraction, the title screen, a save, the renderers
+  drawing the game's frames are the next checks, with a PAL disc image on the page (or `dc2data`'s `data.zip` and
+  `data.json`).
+- **Kazarov's renderer tests** (`kazarov_gfx_tests`, `kazarov_gfx_tests_gl`) in Chromium: `cmake --build --preset web
+  --target kazarov_gfx_tests`, then `port/web/test/gfx_tests.mjs`. DC_Web's CI runs them on both layers; this tree's
+  renderer is newer and the layers were ported, so the suite is the check that the port holds.
+- **The page's Mods card** (MoonMod's mods from a folder or zip into `saves/mods/`, as DC_Web's page does with
+  `zip.js`), **co-op** over the relay (work package D) and **hosting** (a Pages workflow like DC_Web's `web.yml`).
+- **Movies** stay out (no FFmpeg in the browser); **main-depth copies** are not offered by the WebGPU layer, as in
+  DC_Web.
+
+## Watch for
+
+wasm-ld turns a call whose type differs from its definition into a trap, where native linkers let it through.
+Grep the link log for "function signature mismatch"; each one is a crash waiting at that call. The gauntlet's
+`web-browser` stage stores the stand-in archive under `chronicle/` (DC_Web's directory) where this page reads
+`chronicletwo/`; see PROGRESS.md.

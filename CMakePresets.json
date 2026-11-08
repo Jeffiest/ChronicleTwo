@@ -150,6 +150,21 @@
                 "CT_LUAU_PRECOMPILE": "ON",
                 "KZ_FFMPEG_DIR": "/opt/switch/ffmpeg"
             }
+        },
+        {
+            "name": "web",
+            "displayName": "WebAssembly (Emscripten), Release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/port/build/web",
+            "toolchainFile": "${sourceDir}/port/web/toolchain.cmake",
+            "cacheVariables": {
+                "PLATFORM": "WEB",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CT_BUILD_TESTS": "OFF",
+                "CT_ENABLE_TRACY": "OFF",
+                "CT_LTO": "off",
+                "CT_SYMBOLS": "off"
+            }
         }
     ],
     "buildPresets": [
@@ -176,6 +191,10 @@
         {
             "name": "switch",
             "configurePreset": "switch"
+        },
+        {
+            "name": "web",
+            "configurePreset": "web"
         }
     ],
     "testPresets": [

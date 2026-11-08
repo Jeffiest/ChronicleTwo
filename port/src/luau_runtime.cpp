@@ -126,7 +126,7 @@ const luau_bindings::Kind *KindForModule(std::string_view module) {
         const auto found = std::ranges::find(kinds, argument_kind, &luau_bindings::Kind::name);
         return found == kinds.end() ? nullptr : &*found;
     }
-    const auto *const prefix = std::ranges::find_if(kScriptPrefixes, [module](const ScriptPrefix &script_prefix) {
+    const auto        prefix = std::ranges::find_if(kScriptPrefixes, [module](const ScriptPrefix &script_prefix) {
         return module.starts_with(script_prefix.prefix) && (!script_prefix.nested || module.substr(script_prefix.prefix.size()).contains('/'));
     });
     if (prefix == kScriptPrefixes.end()) {

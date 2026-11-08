@@ -16,8 +16,8 @@ extern "C" [[noreturn]] void __assert(const char *file, int line, const char *ex
     CrashReportAndExit(CrashKind::Assert, std::format("{}:{}: assertion failed: {}", file, line, expression), kExitGameAssert);
 }
 
-// glibc declares these noexcept; Apple's libc and the Windows CRT do not.
-#if defined(__APPLE__) || defined(_WIN32)
+// glibc declares these noexcept; Apple's libc, the Windows CRT and Emscripten's musl do not.
+#if defined(__APPLE__) || defined(_WIN32) || defined(__EMSCRIPTEN__)
 #define LIBC_NOEXCEPT
 #else
 #define LIBC_NOEXCEPT noexcept
