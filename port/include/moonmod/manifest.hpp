@@ -54,6 +54,7 @@ struct ModManifest {
     std::vector<std::string> load_before;
     std::vector<std::string> permissions;
     std::vector<SettingDefinition> settings;
+    std::string coop = "required"; // online co-op: required, host_only, or local
     std::filesystem::path package_root;
     std::filesystem::path entry_file;
     std::filesystem::path native_library;
