@@ -27,7 +27,6 @@ static int memory_read(void *opaque, uint8_t *buffer, int size) {
     return (int)count;
 }
 
-// libavformat 61 (FFmpeg 7) made write_packet's buffer const; Ubuntu's FFmpeg 6.1 (libavformat 60) has it non-const.
 #if LIBAVFORMAT_VERSION_MAJOR >= 61
 typedef const uint8_t *write_packet_buffer;
 #else
