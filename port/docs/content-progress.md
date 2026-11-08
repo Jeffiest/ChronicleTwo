@@ -24,16 +24,24 @@ Research notes used: scratchpad `content_research.md` (DC1 reference in DC_Web, 
       Unsupported with reason and next step in CONTENT.md: the active switch, and listing in the native menus.
 - [x] M5 docs: port/docs/CONTENT.md; MoonMod/docs/API.md section "Chronicle Two content" (uncommitted, for the
       coordinator). No Lua example mod was added; the gtest cases drive the API through the adapter's handler.
-- [ ] M6 full test run against the baseline
+- [x] M6 full test run against the baseline: `ctest -LE gpu -j2`, 2426 tests, 20 failed, all 20 in
+      `baselines/linux-x86_64.json` (its 21st, GfxValidation.LayerIsInstalled, passed); 21 skipped/disabled as before.
 
 ## State
 
-- Builds with clang 20 (darkchronicle_tests). `MoonModContent*` (10 cases) pass. The `^MoonMod` ctest subset had
-  three failures before the Georama API tests were moved to the persistent ids: two of those were the hard-coded
-  id 1 in `moonmod_georama_api_test.cpp` (now read through `ChronicleTwoGeoramaNativePartId`), the third
-  (`MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload`) is in the baseline.
+- Builds with clang 20 (all targets). `MoonModContent*` (10 cases) pass; the `^MoonMod` ctest subset fails only
+  `MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload`, which is in the baseline. Two Georama API
+  tests that hard-coded native id 1 now read the persistent id through `ChronicleTwoGeoramaNativePartId`.
+- `party.recruit({id = <hero>, joined})` joins or releases a registered hero (added after the first commit).
 - Fixed from the predecessor's diff: hook includes sat in later sections of concatenated units (after their use);
   a `*/` inside a comment; `GetModelNo` on a const record; `player.*` and `characters.get` did not take a hero id.
+
+## Next step
+
+The active switch to a registered hero and his listing in the native menus (CONTENT.md, "Not supported"):
+route CheckEnableCharaChange, GetCharaMemAllocPtr/Size and CBattleCharaInfo::SetChrNo through
+ChronicleTwoRegisteredCharacterBody, let SetActiveChrNo take a registered id, then check in a windowed run with
+retail data that SetupMainUnit builds his pack. Also unverified headless: a mod villager drawn in a town.
 
 ## Build and test
 
