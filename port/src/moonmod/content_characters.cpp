@@ -9,6 +9,7 @@
 
 #include "moonmod/content_slots.hpp"
 #include "moonmod/native_resource_overrides.hpp"
+#include "moonmod/runtime.hpp"
 #include "moonmod/symlinks.hpp"
 #include "userdata.hpp"
 
@@ -336,6 +337,28 @@ std::optional<std::string> ChronicleTwoRegisteredCharacterPack(int character_ind
 CHARA_DATA *ChronicleTwoRegisteredCharaData(int character_index) {
     const int slot = SlotOf(character_index);
     return slot < 0 ? nullptr : &g_state[static_cast<std::size_t>(slot)].data;
+}
+
+ApiCallResult RecruitChronicleTwoPlayable(const Json &definition) {
+    for (auto it = definition.begin(); it != definition.end(); ++it) {
+        if (it.key() != "id" && it.key() != "joined") return Invalid("expected {id = registered playable id, joined = optional boolean}");
+    }
+    const auto id = definition.find("id");
+    const auto joined = definition.find("joined");
+    if (!id->is_string() || (joined != definition.end() && !joined->is_boolean())) {
+        return Invalid("expected {id = registered playable id, joined = optional boolean}");
+    }
+    int index = -1;
+    if (!ChronicleTwoRegisteredCharacterIndex(id->get_ref<const std::string &>(), index)) {
+        return Invalid("id must name a registered playable character");
+    }
+    const bool join = joined == definition.end() || joined->get<bool>();
+    const bool changed = ChronicleTwoRegisteredCharacterJoined(index) != join;
+    SetChronicleTwoRegisteredCharacterJoined(index, join);
+    Json result = {{"id", id->get<std::string>()}, {"character_id", index}, {"status", join ? "in_party" : "left"},
+                   {"recruited", join}, {"changed", changed}};
+    if (changed) SharedRuntime().QueueEvent("game.party.recruited", result);
+    return {ApiCallStatus::Ok, std::move(result), {}};
 }
 
 bool ChronicleTwoRegisteredCharacterJoined(int character_index) {

@@ -52,6 +52,12 @@ CHARA_DATA *ChronicleTwoRegisteredCharaData(int character_index);
 bool ChronicleTwoRegisteredCharacterJoined(int character_index);
 void SetChronicleTwoRegisteredCharacterJoined(int character_index, bool joined);
 
+/**
+ * `party.recruit({id = <registered playable id>, joined = true|false})`: the hero joins (default) or leaves the
+ * party; `party.list` then reports him. Emits `game.party.recruited` with `{id, recruited, changed}` on a change.
+ */
+ApiCallResult RecruitChronicleTwoPlayable(const Json &definition);
+
 /** The hero's record for `characters.list`/`characters.get`/`party.list`. */
 Json ChronicleTwoRegisteredCharacterJson(int character_index, int active_character_id);
 

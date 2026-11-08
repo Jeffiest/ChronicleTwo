@@ -421,7 +421,11 @@ TEST(MoonModContentPlayable, RegistersAHeroRoutesHisRecordAndPersistsItBesideThe
     EXPECT_EQ(weapon.value.at("assets").at("holder"), id);
 
     // Persistence beside the save, keyed by the save identity, with tombstones for unregistered ids.
-    moonmod::SetChronicleTwoRegisteredCharacterJoined(index, true);
+    const moonmod::ApiCallResult joined = fixture.Call(owner, "party.recruit", Json::array({Json{{"id", id}}}));
+    ASSERT_EQ(joined.status, ApiCallStatus::Ok) << joined.message;
+    EXPECT_TRUE(joined.value.at("changed").get<bool>());
+    EXPECT_TRUE(moonmod::ChronicleTwoRegisteredCharacterJoined(index));
+    EXPECT_EQ(fixture.Call(owner, "party.recruit", Json::array({Json{{"id", "nobody"}}})).status, ApiCallStatus::InvalidArgument);
     data->equip[CHARA_EQUIP_MELEE].item_no = 0x20;
     data->status_attr = 3;
     ASSERT_TRUE(moonmod::ChronicleTwoRegisteredCharactersSave("0000000000000001-0000000000000002"));
@@ -440,6 +444,11 @@ TEST(MoonModContentPlayable, RegistersAHeroRoutesHisRecordAndPersistsItBesideThe
     EXPECT_TRUE(std::ranges::any_of(party.value, [&id](const Json &entry) { return entry.value("id", "") == id; }));
     ASSERT_TRUE(moonmod::ChronicleTwoRegisteredCharactersLoad("0000000000000001-0000000000000003"));
     EXPECT_FLOAT_EQ(data->hp.now, 77.0f) << "another save starts him afresh";
+    ASSERT_TRUE(moonmod::ChronicleTwoRegisteredCharactersLoad("0000000000000001-0000000000000002"));
+    const moonmod::ApiCallResult left = fixture.Call(owner, "party.recruit", Json::array({Json{{"id", id}, {"joined", false}}}));
+    ASSERT_EQ(left.status, ApiCallStatus::Ok) << left.message;
+    EXPECT_FALSE(moonmod::ChronicleTwoRegisteredCharacterJoined(index));
+    moonmod::SetChronicleTwoRegisteredCharacterJoined(index, true);
     user_data->Initialize();
     EXPECT_FALSE(moonmod::ChronicleTwoRegisteredCharacterJoined(index)) << "a new game resets the heroes";
 

@@ -130,7 +130,10 @@ game.characters.register_playable({id = "opar", name = "Opar", pack = "mainchr/o
   character he fights as.
 - Up to 12 heroes, character ids 4-15 (`USER_CHARA_NUM` upward). `character_id` and `count` come back.
 - His record is a `CHARA_DATA` outside `CUserDataManager`: `GetCharaDataPtr`, `GetCharaHpGage` and
-  `MainCharaModelName` return it for his id, so `player.heal/damage/set {character = <id>}` work on it. `characters.list`, `characters.get` and `party.list` (when he has joined) report him.
+  `MainCharaModelName` return it for his id, so `player.heal/damage/set {character = <id>}` work on it.
+- `party.recruit({id = <hero id>, joined = true|false})` makes him join (default) or leave the party (API-side
+  membership, kept in `characters.json`; the save's 16-bit party mask keeps the native ids). `characters.list`,
+  `characters.get` and `party.list` (once joined) report him.
 - Persistence: `<save root>/moonmod/characters.json`, `{"version": 1, "saves": {"<identity>": {"<id>": {...}}}}`,
   written and read with the dungeon sidecar under the same save identity (`<fingerprint>-<counter>`). Each entry keeps
   `joined`, `hp`, `max_hp`, `defence`, `status_attr`, `status_time`, `keep_costume_on_equip_change`, the three

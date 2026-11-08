@@ -2282,6 +2282,7 @@ ApiCallResult RecruitPartyNpc(const Json &args) {
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) {
         return Invalid("expected {npc_id = integer from 1 to 32}");
     }
+    if (args[0].contains("id")) return RecruitChronicleTwoPlayable(args[0]); // a registered playable character
     int npc_id = 0;
     if (!ReadInt(args[0], "npc_id", 0, 1, 32, npc_id)) {
         return Invalid("npc_id must be an integer from 1 to 32");
