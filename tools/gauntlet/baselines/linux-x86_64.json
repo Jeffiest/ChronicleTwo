@@ -2,7 +2,7 @@
  "ctest-cpu": {
   "updated": "2026-11-08T03:11:54+00:00",
   "head": "cb6ae0f3ab9d292ce1270ee9fd01ddc2e596ac34",
-  "note": "written by run.py --update-baseline",
+  "note": "written by run.py --update-baseline; MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload removed by hand after its fix (6b8efdc1)",
   "totals": {
    "total": 2420,
    "passed": 2378,
@@ -24,7 +24,6 @@
    "Log.SessionIdIsDateTimeAndFourHexDigits",
    "LogFiles.PruningKeepsTheNewestSessions",
    "LogFiles.SessionFileHasTimeLevelThreadAndCategory",
-   "MoonModManagerUi.ChangesTypedSettingsNotifiesModsAndSurvivesReload",
    "NativeCharacterRetail.LoadsConvertedC01ProfileAndEvaluatesItsNativeMotion",
    "SaveSlotTest.LocalizedSavePromptsContainRetailText",
    "SaveSlotTest.NewSaveAndFinnyPromptsUseRetailMessagesInEveryPalLanguage",
