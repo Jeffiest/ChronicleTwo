@@ -27,7 +27,13 @@ static int memory_read(void *opaque, uint8_t *buffer, int size) {
     return (int)count;
 }
 
-static int memory_write(void *opaque, const uint8_t *buffer, int size) {
+#if LIBAVFORMAT_VERSION_MAJOR >= 61
+typedef const uint8_t *write_packet_buffer;
+#else
+typedef uint8_t *write_packet_buffer;
+#endif
+
+static int memory_write(void *opaque, write_packet_buffer buffer, int size) {
     MemoryFile *file = opaque;
     if (!file->writable || size < 0 || (size_t)size > SIZE_MAX - file->position)
         return AVERROR(EINVAL);
