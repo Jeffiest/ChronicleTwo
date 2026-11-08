@@ -156,9 +156,19 @@ set(CT_GPU_TESTS
     GfxCachedTarget.*
     GfxTim2.UploadRgbaAndIndexed
     GfxValidation.DeliberateMisuseIsCaught)
+# These cases write and scan a catalogue of 31 saves; a save holds SAVE_DUNGEON_FLOOR_NUM floor records and
+# USED_DATA_PLACE_MAX places (port/include/capacity.hpp), so the catalogue outlasts CT_TEST_TIMEOUT.
+set(CT_CPU_SLOW_TESTS
+    SaveSlotTest.CatalogHasNoRetailSlotLimitAndOnlyOneNewRow
+    SaveSlotTest.MenuScrollsPastThirteenAndClampsItsVisibleWindow)
+set(CT_CPU_SLOW_TIMEOUT 20 CACHE STRING "Seconds a case in CT_CPU_SLOW_TESTS may run before it is cut off")
+if(CT_TEST_TIMEOUT GREATER CT_CPU_SLOW_TIMEOUT)
+    set(CT_CPU_SLOW_TIMEOUT ${CT_TEST_TIMEOUT})
+endif()
 list(JOIN CT_GPU_SLOW_TESTS ":" CT_GPU_SLOW_FILTER)
 list(JOIN CT_GPU_TESTS ":" CT_GPU_FILTER)
 list(JOIN CT_CPU_TESTS ":" CT_CPU_FILTER)
+list(JOIN CT_CPU_SLOW_TESTS ":" CT_CPU_SLOW_FILTER)
 set(CT_CONFIG_PARITY_FILTER "NativeConfigParity.*")
 set(CT_CORPUS_FILTER "NativeSubtitles.MatchesEveryOfflineSubtitleChapter:MovieGlue.L5LogoPlaysOnTheClockWithItsSoundtrack:SoundRealData.PublishedBanksAndSequencesLoad")
 set(CT_CORPUS_TIMEOUT 120)
@@ -186,8 +196,14 @@ gtest_discover_tests(darkchronicle_tests
     DISCOVERY_MODE PRE_TEST
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DISCOVERY_TIMEOUT 60
-    TEST_FILTER -PlatformClock.*:${CT_GPU_FILTER}:${CT_GPU_SLOW_FILTER}:${CT_CPU_FILTER}:${CT_CORPUS_FILTER}:${CT_CONFIG_PARITY_FILTER}
+    TEST_FILTER -PlatformClock.*:${CT_GPU_FILTER}:${CT_GPU_SLOW_FILTER}:${CT_CPU_FILTER}:${CT_CPU_SLOW_FILTER}:${CT_CORPUS_FILTER}:${CT_CONFIG_PARITY_FILTER}
     PROPERTIES TIMEOUT ${CT_TEST_TIMEOUT})
+gtest_discover_tests(darkchronicle_tests
+    DISCOVERY_MODE PRE_TEST
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DISCOVERY_TIMEOUT 60
+    TEST_FILTER ${CT_CPU_SLOW_FILTER}
+    PROPERTIES TIMEOUT ${CT_CPU_SLOW_TIMEOUT})
 gtest_discover_tests(darkchronicle_tests
     DISCOVERY_MODE PRE_TEST
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

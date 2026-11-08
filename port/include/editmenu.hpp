@@ -5,6 +5,7 @@
 #include <libvu0.h>
 
 #include "actionchara.hpp"
+#include "capacity.hpp"
 #include "editparts.hpp"
 #include "mapparts.hpp"
 #include "menucls1.hpp"
@@ -26,7 +27,7 @@
  * Number of entries in each parts list of the Georama menu.
  *
  */
-#define GEORAMA_PARTS_LIST_MAX 0x180
+#define GEORAMA_PARTS_LIST_MAX capacity::kGeoramaPartsList /**< Retail 0x180. */
 
 /**
  *

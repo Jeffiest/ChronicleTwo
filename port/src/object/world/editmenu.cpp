@@ -2433,9 +2433,9 @@ int MakeDownLoadAnaunce(int town_no, mgCMemory *stack, int *out_num, int *out_su
     int               geo_floor = {};
     CEditData        *edit = {};
     int               font_no = {};
-    short             floors[0x180][2];
-    char             *names[0x180];
-    signed char       extras[0x180];
+    short             floors[GEORAMA_PARTS_LIST_MAX][2];
+    char             *names[GEORAMA_PARTS_LIST_MAX];
+    signed char       extras[GEORAMA_PARTS_LIST_MAX];
     u_long128         load_buffer[0x780];
     char              file_name[0x40];
     char              text[0x80];

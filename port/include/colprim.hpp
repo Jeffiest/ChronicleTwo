@@ -6,6 +6,7 @@
 
 #include <bitset>
 
+#include "capacity.hpp"
 #include "mg_frame.hpp"
 
 /**
@@ -189,8 +190,8 @@ public:
     int           owner{};    /**< Identifier of the character or script that created the
                                primitive. */
     int              unk_14{};
-    std::bitset<128> hit_characters{}; /**< Scene character slots already struck
-                                          by this primitive. */
+    std::bitset<capacity::kSceneCharaSlots> hit_characters{}; /**< Scene character slots already struck by this
+                                                                   primitive; one per SCENE_CHARA_SLOT_NUM. */
     int step_count{};                  /**< Steps since the primitive was set up. */
     int life{};                        /**< Steps after which the primitive is deleted, or -1 to last until
                                         deleted. */

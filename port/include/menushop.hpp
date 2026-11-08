@@ -4,6 +4,7 @@
 
 #include <cstring>
 
+#include "capacity.hpp"
 #include "menudraw.hpp"
 #include "menusys.hpp"
 #include "mg_memory.hpp"
@@ -87,8 +88,8 @@ enum QUEST_VIEW_MODE {
  *
  */
 enum {
-    SHOP_ITEM_MAX = 0x40,          /**< Goods one shop can offer. */
-    SHOP_PRICE_MAX = 0x200,        /**< Item numbers the price list covers. */
+    SHOP_ITEM_MAX = capacity::kShopGoods, /**< Goods one shop can offer; retail 0x40. */
+    SHOP_PRICE_MAX = ITEM_NO_MAX,         /**< Item numbers the price list covers; retail 0x200. */
     SHOP_LIST_LINE = 6,            /**< Lines of goods the shop list shows at once. */
     QUEST_VIEW_PHOTO_MAX = 0x1E,   /**< Photo album slots the quest viewer reads. */
     QUEST_VIEW_SCOOP_COUNT = 0x35, /**< Number of selectable photo scoops. */

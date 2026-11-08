@@ -5,6 +5,8 @@
 #include <optional>
 #include <string>
 
+#include "capacity.hpp"
+
 /**
  * @file
  * Declares the master item tables read from the menu configuration scripts (common, weapon, item,
@@ -223,8 +225,10 @@ enum ITEM_TARGET_FLAG {
  *
  */
 enum {
-    ITEM_NO_MAX = 0x200,        /**< Item numbers the item number conversion table covers. */
-    ITEM_COMMON_DATA_MAX = 432, /**< Entries of the common item data. */
+    ITEM_NO_MAX = capacity::kItemNumbers,          /**< Item numbers the item number conversion table covers; retail 0x200. */
+    ITEM_COMMON_DATA_MAX = capacity::kCommonItems, /**< Entries of the common item data; retail 432. */
+    ITEM_DATA_MAX = capacity::kItemRecords,        /**< Usable item records (local_itemdata); retail 162. */
+    WEAPON_DATA_MAX = capacity::kWeaponRecords,    /**< Weapon records (local_weapondata); retail 116. */
 };
 
 /**

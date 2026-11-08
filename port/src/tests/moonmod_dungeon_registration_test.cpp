@@ -400,7 +400,7 @@ TEST(MoonModDungeonRegistration, ConfiguresProceduralDungeonLayoutLimits) {
                                  moonmod::Json::array({moonmod::Json{{"rooms", 1}}})).status,
               moonmod::ApiCallStatus::InvalidArgument);
     EXPECT_EQ(config.api_handler("test.moonmod.dungeon-probe", *layout_operation,
-                                 moonmod::Json::array({moonmod::Json{{"rooms", 12}, {"area", 31}}})).status,
+                                 moonmod::Json::array({moonmod::Json{{"rooms", 12}, {"area", DNG_GRID + 1}}})).status,
               moonmod::ApiCallStatus::InvalidArgument);
     EXPECT_EQ(config.api_handler("test.moonmod.dungeon-probe", *layout_operation,
                                  moonmod::Json::array({moonmod::Json{{"rooms", 12}, {"room_min", 5}, {"room_max", 3}}})).status,

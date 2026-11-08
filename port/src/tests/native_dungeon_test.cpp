@@ -174,7 +174,7 @@ TEST_F(NativeDungeon, TreasureTablesStayInsideTheirLimits) {
 
 TEST_F(NativeDungeon, MonsterFloorsFillOnlyTheCurrentFloor) {
     Json many = Json::array();
-    for (int i = 0; i < 40; ++i) {
+    for (int i = 0; i < MONSTER_LOCATE_MAX + 8; ++i) {
         many.push_back({
             {"monster_id", i    },
             {"param",      i * 2}
@@ -199,7 +199,7 @@ TEST_F(NativeDungeon, MonsterFloorsFillOnlyTheCurrentFloor) {
     // The second list for floor 2 restarts it, and stops at the list's capacity.
     EXPECT_EQ(manager->locate.num, MONSTER_LOCATE_MAX);
     EXPECT_EQ(manager->locate.monster_id[0], 0);
-    EXPECT_EQ(manager->locate.param[31], 62);
+    EXPECT_EQ(manager->locate.param[MONSTER_LOCATE_MAX - 1], (MONSTER_LOCATE_MAX - 1) * 2);
     ActiveMonster = saved_manager;
     DngSaveDataDungeon = saved_save;
 }

@@ -9,6 +9,7 @@
 #include "actionchara.hpp"
 #include "automap.hpp"
 #include "cameracontrol.hpp"
+#include "capacity.hpp"
 #include "character.hpp"
 #include "collision.hpp"
 #include "colprim.hpp"
@@ -110,7 +111,7 @@ enum DNG_MAIN_ARRAY_SIZE {
     DNG_DAMAGE_SCORE_MONS_NUM = 8, /**< Damage numbers in DamageScoreMons. */
     DNG_ITEM_BASE_NUM = 19,        /**< Models in ItemBaseData. */
     DNG_AFTER_WIRE_NUM = 16,       /**< Wires in afterWire. */
-    DNG_PULL_ITEM_NUM = 72,        /**< Pickup slots in PullItem. */
+    DNG_PULL_ITEM_NUM = capacity::kPullItems, /**< Pickup slots in PullItem; retail 72. */
     DNG_SPARC_MODEL_NUM = 3,       /**< Models in SparcModel. */
     DNG_WEAPON_EFFECT_NUM = 8,     /**< Weapon element effects in wep_effect. */
     DNG_ELEMENT_EFFECT_NUM = 6,    /**< Effects in Sparc_fx, thunder, tornado, chillAfterHit and fireAfterHit. */

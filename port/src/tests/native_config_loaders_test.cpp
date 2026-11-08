@@ -234,7 +234,7 @@ TEST_F(NativeConfigLoaders, NpcRecordsKeepTheTableBoundsAndNullTexts) {
     characters.push_back(Character(2, "", "", 0, 0, 0, {0, 0, 0, 0}, 0));
     characters[0]["name"] = nullptr;
     characters[0]["model"] = nullptr;
-    CharacterPadding(characters, 200);
+    CharacterPadding(characters, NPC_BASE_DATA_MAX + 20);
     Write("npc1.cfg.json", "party_characters", {
                                                    {"characters", characters}
     });
@@ -242,8 +242,8 @@ TEST_F(NativeConfigLoaders, NpcRecordsKeepTheTableBoundsAndNullTexts) {
     ASSERT_NE(GetPartyNPCData(2), nullptr);
     EXPECT_STREQ(GetNPCName(2), "Named");
     EXPECT_STREQ(GetNPCModelName(2), "named");
-    EXPECT_NE(GetPartyNPCData(1000 + 178), nullptr);
-    EXPECT_EQ(GetPartyNPCData(1000 + 179), nullptr);
+    EXPECT_NE(GetPartyNPCData(1000 + NPC_BASE_DATA_MAX - 2), nullptr);
+    EXPECT_EQ(GetPartyNPCData(1000 + NPC_BASE_DATA_MAX - 1), nullptr);
 
     // A name too long for its field rejects the document.
     characters = Json::array();

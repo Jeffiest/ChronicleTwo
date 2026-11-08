@@ -4,6 +4,7 @@
 
 #include <libvu0.h>
 
+#include "capacity.hpp"
 #include "mg_memory.hpp"
 
 /**
@@ -243,13 +244,22 @@ STATIC_ASSERT(sizeof(CVillagerData) == 0x70);
  * Moves the villagers placed in the town each frame.
  *
  */
+/**
+ *
+ * Number of villager records the manager keeps.
+ *
+ */
+enum {
+    VILLAGER_DATA_MAX = capacity::kVillagerRecords, /**< Entries of CVillagerMngr::data; retail 32. */
+};
+
 class CVillagerMngr {
 public:
     s32           stop{};     /**< Whether every villager is held still. */
     s32           data_num{}; /**< Number of entries in data. */
     s32           unk_8{};
     s32           unk_c{};
-    CVillagerData data[32]; /**< State of each villager placed. */
+    CVillagerData data[VILLAGER_DATA_MAX]; /**< State of each villager placed. */
 
     /**
      *

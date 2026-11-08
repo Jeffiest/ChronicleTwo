@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include "capacity.hpp"
+
 /**
  * @file
  * Declares the table of party characters (NPCs who can join the party),
@@ -60,6 +62,15 @@ struct NPC_BASE_DATA {
 };
 
 STATIC_ASSERT(sizeof(NPC_BASE_DATA) == 0x36);
+
+/**
+ *
+ * Number of entries of the NPC configuration table.
+ *
+ */
+enum {
+    NPC_BASE_DATA_MAX = capacity::kNpcRecords, /**< Entries of NpcBaseData; retail 180. */
+};
 
 /**
  *

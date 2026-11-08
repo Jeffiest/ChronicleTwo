@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "capacity.hpp"
 #include "dngfloor.hpp"
 #include "dng_event.hpp"
 #include "dng_main.hpp"
@@ -6850,7 +6851,7 @@ void ConfigureChronicleTwoApi(RuntimeConfig &config) {
 void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory) {
     if (map == nullptr || memory == nullptr || map->area_no < 0 || map->area_no >= 5) return;
     CEditInfoMngr &manager = map->info_mngr;
-    if (manager.parts_info_num < 0 || manager.parts_info_num > 0x180 ||
+    if (manager.parts_info_num < 0 || manager.parts_info_num > capacity::kGeoramaPartsList ||
         (manager.parts_info_num > 0 && manager.parts_info == nullptr)) {
         return;
     }
@@ -6911,7 +6912,7 @@ void ApplyChronicleTwoGeorama(::CEditMap *map, ::mgCMemory *memory) {
 
     const int original_count = manager.parts_info_num;
     const int new_count = original_count + static_cast<int>(pending.size());
-    if (original_count < 0 || new_count > 0x180 || (original_count > 0 && manager.parts_info == nullptr)) {
+    if (original_count < 0 || new_count > capacity::kGeoramaPartsList || (original_count > 0 && manager.parts_info == nullptr)) {
         for (PendingPiece &entry : pending) {
             entry.piece->apply_errors[town_id] = "the native Georama piece table has no safe extension capacity";
         }

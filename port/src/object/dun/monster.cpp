@@ -748,18 +748,17 @@ void CMonsterLocateInfo::SetPutFlag(int slot, int put) {
     if (put != 0) {
         BumpMoonModMonsterSlotGeneration(slot);
     }
-    // put_flag has a bit for the first 32 slots only. There each slot is counted once, so a mod despawn and the
-    // native death of the same monster cannot both release it; the slots past it count as retail counted them.
-    const bool tracked = slot < 32;
-    const u32  mask = tracked ? 1u << slot : 0u;
-    const bool was_put = tracked && (put_flag & mask) != 0;
+    // put_flag has a bit per slot (retail's u32 covered the first 32), so each slot is counted once and a mod
+    // despawn and the native death of the same monster cannot both release it.
+    const auto bit = static_cast<std::size_t>(slot);
+    const bool was_put = put_flag.test(bit);
     if (put != 0) {
-        if ((!tracked || !was_put) && put_num < num) {
-            put_flag |= mask;
+        if (!was_put && put_num < num) {
+            put_flag.set(bit);
             put_num += 1;
         }
-    } else if ((!tracked || was_put) && put_num > 0) {
-        put_flag &= ~mask;
+    } else if (was_put && put_num > 0) {
+        put_flag.reset(bit);
         put_num -= 1;
     }
 }
@@ -825,7 +824,7 @@ void CMonsterMan::Initialize(CScene *scene) {
     boss_max_life = 0;
     locate.num = 0;
     locate.put_num = 0;
-    locate.put_flag = 0;
+    locate.put_flag.reset();
 
     for (m = 0; m < MONSTER_LOCATE_MAX; m++) {
         s16 *param = locate.param;

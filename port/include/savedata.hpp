@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include "capacity.hpp"
 #include "editdata.hpp"
 #include "map.hpp"
 #include "menusystemdata.hpp"
@@ -43,7 +44,7 @@
  * Number of Georama parts whose held count the save data keeps.
  *
  */
-#define SAVE_BUILD_PARTS_MAX 0x100
+#define SAVE_BUILD_PARTS_MAX capacity::kSaveBuildParts /**< Retail 0x100. */
 
 /**
  *

@@ -1978,7 +1978,7 @@ void InitDrawType(CMenuPosDataForm *form, const DrawTypeSetting &setting) {
             std::ranges::copy(*setting.ambient, form->ambient);
         }
     } else if (form->dtype == MENUFORM_DTYPE_ITEMBRD) {
-        form->parts_num = 150;
+        form->parts_num = USED_DATA_PLACE_MAX;
         form->parts = AllocateRecords<MENUFORMPARTS_TYPE>(form->parts_num);
         MenuItemBrdItemIconEffectMalloc(MenuSpiStack, form->parts, form->parts_num);
     } else if (form->dtype == MENUFORM_DTYPE_GEOLIST) {

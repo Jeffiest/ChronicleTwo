@@ -11,6 +11,7 @@
 #include "event.hpp"
 #include "log/game_output.hpp"
 #include "mainloop.hpp"
+#include "map.hpp"
 #include "mapjump.hpp"
 #include "mapselect.hpp"
 #include "mg_camera.hpp"
@@ -272,7 +273,7 @@ int GetLoadMapInfo(SCN_LOADMAP_INFO2 *info, int map_no) {
     info->sky_tex_block = MainMapInfo.sky_tex_block;
 
     if (info->place_parts_max <= 0) {
-        info->place_parts_max = 0x140;
+        info->place_parts_max = MAP_PLACE_PARTS_TOWN;
     }
 
     GAME_PROGRESS_INFO *progress = GetGameProgressInfo(GetSaveData()->game_progress);
@@ -346,7 +347,7 @@ int LoadSubMap(CScene *scene, int sub_map_no, int flag) {
     dc2::text::Copy(info.name, dc2::text::View(map_name));
 
     if (info.place_parts_max <= 0) {
-        info.place_parts_max = 0x140;
+        info.place_parts_max = MAP_PLACE_PARTS_TOWN;
     }
 
     const std::string map_path = dc2::world::MapPath(map_name);

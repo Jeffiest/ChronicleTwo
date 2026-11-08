@@ -72,7 +72,7 @@ CVillagerPlaceInfo::Node *CVillagerPlaceInfo::Add(mgCMemory *stack) {
 }
 
 void CVillagerMngr::Initialize() {
-    data_num = 32;
+    data_num = VILLAGER_DATA_MAX;
 
     for (int index = 0; index < data_num; ++index) {
         data[index].Initialize();

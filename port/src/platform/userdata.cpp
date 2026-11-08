@@ -2479,7 +2479,7 @@ void CUserDataManager::Initialize() {
     aquarium.Initialize();
     invent_data.Initialize();
 
-    for (i = 0; i < 150; i++) {
+    for (i = 0; i < USED_DATA_PLACE_MAX; i++) {
         used_data[i].Init();
     }
 
@@ -2507,7 +2507,7 @@ void CUserDataManager::Initialize() {
     SetRoboName(GetRoboNameDefault());
     monster_box.Initialize();
 
-    for (int j = 0; j < 150; j++) {
+    for (int j = 0; j < USED_DATA_PLACE_MAX; j++) {
         used_data[j].Init();
     }
 }
@@ -2517,7 +2517,7 @@ void CUserDataManager::RefreshParam() {
     int now = static_cast<int>(GetSaveData()->play_time);
     int elapsed = static_cast<int>(now - last_refresh_time);
 
-    for (int slot = 0; slot < 150; slot++) {
+    for (int slot = 0; slot < USED_DATA_PLACE_MAX; slot++) {
         used_data[slot].TimeCheck(PAL_TIMING(elapsed, (elapsed) * 6 / 5));
     }
 
@@ -2527,7 +2527,7 @@ void CUserDataManager::RefreshParam() {
 }
 
 CGameDataUsed *CUserDataManager::GetUsedDataPtr(int index) {
-    if (index < 0 || index >= 150) {
+    if (index < 0 || index >= USED_DATA_PLACE_MAX) {
         return nullptr;
     }
 
@@ -3101,7 +3101,7 @@ int CUserDataManager::GetItemBoardMaxNum(int board) {
     int result = size;
 
     if (board == ITEM_BOARD_ALL) {
-        result = 150;
+        result = ITEM_BOARD_PLACE_NUM;
     }
 
     return result;
@@ -3191,7 +3191,7 @@ float CUserDataManager::GetRoboAbs() {
 int CUserDataManager::CheckCapacity() {
     int i = 0;
 
-    for (; i < 150; i++) {
+    for (; i < USED_DATA_PLACE_MAX; i++) {
         CGameDataUsed *item = &used_data[i];
 
         if (item->item_type == ITEM_DATA_ROBO_CORE) {
@@ -3207,7 +3207,7 @@ int CUserDataManager::CheckCapacity() {
 }
 
 int CUserDataManager::CheckRobotCore() {
-    for (int i = 0; i < 150; i++) {
+    for (int i = 0; i < USED_DATA_PLACE_MAX; i++) {
         if (used_data[i].item_type == ITEM_DATA_ROBO_CORE) {
             return used_data[i].item_no;
         }
@@ -3386,7 +3386,7 @@ int CUserDataManager::UseNpcAbility(int npc_no, int ability_no, int consume) {
 void CUserDataManager::AllWeaponRepair() {
     int i = 0;
 
-    for (; i < 150; i++) {
+    for (; i < USED_DATA_PLACE_MAX; i++) {
         CGameDataUsed *item = &used_data[i];
 
         if (item->used_type == USED_ITEM_TYPE_ROBO_PART) {
@@ -4391,7 +4391,7 @@ int CUserDataManager::CountFish() {
     int            count = 0;
     CGameDataUsed *item = used_data;
 
-    for (int i = 0; i < 150; i++, item++) {
+    for (int i = 0; i < USED_DATA_PLACE_MAX; i++, item++) {
         if (item->used_type == USED_ITEM_TYPE_FISH) {
             count++;
         }
@@ -5950,7 +5950,7 @@ void AquaFishFatigueClear() {
 
     fish = user_data->GetUsedDataPtr(0);
 
-    for (i = 0; i < 150; i++, fish++) {
+    for (i = 0; i < USED_DATA_PLACE_MAX; i++, fish++) {
         if (fish->item_no > 0 && fish->used_type == USED_ITEM_TYPE_FISH) {
             fish->data.fish.fatigue = 0;
             fish->data.fish.race_placement_flags = 0;

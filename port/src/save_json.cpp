@@ -805,10 +805,13 @@ public:
                 Fail(SaveJsonError::BadValue);
             }
         } else if constexpr (std::is_array_v<T>) {
-            if (!value.is_array() || value.size() != std::extent_v<T>) {
+            // A save written with a smaller count (retail's, or an older port's) fills the front of the array and
+            // leaves the rest as the cleared document has it; one written with a larger count than this build
+            // holds is refused.
+            if (!value.is_array() || value.size() > std::extent_v<T>) {
                 Fail(SaveJsonError::BadValue);
             }
-            for (std::size_t i = 0; i < std::extent_v<T>; ++i) {
+            for (std::size_t i = 0; i < value.size(); ++i) {
                 Read(value[i], out[i]);
             }
         } else {

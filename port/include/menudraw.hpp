@@ -1187,9 +1187,9 @@ public:
     mgCTexture *icon_effect_tex;       /**< Texture of the item icon effects. */
     mgCTexture *effect_tex;            /**< Texture of the menu effects. */
     mgCTexture *item_icon_tex[4][2];   /**< Item icon textures: original, normal, grey and sepia, for each icon texture. */
-    float       fish_jump_wait[150];   /**< Frames until each item board fish next jumps. */
-    float       fish_jump_height[150]; /**< Height of the current jump of each item board fish. */
-    s8          fish_jump_count[150];  /**< Bounces left in the current jump of each item board fish. */
+    float       fish_jump_wait[USED_DATA_PLACE_MAX];   /**< Frames until each item board fish next jumps. */
+    float       fish_jump_height[USED_DATA_PLACE_MAX]; /**< Height of the current jump of each item board fish. */
+    s8          fish_jump_count[USED_DATA_PLACE_MAX];  /**< Bounces left in the current jump of each item board fish. */
 
     /**
      *
@@ -2771,7 +2771,7 @@ extern CMenuPosDataForm *MenuMesForm[9];
  * Items the item board shows.
  *
  */
-extern CGameDataUsed *MenuDrawItemInfo[150];
+extern CGameDataUsed *MenuDrawItemInfo[USED_DATA_PLACE_MAX];
 
 /**
  *

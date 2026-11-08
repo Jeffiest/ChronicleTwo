@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "capacity.hpp"
 #include "collision.hpp"
 #include "effectlist.hpp"
 #include "funcpoint.hpp"
@@ -21,6 +22,16 @@
 #include "mg_texture.hpp"
 #include "occlusion.hpp"
 #include "water.hpp"
+
+/**
+ *
+ * Placed parts a map makes room for when it loads (SCN_LOADMAP_INFO2::place_parts_max).
+ *
+ */
+enum {
+    MAP_PLACE_PARTS_TOWN = capacity::kMapPlacementsTown,       /**< Town and interior maps; retail 0x140. */
+    MAP_PLACE_PARTS_DUNGEON = capacity::kMapPlacementsDungeon, /**< Dungeon floors; retail 400. */
+};
 
 class CMap;
 

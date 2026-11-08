@@ -111,7 +111,7 @@ short CSaveData::GetShortFlag(int index) {
 }
 
 void CSaveData::SetBuildPartsNum(int index, int value) {
-    if (index < 0 || index >= 0x100) {
+    if (index < 0 || index >= SAVE_BUILD_PARTS_MAX) {
         return;
     }
 
@@ -128,7 +128,7 @@ void CSaveData::SetBuildPartsNum(int index, int value) {
 }
 
 int CSaveData::GetBuildPartsNum(int index) {
-    if (index < 0 || index >= 0x100) {
+    if (index < 0 || index >= SAVE_BUILD_PARTS_MAX) {
         return 0;
     }
 
@@ -136,7 +136,7 @@ int CSaveData::GetBuildPartsNum(int index) {
 }
 
 short CSaveData::AddBuildPartsNum(int index, int delta) {
-    if (index < 0 || index >= 0x100) {
+    if (index < 0 || index >= SAVE_BUILD_PARTS_MAX) {
         return 0;
     }
 
@@ -163,7 +163,7 @@ CEditData *CSaveData::GetEditData(int index) {
 }
 
 CMapFlagData *CSaveData::GetMapFlag(int index) {
-    if (index < 0 || index >= 0x100) {
+    if (index < 0 || index >= SAVE_BUILD_PARTS_MAX) {
         return nullptr;
     }
 

@@ -37,6 +37,7 @@
 #include "gameutil.hpp"
 #include "mainloop.hpp"
 #include "maintex.hpp"
+#include "map.hpp"
 #include "mapinfo.hpp"
 #include "mapjump.hpp"
 #include "mapload.hpp"
@@ -2009,7 +2010,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
         GetLoadMapInfo(&load_info, map_no);
         load_info.sky_tex_block = 0x4C;
         load_info.load_sky = 1;
-        load_info.place_parts_max = 400;
+        load_info.place_parts_max = MAP_PLACE_PARTS_DUNGEON;
         DngMainScene->DeleteMap(0, 1);
         DngMainScene->LoadMap(0, &load_info, 0);
         DngMainScene->SetNowMapNo(map_no);
@@ -2242,7 +2243,8 @@ void LoadMonsterFile() {
     PrepareMonsterMemory(*ActiveMonster);
     sndInitPort(5);
     auto &locate = ActiveMonster->locate;
-    locate.num = locate.put_num = locate.put_flag = 0;
+    locate.num = locate.put_num = 0;
+    locate.put_flag.reset();
     for (int i = 0; i < MONSTER_LOCATE_MAX; ++i) {
         locate.param[i] = -1;
         locate.monster_id[i] = -1;

@@ -5,6 +5,8 @@
 #include <cstring>
 #include <string>
 
+#include "capacity.hpp"
+
 /**
  * @file
  * Declares the saved layout of a Georama town (the parts placed, their houses and the placement log
@@ -54,14 +56,14 @@
  * Number of placed parts a saved layout holds.
  *
  */
-#define EDIT_DATA_PARTS_MAX 300
+#define EDIT_DATA_PARTS_MAX capacity::kEditDataParts /**< Retail 300; the port's TownLayout holds a town's parts beyond the record. */
 
 /**
  *
  * Number of houses a saved layout holds.
  *
  */
-#define EDIT_DATA_HOUSE_MAX 32
+#define EDIT_DATA_HOUSE_MAX capacity::kEditDataHouses /**< Retail 32; the port's TownLayout holds a town's houses beyond the record. */
 
 /**
  *

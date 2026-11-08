@@ -5,10 +5,12 @@
 #include <libvu0.h>
 
 #include <array>
+#include <bitset>
 #include <span>
 
 #include "actionchara.hpp"
 #include "automap.hpp"
+#include "capacity.hpp"
 #include "colprim.hpp"
 #include "dng_hud.hpp"
 #include "effscript.hpp"
@@ -32,9 +34,9 @@
  *
  */
 enum MONSTER_MAN_SIZE {
-    MONSTER_ACTIVE_MAX = 60, /**< Monsters that can be out on the floor at once. */
-    MONSTER_REFER_MAX = 12,  /**< Monster kinds that can be loaded at once. */
-    MONSTER_LOCATE_MAX = 32, /**< Entries in the floor's list of monsters to place. */
+    MONSTER_ACTIVE_MAX = capacity::kActiveMonsters,       /**< Monsters that can be out on the floor at once; retail 24. */
+    MONSTER_REFER_MAX = capacity::kMonsterKinds,          /**< Monster kinds that can be loaded at once; retail 12. */
+    MONSTER_LOCATE_MAX = capacity::kMonsterLocateEntries, /**< Entries in the floor's list of monsters to place; retail 32. */
     MONSTER_VAR_MAX = 8,     /**< Variables that each monster's script keeps for itself. */
     MONSTER_VAR2_MAX = 32,   /**< Second set of variables that each monster's script keeps for itself. */
     MONSTER_SHARE_MAX = 128  /**< Variables that every monster's script shares. */
@@ -385,7 +387,7 @@ class CMonsterLocateInfo {
 public:
     s32 num;                            /**< Number of entries in the list. */
     s32 put_num;                        /**< Number of monsters placed. */
-    u32 put_flag;                       /**< One bit per monster slot that has been filled. */
+    std::bitset<MONSTER_ACTIVE_MAX> put_flag; /**< One bit per monster slot that has been filled; retail's u32 covers 32 slots. */
     s16 monster_id[MONSTER_LOCATE_MAX]; /**< Monster kind of each entry; -1 for none. */
     s16 param[MONSTER_LOCATE_MAX];      /**< Value given to the monster of each entry; -1 for none. */
 

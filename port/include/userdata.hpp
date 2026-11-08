@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include "capacity.hpp"
 #include "gamedata.hpp"
 
 /**
@@ -106,6 +107,16 @@ enum QUICK_CHANGE_STATE {
 enum ITEM_BOARD {
     ITEM_BOARD_MAIN = 0, /**< The item board alone. */
     ITEM_BOARD_ALL = 1,  /**< The item board followed by its overflow places. */
+};
+
+/**
+ *
+ * Places of the inventory that CUserDataManager::used_data holds.
+ *
+ */
+enum {
+    ITEM_BOARD_PLACE_NUM = 150, /**< Places the item board and its overflow page through: GetItemBoardMaxNum(ITEM_BOARD_ALL). */
+    USED_DATA_PLACE_MAX = capacity::kInventoryPlaces, /**< Inventory places held and saved; retail 150. The menus page through the first ITEM_BOARD_PLACE_NUM until a layout for the rest exists. */
 };
 
 /**
@@ -1152,7 +1163,7 @@ STATIC_ASSERT(sizeof(CInventUserData) == 0x3CE60);
  */
 class CUserDataManager {
 public:
-    CGameDataUsed      used_data[150]; /**< Inventory; the item board followed by its overflow places. */
+    CGameDataUsed      used_data[USED_DATA_PLACE_MAX]; /**< Inventory; the item board followed by its overflow places. */
     CHARA_DATA         chara_data[2];  /**< Status of Max and Monica. */
     ROBO_DATA          robo_data;      /**< Status of the ridepod. */
     CGameDataUsed      esa[2];         /**< Bait fitted to each of the two fishing rods. */

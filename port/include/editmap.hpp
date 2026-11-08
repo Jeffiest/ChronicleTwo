@@ -4,6 +4,7 @@
 
 #include <libvu0.h>
 
+#include "capacity.hpp"
 #include "collision.hpp"
 #include "editdata.hpp"
 #include "editinfo.hpp"
@@ -32,7 +33,7 @@
  *
  */
 enum {
-    EDIT_MAP_HOUSE_MAX = 32,       /**< Houses an edit map holds. */
+    EDIT_MAP_HOUSE_MAX = capacity::kEditDataHouses, /**< Houses an edit map holds; retail 32, uncapped on the port (kPortEditSlotCeiling). */
     EDIT_MAP_GRID_MAX = 4,         /**< River grids an edit map holds. */
     EDIT_MAP_RIVER_PARTS_MAX = 8,  /**< Ground parts that river pieces are made for. */
     EDIT_MAP_MASK_PIECE_MAX = 1,   /**< Models that mask the river. */

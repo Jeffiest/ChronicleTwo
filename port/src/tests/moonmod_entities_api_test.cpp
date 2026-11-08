@@ -278,7 +278,8 @@ TEST(MoonModEntitiesApi, DespawnsOwnedMonsterWithoutKillSideEffectsAndInvalidate
     manager.effect_man = nullptr;
     manager.locate.num = 2;
     manager.locate.put_num = 1;
-    manager.locate.put_flag = 1u << slot;
+    manager.locate.put_flag.reset();
+    manager.locate.put_flag.set(static_cast<std::size_t>(slot));
     manager.memory[slot].stack_used = 7;
     manager.memory[slot].lock = 1;
 
@@ -319,7 +320,7 @@ TEST(MoonModEntitiesApi, DespawnsOwnedMonsterWithoutKillSideEffectsAndInvalidate
     EXPECT_EQ(player.target_no, -1);
     EXPECT_FALSE(player.lock_on);
     EXPECT_EQ(manager.locate.put_num, 0);
-    EXPECT_EQ(manager.locate.put_flag, 0u);
+    EXPECT_TRUE(manager.locate.put_flag.none());
     EXPECT_EQ(manager.memory[slot].stack_used, 0);
     EXPECT_EQ(manager.memory[slot].lock, 0);
     EXPECT_NE(GetMoonModMonsterSlotGeneration(slot), generation);

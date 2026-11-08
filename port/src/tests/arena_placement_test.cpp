@@ -213,7 +213,8 @@ TEST(CtArenaPlacement, RetailRunsAgainstHostSizes) {
         }
     }
 
-    // These current native types exceed the corresponding retail quadword reservations.
+    // These current native types exceed the corresponding retail quadword reservations. CMenuGeorama and CShop
+    // outgrow theirs by capacity.hpp: two lists of GEORAMA_PARTS_LIST_MAX and a price table of ITEM_NO_MAX.
     const std::vector<std::string> kOutgrowing = {
         "automap.cpp:821 AUTOMAP_ROOM_INFO[AUTOMAP_ROOM_INFO_MAX]",
         "character.cpp:3792 CSWordAfterEffect[1]",
@@ -225,6 +226,7 @@ TEST(CtArenaPlacement, RetailRunsAgainstHostSizes) {
         "editexception.cpp:392 mgCFrame[1]",
         "editexception.cpp:691 mgCFrame[1]",
         "editexception.cpp:696 CGeyserEffect[4]",
+        "editmenu.cpp:1162 CMenuGeorama[1]",
         "editmenu.cpp:1222 CDC2Mes[1]",
         "editmenu.cpp:2099 CDC2Mes[1]",
         "editmenu.cpp:5763 CRemovalMenu[1]",
@@ -257,6 +259,7 @@ TEST(CtArenaPlacement, RetailRunsAgainstHostSizes) {
         "menudraw.cpp:6359 CActionChara[1]",
         "menuop.cpp:3128 CDC2Mes[1]",
         "menushop.cpp:1868 CShopMenu[1]",
+        "menushop.cpp:1874 CShop[1]",
         "menusys.cpp:6954 CActionChara[1]",
         "menusys.cpp:6964 CActionChara[1]",
         "menusys.cpp:6978 CRepairManager[1]",

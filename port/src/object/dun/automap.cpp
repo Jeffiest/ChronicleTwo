@@ -743,8 +743,8 @@ gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, f
         float far_dist, near_dist, fade_alpha;
         s32   fade;
     };
-    static PartClip saved_clip[1024];
-    const int clip_num = main_map->place_parts_num < 1024 ? main_map->place_parts_num : 1024;
+    static PartClip saved_clip[MAP_PLACE_PARTS_DUNGEON];
+    const int clip_num = main_map->place_parts_num < MAP_PLACE_PARTS_DUNGEON ? main_map->place_parts_num : MAP_PLACE_PARTS_DUNGEON;
 
     for (int i = 0; i < clip_num; i++) {
         CMapParts *part = &main_map->place_parts[i];
@@ -2163,6 +2163,9 @@ void CAutoMapGen::IndexToPartsPlace() {
         return;
     }
 
+    // Grid parts and SetDummyTree's trees take disjoint cells of the grid widened by four on each side; the
+    // gio, the random stones, the pot and the dummy mountain come on top.
+    static_assert(MAP_PLACE_PARTS_DUNGEON >= (DNG_GRID + 8) * (DNG_GRID + 8) + AUTOMAP_RANDOM_STONE_MAX + 3);
     map->ClearPlaceParts();
     float rot[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     float scale[4] = {1.0f, 1.0f, 1.0f, 1.0f};

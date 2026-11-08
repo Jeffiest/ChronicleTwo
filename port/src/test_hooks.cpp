@@ -1518,8 +1518,8 @@ bool GameParseJump(std::string_view text, GameJump &jump) {
         if (floor != std::string_view::npos && (!Number(arg.substr(floor + 1), parsed.floor, 99) || parsed.floor == 0)) {
             return false;
         }
-        CSaveDataDungeon floors{};
-        if (!floors.GetFloorInfoPtr(parsed.map, parsed.floor)) {
+        // One of the dungeon's native floors; the save holds records past them (capacity.hpp).
+        if (parsed.floor >= GetSavedDungeonFloorCount(parsed.map)) {
             return false;
         }
     } else if (name == "event") {

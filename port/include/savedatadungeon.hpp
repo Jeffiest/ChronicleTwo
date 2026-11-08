@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include "capacity.hpp"
+
 /**
  * @file
  * Declares the dungeon part of the save data: the dungeon and floor the
@@ -14,8 +16,11 @@
  *
  */
 enum {
-    SAVE_DUNGEON_NUM = 7,        /**< Dungeons that the save data tracks a floor for. */
-    SAVE_DUNGEON_FLOOR_NUM = 162 /**< Floor records across every dungeon. */
+    SAVE_DUNGEON_NUM = 7,               /**< Dungeons that the save data tracks a floor for. */
+    SAVE_DUNGEON_RETAIL_FLOOR_NUM = 162, /**< Floor records of a retail save: the sum of limmit_table, laid out dungeon by dungeon. */
+    SAVE_DUNGEON_FLOOR_NUM = capacity::kSaveDungeonFloorRecords, /**< Floor records across every dungeon; retail 162. */
+    /** Records past retail's that each dungeon gets, for floors from its limmit_table count up. */
+    SAVE_DUNGEON_FLOOR_EXTRA = (SAVE_DUNGEON_FLOOR_NUM - SAVE_DUNGEON_RETAIL_FLOOR_NUM) / SAVE_DUNGEON_NUM,
 };
 
 /**
@@ -102,6 +107,7 @@ public:
 };
 
 STATIC_ASSERT(sizeof(CSaveDataDungeon) == 0xCE4);
-PORT_RECORD_ASSERT(sizeof(CSaveDataDungeon) == 0xCE4);
+// Retail's 0xCE4 with SAVE_DUNGEON_FLOOR_NUM records; the port's JSON save reads a record of either count.
+PORT_RECORD_ASSERT(sizeof(CSaveDataDungeon) == 0x3C + SAVE_DUNGEON_FLOOR_NUM * sizeof(DNG_FLOOR_SAVE));
 
 #include "moonmod/savedatadungeon_moonmod.hpp"

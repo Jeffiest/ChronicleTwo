@@ -367,7 +367,7 @@ enum MENU_ITEM_BOARD {
  *
  */
 enum MENU_BAG {
-    MENU_BAG_PLACE_MAX = 150, /**< Places of the inventory: the item board followed by its overflow places. */
+    MENU_BAG_PLACE_MAX = USED_DATA_PLACE_MAX, /**< Places of the inventory: the item board followed by its overflow places; retail 150. */
 };
 
 /**

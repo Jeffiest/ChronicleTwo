@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include "capacity.hpp"
 #include "mg_memory.hpp"
 
 /**
@@ -136,7 +137,7 @@ enum {
     DNGMAP_FLOOR_SPECIAL = 100,  /**< Floor number with a fixed answer outside the tree map's rooms. */
     DNGMAP_SPHEDA_PRIZE_NUM = 3, /**< Prizes a floor's spheda challenge offers. */
     DNGMAP_DUNGEON_NUM = 7,      /**< Number of dungeons with a data table. */
-    DNGMAP_FLOOR_NUM = 40,       /**< Floors of a dungeon that the save data is searched through. */
+    DNGMAP_FLOOR_NUM = capacity::kDungeonFloors, /**< Floors of a dungeon that the save data is searched through; retail 40. */
 };
 
 // clang-format on

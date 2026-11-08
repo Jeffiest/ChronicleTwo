@@ -4,8 +4,10 @@
 
 #include <cstddef>
 
+#include "capacity.hpp"
+
 enum {
-    SAVE_DUNGEON_FLOOR_ID_MAX = 40 /**< Largest floor id held by the native dungeon graph. */
+    SAVE_DUNGEON_FLOOR_ID_MAX = capacity::kDungeonFloors /**< Floor ids the native dungeon graph can hold (DNGMAP_FLOOR_NUM); retail 40. */
 };
 
 /**

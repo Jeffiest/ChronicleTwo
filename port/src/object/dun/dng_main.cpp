@@ -735,15 +735,15 @@ void InitDungeonMain(INIT_LOOP_ARG arg) {
     AutoMapGen.navi_enable = 0;
     AutoMapGen.cell_d = 320.0f;
     AutoMapGen.cell_w = 320.0f;
-    auto *grid = RequireDungeonAllocation(dc2::memory::NewArray<CAutoMapParts>(*MainBuffer, 900));
+    auto *grid = RequireDungeonAllocation(dc2::memory::NewArray<CAutoMapParts>(*MainBuffer, DNG_GRID_CELLS));
     AutoMapGen.SetGridStorage(dc2::memory::ArenaBuffer::Bind(*MainBuffer,
-                                                             std::span(reinterpret_cast<u8 *>(grid), 900 * sizeof(CAutoMapParts))));
-    for (int i = 0; i < 900; i++) {
+                                                             std::span(reinterpret_cast<u8 *>(grid), DNG_GRID_CELLS * sizeof(CAutoMapParts))));
+    for (int i = 0; i < DNG_GRID_CELLS; i++) {
         grid[i].Initialize();
     }
 
-    AutoMapGen.grid_w = 30;
-    AutoMapGen.grid_h = 30;
+    AutoMapGen.grid_w = DNG_GRID;
+    AutoMapGen.grid_h = DNG_GRID;
     MainChara__2->sound_info.foot_se_bank = DngMainScene->se_base_id;
     MainChara__2->sound_info.foot_sound_id = -1;
     sndInitPort(SND_PORT_CHARA);

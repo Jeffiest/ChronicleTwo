@@ -487,14 +487,14 @@ CDataCommon local_com_itemdata[ITEM_COMMON_DATA_MAX + MOONMOD_ITEM_CAPACITY + MO
  * Usable item records loaded from item data scripts.
  *
  */
-CDataItem local_itemdata[162 + MOONMOD_ITEM_CAPACITY];
+CDataItem local_itemdata[ITEM_DATA_MAX + MOONMOD_ITEM_CAPACITY];
 
 /**
  *
  * Weapon records loaded from weapon data scripts.
  *
  */
-CDataWeapon local_weapondata[116 + MOONMOD_WEAPON_CAPACITY];
+CDataWeapon local_weapondata[WEAPON_DATA_MAX + MOONMOD_WEAPON_CAPACITY];
 
 /**
  *
@@ -1516,7 +1516,7 @@ void Apply(const CommonTable &table) {
         std::memset(local_itemdatano_converttable, -1, sizeof(local_itemdatano_converttable));
     }
     for (const auto &source : table.records) {
-        // Retail runs its cursor past the 432-entry table; records past it are dropped.
+        // Retail runs its cursor past the ITEM_COMMON_DATA_MAX-entry table; records past it are dropped.
         if (!Inside(local_com_itemdata, comdatapt_num)) {
             continue;
         }
@@ -1586,7 +1586,7 @@ void Apply(const CountedTable<WeaponRecord> &table) {
         if (source.buildup_monster) {
             CopyValues(weapon.buildup_monster, *source.buildup_monster);
         }
-        // Retail advances the cursor past the 116-entry table; it becomes null at the table's end.
+        // Retail advances the cursor past the WEAPON_DATA_MAX-entry table; it becomes null at the table's end.
         if (++SpiWeaponPt == std::end(local_weapondata)) {
             SpiWeaponPt = nullptr;
         }

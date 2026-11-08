@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include "capacity.hpp"
 #include "character.hpp"
 #include "mg_frame.hpp"
 
@@ -37,15 +38,15 @@ enum SCENE_CHARA_STATUS {
  */
 enum SCENE_VILLAGER_SLOT {
     SCENE_VILLAGER_SLOT_TOP = 8,         /**< First slot of the villagers of the main map. */
-    SCENE_VILLAGER_SLOT_NUM = 16,        /**< Number of slots for the villagers of the main map. */
-    SCENE_SUB_VILLAGER_SLOT_TOP = 0x18,  /**< First slot of the villagers of the sub map. */
-    SCENE_SUB_VILLAGER_SLOT_NUM = 8,     /**< Number of slots for the villagers of the sub map. */
+    SCENE_VILLAGER_SLOT_NUM = capacity::kVillagerSlots,         /**< Slots for the villagers of the main map; retail 16. */
+    SCENE_SUB_VILLAGER_SLOT_TOP = SCENE_VILLAGER_SLOT_TOP + SCENE_VILLAGER_SLOT_NUM, /**< First slot of the villagers of the sub map; retail 0x18. */
+    SCENE_SUB_VILLAGER_SLOT_NUM = capacity::kSubVillagerSlots,  /**< Slots for the villagers of the sub map; retail 8. */
     SCENE_TALK_SLOT_END = 0x40,          /**< End of the slots searched for a character to talk to or look at. */
     SCENE_GAMEOBJ_SLOT_TG = 0x78,        /**< Slot of the circle of a coloured marker game object. */
     SCENE_GAMEOBJ_SLOT_TG_BASE = 0x79,   /**< Slot of the base of a coloured marker game object. */
     SCENE_GAMEOBJ_SLOT_SAVEPOINT = 0x7A, /**< Slot of the save point game object. */
     SCENE_GAMEOBJ_SLOT_BOOK = 0x7B,      /**< Slot of the book that stands with the save point. */
-    SCENE_CHARA_SLOT_NUM = 0x80,         /**< Number of character slots of a scene. */
+    SCENE_CHARA_SLOT_NUM = capacity::kSceneCharaSlots, /**< Number of character slots of a scene; retail 0x80. */
 };
 
 /**

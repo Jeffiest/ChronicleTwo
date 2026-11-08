@@ -18,6 +18,7 @@ union DngEventVector {
 #include <libvu0.h>
 
 #include "automap.hpp"
+#include "capacity.hpp"
 #include "character.hpp"
 #include "collision.hpp"
 #include "mapparts.hpp"
@@ -62,7 +63,7 @@ enum TreasureBoxState {
  *
  */
 enum {
-    TREASURE_BOX_MAX = 24, /**< Box slots that CTreasureBoxManager holds. */
+    TREASURE_BOX_MAX = capacity::kTreasureBoxes, /**< Box slots that CTreasureBoxManager holds; retail 24. */
 };
 
 /**

@@ -28,7 +28,7 @@ int NpcBaseDataTotalNum;
  * Party-character entries loaded from the NPC script, kept on a quadword boundary.
  *
  */
-NPC_BASE_DATA NpcBaseData[180] __attribute__((aligned(16)));
+NPC_BASE_DATA NpcBaseData[NPC_BASE_DATA_MAX] __attribute__((aligned(16)));
 
 /**
  *

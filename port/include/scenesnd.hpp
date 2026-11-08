@@ -10,6 +10,7 @@
 #include <span>
 #include <string>
 
+#include "capacity.hpp"
 #include "character.hpp"
 #include "collision.hpp"
 #include "dng_effect.hpp"
@@ -356,7 +357,7 @@ public:
     }
 
     s32             chara_num{};   /**< Number of entries in chara. */
-    CSceneCharacter chara[128];    /**< Character slots. */
+    CSceneCharacter chara[capacity::kSceneCharaSlots]; /**< Character slots; retail 128 (SCENE_CHARA_SLOT_NUM). */
     s32             camera_num{};  /**< Number of entries in camera. */
     CSceneCamera    camera[8];     /**< Camera slots. */
     s32             message_num{}; /**< Number of entries in message. */

@@ -1100,7 +1100,7 @@ void CScene::Initialize() {
 
     work_stack = nullptr;
     read_buffer_storage = {};
-    chara_num = 128;
+    chara_num = static_cast<s32>(std::size(chara));
 
     for (index = 0; index < chara_num; index++) {
         chara[index].Initialize();

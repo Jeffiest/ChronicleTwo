@@ -1409,7 +1409,7 @@ int SetModeMenuDrawItemBoard(int mode) {
     party = GetUserDataMan()->GetNowPartyMember();
 
     if (mode == MENU_ITEM_BOARD_BAG) {
-        for (k = 0; k < 150; k++) {
+        for (k = 0; k < USED_DATA_PLACE_MAX; k++) {
             MenuDrawItemInfo[k] = &MenuUserParam.used_data[k];
         }
 
@@ -1433,7 +1433,7 @@ int SetModeMenuDrawItemBoard(int mode) {
 
         item = MenuUserParam.used_data;
 
-        for (k = 0; k < 150; k++, item++) {
+        for (k = 0; k < USED_DATA_PLACE_MAX; k++, item++) {
             if (item->used_type == USED_ITEM_TYPE_WEAPON) {
                 MenuDrawItemInfo[MenuDrawItemInfoNum] = item;
                 MenuDrawItemInfoNum++;
@@ -1449,7 +1449,7 @@ int SetModeMenuDrawItemBoard(int mode) {
 
         item = MenuUserParam.used_data;
 
-        for (k = 0; k < 150; k++, item++) {
+        for (k = 0; k < USED_DATA_PLACE_MAX; k++, item++) {
             if (item->item_type == ITEM_DATA_ROBO_ARM) {
                 MenuDrawItemInfo[MenuDrawItemInfoNum] = item;
                 MenuDrawItemInfoNum++;
@@ -1465,7 +1465,7 @@ int SetModeMenuDrawItemBoard(int mode) {
 
         item = MenuUserParam.used_data;
 
-        for (k = 0; k < 150; k++, item++) {
+        for (k = 0; k < USED_DATA_PLACE_MAX; k++, item++) {
             if (item->item_type == ITEM_DATA_ROBO_ENERGY_PACK) {
                 MenuDrawItemInfo[MenuDrawItemInfoNum] = item;
                 MenuDrawItemInfoNum++;
@@ -1491,7 +1491,7 @@ int SetModeMenuDrawItemBoard(int mode) {
 
         item = MenuUserParam.used_data;
 
-        for (k = 0; k < 150; k++, item++) {
+        for (k = 0; k < USED_DATA_PLACE_MAX; k++, item++) {
             if (item->used_type == USED_ITEM_TYPE_FISH) {
                 MenuDrawItemInfo[MenuDrawItemInfoNum] = item;
                 MenuDrawItemInfoNum++;
@@ -1499,7 +1499,7 @@ int SetModeMenuDrawItemBoard(int mode) {
         }
     }
 
-    for (k = MenuDrawItemInfoNum; k < 150; k++) {
+    for (k = MenuDrawItemInfoNum; k < USED_DATA_PLACE_MAX; k++) {
         MenuDrawItemInfo[k] = nullptr;
     }
 
@@ -7296,7 +7296,7 @@ u8 menu_limmit_displayflag[0x9C];
 
 CMenuPosDataForm *MenuMesForm[9];
 
-CGameDataUsed *MenuDrawItemInfo[150];
+CGameDataUsed *MenuDrawItemInfo[USED_DATA_PLACE_MAX];
 
 mgRect<int> GiftBoxWindowPutPos(0, 0, 0, 0);
 

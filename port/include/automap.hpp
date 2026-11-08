@@ -8,6 +8,7 @@
 #include <span>
 #include <string_view>
 
+#include "capacity.hpp"
 #include "character.hpp"
 #include "map.hpp"
 #include "mapparts.hpp"
@@ -36,9 +37,11 @@ struct RoomStorage;
 #define MINIMAP_INFO_NUM 18
 /** Number of preset room layouts that a room script can hold. */
 #define AUTOMAP_ROOM_INFO_MAX 64
-/** Floor grid side and room limit: retail 30 x 30 and 8 rooms; the PC port enlarges the room limit for mods. */
-#define DNG_GRID         30
-#define AUTOMAP_ROOM_MAX 64
+/** Floor grid side and room limit: retail 30 x 30 and 64 rooms; the PC port enlarges both for mods (capacity.hpp). */
+#define DNG_GRID         capacity::kDungeonGrid
+#define AUTOMAP_ROOM_MAX capacity::kDungeonRooms
+/** Cells of the floor grid that a dungeon allocates: DNG_GRID squared. */
+#define DNG_GRID_CELLS   (DNG_GRID * DNG_GRID)
 #define DNG_ROOM_MAX     AUTOMAP_ROOM_MAX
 extern int DngLayoutRooms;   /**< Rooms to try to place, 2..DNG_ROOM_MAX. */
 extern int DngLayoutArea;    /**< Side of the random floor grid, 8..DNG_GRID. */
