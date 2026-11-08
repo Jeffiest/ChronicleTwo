@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark Cloud</title>
+<style>
+  :root { color-scheme: dark; --bg: #0d0d12; --panel: #17171f; --fg: #e6e6ea; --dim: #8a8a96; --accent: #c9a24a; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+  [hidden] { display: none !important; }
+
+  /* Before the game: what data this browser holds, and the choices. */
+  #setup { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  p { color: var(--dim); margin: 0 0 12px; }
+  .card { background: var(--panel); border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .card h2 { font-size: 1rem; margin: 0 0 6px; color: var(--fg); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  button, label.button, a.button { background: var(--accent); color: #111; border: 0; padding: 8px 14px; border-radius: 4px;
+    font: inherit; cursor: pointer; display: inline-block; }
+  button.secondary, label.secondary, a.secondary { background: #2a2a33; color: var(--fg); }
+  input[type=file] { display: none; }
+  progress { width: 100%; margin-top: 12px; }
+  code { color: var(--fg); }
+
+  /* The mods: a switch for each, its settings folded under it. */
+  #mod-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  #mod-list > li { border-top: 1px solid #262630; padding: 10px 0; }
+  #mod-list.off > li { opacity: 0.5; }
+  .mod-head { display: flex; align-items: center; gap: 10px; }
+  .mod-head label { flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
+  .mod-head small, .mod-note { color: var(--dim); }
+  .mod-head button { padding: 2px 8px; }
+  .mod-note { margin: 4px 0 0 26px; font-size: 13px; }
+  .mod-note.warn { color: #e0a060; }
+  #mod-list details { margin: 6px 0 0 26px; }
+  #mod-list summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  .settings { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center;
+    margin-top: 8px; font-size: 14px; }
+  .settings .name small { display: block; color: var(--dim); font-size: 12px; }
+  .settings .value { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .settings input[type=range] { width: min(160px, 30vw); accent-color: var(--accent); }
+  .settings output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .settings select, .settings input[type=text], .settings input[type=number] { background: #24242d; color: var(--fg);
+    border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px; font: inherit; max-width: 40vw; }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  #pc-mod-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  #pc-mod-list > li { border-top: 1px solid #262630; padding: 10px 0; }
+  #pc-mod-list .row { margin-top: 8px; }
+  #pc-mod-list .row a.button { text-decoration: none; }
+  #pc a:not(.button) { color: var(--accent); }
+  #pc-builtin-list { padding-left: 20px; }
+  #pc-mod-list a.button.unpublished { opacity: 0.45; pointer-events: none; }
+  #pc-mod-list details { margin-top: 6px; font-size: 14px; }
+  #pc-mod-list summary { cursor: pointer; color: var(--accent); }
+  #pc-system { background: #24242d; color: var(--fg); border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px;
+    font: inherit; }
+
+  /* The game: the whole window, the canvas scaled to fit. */
+  #game { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
+  canvas { display: block; width: 100%; height: 100%; object-fit: contain; outline: none; }
+  #toolbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; opacity: 0.35; transition: opacity 0.2s; }
+  #toolbar:hover, #toolbar:focus-within { opacity: 1; }
+  #toolbar button { background: rgba(30, 30, 40, 0.85); color: var(--fg); padding: 4px 10px; font-size: 13px; }
+  #notice { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 28, 0.92);
+    padding: 16px 20px; border-radius: 8px; min-width: min(360px, 80vw); text-align: center; }
+  #notice progress { margin-top: 8px; }
+  #drawer { position: absolute; left: 0; right: 0; bottom: 0; height: 40vh; background: rgba(0, 0, 0, 0.9); }
+  /* The on-screen gamepad on a touch screen (shell.js): the buttons take touches, the space between them goes
+     to the canvas. Sizes in vmin fit a phone held either way. */
+  #pad { position: absolute; inset: 0; pointer-events: none; touch-action: none; user-select: none;
+    -webkit-user-select: none; }
+  #pad > * { position: absolute; pointer-events: auto; touch-action: none; }
+  .pad-button { width: 11vmin; height: 11vmin; border-radius: 50%; background: rgba(255, 255, 255, 0.16);
+    border: 2px solid rgba(255, 255, 255, 0.35); color: rgba(255, 255, 255, 0.85); display: flex;
+    align-items: center; justify-content: center; font: 600 4.5vmin system-ui, sans-serif; box-sizing: border-box; }
+  .pad-button.held, .pad-dpad .held { background: rgba(255, 255, 255, 0.45); }
+  .pad-shoulder { width: 14vmin; height: 8vmin; border-radius: 3vmin; font-size: 3.6vmin; }
+  .pad-small { width: 12vmin; height: 6vmin; border-radius: 3vmin; font-size: 2.6vmin; }
+  .pad-stick { border-radius: 50%; background: rgba(255, 255, 255, 0.10); border: 2px solid rgba(255, 255, 255, 0.3);
+    box-sizing: border-box; }
+  .pad-knob { position: absolute; left: 30%; top: 30%; width: 40%; height: 40%; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4); pointer-events: none; }
+  .pad-dpad { width: 30vmin; height: 30vmin; }
+  .pad-dpad > div { position: absolute; width: 33.4%; height: 33.4%; background: rgba(255, 255, 255, 0.16);
+    border: 2px solid rgba(255, 255, 255, 0.35); box-sizing: border-box; pointer-events: none; }
+  #captured { position: absolute; inset: 0; overflow: auto; background: rgba(0, 0, 0, 0.95); padding: 8px; }
+  #captured img { display: block; max-width: 100%; margin-top: 8px; }
+  #captured a.button { text-decoration: none; }
+  #log { margin: 0; height: 100%; overflow: auto; padding: 8px 12px; box-sizing: border-box; color: #b8b8c0;
+    font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<main id="setup">
+  <h1>Dark Cloud</h1>
+  <p id="status">Starting…</p>
+  <button id="last-log-toggle" class="secondary" hidden>Previous run's log</button>
+  <pre id="last-log" hidden style="max-height: 50vh; overflow: auto; white-space: pre-wrap; word-break: break-all;
+    font-size: 12px; color: #b8b8c0"></pre>
+
+  <div id="pick" class="card" hidden>
+    <h2>Game data</h2>
+    <p>Use your own PAL disc of Dark Cloud. The data is copied into this browser's storage once and never leaves
+      your computer.</p>
+    <div class="row">
+      <label class="button">Disc image (.iso) or data.zip<input id="file" type="file" accept=".iso,.zip"></label>
+      <label class="button secondary">A folder<input id="folder" type="file" webkitdirectory></label>
+    </div>
+    <p style="margin-top: 12px">A folder can be the disc's files (<code>DATA.DAT</code> and <code>DATA.HD2</code>) or a
+      <code>data</code> folder dcdata extracted. A disc is read in place; the game prepares a few files from it when it
+      first starts.</p>
+    <progress id="progress" hidden></progress>
+  </div>
+
+  <div id="ready" class="card" hidden>
+    <h2 id="stored"></h2>
+    <div class="row">
+      <button id="start">Start</button>
+      <button id="forget" class="secondary">Remove the game data</button>
+    </div>
+  </div>
+  <div id="mods" class="card" hidden>
+    <h2>Mods</h2>
+    <p>MoonMod mods load when the game starts. MoonMod's own mods are built in: they are installed here for you, off
+      until you turn them on. Add others as a mod's folder (the one holding <code>mod.json</code>), a folder of mods,
+      or a <code>.zip</code> of either. They are kept in this browser's storage with your saves. Turn each on or off
+      and change its settings here before you start; the game's own Mods menu changes them too.</p>
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+      <input id="mods-on" type="checkbox" checked> Start the game with mods
+    </label>
+    <ul id="mod-list"></ul>
+    <div class="row">
+      <label class="button secondary">Add a mod folder<input id="mod-folder" type="file" webkitdirectory></label>
+      <label class="button secondary">Add a .zip<input id="mod-zip" type="file" accept=".zip"></label>
+      <button id="mod-restore" class="secondary" hidden>Restore the built-in mods</button>
+      <a class="button secondary" href="anim/" style="text-decoration: none">Animation editor</a>
+    </div>
+    <progress id="mod-progress" hidden></progress>
+  </div>
+  <div id="pc" class="card">
+    <h2>Play on your PC</h2>
+    <p>The same game, built for your own computer from this page's code, with MoonMod's mods. The game data still
+      comes from your own disc (<a href="https://github.com/Jeffiest/DC_Web/blob/main/docs/PC.md">how to set it
+      up</a>).</p>
+    <label>Your system <select id="pc-system">
+      <option value="windows">Windows (x64)</option>
+      <option value="linux">Linux (Flatpak, x86_64)</option>
+      <option value="macos">macOS (Apple silicon)</option>
+    </select></label>
+    <div class="row" style="margin-top: 12px">
+      <a id="pc-build" class="button" style="text-decoration: none">The game</a>
+      <a id="pc-mods-all" class="button secondary" style="text-decoration: none" hidden>All the mods (.zip)</a>
+    </div>
+    <p id="pc-build-note" class="mod-note" style="margin-left: 0"></p>
+    <p id="pc-install" class="mod-note" style="margin-left: 0"></p>
+    <details id="pc-builtin" hidden>
+      <summary>Each mod on its own</summary>
+      <ul id="pc-builtin-list"></ul>
+    </details>
+  </div>
+  <div id="pc-mods" class="card" hidden>
+    <h2>More mods for your PC</h2>
+    <p>Each mod here was confirmed with one build of the game: download that build and the mod, and unzip the mod
+      into the game's mods folder, as above.</p>
+    <ul id="pc-mod-list"></ul>
+  </div>
+</main>
+
+<div id="game" hidden>
+  <canvas id="canvas" tabindex="-1"></canvas>
+  <div id="notice" hidden><div id="notice-text"></div><progress id="notice-progress" hidden></progress></div>
+  <div id="toolbar">
+    <button id="fullscreen" title="Fullscreen (F11 also works)">Fullscreen</button>
+    <button id="log-toggle" title="Show what the game prints">Log</button>
+    <button id="capture" title="Save the next frames as the game drew them, before the browser shows them">Capture</button>
+  </div>
+  <div id="pad" hidden>
+    <div id="pad-dpad" class="pad-dpad" style="left: 4vmin; bottom: 38vmin">
+      <div data-dir="up" style="left: 33.3%; top: 0"></div><div data-dir="down" style="left: 33.3%; bottom: 0"></div>
+      <div data-dir="left" style="left: 0; top: 33.3%"></div><div data-dir="right" style="right: 0; top: 33.3%"></div>
+    </div>
+    <div id="pad-left" class="pad-stick" style="left: 4vmin; bottom: 3vmin; width: 32vmin; height: 32vmin">
+      <div class="pad-knob"></div></div>
+    <div class="pad-button" data-button="triangle" style="right: 15.5vmin; bottom: 52vmin">&#9651;</div>
+    <div class="pad-button" data-button="square" style="right: 27vmin; bottom: 40.5vmin">&#9633;</div>
+    <div class="pad-button" data-button="circle" style="right: 4vmin; bottom: 40.5vmin">&#9675;</div>
+    <div class="pad-button" data-button="cross" style="right: 15.5vmin; bottom: 29vmin">&#10005;</div>
+    <div id="pad-right" class="pad-stick" style="right: 8vmin; bottom: 3vmin; width: 22vmin; height: 22vmin">
+      <div class="pad-knob"></div></div>
+    <div class="pad-button pad-shoulder" data-button="l2" style="left: 4vmin; bottom: 75vmin">L2</div>
+    <div class="pad-button pad-shoulder" data-button="l1" style="left: 20vmin; bottom: 75vmin">L1</div>
+    <div class="pad-button pad-shoulder" data-button="r1" style="right: 20vmin; bottom: 75vmin">R1</div>
+    <div class="pad-button pad-shoulder" data-button="r2" style="right: 4vmin; bottom: 75vmin">R2</div>
+    <div class="pad-button pad-small" data-button="select" style="left: calc(50% - 14vmin); bottom: 3vmin">SELECT</div>
+    <div class="pad-button pad-small" data-button="start" style="left: calc(50% + 2vmin); bottom: 3vmin">START</div>
+  </div>
+  <div id="drawer" hidden><pre id="log"></pre></div>
+  <div id="captured" hidden>
+    <div class="row"><a id="captured-save" class="button" download="frames.png">Save</a>
+      <button id="captured-close" class="secondary">Close</button></div>
+    <img id="captured-image" alt="The captured frames">
+  </div>
+</div>
+<script src="zip.js"></script>
+<script src="shell.js"></script>
+</body>
+</html>

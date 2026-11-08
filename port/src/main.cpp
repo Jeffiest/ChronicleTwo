@@ -56,6 +56,11 @@
 #ifdef __SWITCH__
 #include "switch_main.hpp"
 #endif
+#ifdef __EMSCRIPTEN__
+#include <cstring>
+void WebMountStorage();     // port/web/src/storage.cpp
+void WebTouchOverlayPoll(); // port/web/src/touch.cpp
+#endif
 
 namespace {
 
@@ -342,6 +347,9 @@ void PumpHost() {
         std::exit(kExitOk);
     }
     DisplayPump();
+#ifdef __EMSCRIPTEN__
+    WebTouchOverlayPoll();
+#endif
     InputPoll();
     InputScriptApply(mgPortFrameCount());
 
@@ -404,6 +412,8 @@ void LogSessionHeader() {
     constexpr std::string_view os = "Windows";
 #elifdef __SWITCH__
     constexpr std::string_view os = "Nintendo Switch";
+#elifdef __EMSCRIPTEN__
+    constexpr std::string_view os = "the web";
 #elifdef __APPLE__
     constexpr std::string_view os = "macOS";
 #else
@@ -526,6 +536,10 @@ int Run(int argc, const char **argv) {
     if (options.headless || !options.screenshot.empty()) {
         renderer.render_thread = gfx::RenderThreadMode::Off;
     }
+#ifdef __EMSCRIPTEN__
+    // The GL context and WebGPU's objects belong to the thread that made the device (port/web): the game's.
+    renderer.render_thread = gfx::RenderThreadMode::Off;
+#endif
 #ifdef __SWITCH__
     SwitchConfigureRenderer(renderer);
 #endif
@@ -620,6 +634,22 @@ int main(int argc, const char **argv) {
     return SDL_RunApp(argc, const_cast<char **>(argv), IosMain, nullptr);
 #elifdef __SWITCH__
     return SwitchMain(argc, argv, Run);
+#elifdef __EMSCRIPTEN__
+    // The browser's storage first (docs/WEB.md). --env NAME=VALUE, which the page's ?args= can pass, sets an
+    // environment variable, as a browser has no other way to: DC2_LOG=debug, for one.
+    WebMountStorage();
+    int kept = 1;
+    for (int i = 1; i < argc; i++) {
+        const char *equals = i + 1 < argc && std::strcmp(argv[i], "--env") == 0 ? std::strchr(argv[i + 1], '=') : nullptr;
+        if (equals != nullptr) {
+            const std::string name(argv[i + 1], static_cast<std::size_t>(equals - argv[i + 1]));
+            setenv(name.c_str(), equals + 1, 1);
+            i++;
+        } else {
+            argv[kept++] = argv[i];
+        }
+    }
+    return Run(kept, argv);
 #else
     return Run(argc, argv);
 #endif

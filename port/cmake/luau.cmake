@@ -133,6 +133,9 @@ if(CT_LUAU_PRECOMPILE)
 endif()
 add_custom_target(ct_luau_scripts DEPENDS ${ct_luau_stamp} ${CT_LUAU_COPIES} ${CMAKE_BINARY_DIR}/generated/luau/copied.txt)
 add_dependencies(darkchronicle ct_luau_scripts)
+if(TARGET darkchronicle_gl)
+    add_dependencies(darkchronicle_gl ct_luau_scripts)
+endif()
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/port/src/luau/ DESTINATION ${CMAKE_INSTALL_BINDIR}/scripts
     FILES_MATCHING PATTERN "*.luau" PATTERN "*.d.luau" EXCLUDE)
 # An install likewise removes the modules an earlier install put there whose sources are gone, recording what it
