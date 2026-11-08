@@ -32,7 +32,9 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
-out=${out:-$build/smoke}
+# Absolute: the browser driver runs from its own directory.
+build=$(realpath -m "$build")
+out=$(realpath -m "${out:-$build/smoke}")
 mkdir -p "$out"
 game=darkchronicle.js
 [[ $renderer == gl ]] && game=darkchronicle_gl.js

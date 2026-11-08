@@ -60,6 +60,7 @@
 #include <cstring>
 void WebMountStorage();     // port/web/src/storage.cpp
 void WebTouchOverlayPoll(); // port/web/src/touch.cpp
+[[noreturn]] void WebExit(int status); // port/web/src/exit.cpp: exit() with the atexit handlers on this thread
 #endif
 
 namespace {
@@ -344,7 +345,11 @@ void StartMoonMod() {
 // A closed window ends the process here: the game has no stop request to ask its loop to return.
 void PumpHost() {
     if (!WindowPollEvents()) {
+#ifdef __EMSCRIPTEN__
+        WebExit(kExitOk);
+#else
         std::exit(kExitOk);
+#endif
     }
     DisplayPump();
 #ifdef __EMSCRIPTEN__

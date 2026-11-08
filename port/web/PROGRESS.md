@@ -113,6 +113,20 @@ tools/web/build.sh build darkchronicle
   after the game's exit code is reported, so the smoke runs pass; with real data the same abort would end every
   `--frames` run and a closed tab's exit (`PumpHost`).
 
+- `tools/web/build.sh build darkchronicle_gl`: `darkchronicle_gl.js` (639 KB), `.wasm` (26.2 MB), `.data` (the
+  same 37.8 MB); 6 min 54 s in all, compiling the GL layer and linking. `tools/web/smoke.sh browser --renderer gl`
+  passes (`(WebGL2, ANGLE (Google, Vulkan 1.3.0 (SwiftShader ...)))`, `exit=3`); with `--with-marker` the GL layer
+  creates its device (`webgl: WebGL2 ANGLE ...`), compiles the 21860 pipelines in 0.44 s, runs the 30 frames and
+  exits 0 with no abort: the GL layer has no device-thread assertion at shutdown.
+- The exit abort's cause, settled: Emscripten excludes musl's `exit.c` (`tools/system_libs.py`, "exit exclusions");
+  `exit()` is the runtime's, which posts the status to the page's main thread, whose `exitRuntime()`
+  (`src/preamble.js`) calls `___funcs_on_exit()`, the C atexit list, there. So the host's atexit shutdown
+  (`ShutdownRenderer` -> `vkDeviceWaitIdle`) ran on the page's thread, and the WebGPU layer's `AssertDeviceThread`
+  aborted. Fix: `WebExit(status)` in `port/web/src/exit.cpp` runs `__funcs_on_exit()` on the game's thread, then
+  `WebQuickExit`; the frames exit (`mglib.cpp`) and `PumpHost` (`main.cpp`) call it under `__EMSCRIPTEN__`.
+  Checked: the WebGPU `--with-marker` run now ends `exit=0` with no abort (relink 4 min 54 s with the three
+  units recompiled).
+
 ## Gauntlet mismatch
 
 `tools/gauntlet/web/browser_smoke.cjs` (in /home/user/ChronicleTwo) stores `data.zip` under the OPFS directory
