@@ -102,4 +102,3 @@ public:
 };
 
 STATIC_ASSERT(sizeof(CSaveDataDungeon) == 0xCE4);
-PORT_RECORD_ASSERT(sizeof(CSaveDataDungeon) == 0xCE4);

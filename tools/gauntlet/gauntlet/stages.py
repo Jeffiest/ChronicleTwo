@@ -806,7 +806,13 @@ def stage_retail_smokes(ctx):
                         details=details)
 
 
-def _markers(log, prefixes):
+def _markers(log, prefixes, own=None):
+    """The marker lines of a log; each path in own (name -> path, the run's own files) reads as <name>.
+
+    A run's own paths differ between two otherwise identical runs ("mglib: frame 120 written to .../run-a.png"),
+    so they are replaced before the lists are compared."""
+    replacements = sorted(((path, "<%s>" % name) for name, path in (own or {}).items() if path),
+                          key=lambda item: -len(item[0]))
     found = []
     try:
         with open(log, encoding="utf-8", errors="replace") as f:
@@ -814,7 +820,10 @@ def _markers(log, prefixes):
                 for prefix in prefixes:
                     index = line.find(prefix)
                     if index >= 0:
-                        found.append(line[index:].strip())
+                        marker = line[index:].strip()
+                        for path, placeholder in replacements:
+                            marker = marker.replace(path, placeholder)
+                        found.append(marker)
                         break
     except OSError:
         pass
@@ -833,7 +842,7 @@ def stage_retail_determinism(ctx):
     evidence = [p for r in runs for p in (r["log"], r["screenshot"])]
     markers = []
     for r, tag in zip(runs, ("a", "b")):
-        found = _markers(r["log"], prefixes)
+        found = _markers(r["log"], prefixes, {"screenshot": r.get("screenshot"), "save": r.get("save")})
         path = os.path.join(out, "markers-%s.txt" % tag)
         with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(found) + "\n")

@@ -4,7 +4,7 @@
 
 Done (stream `records`, branch `s/records`):
 
-- 57 records carry `PORT_RECORD_ASSERT(sizeof(T) == N)` beside their `STATIC_ASSERT`; all hold on PC, and `scripts/port/records.py --build port/build/pc --require-clang` (ctest `Records.Check`) proves sizes and the absence of pointer, `uptr`/`sptr` and vtable members.
+- 56 records carry `PORT_RECORD_ASSERT(sizeof(T) == N)` (57 until the capacity work made CSaveDataDungeon a host image) beside their `STATIC_ASSERT`; all hold on PC, and `scripts/port/records.py --build port/build/pc --require-clang` (ctest `Records.Check`) proves sizes and the absence of pointer, `uptr`/`sptr` and vtable members.
 - `funcdata::name` is `u32`: it is zero in every disc script and retail never resolves it, and as `char *` it moved `local`/`arg` to 16/20 on PC. This is the one pointer-typed declaration changed, a documented exception to the rule that pointer-typed declarations never change, approved because the field is a 32-bit word on the disc that is always 0 and never resolved.
 - `CVillagerMngr::GetAppearVlgr` (port/src/villagermngr.cpp) indexes `place[alternative][time]` and the output arrays; retail's 4-byte strides are kept in ps2/src because the index form changed MWCC's code.
 - `_GET_INDEXOBJ_SIZE` (port/src/runscript_opcodes.cpp) indexes `entry_object`; retail sums the address into an `int`.
@@ -28,7 +28,7 @@ This inventory was made by stream `uptr` and completed by stream `records`. `scr
 
 ## Summary
 
-- Total: 598 `STATIC_ASSERT` rows: 65 records (57 `assert`, 1 `PS2 only`, 7 `host image`), 533 runtime.
+- Total: 598 `STATIC_ASSERT` rows: 65 records (56 `assert`, 1 `PS2 only`, 8 `host image`), 533 runtime.
 - Runtime with address-holding integer fields: 13 of 535.
 
 ## Records
@@ -76,7 +76,7 @@ This inventory was made by stream `uptr` and completed by stream `records`. `scr
 | CGyoRaceData | 0x2C28 | `ps2/include/savedata.hpp:739` | memcard.cpp:CMemoryCardManager::LoadOmakeFile (member of CSubGameData) | none (no pointers) | assert | - |
 | CSubGameData | 0x5470 | `ps2/include/savedata.hpp:808` | mainloop.cpp:MainLoop; memcard.cpp:CMemoryCardManager::LoadOmakeFile | none (no pointers) | assert | - |
 | DNG_FLOOR_SAVE | 0x14 | `ps2/include/savedatadungeon.hpp:56` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveDataDungeon in CSaveData) | none (no pointers) | assert | - |
-| CSaveDataDungeon | 0xCE4 | `ps2/include/savedatadungeon.hpp:104` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | none (no pointers) | assert | - |
+| CSaveDataDungeon | 0xCE4 | `ps2/include/savedatadungeon.hpp:104` | memcard.cpp:CMemoryCardManager::LoadFromMc (member of CSaveData) | host image: the PC's `floor_info` holds `capacity::kSaveDungeonFloorRecords` records (retail's 162 in place, the extra floors after them), so `port/include/savedatadungeon.hpp` asserts `0x3C + SAVE_DUNGEON_FLOOR_NUM * sizeof(DNG_FLOOR_SAVE)`; it travels inside CSaveData's host image and the JSON save | host image | - |
 | sceMcColor | 0x10 | `ps2/include/sce/libmc.h:57` | memcard.cpp:CMemoryCardManager::SetIconData (member of sceMcIconSys, written to the card) | none (no pointers) | assert | - |
 | sceMcIconSys | 0x3C4 | `ps2/include/sce/libmc.h:90` | memcard.cpp:CMemoryCardManager::SetIconData (writer only) | none (no pointers) | assert | - |
 | sceMcStDateTime | 0x8 | `ps2/include/sce/libmc.h:106` | convviewlp.cpp:SaveDataConvertLoop (member of sceMcTblGetDir) | none (no pointers) | assert | - |

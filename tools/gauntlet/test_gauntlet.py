@@ -142,6 +142,34 @@ class SelectionTest(unittest.TestCase):
             stages.STAGES[:] = saved
 
 
+class MarkersTest(unittest.TestCase):
+    def test_own_paths_do_not_make_identical_runs_differ(self):
+        prefixes = ["dataread: indexed", "mglib: frame"]
+        with tempfile.TemporaryDirectory() as tmp:
+            logs = []
+            for tag in ("a", "b"):
+                log = os.path.join(tmp, "run-%s.log" % tag)
+                with open(log, "w", encoding="utf-8") as f:
+                    f.write("noise\n[t] dataread: indexed 86597 files under /data.zip\n"
+                            "mglib: frame 120 written to %s/run-%s.png\nsaved to %s/run-%s-save\n" % (tmp, tag, tmp, tag))
+                logs.append(stages._markers(log, prefixes, {"screenshot": "%s/run-%s.png" % (tmp, tag),
+                                                              "save": "%s/run-%s-save" % (tmp, tag)}))
+            self.assertEqual(logs[0], logs[1])
+            self.assertEqual(logs[0], ["dataread: indexed 86597 files under /data.zip", "mglib: frame 120 written to <screenshot>"])
+            self.assertNotEqual(stages._markers(os.path.join(tmp, "run-a.log"), prefixes),
+                                stages._markers(os.path.join(tmp, "run-b.log"), prefixes))
+
+    def test_a_real_difference_still_differs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            found = []
+            for tag, frames in (("a", 120), ("b", 119)):
+                log = os.path.join(tmp, "%s.log" % tag)
+                with open(log, "w", encoding="utf-8") as f:
+                    f.write("mglib: frame %d written to %s/%s.png\n" % (frames, tmp, tag))
+                found.append(stages._markers(log, ["mglib: frame"], {"screenshot": "%s/%s.png" % (tmp, tag)}))
+            self.assertNotEqual(found[0], found[1])
+
+
 class ToolkitAndBuildTest(unittest.TestCase):
     def _ctx(self, tmp, **options):
         config = util.read_json(os.path.join(HERE, "stages.json"))
