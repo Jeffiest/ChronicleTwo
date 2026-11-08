@@ -34,6 +34,7 @@
 #include "platform/files.hpp"
 #include "platform/paths.hpp"
 #include "save_slots.hpp"
+#include "moonmod/coop.hpp"
 #include "userdata.hpp"
 
 namespace fs = std::filesystem;
@@ -639,6 +640,7 @@ SaveSlotList SaveSlotScan(bool include_autosave) {
 }
 
 FilesResult SaveSlotWrite(const fs::path &path, const SaveDocument &document, bool replace) {
+    if (moonmod::coop::VisitActive()) return FilesResult::kWritten; // a co-op visit plays another's world: this game's saves stay as they are
     const std::string text = SaveJsonWrite(document);
     const auto        result = FilesWrite(path, text.data(), text.size(), replace);
     if (result == FilesResult::kWritten) {
@@ -650,6 +652,7 @@ FilesResult SaveSlotWrite(const fs::path &path, const SaveDocument &document, bo
 }
 
 FilesResult SaveSlotWrite(const SaveSlot &slot, const SaveDocument &document) {
+    if (moonmod::coop::VisitActive()) return FilesResult::kWritten;
     const auto target = SaveSlotPath(slot.number, slot.second_card);
     if (slot.path == target) {
         return SaveSlotWrite(target, document, true);

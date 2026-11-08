@@ -82,6 +82,8 @@ struct RuntimeConfig {
     std::function<std::string(std::string_view mod_id, const Json &arguments)> api_resource_override_removal_guard;
     std::function<void(std::string_view mod_id)> api_owner_unloaded;
     std::function<void(std::string_view level, std::string_view mod_id, std::string_view message)> log;
+    // mods.* (the runtime sets it): path, the target mod's id (empty: every mod, for an overlay clear), its values.
+    std::function<ApiCallResult(std::string_view path, std::string_view mod_id, const Json &values)> mods_handler;
 };
 
 class Runtime {
@@ -108,6 +110,11 @@ public:
     bool                      SetEnabled(std::string_view id, bool enabled, std::string &error);
     bool                      SetNativeTrusted(std::string_view id, bool trusted, std::string &error);
     Json                      Setting(std::string_view mod_id, std::string_view setting_id) const;
+    // mods.*: the loaded mods in load order, a mod's effective settings, and session-only values over them.
+    Json                      ModList() const;
+    ApiCallResult             ModSettings(std::string_view mod_id) const;
+    ApiCallResult             OverlayModSettings(std::string_view mod_id, const Json &values);
+    void                      ClearModSettingsOverlay(std::string_view mod_id);
     ApiCallResult              Quests(std::string_view mod_id) const;
     ApiCallResult              Skills(std::string_view mod_id) const;
     Json                        CombatDamageBonuses() const;

@@ -349,6 +349,32 @@ if(EMSCRIPTEN)
     ct_web_options(ct_options)
 endif()
 
+# Online co-op (MoonMod net.*, moonmod/net_session.hpp): the socket to the relay (coop/relay in DC_Web, protocol v1)
+# is the browser's WebSocket on the web (the web preset adds CT_COOP_WEB_LINK_OPTIONS to its link options),
+# WinHTTP on Windows, and our own WebSocket over libcurl's TLS connection on Linux and macOS where libcurl is
+# found. Without one, net.* reports itself unsupported. DC_COOP_RELAY_DEFAULT is the relay a mod's net.host/join
+# dial unless the mod names one; a build for a private server sets its own.
+set(DC_COOP_RELAY_DEFAULT "wss://chronicle-coop-relay.jeffery-s-rose.workers.dev" CACHE STRING "The co-op relay (wss://...) online play uses by default")
+target_compile_definitions(ct_options INTERFACE DC_COOP_RELAY_DEFAULT="${DC_COOP_RELAY_DEFAULT}")
+set(DC_NET_LIBS)
+set(CT_COOP_WEB_LINK_OPTIONS "-lwebsocket.js" CACHE STRING "Linker options the web build adds for online play (Emscripten's WebSocket)")
+if(WIN32)
+    set(DC_NET_LIBS winhttp)
+elseif(APPLE)
+    # The SDK's libcurl, linked by name: CURL::libcurl's include directory is the SDK's usr/include, which put ahead
+    # of libc++'s own headers breaks them.
+    target_compile_definitions(ct_options INTERFACE DC_HAVE_CURL)
+    set(DC_NET_LIBS curl)
+elseif(NOT EMSCRIPTEN AND NOT NINTENDO_SWITCH AND NOT ANDROID)
+    find_package(CURL QUIET)
+    if(CURL_FOUND)
+        target_compile_definitions(ct_options INTERFACE DC_HAVE_CURL)
+        set(DC_NET_LIBS CURL::libcurl)
+    else()
+        message(STATUS "libcurl not found: this build has no online play (net.* unsupported)")
+    endif()
+endif()
+
 if(WIN32 AND (NOT MINGW OR NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
     message(FATAL_ERROR "The Windows build requires clang/llvm-mingw")
 endif()
@@ -448,7 +474,7 @@ endif()
 function(ct_link_game target)
     target_sources(${target} PRIVATE $<TARGET_OBJECTS:ct_port> $<TARGET_OBJECTS:ct_port_bridge> $<TARGET_OBJECTS:ct_host> $<TARGET_OBJECTS:ct_native>)
     target_link_libraries(${target} PRIVATE ct_options kz_port_headers SDL3::SDL3 kz::vulkan fastgltf::fastgltf
-        nlohmann_json::nlohmann_json moonmod_lua ${CMAKE_DL_LIBS})
+        nlohmann_json::nlohmann_json moonmod_lua ${CMAKE_DL_LIBS} ${DC_NET_LIBS})
     if(NOT NINTENDO_SWITCH)
         target_link_libraries(${target} PRIVATE kazarov_bridge kazarov_core)
     else()

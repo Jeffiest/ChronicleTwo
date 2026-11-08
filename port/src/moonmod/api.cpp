@@ -208,6 +208,48 @@ constexpr ApiOperationSpec kApiCatalog[] = {
     {"debug.inspect", "debug", "inspect", "any", "debug.inspect", "Read a bounded snapshot of the current native scene context."},
     {"debug.profile", "debug", "profile", "any", "debug.inspect", "Read bounded per-mod resource and registration counters."},
     {"debug.overlay_register", "debug", "overlay_register", "render", "debug.inspect", "Register or update an owner-scoped one-line diagnostic overlay."},
+    {"combat.strike_player", "combat", "strike_player", "simulation", "game.write", "Lay a native hit on the player at a point (a mod's own attack, co-op's blow from the host's monster)."},
+    {"dungeons.set_seed", "dungeons", "set_seed", "simulation", "game.write", "Build the next new floor from this seed, once (world.get().floor_seed reports a floor's seed); {} lets it pick its own."},
+    {"dungeons.enter_floor", "dungeons", "enter_floor", "simulation", "game.write", "Enter floor floor_id of the current dungeon (or, from a town, of dungeon_id), built again from the start."},
+    {"world.avatar_set", "world", "avatar_set", "simulation", "game.write", "Co-op: show another player (slot 1-3) on the dungeon floor or in the town as their hero, easing to where they are."},
+    {"world.avatar_clear", "world", "avatar_clear", "simulation", "game.write", "Co-op: take another player's hero away (one slot, or every one)."},
+    {"world.enter_map", "world", "enter_map", "simulation", "game.write", "Co-op: walk into a town or one of its maps by map number (world.get().map_no), from a town or a dungeon floor."},
+    {"georama.town_export", "georama", "town_export", "any", "game.read", "Co-op: one town's Georama (its record and layout) as text."},
+    {"georama.town_import", "georama", "town_import", "any", "game.write", "Co-op: take a town's Georama from georama.town_export; a player walking in it is walked into it again."},
+    {"monsters.mirror_get", "monsters", "mirror_get", "simulation", "game.read", "Co-op host: the floor's monsters (slot, kind, state, life, place, motion) and the blows that landed on other players since the last call."},
+    {"monsters.puppet_set", "monsters", "puppet_set", "simulation", "game.write", "Co-op guest: make this floor's monsters copies of the host's, by slot; a slot left out is gone on the host."},
+    {"monsters.puppet_clear", "monsters", "puppet_clear", "simulation", "game.write", "Co-op guest: give the floor's monsters their own thoughts back."},
+    {"monsters.mirror_hit", "monsters", "mirror_hit", "simulation", "game.write", "Co-op host: another player's blow on a monster, by slot; a kill dies here."},
+    {"dungeons.shared_events_get", "dungeons", "shared_events_get", "simulation", "game.read", "Co-op: the map events this player started since the last call that change the floor (a door, a gate, a switch), to run for the other players."},
+    {"dungeons.shared_event_run", "dungeons", "shared_event_run", "simulation", "game.write", "Co-op: run another player's floor-changing event here, at its place, once the player is free; the key it asks for is taken as given."},
+    {"items.owned", "items", "owned", "any", "game.read", "The items the player carries (the bag and the active slots), each with its id, name and count."},
+    {"ui.choice_open", "ui", "choice_open", "simulation", "game.write", "Open a panel of 1-6 options over the game until the player picks one or backs out (ui.choice_made)."},
+    {"net.host", "net", "host", "any", "net.session", "Open an online room through the co-op relay; net.receive's connected event names its code."},
+    {"net.join", "net", "join", "any", "net.session", "Join another player's online room by its five-letter code."},
+    {"net.leave", "net", "leave", "any", "net.session", "Leave the online room (a host leaving ends it for everyone)."},
+    {"net.status", "net", "status", "any", "net.session", "The online session: state, this player's id, the room code and the other players."},
+    {"net.send", "net", "send", "any", "net.session", "Send text (at most 16 KiB) to one player, by id, or to all the others."},
+    {"net.receive", "net", "receive", "any", "net.session", "Take what came: connected, joined, left, message and closed events, oldest first."},
+    {"mods.list", "mods", "list", "any", "game.read", "The mods loaded this session, in load order: id, name, version, author and co-op role (required, host_only or local)."},
+    {"mods.settings_get", "mods", "settings_get", "any", "game.read", "A loaded mod's effective setting values; another mod's need mods.settings."},
+    {"mods.settings_overlay", "mods", "settings_overlay", "any", "mods.settings", "Give a loaded mod setting values for this session only (co-op: the host's): never saved, gone when the session ends."},
+    {"mods.settings_overlay_clear", "mods", "settings_overlay_clear", "any", "mods.settings", "Drop session-only setting values: one mod's, or every mod's."},
+    {"save.world_export", "save", "world_export", "any", "game.read", "Co-op: the save's world (story flags, map flags, the day and time, the towns' Georama, dungeon progress, quests) as text."},
+    {"save.world_import", "save", "world_import", "any", "game.write", "Co-op: during this mod's visit, take a world from save.world_export."},
+    {"save.player_export", "save", "player_export", "any", "game.read", "Co-op: the player's own things (Max, Monica and the ridepod, the bag, the active items, Gilda, the badges) as text."},
+    {"save.player_import", "save", "player_import", "any", "game.write", "Co-op: during this mod's visit, take a player's things from save.player_export."},
+    {"save.player_extra_get", "save", "player_extra_get", "any", "game.read", "This mod's own things that came with the player's (a co-op guest's levels, say), or nothing."},
+    {"save.player_extra_set", "save", "player_extra_set", "any", "game.write", "Keep a value of this mod's with the player's things, so it travels with them (a co-op visit sends it to the host's save)."},
+    {"save.account_get", "save", "account_get", "any", "game.read", "Co-op host: a guest's things this save keeps, by the guest's id, or {}."},
+    {"save.account_set", "save", "account_set", "any", "game.write", "Co-op host: keep a guest's things (save.player_export text) in this save; written with its next save."},
+    {"save.account_list", "save", "account_list", "any", "game.read", "Co-op host: the guests this save keeps, as {id, name}."},
+    {"save.account_remove", "save", "account_remove", "any", "game.write", "Co-op host: forget a guest's things in this save."},
+    {"title.mode_register", "title", "mode_register", "content", "content.register", "Add or update this mod's title mode: a title-menu row that opens a page the mod drives."},
+    {"title.mode_set", "title", "mode_set", "any", "game.write", "Change this mod's title mode page: heading, info lines, menu entries and cursor."},
+    {"title.mode_remove", "title", "mode_remove", "content", "content.register", "Remove this mod's title mode."},
+    {"session.get", "session", "get", "any", "game.read", "Read whether the game is in the title, a story save or a mod's visit."},
+    {"session.start", "session", "start", "any", "game.write", "From this mod's open title mode page, start a co-op visit: {visit = {world, player?, map}} in a fresh game with no save slot."},
+    {"session.finish", "session", "finish", "simulation", "game.write", "End this mod's visit and return to the title."},
     {"api.list", "api", "list", "any", "", "List all catalogued operations and capability status."},
     {"api.supports", "api", "supports", "any", "", "Query one operation capability by canonical path."},
     {"api.call", "api", "call", "any", "", "Invoke an operation by canonical path."},
@@ -223,7 +265,14 @@ constexpr EventSpec kEventCatalog[] = {
     {"game.tick", "game", "both", "A simulation frame was pumped."},
     {"game.scene.will_enter", "scene", "both", "A scene is about to initialize."},
     {"game.scene.entered", "scene", "both", "A scene finished initialization."},
-    {"game.dungeon.generating", "dungeons", "both", "Before a Chronicle procedural floor is generated; dungeon_id, floor_id, back_floor."},
+    {"game.dungeon.generating", "dungeons", "both", "Before a procedural floor is generated; dungeon_id, floor_id, back_floor."},
+    {"ui.choice_made", "ui", "both", "The player picked an option on this mod's choice panel (index from 1), or backed out (cancelled)."},
+    {"game.title.opened", "title", "both", "The player opened this mod's title mode page from the title menu."},
+    {"game.title.selected", "title", "both", "The player confirmed an entry on this mod's title mode page, or pressed cancel (entry 'back')."},
+    {"game.session.started", "session", "both", "A mod's visit started: a fresh game with no save slot, in another player's world."},
+    {"game.session.ended", "session", "both", "A visit ended: reason 'ended', 'left' or 'loaded_save'."},
+    {"game.session.failed", "session", "both", "A visit could not start; reason says why."},
+
     {"game.world.location_changed", "world", "both", "A world location changed; published at scene initialization when detectable and polled within scenes."},
     {"game.item_used", "items", "both", "A mod API item-use call completed."},
     {"game.player.thirst_changed", "player", "chronicle", "The active character's Chronicle water gauge changed, drained empty, or was restored."},
@@ -264,9 +313,9 @@ constexpr EventSpec kEventCatalog[] = {
     {"skills.unlocked", "skills", "both", "A skill's rank first became positive."},
 };
 
-constexpr std::array<std::string_view, 8> kKnownPermissions = {
+constexpr std::array<std::string_view, 10> kKnownPermissions = {
     "storage.read", "storage.write", "game.read", "game.write", "content.register", "scripts.override",
-    "debug.inspect", "native.extension",
+    "debug.inspect", "native.extension", "net.session", "mods.settings",
 };
 
 } // namespace
@@ -280,7 +329,8 @@ const ApiOperationSpec *FindApiOperation(std::string_view path) {
 }
 
 bool IsCoreApiOperation(std::string_view path) {
-    return path == "info.get" || path == "compat.list" || path == "compat.supports" ||
+    return path == "mods.list" || path == "mods.settings_get" || path == "mods.settings_overlay" ||
+           path == "mods.settings_overlay_clear" || path == "info.get" || path == "compat.list" || path == "compat.supports" ||
            path == "api.list" || path == "api.supports" || path == "api.call" ||
            path == "events.list" || path == "events.subscribe" || path == "events.unsubscribe" ||
            path == "save.get" || path == "save.set" ||

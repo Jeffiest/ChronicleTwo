@@ -247,7 +247,7 @@ void ExerciseApi(const std::string &game_id) {
           "{\"schema_version\":1,\"id\":\"test.content-probe\",\"name\":\"Content Probe\","
           "\"version\":\"1.0.0\",\"framework_api\":1,\"games\":[\"" + game_id +
               "\"],\"entry\":\"main.lua\",\"permissions\":[\"content.register\",\"game.read\","
-              "\"game.write\",\"storage.read\",\"storage.write\",\"scripts.override\",\"debug.inspect\"]}");
+              "\"game.write\",\"storage.read\",\"storage.write\",\"scripts.override\",\"debug.inspect\",\"net.session\"]}");
     const std::string binary_resource("\0\xff\x10\xff", 4);
     Write(package / "resources" / "probe.bin", std::string_view(binary_resource.data(), binary_resource.size()));
     const std::string oversized_resource(256 * 1024 + 1, 'x');
@@ -1103,7 +1103,9 @@ local core = {
   ["scripts.override"] = true,
   ["skills.list"] = true, ["skills.get"] = true, ["skills.register"] = true,
   ["skills.unlock"] = true, ["skills.set_rank"] = true,
-  ["debug.profile"] = true
+  ["debug.profile"] = true,
+  ["mods.list"] = true, ["mods.settings_get"] = true, ["mods.settings_overlay"] = true,
+  ["mods.settings_overlay_clear"] = true
 }
 local dispatched = 0
 for _, operation in ipairs(catalog) do
