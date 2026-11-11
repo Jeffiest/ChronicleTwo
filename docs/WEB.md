@@ -103,7 +103,19 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   arguments and `--env NAME=VALUE` among them sets an environment variable (`DC2_LOG=debug`, say), as a browser has
   no other way to. The page starts `darkchronicle_gl.js` where there is no WebGPU and on Arm's Mali GPUs, and
   `darkchronicle.js` elsewhere; `?renderer=gl` or `?renderer=webgpu` chooses, and the log's first lines say which
-  ran on what GPU.
+  ran on what GPU. SDL sizes the canvas by `devicePixelRatio`, about three on a phone; a touch screen draws at no
+  more than 1.5 pixels to the CSS pixel and `?scale=1` or `?scale=3` chooses (`pixelRatio` in `shell.js`).
+- **Data from the server**: `tools/web/serve.py --data DIR` serves a `dc2data` extraction at `gamedata/`, and the
+  page then plays with it in place of stored data: `storage.cpp` mounts `data.zip` on a WasmFS fetch backend of
+  64 KiB chunks, kept in memory up to 192 MiB (`port/web/src/fetch_cache.js`), each request reaching at least
+  128 KiB so an entry's header and a small file come in one. The server keeps a device's connection open, answers
+  an unchanged build with a 304, and logs each range's size and speed, which tells a slow network from a slow
+  device. `--tls DIR` adds https for the other devices on the network, and `--compress` serves gzip copies of the
+  build.
+- **Several games on one site**: a `games.json` beside the page, `[{"name": "Dark Cloud", "href": "../"},
+  {"name": "Dark Chronicle", "href": "./"}]`, puts a row of links above the title, the entry for this folder
+  marked (`showGames` in `shell.js`). DC_Web's site writes one for each of its games; a site with this game alone
+  has none and shows no row.
 - **Libraries**: quill's `Rdtsc.h` includes `x86gprintrin.h` on every non-Arm target, which clang ships but wasm32
   cannot use; `port/web/include/x86gprintrin.h` shadows it and the port's logger uses quill's user clock. quill's
   backend calls `pthread_setname_np`, `pthread_getname_np` and `sched_setaffinity`, which Emscripten's libc declares
@@ -137,12 +149,12 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
 | `darkchronicle_gl` (WebGL2) | Done: `darkchronicle_gl.wasm` 26.2 MB, `.js` 639 KB; its Chromium smoke passes (`--renderer gl`), and with `--with-marker` it runs 30 frames and exits 0 cleanly |
 | Smoke run under Node without data (exit 3) | Passes (`tools/web/smoke.sh node`; a stand-in canvas lets the game's thread start, `port/web/src/node_canvas.js`) |
 | Smoke run in headless Chromium (SwiftShader) | Passes on WebGPU (`tools/web/smoke.sh browser`): the page isolates, stores the archive, the game reports the missing data, `exit=3`. With a current `data.json` (`--with-marker`) the game creates the WebGPU device, compiles 21860 pipelines and runs 30 frames on the stand-in data |
-| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Page and first run written; not run with a disc here (none present) |
-| Renderer on WebGPU / WebGL2 with the game's frames | Not checked: needs game data |
+| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Played from a `dc2data` extraction, stored and from the server (`--data`), on a PC and on an Android phone |
+| Renderer on WebGPU / WebGL2 with the game's frames | Both draw the title, the towns, the dungeon and the events. On WebGL2 a copy within one image (the eyes' texture animation) read the frame instead until the layer kept the read framebuffer binding (`FramebufferFor`, `port/web/gl/objects.cpp`) |
 | Kazarov's renderer tests in the browser (`kazarov_gfx_tests`) | Not built here yet |
 | Saves in the browser's storage | Written (WasmFS on OPFS); not checked with a save |
 | Mods on the page (MoonMod's Mods card), co-op | Not done |
-| Hosting (GitHub Pages workflow) | Not done |
+| Hosting | DC_Web's `web.yml` builds this tree at the commit its `port/web/dc2.json` pins and publishes it beside Dark Cloud, at `dc2/` of its GitHub Pages site |
 
 ## Not done, and the next steps
 
@@ -153,14 +165,14 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
   (`port/web/src/exit.cpp`), which runs the handlers on the game's thread first. Checked by the `--with-marker`
   smoke: both layers now end `exit=0` with no abort. Other `std::exit` calls (usage errors, the
   missing-data exit) happen before the renderer exists and are left as they are.
-- **A disc.** Nothing here was run with game data: the page's extraction, the title screen, a save, the renderers
-  drawing the game's frames are the next checks, with a PAL disc image on the page (or `dc2data`'s `data.zip` and
-  `data.json`).
+- **A disc image on the page.** The game has been played from a `dc2data` extraction; the page's own extraction
+  of a disc image (`extract:` progress, `firstrun.cpp`) is still to be run through on a phone, where the image and
+  its extraction both have to fit the browser's storage.
 - **Kazarov's renderer tests** (`kazarov_gfx_tests`, `kazarov_gfx_tests_gl`) in Chromium: `cmake --build --preset web
   --target kazarov_gfx_tests`, then `port/web/test/gfx_tests.mjs`. DC_Web's CI runs them on both layers; this tree's
   renderer is newer and the layers were ported, so the suite is the check that the port holds.
 - **The page's Mods card** (MoonMod's mods from a folder or zip into `saves/mods/`, as DC_Web's page does with
-  `zip.js`), **co-op** over the relay (work package D) and **hosting** (a Pages workflow like DC_Web's `web.yml`).
+  `zip.js`) and **co-op** over the relay (work package D).
 - **Movies** stay out (no FFmpeg in the browser); **main-depth copies** are not offered by the WebGPU layer, as in
   DC_Web.
 

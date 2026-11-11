@@ -67,6 +67,15 @@ fs::path DiscSource(const fs::path &game_root) {
 // Extracts source into root, reporting as it goes; empty when the data is current afterwards.
 std::string Extract(const fs::path &source, const fs::path &root) {
     Say("extract: preparing the game data from " + source.filename().string());
+    // The extraction's temporary files (Kazarov's spill of model data, over a gigabyte for the disc) go to the
+    // browser's storage beside the data: /tmp is in memory here, and memory is 4 GiB.
+    std::error_code temporary_error;
+    const fs::path  temporary = root.parent_path() / ".extract-tmp";
+    fs::remove_all(temporary, temporary_error);
+    fs::create_directories(temporary, temporary_error);
+    if (!temporary_error) {
+        setenv("TMPDIR", temporary.c_str(), 1);
+    }
     auto worker = std::async(std::launch::async, [source, root]() -> std::string {
         try {
             // The game runs the scripts' Luau modules, so the compiled scripts are not published.
@@ -88,6 +97,7 @@ std::string Extract(const fs::path &source, const fs::path &root) {
         }
     }
     std::string failure = worker.get();
+    fs::remove_all(temporary, temporary_error);
     if (failure.empty() && FirstRunDataMissing(root)) {
         failure = "the extraction finished without current game data";
     }

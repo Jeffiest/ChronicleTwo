@@ -261,6 +261,10 @@ struct Swapchain {
     uint32_t             width = 0;
     uint32_t             height = 0;
     uint32_t             next = 0;
+    // The canvas's drawing buffer once this swapchain had sized it: one of another size at present means the
+    // page resized the canvas since.
+    int canvas_width = 0;
+    int canvas_height = 0;
 };
 
 struct Context {

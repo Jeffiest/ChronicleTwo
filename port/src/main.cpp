@@ -60,6 +60,7 @@
 #ifdef __EMSCRIPTEN__
 #include <cstring>
 void WebMountStorage();     // port/web/src/storage.cpp
+void WebMountServerData();  // port/web/src/storage.cpp
 void WebTouchOverlayPoll(); // port/web/src/touch.cpp
 [[noreturn]] void WebExit(int status); // port/web/src/exit.cpp: exit() with the atexit handlers on this thread
 #endif
@@ -656,6 +657,8 @@ int main(int argc, const char **argv) {
             argv[kept++] = argv[i];
         }
     }
+    // The server's game data, which the page asks for with --env CT_WEB_SERVER_DATA=... (set just above).
+    WebMountServerData();
     return Run(kept, argv);
 #else
     return Run(argc, argv);

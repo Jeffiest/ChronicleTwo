@@ -73,8 +73,13 @@ GLuint FramebufferFor(Image *color, uint32_t color_mip, Image *depth, uint32_t d
     }
     GLuint framebuffer = 0;
     glGenFramebuffers(1, &framebuffer);
+    // Both bindings are put back as they were: a blit binds its source to read, then asks for its destination's
+    // framebuffer, and a new one that left the draw binding on read had the blit copy from whatever was drawn
+    // into last (the frame, into a face's eyes).
     GLint previous = 0;
+    GLint previous_read = 0;
     glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previous_read);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     if (color != nullptr) {
         Attach(GL_COLOR_ATTACHMENT0, color, color_mip);
@@ -93,7 +98,8 @@ GLuint FramebufferFor(Image *color, uint32_t color_mip, Image *depth, uint32_t d
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         Warn("a framebuffer is incomplete (0x%x)", status);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, static_cast<GLuint>(previous));
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, static_cast<GLuint>(previous));
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, static_cast<GLuint>(previous_read));
     g_framebuffers.emplace(key, framebuffer);
     if (color != nullptr) {
         g_framebuffers_of[color].push_back(key);

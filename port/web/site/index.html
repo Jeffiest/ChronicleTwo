@@ -22,6 +22,10 @@
   button.secondary, label.secondary, a.secondary { background: #2a2a33; color: var(--fg); }
   input[type=file] { display: none; }
   progress { width: 100%; margin-top: 12px; }
+  /* The games this site offers (games.json, shell.js): this one marked, the others links to their pages. */
+  #games { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 24px; }
+  #games a { background: #2a2a33; color: var(--fg); padding: 6px 14px; border-radius: 4px; text-decoration: none; }
+  #games a[aria-current] { background: var(--accent); color: #111; }
   code { color: var(--fg); }
 
   /* The game: the whole window, the canvas scaled to fit. */
@@ -61,6 +65,7 @@
 </head>
 <body>
 <main id="setup">
+  <nav id="games" aria-label="Games" hidden></nav>
   <h1>Dark Chronicle</h1>
   <p id="status">Starting…</p>
   <button id="last-log-toggle" class="secondary" hidden>Previous run's log</button>
@@ -80,7 +85,8 @@
       on a PC; that takes a while and the page shows its progress. A folder can be the disc's files
       (<code>DATA.HD4</code>, <code>DATA.DAT</code>, <code>SOUND.HD3</code> and <code>SOUND.DAT</code>), or a PC
       extraction: the folder holding <code>data.zip</code> and <code>data.json</code>, or <code>data/</code> beside
-      <code>data.json</code>.</p>
+      <code>data.json</code> (only those are copied, so the folder may hold the disc image too), or a folder holding
+      the disc image alone.</p>
     <progress id="progress" hidden></progress>
   </div>
 

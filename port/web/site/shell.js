@@ -2,13 +2,17 @@
 // game data in the origin private file system under chronicletwo/, and starts the game with that directory as
 // its game root, mounted at /opfs (port/web/src/storage.cpp): darkchronicle.js, drawing with WebGPU, or
 // darkchronicle_gl.js, drawing with WebGL2 (chooseRenderer). Extra arguments for the game can be given as
-// ?args=--headless+--frames+30, and the renderer as ?renderer=gl or ?renderer=webgpu.
+// ?args=--headless+--frames+30, the renderer as ?renderer=gl or ?renderer=webgpu, and how many pixels the game
+// draws to the CSS pixel as ?scale=2 (pixelRatio).
 //
 // What the player chooses is stored in chronicletwo/ as one of:
 // - data.zip and data.json, as dc2data extract writes them on a PC (or a data/ folder and data.json);
 // - disc.iso, an image of the PAL disc, or disc/ (DATA.HD4, DATA.DAT, SOUND.HD3, SOUND.DAT), which the game
 //   extracts into data.zip and data.json when it first starts (port/web/src/firstrun.cpp).
 // Storing one removes the others. saves/, config.json and logs/ beside them are the game's own and stay.
+//
+// A server that offers the game data (tools/web/serve.py --data) serves data.zip and data.json at gamedata/; the
+// page then plays with those, read over the network as the game needs them, and nothing need be stored but saves.
 'use strict';
 
 const $ = (id) => document.getElementById(id);
@@ -17,15 +21,58 @@ const HOME = 'chronicletwo';
 // A disc comes first: the data beside it is what the game extracted from it.
 const KINDS = ['disc.iso', 'disc', 'data.zip', 'data'];
 const MARKER = 'data.json';
+const SERVER_DATA = 'gamedata/';
+// What the server offers, as {size}, or null; found once at startup.
+let server = null;
 
 function setStatus(text) {
     $('status').textContent = text;
+}
+
+// The games the site offers, as a row of links above the title. games.json beside the page lists them,
+// [{"name": "Dark Cloud", "href": "../"}, ...], the one whose href is this page's folder being this game. A site
+// with one game has no games.json, and the page no row.
+async function showGames() {
+    let games;
+    try {
+        const response = await fetch('games.json', {cache: 'no-cache'});
+        if (!response.ok) {
+            return;
+        }
+        games = await response.json();
+    } catch {
+        return;
+    }
+    if (!Array.isArray(games)) {
+        return;
+    }
+    const here = new URL('./', location.href).href;
+    const row = $('games');
+    for (const game of games) {
+        if (typeof game?.name !== 'string' || typeof game?.href !== 'string') {
+            continue;
+        }
+        const target = new URL(game.href, location.href);
+        if (target.protocol !== 'https:' && target.protocol !== 'http:') {
+            continue;
+        }
+        const link = document.createElement('a');
+        link.textContent = game.name;
+        link.href = target.href;
+        if (target.href === here) {
+            link.setAttribute('aria-current', 'page');
+        }
+        row.append(link);
+    }
+    row.hidden = row.childElementCount < 2;
 }
 
 // The run's last lines, kept in the browser's storage as they come, so a tab the browser kills (Safari reloads
 // one that crashed or ran out of memory) leaves them to read at the next visit, as "Previous run's log".
 const LOG_KEY = 'ct-log';
 const LOG_LINES = 400;
+// How many lines the Log drawer holds.
+const LOG_SHOWN = 4000;
 const kept = [];
 let keepTimer = 0;
 
@@ -55,10 +102,12 @@ function log(text) {
         // What precedes a crash is written at once; the rest a little later, in one go.
         keepLog(/error|abort|fail|nan|exception|lost/i.test(text));
     }
+    // Each line is a node of its own: adding to the text as a whole copied all of it for every line, which a
+    // phone felt in the game's frames.
     const pre = $('log');
-    pre.textContent += text + '\n';
-    if (pre.textContent.length > 200000) {
-        pre.textContent = pre.textContent.slice(-100000);
+    pre.append(text + '\n');
+    while (pre.childNodes.length > LOG_SHOWN) {
+        pre.firstChild.remove();
     }
     if (!$('drawer').hidden) {
         pre.scrollTop = pre.scrollHeight;
@@ -173,14 +222,15 @@ async function copyFiles(files, progress = $('progress')) {
     progress.hidden = true;
 }
 
-// Files chosen together: a disc image, or data.zip with data.json.
+// Files chosen together: data.zip with data.json, or a disc image. When both are chosen the extraction wins:
+// it is ready to play, where the disc would be extracted again in the page.
 async function storeFiles(list) {
     const files = [...list];
     const named = (test) => files.find((file) => test(file.name.toLowerCase()));
     const iso = named((name) => name.endsWith('.iso'));
     const zip = named((name) => name.endsWith('.zip'));
     const json = named((name) => name === 'data.json');
-    if (iso) {
+    if (iso && !(zip && json)) {
         await removeAll();
         await copyFiles([['disc.iso', iso]]);
         return;
@@ -195,7 +245,9 @@ async function storeFiles(list) {
     await copyFiles([['data.zip', zip], [MARKER, json]]);
 }
 
-// A folder: the disc's files, a PC extraction (data.zip and data.json), or data/ beside data.json.
+// A folder: the disc's files, a PC extraction (data.zip and data.json), data/ beside data.json, or a disc image.
+// Only what is used is copied, so a folder that also holds the disc image beside its extraction stores the
+// extraction alone.
 async function storeFolder(list) {
     const files = [...list].map((file) => [file.webkitRelativePath.split('/').slice(1), file]);
     if (files.length === 0) {
@@ -221,7 +273,16 @@ async function storeFolder(list) {
         await copyFiles([[MARKER, json[1]], ...inner.map(([parts, file]) => [['data', ...parts.slice(1)].join('/'), file])]);
         return;
     }
-    throw new Error("the folder holds neither the disc's files nor data.zip (or data/) with data.json");
+    const images = files.filter(([parts]) => parts.length === 1 && parts[0].toLowerCase().endsWith('.iso'));
+    if (images.length === 1) {
+        await removeAll();
+        await copyFiles([['disc.iso', images[0][1]]]);
+        return;
+    }
+    if (images.length > 1) {
+        throw new Error('the folder holds more than one .iso: choose the disc image itself');
+    }
+    throw new Error("the folder holds neither the disc's files, data.zip (or data/) with data.json, nor a .iso");
 }
 
 function describe(what) {
@@ -237,7 +298,29 @@ function describe(what) {
     }
 }
 
+// The game data the page's server offers, or null when it offers none.
+async function serverData() {
+    try {
+        const [zip, json] = await Promise.all(['data.zip', MARKER].map((name) =>
+            fetch(SERVER_DATA + name, {method: 'HEAD', cache: 'no-store'})));
+        if (!zip.ok || !json.ok) {
+            return null;
+        }
+        return {size: Number(zip.headers.get('Content-Length') ?? 0)};
+    } catch {
+        return null;
+    }
+}
+
 async function refresh() {
+    if (server) {
+        $('pick').hidden = true;
+        $('ready').hidden = false;
+        $('forget').hidden = true;
+        $('stored').textContent = `The game data comes from the computer serving this page (data.zip, ${mib(server.size)}).`;
+        setStatus('Ready. The game reads the data over the network as it plays; saves stay in this browser.');
+        return;
+    }
     const what = await stored();
     $('pick').hidden = what !== null;
     $('ready').hidden = what === null;
@@ -439,11 +522,27 @@ function chooseRenderer() {
     return /mali/i.test(gpuName()) ? 'gl' : 'webgpu';
 }
 
+// How many pixels the game draws to the CSS pixel. SDL sizes the canvas by the screen's own ratio, about three on
+// a phone: the frame would be several times a PC window's, on a GPU a fraction as fast. A touch screen draws at no
+// more than 1.5; ?scale=1 or ?scale=3, say, chooses. SDL asks the page for devicePixelRatio, so that is what
+// answers.
+function pixelRatio() {
+    const asked = Number(new URLSearchParams(location.search).get('scale'));
+    const ratio = asked > 0 ? Math.min(asked, 4) : TOUCH_SCREEN ? Math.min(devicePixelRatio, 1.5) : devicePixelRatio;
+    if (ratio !== devicePixelRatio) {
+        Object.defineProperty(window, 'devicePixelRatio', {get: () => ratio, configurable: true});
+    }
+    return ratio;
+}
+
 function start() {
     $('setup').hidden = true;
     $('game').hidden = false;
     const extra = new URLSearchParams(location.search).get('args');
     const args = ['--run-dir', `/opfs/${HOME}`];
+    if (server) {
+        args.push('--env', `CT_WEB_SERVER_DATA=${new URL(SERVER_DATA, location.href)}`, '--data', '/server/data');
+    }
     if (extra) {
         args.push(...extra.split(/\s+/).filter(Boolean));
     }
@@ -451,7 +550,9 @@ function start() {
     kept.length = 0;
     log(`${new Date().toISOString()} ${navigator.userAgent}`);
     const renderer = chooseRenderer();
-    log(`darkchronicle ${args.join(' ')} (${renderer === 'gl' ? 'WebGL2' : 'WebGPU'}, ${gpuName() || 'GPU unknown'})`);
+    const screenRatio = devicePixelRatio;
+    log(`darkchronicle ${args.join(' ')} (${renderer === 'gl' ? 'WebGL2' : 'WebGPU'}, ${gpuName() || 'GPU unknown'}, ` +
+        `${pixelRatio()} pixels to the CSS pixel of the screen's ${screenRatio}, page ${innerWidth}x${innerHeight})`);
     const canvas = $('canvas');
     // Threads still running when the game exits can abort as it takes them down; the exit is what matters.
     let exited = false;
@@ -520,6 +621,7 @@ function showPreviousLog() {
 
 async function main() {
     showPreviousLog();
+    showGames();
     $('fullscreen').addEventListener('click', () => {
         if (document.fullscreenElement) {
             document.exitFullscreen();
@@ -563,6 +665,7 @@ async function main() {
         return;
     }
     navigator.storage.persist?.();
+    server = new URLSearchParams(location.search).has('local') ? null : await serverData();
 
     const choose = (store) => async (event) => {
         const chosen = event.target.files;

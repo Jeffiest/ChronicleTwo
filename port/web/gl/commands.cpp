@@ -930,8 +930,11 @@ void FinishBlit() {
 
 void Blit(Image *source, uint32_t source_mip, const int32_t (&s)[4], Image *destination, uint32_t destination_mip,
           const int32_t (&d)[4], GLenum filter) {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferOf(source, source_mip));
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FramebufferOf(destination, destination_mip));
+    // Both are found before either is bound: making one binds it.
+    const GLuint read = FramebufferOf(source, source_mip);
+    const GLuint draw = FramebufferOf(destination, destination_mip);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, read);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw);
     glBlitFramebuffer(s[0], s[1], s[2], s[3], d[0], d[1], d[2], d[3], BlitMask(source), filter);
 }
 

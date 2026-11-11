@@ -148,7 +148,7 @@ add_custom_target(ct_web_site
 # What the page loads. The game runs on a pthread; the main thread keeps the page responsive, and the canvas
 # is handed to the game's thread, where WebGPU or WebGL2 draws to it. WasmFS mounts the browser's storage
 # (src/storage.cpp). glyphs/, fonts/ and the Luau scripts/, which the game reads beside its executable, are
-# preloaded into the root: the executable is ./this.program there. Memory may grow to 4 GiB: the disc's
+# preloaded into the root with the gameplay seed assets/data.zip: the executable is ./this.program there. Memory may grow to 4 GiB: the disc's
 # extraction holds a floor's worth of models and textures at a time.
 set(CT_WEB_LINK_OPTIONS
     -sOFFSCREENCANVAS_SUPPORT=1
@@ -157,6 +157,8 @@ set(CT_WEB_LINK_OPTIONS
     "SHELL:--preload-file ${CMAKE_BINARY_DIR}/glyphs@/glyphs"
     "SHELL:--preload-file ${CMAKE_BINARY_DIR}/fonts@/fonts"
     "SHELL:--preload-file ${CMAKE_BINARY_DIR}/scripts@/scripts"
+    # The gameplay seed (KazarovRust.cmake's KZ_GAMEPLAY_ARCHIVE), which extracting a disc in the page needs.
+    "SHELL:--preload-file ${CMAKE_BINARY_DIR}/assets/data.zip@/assets/data.zip"
     -sPROXY_TO_PTHREAD=1
     -sASYNCIFY=1
     -sALLOW_MEMORY_GROWTH=1
@@ -171,9 +173,11 @@ set(CT_WEB_LINK_OPTIONS
     -sENVIRONMENT=web,worker,node
     -sEXPORTED_RUNTIME_METHODS=FS,callMain,ENV
     "SHELL:--pre-js ${CT_WEB_DIR}/src/node_canvas.js"
+    # The fetch backend with a bounded cache, for the server's game data (src/storage.cpp, WebMountServerData).
+    "SHELL:--js-library ${CT_WEB_DIR}/src/fetch_cache.js"
     -Wl,--error-limit=0)
-# The link reruns when the pre-js changes (emcc reads it at link time, outside CMake's dependency scan).
-set(CT_WEB_LINK_DEPENDS ${CT_WEB_DIR}/src/node_canvas.js)
+# The link reruns when the pre-js or the library changes (emcc reads them at link time, outside CMake's scan).
+set(CT_WEB_LINK_DEPENDS ${CT_WEB_DIR}/src/node_canvas.js ${CT_WEB_DIR}/src/fetch_cache.js)
 
 # The WebGPU probe (probe/): what the renderer's WebGPU backend relies on, with the game's thread model.
 add_executable(webgpu_probe EXCLUDE_FROM_ALL ${CT_WEB_DIR}/probe/webgpu_probe.cpp)

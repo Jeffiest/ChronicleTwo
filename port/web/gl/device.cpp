@@ -521,6 +521,21 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateSwapchainKHR(VkDevice device, const VkSwa
         Get<Image>(handle)->swapchain = true;
         chain->images.push_back(Get<Image>(handle));
     }
+    // The canvas's drawing buffer is made the swapchain's size, as configuring a WebGPU surface does. Left to
+    // the window alone the two can differ for good, and a present that called every such frame stale had the
+    // renderer make a new swapchain for each one.
+    int before_width = 0;
+    int before_height = 0;
+    emscripten_webgl_get_drawing_buffer_size(g.context, &before_width, &before_height);
+    if (static_cast<uint32_t>(before_width) != chain->width || static_cast<uint32_t>(before_height) != chain->height) {
+        emscripten_set_canvas_element_size("#canvas", static_cast<int>(chain->width), static_cast<int>(chain->height));
+    }
+    emscripten_webgl_get_drawing_buffer_size(g.context, &chain->canvas_width, &chain->canvas_height);
+    if (static_cast<uint32_t>(chain->canvas_width) != chain->width ||
+        static_cast<uint32_t>(chain->canvas_height) != chain->height) {
+        Warn("the canvas is %dx%d (was %dx%d) under a swapchain of %ux%u: frames are scaled to it", chain->canvas_width,
+             chain->canvas_height, before_width, before_height, chain->width, chain->height);
+    }
     *swapchain = Handle<VkSwapchainKHR>(chain);
     return VK_SUCCESS;
 }
@@ -591,21 +606,22 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue, const VkPresentInfoKHR
         if (g_capture_frames.load() > 0) {
             CaptureFrame(image, chain->width, chain->height);
         }
-        // The canvas resizes with the page; a drawing buffer of another size means the swapchain is stale. What
-        // overlaps is still shown, so the frame is not blank.
+        // The canvas resizes with the page; a drawing buffer that is no longer the one this swapchain sized means
+        // the swapchain is stale. The whole frame is still shown, scaled where the sizes differ.
         int width = 0;
         int height = 0;
         emscripten_webgl_get_drawing_buffer_size(g.context, &width, &height);
-        if (static_cast<uint32_t>(width) != chain->width || static_cast<uint32_t>(height) != chain->height) {
+        if (width != chain->canvas_width || height != chain->canvas_height) {
             result = VK_ERROR_OUT_OF_DATE_KHR;
         }
-        const auto w = static_cast<GLint>(std::min<uint32_t>(width, chain->width));
-        const auto h = static_cast<GLint>(std::min<uint32_t>(height, chain->height));
+        const auto w = static_cast<GLint>(chain->width);
+        const auto h = static_cast<GLint>(chain->height);
+        const bool same = w == width && h == height;
         glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferFor(image, 0, nullptr, 0));
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         glDisable(GL_SCISSOR_TEST);
         // The image's row 0 is the frame's top; the canvas's is its bottom.
-        glBlitFramebuffer(0, 0, w, h, 0, height, w, height - h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glBlitFramebuffer(0, 0, w, h, 0, height, width, 0, GL_COLOR_BUFFER_BIT, same ? GL_NEAREST : GL_LINEAR);
         glEnable(GL_SCISSOR_TEST);
         if (info->pResults != nullptr) {
             info->pResults[i] = result;
