@@ -88,8 +88,15 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   with `--run-dir /opfs/chronicletwo`, so `data.zip` is read in place and saves, `config.json` and the logs live
   beside it. A disc is extracted at the game's first start by Kazarov's extractor, as `dc2data` does on a PC, on a
   thread of its own with progress on stdout as `extract: <percent> <stage>`, which the page shows over the canvas
-  (`port/web/src/firstrun.cpp`). Movies are left out of the extraction and `MoviePlayer` is a no-op
-  (`port/web/src/movie.cpp`): the browser has no FFmpeg. OPFS needs Chromium or Firefox.
+  (`port/web/src/firstrun.cpp`). Movies are left out of the extraction (a build without FFmpeg plans no movie
+  job, `plan_stream` in `tools/kazarov/src/rust/audio.rs`) and `MoviePlayer` is a no-op
+  (`port/web/src/movie.cpp`): the browser has no FFmpeg. Two conversions run at once, or as many as
+  `CT_WEB_EXTRACT_JOBS` says (1 to 8, `?args=--env+CT_WEB_EXTRACT_JOBS=4`), and the log says how long the
+  extraction ran. The page holds a screen wake lock while it runs, since a phone that sleeps stops the page, and
+  once a disc is extracted it offers to remove the disc image, which the game no longer reads. Unlike DC_Web's
+  Dark Cloud the game cannot read the disc as it goes: it reads converted data (glTF, PNG, WAV, JSON), and the
+  extractor plans textures, sound and models over the whole disc before it converts any of it. OPFS needs
+  Chromium or Firefox.
 - **Saves**: Kazarov's `FilesWrite` commits a new file with an exclusive rename or a hard link, neither of which
   WasmFS has; on the web it checks the name is free and renames (`platform/files.cpp`).
 - **Crashes** exit through `WebQuickExit` (`port/web/src/crash.cpp`, the Switch stub's shape); there is no
@@ -149,7 +156,7 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
 | `darkchronicle_gl` (WebGL2) | Done: `darkchronicle_gl.wasm` 26.2 MB, `.js` 639 KB; its Chromium smoke passes (`--renderer gl`), and with `--with-marker` it runs 30 frames and exits 0 cleanly |
 | Smoke run under Node without data (exit 3) | Passes (`tools/web/smoke.sh node`; a stand-in canvas lets the game's thread start, `port/web/src/node_canvas.js`) |
 | Smoke run in headless Chromium (SwiftShader) | Passes on WebGPU (`tools/web/smoke.sh browser`): the page isolates, stores the archive, the game reports the missing data, `exit=3`. With a current `data.json` (`--with-marker`) the game creates the WebGPU device, compiles 21860 pipelines and runs 30 frames on the stand-in data |
-| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Played from a `dc2data` extraction, stored and from the server (`--data`), on a PC and on an Android phone |
+| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Played from a `dc2data` extraction, stored and from the server (`--data`), on a PC and on an Android phone. A disc image extracted on the page in headless Chrome on a PC: the 4.7 GB image copied in 20 s, the extraction ran 1123 s with two conversions at once (1419 s with four: the first conversions went three times as fast and the models twice as slow), Chrome's process reached 3.0 GB either way, `data.zip` came to 2232 MiB without movies, and the game started from it, with the image and after the page removed it |
 | Renderer on WebGPU / WebGL2 with the game's frames | Both draw the title, the towns, the dungeon and the events. On WebGL2 a copy within one image (the eyes' texture animation) read the frame instead until the layer kept the read framebuffer binding (`FramebufferFor`, `port/web/gl/objects.cpp`) |
 | Kazarov's renderer tests in the browser (`kazarov_gfx_tests`) | Not built here yet |
 | Saves in the browser's storage | Written (WasmFS on OPFS); not checked with a save |
@@ -165,9 +172,11 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
   (`port/web/src/exit.cpp`), which runs the handlers on the game's thread first. Checked by the `--with-marker`
   smoke: both layers now end `exit=0` with no abort. Other `std::exit` calls (usage errors, the
   missing-data exit) happen before the renderer exists and are left as they are.
-- **A disc image on the page.** The game has been played from a `dc2data` extraction; the page's own extraction
-  of a disc image (`extract:` progress, `firstrun.cpp`) is still to be run through on a phone, where the image and
-  its extraction both have to fit the browser's storage.
+- **A disc image on a phone.** The page's own extraction of a disc image (`extract:` progress, `firstrun.cpp`)
+  runs to the end on a PC; it is still to be run through on a phone, where the image and its extraction both have
+  to fit the browser's storage (about 7 GB until the image is removed) and the extraction's 3 GB of memory may be
+  more than the browser gives a page. A phone is better served by the server's data (`--data`) or a `data.zip`
+  made on a PC.
 - **Kazarov's renderer tests** (`kazarov_gfx_tests`, `kazarov_gfx_tests_gl`) in Chromium: `cmake --build --preset web
   --target kazarov_gfx_tests`, then `port/web/test/gfx_tests.mjs`. DC_Web's CI runs them on both layers; this tree's
   renderer is newer and the layers were ported, so the suite is the check that the port holds.

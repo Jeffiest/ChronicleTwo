@@ -64,8 +64,21 @@ fs::path DiscSource(const fs::path &game_root) {
     return {};
 }
 
+// How many conversions run at once. Each holds what it converts in the browser's 4 GiB of memory, and a phone's
+// browser ends a page well before that, so the count stays small; CT_WEB_EXTRACT_JOBS (1 to 8) sets another.
+std::size_t ExtractJobs() {
+    if (const char *asked = std::getenv("CT_WEB_EXTRACT_JOBS")) {
+        const long value = std::strtol(asked, nullptr, 10);
+        if (value >= 1 && value <= 8) {
+            return static_cast<std::size_t>(value);
+        }
+    }
+    return 2;
+}
+
 // Extracts source into root, reporting as it goes; empty when the data is current afterwards.
 std::string Extract(const fs::path &source, const fs::path &root) {
+    const auto began = std::chrono::steady_clock::now();
     Say("extract: preparing the game data from " + source.filename().string());
     // The extraction's temporary files (Kazarov's spill of model data, over a gigabyte for the disc) go to the
     // browser's storage beside the data: /tmp is in memory here, and memory is 4 GiB.
@@ -76,10 +89,12 @@ std::string Extract(const fs::path &source, const fs::path &root) {
     if (!temporary_error) {
         setenv("TMPDIR", temporary.c_str(), 1);
     }
-    auto worker = std::async(std::launch::async, [source, root]() -> std::string {
+    const std::size_t jobs = ExtractJobs();
+    CT_LOG_INFO(Main, "Extracting with {} conversions at a time", jobs);
+    auto worker = std::async(std::launch::async, [source, root, jobs]() -> std::string {
         try {
             // The game runs the scripts' Luau modules, so the compiled scripts are not published.
-            kazarov::extract_tracked_with_script_policy(source.string(), root.string(), 2,
+            kazarov::extract_tracked_with_script_policy(source.string(), root.string(), jobs,
                                                         kazarov::ScriptPublicationPolicy::LuauOnly);
             return {};
         } catch (const std::exception &error) {
@@ -97,6 +112,8 @@ std::string Extract(const fs::path &source, const fs::path &root) {
         }
     }
     std::string failure = worker.get();
+    CT_LOG_INFO(Main, "The extraction ran for {} s", std::chrono::duration_cast<std::chrono::seconds>(
+                                                          std::chrono::steady_clock::now() - began).count());
     fs::remove_all(temporary, temporary_error);
     if (failure.empty() && FirstRunDataMissing(root)) {
         failure = "the extraction finished without current game data";

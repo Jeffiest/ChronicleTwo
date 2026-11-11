@@ -1215,6 +1215,11 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                 }),
             });
         } else if key.ends_with(".pss") {
+            // A build without FFmpeg (the browser's) cannot write a movie: it leaves each out, and the game
+            // passes over a movie that is missing.
+            if !cfg!(kazarov_ffmpeg) {
+                continue;
+            }
             let key = key.clone();
             let input = resource.clone();
             jobs.push(Job {

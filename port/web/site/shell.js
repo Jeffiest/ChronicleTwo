@@ -324,6 +324,13 @@ async function refresh() {
     const what = await stored();
     $('pick').hidden = what !== null;
     $('ready').hidden = what === null;
+    // A disc that is extracted is no longer read: the game plays from data.zip, and the disc only takes space.
+    const spent = what !== null && what.marker && (what.kind === 'disc.iso' || what.kind === 'disc');
+    $('forget-disc').hidden = !spent;
+    if (spent) {
+        $('forget-disc').textContent = what.kind === 'disc.iso'
+            ? `Remove the disc image (frees ${mib(what.size)})` : "Remove the disc's files";
+    }
     if (what) {
         $('stored').textContent = describe(what);
         setStatus(what.marker || what.kind === 'data.zip' || what.kind === 'data' ? 'Ready.'
@@ -345,15 +352,60 @@ function notice(text, fraction) {
     }
 }
 
+// A phone that sleeps stops the page, and an extraction with it, so the screen is kept on while one runs. The
+// browser drops the lock when the page is hidden; it is asked for again when the page shows.
+let extracting = false;
+let wakeLock = null;
+let wakeLockAsked = false;
+
+async function keepAwake(on) {
+    extracting = on;
+    if (!on) {
+        wakeLock?.release().catch(() => {});
+        wakeLock = null;
+        return;
+    }
+    if (wakeLock || wakeLockAsked || !navigator.wakeLock || document.visibilityState !== 'visible') {
+        return;
+    }
+    wakeLockAsked = true;
+    try {
+        const lock = await navigator.wakeLock.request('screen');
+        lock.addEventListener('release', () => {
+            if (wakeLock === lock) {
+                wakeLock = null;
+            }
+        });
+        if (extracting) {
+            wakeLock = lock;
+        } else {
+            lock.release().catch(() => {});
+        }
+    } catch {
+        // Refused (battery saver, no permission): the extraction still runs while the page is on screen.
+    }
+    wakeLockAsked = false;
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (extracting) {
+        keepAwake(true);
+    }
+});
+
 function print(text) {
     const extract = /^extract: (\d+) (.*)$/.exec(text);
     if (extract) {
-        notice(`Extracting the game data: ${extract[2]}`, Number(extract[1]) / 100);
+        keepAwake(true);
+        notice(`Extracting the game data, once. Keep this page open and on screen. ${extract[2]}`,
+            Number(extract[1]) / 100);
         return;
     }
     if (text === 'extract: done') {
+        keepAwake(false);
         notice(null);
     } else if (text.startsWith('extract: ')) {
+        keepAwake(!text.startsWith('extract: failed'));
         notice(text.slice('extract: '.length));
     }
     log(text);
@@ -688,6 +740,13 @@ async function main() {
     $('start').addEventListener('click', start);
     $('forget').addEventListener('click', async () => {
         await removeAll();
+        await refresh();
+    });
+    $('forget-disc').addEventListener('click', async () => {
+        const home = await gameDirectory();
+        for (const kind of ['disc.iso', 'disc']) {
+            await home.removeEntry(kind, {recursive: true}).catch(() => {});
+        }
         await refresh();
     });
     await refresh();
