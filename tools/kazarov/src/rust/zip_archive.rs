@@ -145,7 +145,36 @@ struct Entry {
     crc: u32,
     compressed: u64,
     size: u64,
-    data: u64,
+    /// Offset of the entry's local header.
+    local: u64,
+    /// Offset of the entry's data, once its local header is checked: at open for a mapped archive, at the
+    /// entry's first read for one read through its file.
+    data: std::sync::OnceLock<u64>,
+}
+
+/// Checks a local header (and the name after it, `header` holding both) against its central entry and gives the
+/// entry's data offset.
+fn local_data_offset(header: &[u8], entry: &Entry, directory_offset: u64) -> CoreResult<u64> {
+    let name = &entry.name;
+    if header.len() < LOCAL_HEADER
+        || u32_at(header, 0) != LOCAL_SIGNATURE
+        || u16_at(header, 8) != entry.method
+    {
+        return Err(fail(format!("invalid local header: {name}")));
+    }
+    let local_name_length = u16_at(header, 26) as usize;
+    let local_extra_length = u16_at(header, 28) as u64;
+    if local_name_length != name.len() || header[LOCAL_HEADER..] != *name.as_bytes() {
+        return Err(fail(format!("local header name mismatch: {name}")));
+    }
+    let data = entry.local + LOCAL_HEADER as u64 + local_name_length as u64 + local_extra_length;
+    if data
+        .checked_add(entry.compressed)
+        .is_none_or(|end| end > directory_offset)
+    {
+        return Err(fail(format!("entry data outside archive: {name}")));
+    }
+    Ok(data)
 }
 
 enum Backing {
@@ -159,6 +188,8 @@ pub struct Archive {
     backing: Backing,
     length: u64,
     entries: Vec<Entry>,
+    /// Where the central directory starts: every entry's data ends before it.
+    directory_offset: u64,
 }
 
 #[cfg(windows)]
@@ -212,7 +243,8 @@ impl Archive {
     /// does not have to spare, so the disc image's mappings during verification or the game's arenas after
     /// an extraction could no longer be placed.
     pub fn open(path: &Path) -> CoreResult<Archive> {
-        let map = !cfg!(any(target_os = "ios", kazarov_mapped_source));
+        // The browser has no file mappings, and a 3.8 GB archive does not fit its 4 GiB of memory.
+        let map = !cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source));
         let context = |error: CoreError| fail(format!("{}: {error}", path.display()));
         let file = File::open(path).map_err(|e| context(e.into()))?;
         let length = file.metadata().map_err(|e| context(e.into()))?.len();
@@ -232,8 +264,9 @@ impl Archive {
             backing,
             length,
             entries: Vec::new(),
+            directory_offset: 0,
         };
-        archive.entries = archive.parse().map_err(context)?;
+        (archive.entries, archive.directory_offset) = archive.parse().map_err(context)?;
         Ok(archive)
     }
 
@@ -253,7 +286,7 @@ impl Archive {
         }
     }
 
-    fn parse(&self) -> CoreResult<Vec<Entry>> {
+    fn parse(&self) -> CoreResult<(Vec<Entry>, u64)> {
         if self.length < END_RECORD as u64 {
             return Err(fail("not a ZIP archive"));
         }
@@ -396,38 +429,47 @@ impl Archive {
             if method == METHOD_STORED && compressed != size {
                 return Err(fail(format!("stored entry size mismatch: {name}")));
             }
-            let local_header = self.bytes(local, LOCAL_HEADER as u64)?;
-            if u32_at(&local_header, 0) != LOCAL_SIGNATURE || u16_at(&local_header, 8) != method {
-                return Err(fail(format!("invalid local header: {name}")));
-            }
-            let local_name_length = u16_at(&local_header, 26) as u64;
-            let local_extra_length = u16_at(&local_header, 28) as u64;
-            if self
-                .bytes(local + LOCAL_HEADER as u64, local_name_length)?
-                .as_ref()
-                != raw_name
-            {
-                return Err(fail(format!("local header name mismatch: {name}")));
-            }
-            let data = local + LOCAL_HEADER as u64 + local_name_length + local_extra_length;
-            if data
-                .checked_add(compressed)
+            if local
+                .checked_add(LOCAL_HEADER as u64 + name_length as u64)
                 .is_none_or(|end| end > directory_offset)
             {
-                return Err(fail(format!("entry data outside archive: {name}")));
+                return Err(fail(format!("local header outside archive: {name}")));
             }
-            entries.push(Entry {
+            let entry = Entry {
                 name,
                 method,
                 crc,
                 compressed,
                 size,
-                data,
-            });
+                local,
+                data: std::sync::OnceLock::new(),
+            };
+            // A mapped archive checks every local header now, which costs nothing; one read through its file
+            // checks each when it is first read (`Archive::data`), as tens of thousands of reads at open are
+            // slow where each is a round trip (the browser's storage).
+            if matches!(self.backing, Backing::Mapped(_)) {
+                let data = local_data_offset(
+                    &self.bytes(local, (LOCAL_HEADER + name_length) as u64)?,
+                    &entry,
+                    directory_offset,
+                )?;
+                let _ = entry.data.set(data);
+            }
+            entries.push(entry);
             at = next;
         }
         check_unique(entries.iter().map(|entry| entry.name.as_str()))?;
-        Ok(entries)
+        Ok((entries, directory_offset))
+    }
+
+    /// The entry's data offset, checking its local header on first use.
+    fn data(&self, entry: &Entry) -> CoreResult<u64> {
+        if let Some(data) = entry.data.get() {
+            return Ok(*data);
+        }
+        let header = self.bytes(entry.local, (LOCAL_HEADER + entry.name.len()) as u64)?;
+        let data = local_data_offset(&header, entry, self.directory_offset)?;
+        Ok(*entry.data.get_or_init(|| data))
     }
 
     pub fn path(&self) -> &Path {
@@ -465,8 +507,9 @@ impl Archive {
         self.entries[index].method == METHOD_STORED
     }
 
-    pub fn data_offset(&self, index: usize) -> u64 {
-        self.entries[index].data
+    /// The entry's data offset; an archive read through its file checks the entry's local header here first.
+    pub fn data_offset(&self, index: usize) -> CoreResult<u64> {
+        self.data(self.entry(index)?)
     }
 
     /// Reads one entry's uncompressed bytes into `out` and verifies its CRC-32.
@@ -480,13 +523,14 @@ impl Archive {
                 entry.name
             )));
         }
+        let data = self.data(entry)?;
         if let (Backing::File(file), METHOD_STORED) = (&self.backing, entry.method) {
             // Straight into the caller's buffer, without a copy of the whole entry in between.
-            read_exact_at(file, out, entry.data)?;
+            read_exact_at(file, out, data)?;
         } else if entry.method == METHOD_STORED {
-            out.copy_from_slice(&self.bytes(entry.data, entry.compressed)?);
+            out.copy_from_slice(&self.bytes(data, entry.compressed)?);
         } else {
-            let source = self.bytes(entry.data, entry.compressed)?;
+            let source = self.bytes(data, entry.compressed)?;
             decompress_exact(&source, out)
                 .map_err(|e| fail(format!("{}: {}: {e}", self.path.display(), entry.name)))?;
         }
@@ -526,7 +570,7 @@ impl Archive {
             .map(|index| {
                 let entry = &self.entries[index];
                 let bytes = if entry.method == METHOD_STORED {
-                    let bytes = self.bytes(entry.data, entry.size)?;
+                    let bytes = self.bytes(self.data(entry)?, entry.size)?;
                     if crc32fast::hash(&bytes) != entry.crc {
                         return Err(fail(format!("CRC mismatch: {}", entry.name)));
                     }
@@ -1215,10 +1259,10 @@ mod tests {
             assert_eq!(archive.size(index), expected.len() as u64);
             assert_eq!(archive.crc(index), crc32fast::hash(expected));
             assert_eq!(archive.read(index).unwrap(), *expected);
-            assert_eq!(archive.data_offset(index) % ALIGNMENT, 0);
+            assert_eq!(archive.data_offset(index).unwrap() % ALIGNMENT, 0);
             assert_eq!(archive.stored(index), stored_by_name(name));
             if archive.stored(index) {
-                let at = archive.data_offset(index) as usize;
+                let at = archive.data_offset(index).unwrap() as usize;
                 assert_eq!(&bytes[at..at + expected.len()], expected.as_slice());
             }
         }
@@ -1314,7 +1358,7 @@ mod tests {
         let index = (0..archive.len())
             .find(|&i| archive.name(i) == "a/texture.png")
             .unwrap();
-        let at = archive.data_offset(index) as usize;
+        let at = archive.data_offset(index).unwrap() as usize;
         drop(archive);
         let mut bytes = fs::read(&output).unwrap();
         bytes[at] ^= 0xff;
@@ -1414,7 +1458,7 @@ mod tests {
         let (output, files) = packed(temp.path());
         let mut archive = Archive::open(&output).unwrap();
         archive.backing = Backing::File(File::open(&output).unwrap());
-        archive.entries = archive.parse().unwrap();
+        (archive.entries, archive.directory_offset) = archive.parse().unwrap();
         for index in 0..archive.len() {
             let expected = &files
                 .iter()

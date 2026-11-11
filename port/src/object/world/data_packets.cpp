@@ -84,6 +84,9 @@ PreparedDataPackets DataPacketStorage::Prepare(DataPacketMode requested_mode, mg
     }
     for (auto &buffer : buffers) {
         auto *storage = ArenaBlock(&buffer, static_cast<std::size_t>(quadwords) * sizeof(u_long128));
+        // A new layout ends the old one. Rebinding over it would hold the new extent to the old one's, and
+        // the loading layout is smaller than the map's: the second return to the town stopped there.
+        buffer.stSetBuffer(nullptr, 0);
         buffer.stSetBuffer(reinterpret_cast<u_long128 *>(storage), quadwords);
     }
     mode = requested_mode;

@@ -15,21 +15,21 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 const SECTOR: u64 = 2048;
 const CHUNK: usize = 4 << 20;
 
-struct ReadOnlyCursor<'a>(std::io::Cursor<&'a [u8]>);
+struct ReadOnlyCursor<R>(R);
 
-impl Read for ReadOnlyCursor<'_> {
+impl<R: Read> Read for ReadOnlyCursor<R> {
     fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
         self.0.read(output)
     }
 }
 
-impl Seek for ReadOnlyCursor<'_> {
+impl<R: Seek> Seek for ReadOnlyCursor<R> {
     fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
         self.0.seek(position)
     }
 }
 
-impl Write for ReadOnlyCursor<'_> {
+impl<R> Write for ReadOnlyCursor<R> {
     fn write(&mut self, _: &[u8]) -> std::io::Result<usize> {
         Err(std::io::ErrorKind::PermissionDenied.into())
     }
@@ -39,7 +39,42 @@ impl Write for ReadOnlyCursor<'_> {
     }
 }
 
-impl gpt_disk_io::ReadWriteSeek for ReadOnlyCursor<'_> {}
+impl<R: Read + Seek> gpt_disk_io::ReadWriteSeek for ReadOnlyCursor<R> {}
+
+/// Reads a source by position, a range at a time: the ISO's directory is found without the whole image in memory.
+struct SourceReader {
+    source: SourceBytes,
+    position: u64,
+}
+
+impl Read for SourceReader {
+    fn read(&mut self, output: &mut [u8]) -> std::io::Result<usize> {
+        let length = self.source.len();
+        if self.position >= length || output.is_empty() {
+            return Ok(0);
+        }
+        let count = (output.len() as u64).min(length - self.position);
+        let bytes = self
+            .source
+            .slice(self.position..self.position + count)
+            .map_err(|failure| std::io::Error::other(failure.0))?;
+        output[..bytes.len()].copy_from_slice(&bytes);
+        self.position += bytes.len() as u64;
+        Ok(bytes.len())
+    }
+}
+
+impl Seek for SourceReader {
+    fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+        let target = match position {
+            SeekFrom::Start(offset) => Some(offset),
+            SeekFrom::End(delta) => self.source.len().checked_add_signed(delta),
+            SeekFrom::Current(delta) => self.position.checked_add_signed(delta),
+        };
+        self.position = target.ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidInput))?;
+        Ok(self.position)
+    }
+}
 
 fn error(message: impl Into<String>) -> CoreError {
     CoreError(message.into())
@@ -148,11 +183,9 @@ struct Archive {
 impl Archive {
     fn extent_bytes(&self, extent: &Extent) -> CoreResult<Vec<u8>> {
         if let Some(image) = &self.image_bytes {
-            let start =
-                usize::try_from(extent.offset).map_err(|_| error("source offset overflow"))?;
-            let size = usize::try_from(extent.size).map_err(|_| error("source size overflow"))?;
+            let start = extent.offset;
             let end = start
-                .checked_add(size)
+                .checked_add(extent.size)
                 .ok_or_else(|| error("source range overflow"))?;
             if end > image.len() {
                 return Err(error("truncated ISO extent"));
@@ -188,10 +221,20 @@ fn image_extent(image: &Path, entry: &FileEntry) -> CoreResult<Extent> {
     Ok(extent)
 }
 
-fn open_image_bytes(image: &Path, bytes: &[u8]) -> CoreResult<Archive> {
+fn open_image_source(image: &Path, source: &SourceBytes) -> CoreResult<Archive> {
+    open_image_reader(
+        image,
+        SourceReader {
+            source: source.clone(),
+            position: 0,
+        },
+    )
+}
+
+fn open_image_reader<R: Read + Seek>(image: &Path, reader: R) -> CoreResult<Archive> {
     let block_size =
         BlockSize::new(SECTOR as u32).ok_or_else(|| error("invalid ISO sector size"))?;
-    let mut io = BlockIoAdapter::new(ReadOnlyCursor(std::io::Cursor::new(bytes)), block_size);
+    let mut io = BlockIoAdapter::new(ReadOnlyCursor(reader), block_size);
     let volume = mount(&mut io, 0)
         .map_err(|cause| error(format!("{}: ISO mount: {cause}", image.display())))?;
     if u64::from(volume.logical_block_size) != SECTOR {
@@ -260,7 +303,7 @@ fn open_image_bytes(image: &Path, bytes: &[u8]) -> CoreResult<Archive> {
 }
 
 fn open_image(image: &Path) -> CoreResult<Archive> {
-    open_image_bytes(image, &SourceBytes::open_iso(image)?.bytes()?)
+    open_image_source(image, &SourceBytes::open_iso(image)?)
 }
 
 fn directory_file(root: &Path, name: &str) -> CoreResult<Extent> {
@@ -498,7 +541,7 @@ enum SourceData {
     /// while it is read.
     Mapped {
         file: File,
-        length: usize,
+        length: u64,
     },
 }
 
@@ -533,14 +576,16 @@ impl SourceBytes {
 
     pub fn open_iso_with_progress(path: &Path, phase: &Phase) -> CoreResult<Self> {
         let mut file = File::open(path)?;
-        let length = usize::try_from(file.metadata()?.len())
-            .map_err(|_| error("ISO exceeds addressable memory"))?;
-        phase.set_total(length as u64);
-        if cfg!(any(target_os = "ios", kazarov_mapped_source)) {
-            phase.inc(length as u64);
-            phase.add_bytes(length as u64);
+        let length = file.metadata()?.len();
+        phase.set_total(length);
+        // iOS's address space and the browser's 4 GiB memory (wasm32) cannot hold a 4.7 GB disc image: there
+        // each resource reads its own range of the image while it is converted.
+        if cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source)) {
+            phase.inc(length);
+            phase.add_bytes(length);
             return Ok(Self(Arc::new(SourceData::Mapped { file, length })));
         }
+        let length = usize::try_from(length).map_err(|_| error("ISO exceeds addressable memory"))?;
         let mut bytes = Vec::with_capacity(length);
         let mut chunk = vec![0u8; CHUNK];
         loop {
@@ -558,9 +603,9 @@ impl SourceBytes {
         Ok(Self::owned(bytes))
     }
 
-    pub fn len(&self) -> usize {
+    pub fn len(&self) -> u64 {
         match &*self.0 {
-            SourceData::Owned(bytes) => bytes.len(),
+            SourceData::Owned(bytes) => bytes.len() as u64,
             SourceData::Mapped { length, .. } => *length,
         }
     }
@@ -570,32 +615,39 @@ impl SourceBytes {
     }
 
     /// The bytes in range, which must lie inside the source.
-    pub fn slice(&self, range: Range<usize>) -> CoreResult<SourceSlice<'_>> {
+    pub fn slice(&self, range: Range<u64>) -> CoreResult<SourceSlice<'_>> {
         if range.start > range.end || range.end > self.len() {
             return Err(error("source range outside the source"));
         }
+        let count = usize::try_from(range.end - range.start)
+            .map_err(|_| error("source range exceeds addressable memory"))?;
         match &*self.0 {
-            SourceData::Owned(bytes) => Ok(SourceSlice::Borrowed(&bytes[range])),
+            SourceData::Owned(bytes) => {
+                // An owned source fits in memory, so its positions fit in usize.
+                let start = range.start as usize;
+                Ok(SourceSlice::Borrowed(&bytes[start..start + count]))
+            }
             SourceData::Mapped { file, .. } => {
-                if range.is_empty() {
+                if count == 0 {
                     return Ok(SourceSlice::Borrowed(&[]));
                 }
-                // SAFETY: the mapping is read-only, and the disc image is not changed during extraction.
-                let mapped = unsafe {
-                    memmap2::MmapOptions::new()
-                        .offset(range.start as u64)
-                        .len(range.len())
-                        .map(file)
-                };
-                match mapped {
-                    Ok(map) => Ok(SourceSlice::Mapped(map)),
+                // The browser's file system has no file mappings: it reads the range.
+                if !cfg!(target_os = "emscripten") {
+                    // SAFETY: the mapping is read-only, and the disc image is not changed during extraction.
+                    let mapped = unsafe {
+                        memmap2::MmapOptions::new()
+                            .offset(range.start)
+                            .len(count)
+                            .map(file)
+                    };
                     // Without address space for a mapping there may still be memory for a copy.
-                    Err(_) => {
-                        let mut bytes = vec![0; range.len()];
-                        read_at(file, range.start as u64, &mut bytes)?;
-                        Ok(SourceSlice::Read(bytes))
+                    if let Ok(map) = mapped {
+                        return Ok(SourceSlice::Mapped(map));
                     }
                 }
+                let mut bytes = vec![0; count];
+                read_at(file, range.start, &mut bytes)?;
+                Ok(SourceSlice::Read(bytes))
             }
         }
     }
@@ -630,7 +682,7 @@ fn read_at(file: &File, mut offset: u64, mut bytes: &mut [u8]) -> CoreResult<()>
 pub struct ResourceRef {
     pub alias: String,
     source: SourceBytes,
-    range: Range<usize>,
+    range: Range<u64>,
 }
 
 impl ResourceRef {
@@ -643,11 +695,12 @@ impl ResourceRef {
     }
 
     pub fn len(&self) -> usize {
-        self.range.len()
+        // A resource is read into memory whole, so its length fits in usize.
+        (self.range.end - self.range.start) as usize
     }
 
     pub fn is_empty(&self) -> bool {
-        self.range.is_empty()
+        self.range.start == self.range.end
     }
 
     pub fn subrange(&self, alias: impl Into<String>, range: Range<usize>) -> CoreResult<Self> {
@@ -657,12 +710,12 @@ impl ResourceRef {
         let start = self
             .range
             .start
-            .checked_add(range.start)
+            .checked_add(range.start as u64)
             .ok_or_else(|| error("resource offset overflow"))?;
         let end = self
             .range
             .start
-            .checked_add(range.end)
+            .checked_add(range.end as u64)
             .ok_or_else(|| error("resource offset overflow"))?;
         Ok(Self {
             alias: alias.into(),
@@ -718,7 +771,7 @@ impl SourceTree {
             .then(|| SourceBytes::open_iso_with_progress(source, phase))
             .transpose()?;
         let mut archive = if let Some(image) = &image {
-            open_image_bytes(source, &image.bytes()?)?
+            open_image_source(source, image)?
         } else {
             open_archive(source)?
         };
@@ -731,10 +784,8 @@ impl SourceTree {
             } else {
                 SourceBytes::owned(item.extent.read()?)
             };
-            let start =
-                usize::try_from(item.extent.offset).map_err(|_| error("source offset overflow"))?;
-            let size =
-                usize::try_from(item.extent.size).map_err(|_| error("source size overflow"))?;
+            let start = item.extent.offset;
+            let size = item.extent.size;
             let range = if image.is_some() {
                 start
                     ..start
@@ -879,9 +930,9 @@ impl SourceTree {
             .ok_or_else(|| error("source is not an ISO"))?;
         let mut hash = Sha256::new();
         hash.update(b"kazarov-source-file-v1\0");
-        hash.update((image.len() as u64).to_le_bytes());
+        hash.update(image.len().to_le_bytes());
         // A mapped image is hashed in pieces, so the whole of it is never mapped at once.
-        let mut start = 0;
+        let mut start = 0u64;
         while start < image.len() {
             let end = image.len().min(start + (64 << 20));
             hash.update(&*image.slice(start..end)?);

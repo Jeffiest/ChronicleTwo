@@ -528,6 +528,9 @@ fn lock_stage(path: &Path) -> CoreResult<StageGuard> {
         .create(true)
         .truncate(false)
         .open(path.join(".lock"))?;
+    // The browser's file system (WasmFS) has no file locks; there one game, on its own thread, extracts into
+    // the page's storage, so there is no second extraction to keep out.
+    #[cfg(not(target_os = "emscripten"))]
     lock.try_lock().map_err(|e| fail(e.to_string()))?;
     Ok(StageGuard {
         path: path.to_path_buf(),

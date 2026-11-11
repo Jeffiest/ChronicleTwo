@@ -5,6 +5,7 @@
 #include <sifdev.h>
 
 #include <cstdio>
+#include <new>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
@@ -166,6 +167,22 @@ DataReadPathNameExt DivPathNameExt(std::string_view path) {
 
 namespace dc2::io {
 /**
+ * Allocates on 16 bytes, as the game's u_long128 buffers need. A plain vector's bytes come from malloc, which
+ * WebAssembly aligns on 8 only: the reads below refused such a buffer, so about half of them failed at random
+ * there, and a menu that waits for its read to be queued (the costume menu) waited forever.
+ */
+template <class T> struct QuadwordAllocator {
+    using value_type = T;
+    QuadwordAllocator() = default;
+    template <class U> QuadwordAllocator(const QuadwordAllocator<U> &) noexcept {}
+    T *allocate(std::size_t count) {
+        return static_cast<T *>(::operator new(count * sizeof(T), std::align_val_t{alignof(u_long128)}));
+    }
+    void deallocate(T *pointer, std::size_t) noexcept { ::operator delete(pointer, std::align_val_t{alignof(u_long128)}); }
+    template <class U> bool operator==(const QuadwordAllocator<U> &) const noexcept { return true; }
+};
+
+/**
  *
  * Keeps loaded file bytes and their registrations alive independently of queue membership.
  *
@@ -177,7 +194,7 @@ struct FileReadState {
     FileReadState(FileReadState &&) = delete;
     FileReadState              &operator=(FileReadState &&) = delete;
     std::string                 source;               /**< Copied native source identity independent of pointer registries. */
-    std::vector<u8>             storage;              /**< Sector-padded owned file bytes. */
+    std::vector<u8, QuadwordAllocator<u8>> storage;   /**< Sector-padded owned file bytes, on 16 bytes. */
     std::string                 name;                 /**< Exact full queued filename. */
     int                         size = 0;             /**< Initialized transformed file length. */
     bool                        issued = false;       /**< Whether completion polling issued this read. */
@@ -1145,10 +1162,12 @@ std::shared_ptr<dc2::io::FileReadState> ReadOwnedFile(std::string_view name, Own
             InitCDFile();
         }
         const auto *file = Lookup(IndexKey(path));
-        if (file == nullptr || !vfs::Read(file->file, read->storage, std::numeric_limits<int>::max()) ||
-            read->storage.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        std::vector<u8> contents;
+        if (file == nullptr || !vfs::Read(file->file, contents, std::numeric_limits<int>::max()) ||
+            contents.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
             return {};
         }
+        read->storage.assign(contents.begin(), contents.end());
         actual = static_cast<int>(read->storage.size());
         read->source = file->relative;
         read->storage.resize(std::max<std::size_t>(DATAREAD_SECTOR_SIZE, PaddedSize(read->storage.size())));

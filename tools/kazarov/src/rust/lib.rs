@@ -116,8 +116,9 @@ mod ffi {
         fn archive_entry_crc(archive: &Archive, index: usize) -> u32;
         /// True when the entry's bytes are stored uncompressed in the file.
         fn archive_entry_stored(archive: &Archive, index: usize) -> bool;
-        /// Absolute file offset of the entry's data, 64-byte aligned.
-        fn archive_entry_data_offset(archive: &Archive, index: usize) -> u64;
+        /// Absolute file offset of the entry's data, 64-byte aligned. An archive read through its file (the
+        /// browser, iOS) checks the entry's local header on this first call, which can fail.
+        fn archive_entry_data_offset(archive: &Archive, index: usize) -> Result<u64>;
         /// Decompresses or copies one entry into `out` (exactly its size) and checks its CRC-32.
         fn archive_read_entry(archive: &Archive, index: usize, out: &mut [u8]) -> Result<()>;
         fn archive_path(archive: &Archive) -> String;
@@ -748,7 +749,7 @@ fn archive_entry_stored(archive: &Archive, index: usize) -> bool {
     archive.stored(index)
 }
 
-fn archive_entry_data_offset(archive: &Archive, index: usize) -> u64 {
+fn archive_entry_data_offset(archive: &Archive, index: usize) -> Result<u64, core::CoreError> {
     archive.data_offset(index)
 }
 

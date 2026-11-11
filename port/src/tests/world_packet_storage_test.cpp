@@ -126,6 +126,33 @@ TEST(WorldPacketStorage, InvalidPrefixLeavesCharacterAndPacketStorageUnchanged) 
     EXPECT_EQ(dc2::memory::ArenaGeneration(prepared.buffers[0]), packet_generation);
 }
 
+// Every return to the town goes through the loading layout and back to the map layout, so the second
+// return asks each buffer's own block for more than the loading layout last bound.
+TEST(WorldPacketStorage, ReturningToTheTownRebindsTheMapLayoutAfterTheLoadingLayout) {
+    static char root_key;
+    mgCMemory   characters;
+    characters.stSetBuffer(reinterpret_cast<u_long128 *>(ArenaBlock(&root_key, 256 * sizeof(u_long128))), 256);
+    characters.stSetLocked(true);
+    dc2::world::DataPacketStorage packets;
+    for (int visit = 0; visit < 3; visit++) {
+        auto loading = packets.Prepare(dc2::world::DataPacketMode::Bootstrap, characters, 0);
+        EXPECT_TRUE(loading.changed);
+        EXPECT_EQ(loading.buffers[0].stack_size, 5000);
+        auto map = packets.Prepare(dc2::world::DataPacketMode::Map, characters, 80);
+        EXPECT_TRUE(map.changed);
+        for (auto &buffer : map.buffers) {
+            EXPECT_EQ(buffer.stack_size, 70000);
+            EXPECT_NE(buffer.Alloc(69999), nullptr);
+        }
+    }
+    auto georama = packets.Prepare(dc2::world::DataPacketMode::Georama, characters, 80);
+    EXPECT_EQ(georama.buffers[0].stack_size, 115000);
+    auto loading = packets.Prepare(dc2::world::DataPacketMode::Bootstrap, characters, 0);
+    EXPECT_EQ(loading.buffers[0].stack_size, 5000);
+    auto map = packets.Prepare(dc2::world::DataPacketMode::Map, characters, 80);
+    EXPECT_EQ(map.buffers[0].stack_size, 70000);
+}
+
 TEST(WorldPacketStorage, BootstrapStorageDoesNotBorrowTheCharacterOrReadBuffer) {
     mgCMemory                     unbound;
     dc2::world::DataPacketStorage packets;

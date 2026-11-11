@@ -73,12 +73,12 @@ public:
             const auto name = kazarov::archive_entry_name(archive, index);
             entry.size = kazarov::archive_entry_size(archive, index);
             entry.stored = kazarov::archive_entry_stored(archive, index);
-            entry.offset = kazarov::archive_entry_data_offset(archive, index);
             const auto crc = kazarov::archive_entry_crc(archive, index);
 #endif
             entry.name.assign(name.data(), name.size());
-            entry.stamp = prefix + std::to_string(crc) + '|' +
-                          std::to_string(entry.size) + '|' + std::to_string(entry.offset);
+            // The entry's index stands for its place in the archive: asking Kazarov for every data offset here
+            // reads every local header, a round trip each to the browser's storage (90k of them in data.zip).
+            entry.stamp = prefix + std::to_string(crc) + '|' + std::to_string(entry.size) + '|' + std::to_string(index);
             if (!index_.emplace(vfs::FoldKey(entry.name), index).second) {
                 throw std::runtime_error("paths differ only by ASCII case: " + entry.name);
             }
@@ -158,7 +158,12 @@ public:
             return false;
         }
 #else
-        const auto offset = entry.offset;
+        std::uint64_t offset = 0;
+        try {
+            offset = kazarov::archive_entry_data_offset(**archive_, index);
+        } catch (const std::exception &) {
+            return false;
+        }
 #endif
         prefix_file_.seekg(static_cast<std::streamoff>(offset));
         prefix_file_.read(reinterpret_cast<char *>(out.data()), static_cast<std::streamsize>(out.size()));
@@ -180,7 +185,12 @@ public:
             return std::nullopt;
         }
 #else
-        const auto offset = entry.offset;
+        std::uint64_t offset = 0;
+        try {
+            offset = kazarov::archive_entry_data_offset(**archive_, index);
+        } catch (const std::exception &) {
+            return std::nullopt;
+        }
 #endif
         return vfs::StoredRange{.file = file_, .offset = offset, .length = entry.size};
     }

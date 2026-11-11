@@ -27,5 +27,7 @@ void                 ArenaMemoryUnmap(ArenaMemory &memory);
 kz::size_t           ArenaMemoryPageSize();
 
 inline bool IsAbove4GiB(const void *pointer) {
-    return reinterpret_cast<kz::uptr>(pointer) >> 32 != 0;
+    // Widened first: shifting a 32-bit pointer (WebAssembly) by 32 is undefined, and the compiler took the
+    // liberty of dropping both arms of a caller's ternary, printing whatever the stray pointer led to.
+    return static_cast<unsigned long long>(reinterpret_cast<kz::uptr>(pointer)) >> 32 != 0;
 }

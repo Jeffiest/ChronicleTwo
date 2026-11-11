@@ -69,7 +69,14 @@ pub fn gameplay_documents(root: Option<&Path>) -> CoreResult<Vec<(&'static str, 
         return Ok(Vec::new());
     }
     let mut candidates = Vec::new();
-    if let Some(directory) = std::env::current_exe()?.parent() {
+    // The browser has no /proc/self/exe: there the executable is /this.program and the seed is preloaded
+    // beside it (port/web/web.cmake). A host where the lookup fails still tries the game root below.
+    let executable_directory = std::env::current_exe()
+        .ok()
+        .and_then(|executable| executable.parent().map(Path::to_path_buf));
+    #[cfg(target_os = "emscripten")]
+    let executable_directory = executable_directory.or_else(|| Some(PathBuf::from("/")));
+    if let Some(directory) = executable_directory {
         candidates.push(directory.join("assets/data.zip"));
         candidates.push(directory.join("data.zip"));
     }

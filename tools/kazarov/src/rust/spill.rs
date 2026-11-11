@@ -9,8 +9,10 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::sync::{Mutex, OnceLock};
 
-/// Whether waiting bytes go to the temporary file: on iOS, and where tests ask for the iOS source path.
-const SPILL: bool = cfg!(any(target_os = "ios", kazarov_mapped_source));
+/// Whether waiting bytes go to the temporary file: on iOS, in the browser (4 GiB of memory, wasm32), and where
+/// tests ask for the iOS source path. The browser's game points TMPDIR at its storage while it extracts
+/// (port/web/src/firstrun.cpp), so the file is not in memory there either.
+const SPILL: bool = cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source));
 
 pub(crate) enum SpilledBytes {
     Memory(Vec<u8>),
@@ -57,6 +59,10 @@ fn spill() -> CoreResult<&'static Spill> {
 
 fn open() -> std::io::Result<Spill> {
     let path = std::env::temp_dir().join(format!("kazarov-spill-{}.bin", std::process::id()));
+    // The browser's storage cannot remove a file that is open, and its process id is always the same: a run
+    // that ended early left its file, which goes first; the game removes the directory after extracting.
+    #[cfg(target_os = "emscripten")]
+    let _ = std::fs::remove_file(&path);
     let mut options = std::fs::OpenOptions::new();
     options.read(true).write(true).create(true).truncate(true);
     #[cfg(windows)]
@@ -67,7 +73,7 @@ fn open() -> std::io::Result<Spill> {
     }
     let file = options.open(&path)?;
     // Unlinked while open, so it goes with the process however that ends.
-    #[cfg(unix)]
+    #[cfg(all(unix, not(target_os = "emscripten")))]
     std::fs::remove_file(&path)?;
     Ok(Spill {
         file,
