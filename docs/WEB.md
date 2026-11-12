@@ -84,7 +84,11 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
 - **Game data** is the player's own, from their PAL disc. The page copies what they choose into the origin
   private file system under `chronicletwo/` once: a disc image (`disc.iso`), the disc's `DATA.HD4`, `DATA.DAT`,
   `SOUND.HD3` and `SOUND.DAT` (`disc/`), or a PC extraction (`data.zip` with `data.json`, or `data/` beside
-  `data.json`). The game mounts that file system at `/opfs` through WasmFS (`port/web/src/storage.cpp`) and starts
+  `data.json`). A disc image is looked at before it is copied (`discFault`): one without `DATA.HD4` and
+  `DATA.DAT` in its root, or shorter than its volume says, is refused there instead of at the game's start. The
+  copy goes 8 MiB at a time (`copyFiles` in `port/web/site/shell.js`), with the status line
+  saying how far it is, the screen kept on, and an error in place of a bar that stands still when the browser runs
+  out of room or goes 30 seconds without finishing a read or a write. The game mounts that file system at `/opfs` through WasmFS (`port/web/src/storage.cpp`) and starts
   with `--run-dir /opfs/chronicletwo`, so `data.zip` is read in place and saves, `config.json` and the logs live
   beside it. A disc is extracted at the game's first start by Kazarov's extractor, as `dc2data` does on a PC, on a
   thread of its own with progress on stdout as `extract: <percent> <stage>`, which the page shows over the canvas

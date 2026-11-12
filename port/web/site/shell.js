@@ -189,37 +189,131 @@ async function removeAll() {
     }
 }
 
-// Copies files into the game's directory, each a [relative path, File] pair, with the progress bar showing bytes.
-// createWritable writes to a swap file and commits on close, so a file cut short is never left in place.
+// A copy goes a part at a time, each read and then written, so the page can say how far it is, and say so when
+// the browser stops answering instead of leaving the bar standing still.
+const kCopyPart = 8 * 1024 * 1024;
+const kStallSeconds = 30;
+
+// The promise, or an error once it has gone kStallSeconds without settling. Seconds count only while the page is
+// on screen: a hidden page is paused, and its reads and writes with it.
+function watched(promise, what) {
+    return new Promise((resolve, reject) => {
+        let seconds = 0;
+        const timer = setInterval(() => {
+            if (document.visibilityState === 'visible' && ++seconds >= kStallSeconds) {
+                clearInterval(timer);
+                reject(new Error(`the browser stopped ${what}`));
+            }
+        }, 1000);
+        promise.then(resolve, reject).finally(() => clearInterval(timer));
+    });
+}
+
+// A part of a chosen file. A phone's file picker hands over a file it reads through another app, and such a read
+// can fail once and work the next time, so it is tried three times.
+async function readPart(file, from, to) {
+    for (let attempt = 1; ; ++attempt) {
+        try {
+            return await watched(file.slice(from, to).arrayBuffer(), 'reading the file');
+        } catch (error) {
+            if (attempt === 3) {
+                throw error;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+    }
+}
+
+// Copies files into the game's directory, each a [relative path, File] pair, with the progress bar and the status
+// line showing bytes. createWritable writes to a swap file and commits on close, so a file cut short is never left
+// in place. The screen is kept on meanwhile: a phone that sleeps pauses the page and the copy with it.
 async function copyFiles(files, progress = $('progress')) {
     const home = await gameDirectory();
+    const total = files.reduce((sum, [, file]) => sum + file.size, 0);
     progress.hidden = false;
-    progress.max = files.reduce((total, [, file]) => total + file.size, 0) || 1;
+    progress.max = total || 1;
     progress.value = 0;
     let copied = 0;
     const directories = new Map();
-    for (const [path, file] of files) {
-        const parts = path.split('/').filter(Boolean);
-        let directory = home;
-        let key = '';
-        for (const part of parts.slice(0, -1)) {
-            key += '/' + part;
-            if (!directories.has(key)) {
-                directories.set(key, await directory.getDirectoryHandle(part, {create: true}));
+    keepAwake(true);
+    try {
+        for (const [path, file] of files) {
+            const parts = path.split('/').filter(Boolean);
+            let directory = home;
+            let key = '';
+            for (const part of parts.slice(0, -1)) {
+                key += '/' + part;
+                if (!directories.has(key)) {
+                    directories.set(key, await directory.getDirectoryHandle(part, {create: true}));
+                }
+                directory = directories.get(key);
             }
-            directory = directories.get(key);
+            const writable = await (await directory.getFileHandle(parts.at(-1), {create: true})).createWritable();
+            try {
+                for (let from = 0; from < file.size; from += kCopyPart) {
+                    const part = await readPart(file, from, Math.min(file.size, from + kCopyPart));
+                    await watched(writable.write(part), "writing to the browser's storage");
+                    copied += part.byteLength;
+                    progress.value = copied;
+                    setStatus(`Copying into this browser: ${mib(copied)} of ${mib(total)}. Keep this page open and on screen.`);
+                }
+                await writable.close();
+            } catch (error) {
+                await writable.abort().catch(() => {});
+                throw error;
+            }
         }
-        const writable = await (await directory.getFileHandle(parts.at(-1), {create: true})).createWritable();
-        const counter = new TransformStream({
-            transform(chunk, controller) {
-                copied += chunk.byteLength;
-                progress.value = copied;
-                controller.enqueue(chunk);
-            },
-        });
-        await file.stream().pipeThrough(counter).pipeTo(writable);
+    } catch (error) {
+        // What the browser reports as its room is a share of the whole device, not what is free, so it is not quoted.
+        const why = error.name === 'QuotaExceededError'
+            ? `the browser has no more room for it: the copy needs ${mib(total)} free on this device`
+            : error.message ?? error;
+        throw new Error(`${why} (stopped after ${mib(copied)} of ${mib(total)})`);
+    } finally {
+        keepAwake(false);
     }
     progress.hidden = true;
+}
+
+// What is wrong with a chosen disc image, or null. The game reads the European disc alone, and without this a
+// wrong disc, or one a download cut short, is copied whole and found out only when the game starts.
+async function discFault(file) {
+    const kSector = 2048;
+    const bytes = async (from, length) => new DataView(await file.slice(from, from + length).arrayBuffer());
+    const text = (view, at, length) => String.fromCharCode(...new Uint8Array(view.buffer, at, length));
+    const volume = await bytes(16 * kSector, kSector);
+    if (volume.byteLength < kSector || text(volume, 1, 5) !== 'CD001') {
+        return 'it is not a disc image';
+    }
+    // The root directory's record sits at 156 in the volume descriptor: where it is, then how long.
+    const root = await bytes(volume.getUint32(158, true) * kSector, volume.getUint32(166, true));
+    const names = new Set();
+    for (let at = 0; at + 33 < root.byteLength;) {
+        const length = root.getUint8(at);
+        if (length === 0) {
+            at = (Math.floor(at / kSector) + 1) * kSector;
+            continue;
+        }
+        names.add(text(root, at + 33, root.getUint8(at + 32)).replace(/;\d+$/, '').toUpperCase());
+        at += length;
+    }
+    if (!names.has('DATA.HD4') || !names.has('DATA.DAT')) {
+        return 'it is not the European Dark Chronicle disc (it has no DATA.HD4)';
+    }
+    const whole = volume.getUint32(80, true) * kSector;
+    if (file.size < whole) {
+        return `the image is cut short: the file holds ${mib(file.size)} of the disc's ${mib(whole)}`;
+    }
+    return null;
+}
+
+async function storeDisc(file) {
+    const fault = await discFault(file);
+    if (fault) {
+        throw new Error(`${fault}. Nothing was copied`);
+    }
+    await removeAll();
+    await copyFiles([['disc.iso', file]]);
 }
 
 // Files chosen together: data.zip with data.json, or a disc image. When both are chosen the extraction wins:
@@ -231,8 +325,7 @@ async function storeFiles(list) {
     const zip = named((name) => name.endsWith('.zip'));
     const json = named((name) => name === 'data.json');
     if (iso && !(zip && json)) {
-        await removeAll();
-        await copyFiles([['disc.iso', iso]]);
+        await storeDisc(iso);
         return;
     }
     if (!zip) {
@@ -275,8 +368,7 @@ async function storeFolder(list) {
     }
     const images = files.filter(([parts]) => parts.length === 1 && parts[0].toLowerCase().endsWith('.iso'));
     if (images.length === 1) {
-        await removeAll();
-        await copyFiles([['disc.iso', images[0][1]]]);
+        await storeDisc(images[0][1]);
         return;
     }
     if (images.length > 1) {
@@ -352,14 +444,14 @@ function notice(text, fraction) {
     }
 }
 
-// A phone that sleeps stops the page, and an extraction with it, so the screen is kept on while one runs. The
+// A phone that sleeps stops the page, and a copy or an extraction with it, so the screen is kept on while one runs. The
 // browser drops the lock when the page is hidden; it is asked for again when the page shows.
-let extracting = false;
+let busy = false;
 let wakeLock = null;
 let wakeLockAsked = false;
 
 async function keepAwake(on) {
-    extracting = on;
+    busy = on;
     if (!on) {
         wakeLock?.release().catch(() => {});
         wakeLock = null;
@@ -376,19 +468,19 @@ async function keepAwake(on) {
                 wakeLock = null;
             }
         });
-        if (extracting) {
+        if (busy) {
             wakeLock = lock;
         } else {
             lock.release().catch(() => {});
         }
     } catch {
-        // Refused (battery saver, no permission): the extraction still runs while the page is on screen.
+        // Refused (battery saver, no permission): the work still runs while the page is on screen.
     }
     wakeLockAsked = false;
 }
 
 document.addEventListener('visibilitychange', () => {
-    if (extracting) {
+    if (busy) {
         keepAwake(true);
     }
 });
