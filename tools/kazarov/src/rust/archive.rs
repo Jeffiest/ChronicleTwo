@@ -564,6 +564,19 @@ impl std::ops::Deref for SourceSlice<'_> {
     }
 }
 
+/// Opens a file that is only read. The browser's storage reads a file opened only to read through a Blob, an
+/// asynchronous round trip for every read; a file opened to read and write gets a synchronous handle. So there
+/// that is asked for first, and nothing is written through it; a file locked by another tab is still read.
+pub fn open_read(path: &Path) -> std::io::Result<File> {
+    #[cfg(target_os = "emscripten")]
+    {
+        if let Ok(file) = fs::OpenOptions::new().read(true).write(true).open(path) {
+            return Ok(file);
+        }
+    }
+    File::open(path)
+}
+
 impl SourceBytes {
     pub fn owned(bytes: Vec<u8>) -> Self {
         Self(Arc::new(SourceData::Owned(bytes)))
@@ -575,7 +588,7 @@ impl SourceBytes {
     }
 
     pub fn open_iso_with_progress(path: &Path, phase: &Phase) -> CoreResult<Self> {
-        let mut file = File::open(path)?;
+        let mut file = open_read(path)?;
         let length = file.metadata()?.len();
         phase.set_total(length);
         // iOS's address space and the browser's 4 GiB memory (wasm32) cannot hold a 4.7 GB disc image: there
@@ -929,6 +942,25 @@ impl SourceTree {
             .as_ref()
             .ok_or_else(|| error("source is not an ISO"))?;
         let mut hash = Sha256::new();
+        // The browser has no fast SHA-256, and a phone hashes a 4.7 GB image for most of a minute: there the
+        // image's length and a megabyte from each of 64 places in it stand for the image. The fingerprint only
+        // names the source in data.json; nothing compares it with another machine's.
+        if cfg!(target_os = "emscripten") {
+            const SAMPLES: u64 = 64;
+            const SAMPLE: u64 = 1 << 20;
+            hash.update(b"kazarov-source-sample-v1\0");
+            hash.update(image.len().to_le_bytes());
+            for index in 0..SAMPLES {
+                let start = (image.len().saturating_sub(SAMPLE) / (SAMPLES - 1)) * index;
+                let end = image.len().min(start + SAMPLE);
+                hash.update(&*image.slice(start..end)?);
+            }
+            return Ok(hash
+                .finalize()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect());
+        }
         hash.update(b"kazarov-source-file-v1\0");
         hash.update(image.len().to_le_bytes());
         // A mapped image is hashed in pieces, so the whole of it is never mapped at once.

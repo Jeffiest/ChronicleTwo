@@ -696,22 +696,29 @@ fn extract_stages(
     publish::seal_stream(sink, &published, marker)?;
     reporter.done(Stage::Seal);
     // No validation begins until every converter and the streaming writer have completed.
-    let phase = reporter.phase(Stage::VerifyArchive);
-    pool.install(|| {
-        publish::verify_stream_with_progress(
-            &published,
-            &inventory,
-            &converted_aliases,
-            &profiles,
-            &texture_paths,
-            &phase,
-            script_policy == ScriptPublicationPolicy::Retain,
-        )
-    })?;
+    // In the browser the whole archive is not read back and checked again, minutes a phone does not have:
+    // publishing still opens it and checks its size, and the game checks each entry's CRC as it reads it.
+    // DC2DATA_VERIFY asks for the full verification there.
+    if !cfg!(target_os = "emscripten") || std::env::var_os("DC2DATA_VERIFY").is_some() {
+        let phase = reporter.phase(Stage::VerifyArchive);
+        pool.install(|| {
+            publish::verify_stream_with_progress(
+                &published,
+                &inventory,
+                &converted_aliases,
+                &profiles,
+                &texture_paths,
+                &phase,
+                script_policy == ScriptPublicationPolicy::Retain,
+            )
+        })?;
+        reporter.done(Stage::VerifyArchive);
+    } else {
+        reporter.skip(Stage::VerifyArchive);
+    }
     if source_state(&source)? != initial_state {
         return Err(CoreError("source changed during extraction".into()));
     }
-    reporter.done(Stage::VerifyArchive);
     reporter.phase(Stage::Publish);
     let marker = publish::read_marker(&published)?;
     publish::publish_verified(&published, root)?;

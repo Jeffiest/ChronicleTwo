@@ -246,7 +246,7 @@ impl Archive {
         // The browser has no file mappings, and a 3.8 GB archive does not fit its 4 GiB of memory.
         let map = !cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source));
         let context = |error: CoreError| fail(format!("{}: {error}", path.display()));
-        let file = File::open(path).map_err(|e| context(e.into()))?;
+        let file = super::archive::open_read(path).map_err(|e| context(e.into()))?;
         let length = file.metadata().map_err(|e| context(e.into()))?.len();
         // SAFETY: archives are treated as immutable while open; concurrent truncation
         // by another process is outside the supported contract.
