@@ -1,4 +1,5 @@
 //! Publishes ordinary retail PACK containers as directly readable asset directories.
+use super::archive::ResourceRef;
 use super::artifacts::{ArtifactBytes, AssetSink, Category, Job};
 use super::inventory::Inventory;
 use super::progress::Phase;
@@ -69,7 +70,7 @@ pub fn assemble_retained(
             .get(alias)
             .ok_or_else(|| fail(format!("missing retail resource: {alias}")))?;
         let members = inventory.members(alias);
-        if members.is_some() || empty_archive(&resource.bytes(), alias) {
+        if members.is_some() || empty_archive_resource(resource, alias) {
             if consumed_container(alias) {
                 return Ok(());
             }
@@ -90,7 +91,7 @@ pub fn assemble_retained(
             if let Some(members) = members {
                 for member in members {
                     if member.resource.is_empty()
-                        && !empty_archive(&member.resource.bytes(), &member.alias)
+                        && !empty_archive_resource(&member.resource, &member.alias)
                     {
                         continue;
                     }
@@ -142,7 +143,7 @@ pub fn plan_jobs(
             .get(alias)
             .ok_or_else(|| fail(format!("missing retail resource: {alias}")))?;
         let members = inventory.members(alias);
-        if members.is_some() || empty_archive(&resource.bytes(), alias) {
+        if members.is_some() || empty_archive_resource(resource, alias) {
             if consumed_container(alias) {
                 return Ok(());
             }
@@ -164,7 +165,7 @@ pub fn plan_jobs(
             if let Some(members) = members {
                 for member in members {
                     if member.resource.is_empty()
-                        && !empty_archive(&member.resource.bytes(), &member.alias)
+                        && !empty_archive_resource(&member.resource, &member.alias)
                     {
                         continue;
                     }
@@ -372,11 +373,19 @@ fn consumed_container(alias: &str) -> bool {
         "chr" | "snd" | "img" | "tm2"
     )
 }
-fn empty_archive(bytes: &[u8], alias: &str) -> bool {
+fn archive_name(alias: &str) -> bool {
     matches!(
         extension(alias).to_ascii_lowercase().as_str(),
         "pcp" | "pac" | "mpk" | "ipk" | "pak" | "chr" | "snd"
-    ) && (bytes.is_empty() || (bytes.len() >= 76 && bytes.iter().all(|byte| *byte == 0)))
+    )
+}
+fn empty_archive(bytes: &[u8], alias: &str) -> bool {
+    archive_name(alias) && (bytes.is_empty() || (bytes.len() >= 76 && bytes.iter().all(|byte| *byte == 0)))
+}
+/// `empty_archive` of a resource, which is read only when its name is an archive's: the leaves include the sound
+/// archive and the movies.
+fn empty_archive_resource(resource: &ResourceRef, alias: &str) -> bool {
+    archive_name(alias) && empty_archive(&resource.bytes(), alias)
 }
 fn clean_empty_directories(path: &Path) -> CoreResult<()> {
     for entry in fs::read_dir(path)? {

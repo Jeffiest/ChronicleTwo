@@ -30,6 +30,8 @@
 #include <system_error>
 #include <thread>
 
+#include <emscripten/heap.h>
+
 #include "exitcodes.hpp"
 #include "kazarov/data_version.hpp"
 #include "log/log.hpp"
@@ -64,8 +66,10 @@ fs::path DiscSource(const fs::path &game_root) {
     return {};
 }
 
-// How many conversions run at once. Each holds what it converts in the browser's 4 GiB of memory, and a phone's
-// browser ends a page well before that, so the count stays small; CT_WEB_EXTRACT_JOBS (1 to 8) sets another.
+// How many conversions run at once: half the device's processors, two to eight (four on a phone with eight);
+// CT_WEB_EXTRACT_JOBS (1 to 8) sets another. The disc in desktop Chrome took 220 s with two, 122 s with four and
+// 78 s with eight, and the memory the page reached was the same with each: the planning before the first
+// conversion is what holds it.
 std::size_t ExtractJobs() {
     if (const char *asked = std::getenv("CT_WEB_EXTRACT_JOBS")) {
         const long value = std::strtol(asked, nullptr, 10);
@@ -73,7 +77,7 @@ std::size_t ExtractJobs() {
             return static_cast<std::size_t>(value);
         }
     }
-    return 2;
+    return std::clamp<std::size_t>(std::thread::hardware_concurrency() / 2, 2, 8);
 }
 
 // Extracts source into root, reporting as it goes; empty when the data is current afterwards.
@@ -101,19 +105,30 @@ std::string Extract(const fs::path &source, const fs::path &root) {
             return error.what();
         }
     });
+    // Each stage goes to the log with the time and the size of the program's memory when it began, so a page the
+    // browser ended says how far it got and how much it held.
+    const auto seconds = [began] {
+        return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - began).count();
+    };
+    const auto memory_mib = [] { return emscripten_get_heap_size() >> 20; };
     std::string last;
+    std::string last_stage;
     while (worker.wait_for(std::chrono::milliseconds(500)) != std::future_status::ready) {
         const auto        status = kazarov::extract_status();
         const int         percent = static_cast<int>(std::clamp(status.fraction, 0.0f, 1.0f) * 100.0f);
-        const std::string line = "extract: " + std::to_string(percent) + " " + std::string(status.stage);
+        const std::string stage(status.stage);
+        const std::string line = "extract: " + std::to_string(percent) + " " + stage;
         if (line != last) {
             last = line;
             Say(line);
         }
+        if (stage != last_stage) {
+            last_stage = stage;
+            CT_LOG_INFO(Main, "Extraction, {} s: {} (memory {} MiB)", seconds(), stage, memory_mib());
+        }
     }
     std::string failure = worker.get();
-    CT_LOG_INFO(Main, "The extraction ran for {} s", std::chrono::duration_cast<std::chrono::seconds>(
-                                                          std::chrono::steady_clock::now() - began).count());
+    CT_LOG_INFO(Main, "The extraction ran for {} s (memory {} MiB)", seconds(), memory_mib());
     fs::remove_all(temporary, temporary_error);
     if (failure.empty() && FirstRunDataMissing(root)) {
         failure = "the extraction finished without current game data";

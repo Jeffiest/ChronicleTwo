@@ -522,7 +522,9 @@ fn extract_stages(
     reporter.done(Stage::Fingerprint);
     let phase = reporter.phase(Stage::Extract);
     let (files, bytes) = source_tree.totals();
+    archive::memory_note("the source opened");
     let inventory = inventory::Inventory::build(&source_tree)?;
+    archive::memory_note("the index built");
     phase.set_total(files);
     reporter.done(Stage::Extract);
     let gameplay_plan_sha256 = configs::asset_plan_fingerprint();
@@ -547,6 +549,7 @@ fn extract_stages(
     });
     let texture_plan = texture_plan?;
     let audio_plan = audio_plan?;
+    archive::memory_note("textures and sound planned");
     let texture_paths: std::collections::BTreeMap<String, String> = texture_plan
         .documents
         .iter()
@@ -567,6 +570,7 @@ fn extract_stages(
             Arc::new(texture_plan.png_names.clone()),
         )
     })?;
+    archive::memory_note("models planned");
     let profiles = models::planned_profile_names(&inventory)?;
     let mut consumed: HashSet<String> = texture_plan.consumed.iter().cloned().collect();
     consumed.extend(audio_plan.consumed);
@@ -581,6 +585,7 @@ fn extract_stages(
         script_policy == ScriptPublicationPolicy::Retain,
     )?;
     consumed.extend(script_consumed);
+    archive::memory_note("scripts planned");
     let texture_members = texture_plan
         .documents
         .iter()
@@ -603,6 +608,7 @@ fn extract_stages(
     all_jobs.extend(model_plan.into_initial_jobs());
     all_jobs.extend(script_jobs);
     all_jobs.extend(packs::plan_jobs(&inventory, &consumed, &texture_members)?);
+    archive::memory_note("packs planned");
     for chunk in gameplay_documents.chunks(128) {
         let documents = chunk.to_vec();
         all_jobs.push(artifacts::Job {

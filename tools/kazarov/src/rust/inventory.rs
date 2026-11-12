@@ -7,6 +7,9 @@ fn fail(message: impl Into<String>) -> CoreError {
     CoreError(message.into())
 }
 
+/// Above this size a resource's first entry header is looked at before all of it is read.
+const LARGE_LEAF: usize = 32 << 20;
+
 /// One named PACK member in its original order, including duplicate-name identity.
 #[derive(Clone)]
 pub struct MemberRef {
@@ -48,7 +51,16 @@ impl Inventory {
         if self.nodes.insert(alias.clone(), resource.clone()).is_some() {
             return Err(fail(format!("duplicate resource identity: {alias}")));
         }
-        let Some(members) = models::pack(&resource.bytes()) else {
+        // The sound archive is a gigabyte and a movie hundreds of megabytes: the first entry header says they are
+        // no PACK without all of that read into memory, which in the browser stays as large as it ever was.
+        let members = if resource.len() > LARGE_LEAF
+            && models::no_pack_at(&resource.head(models::PACK_HEADER))
+        {
+            None
+        } else {
+            models::pack(&resource.bytes())
+        };
+        let Some(members) = members else {
             self.leaves.push(resource);
             return Ok(());
         };

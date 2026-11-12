@@ -161,6 +161,9 @@ set(CT_WEB_LINK_OPTIONS
     "SHELL:--preload-file ${CMAKE_BINARY_DIR}/assets/data.zip@/assets/data.zip"
     -sPROXY_TO_PTHREAD=1
     -sASYNCIFY=1
+    # The default allocator has one lock for every thread: the disc's extraction allocates on all of its
+    # workers at once and went slower with four of them than with two.
+    -sMALLOC=mimalloc
     -sALLOW_MEMORY_GROWTH=1
     -sINITIAL_MEMORY=536870912
     -sMAXIMUM_MEMORY=4GB

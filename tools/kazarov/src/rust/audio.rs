@@ -1113,6 +1113,12 @@ fn submit_json(sink: &AssetSink, name: &str, document: &Value) -> CoreResult<()>
     )
 }
 
+/// Whether a resource's first bytes are a sound stream's, read without the rest of it.
+fn stream_signature(resource: &ResourceRef) -> bool {
+    let head = resource.head(12);
+    head.starts_with(b"SShd") || (head.starts_with(b"RIFF") && head.get(8..12) == Some(b"WAVE"))
+}
+
 /// Plans sound and movie conversion without copying any retail source bytes.
 pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
     let mut jobs = Vec::new();
@@ -1142,9 +1148,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
             || owns_config(key)
             || key.ends_with(".vol")
             || key.ends_with(".wav")
-            || resource.bytes().starts_with(b"SShd")
-            || (resource.bytes().starts_with(b"RIFF")
-                && resource.bytes().get(8..12) == Some(b"WAVE"));
+            || stream_signature(resource);
         if !owned {
             continue;
         }
@@ -1236,11 +1240,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                     )
                 }),
             });
-        } else if key.ends_with(".wav")
-            || resource.bytes().starts_with(b"SShd")
-            || (resource.bytes().starts_with(b"RIFF")
-                && resource.bytes().get(8..12) == Some(b"WAVE"))
-        {
+        } else if key.ends_with(".wav") || stream_signature(resource) {
             let key = key.clone();
             let input = resource.clone();
             jobs.push(Job {

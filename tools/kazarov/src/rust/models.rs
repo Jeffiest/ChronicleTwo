@@ -294,6 +294,23 @@ pub(crate) struct Member {
     pub(crate) size: usize,
     size_field: usize,
 }
+/// The size of a PACK's entry header.
+pub(crate) const PACK_HEADER: usize = 76;
+
+/// Whether a resource's first entry header alone says it is no PACK, as `pack` finds with all of its bytes: a
+/// name that is empty, unterminated, or holds a control character or a path separator.
+pub(crate) fn no_pack_at(head: &[u8]) -> bool {
+    let Some(h) = head.get(..PACK_HEADER) else {
+        return false;
+    };
+    match h[..64].iter().position(|&v| v == 0) {
+        None | Some(0) => true,
+        Some(end) => h[..end]
+            .iter()
+            .any(|v| *v < 32 || matches!(*v, b'/' | b'\\')),
+    }
+}
+
 pub(crate) fn pack(b: &[u8]) -> Option<Vec<Member>> {
     if super::native_scripts::is_valid_script(b) {
         return None;

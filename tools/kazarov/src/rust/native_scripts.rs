@@ -154,6 +154,13 @@ fn literal<'a>(b: &'a [u8], code: usize, insn: &Instruction) -> CoreResult<&'a [
         .ok_or_else(|| fail("unterminated script string"))?;
     Ok(&tail[..end])
 }
+/// Whether a resource is a compiled script. Its signature is read first: the leaves include the sound archive and
+/// the movies, a gigabyte and more that no reader of scripts needs in memory.
+pub(crate) fn is_script_resource(resource: &super::archive::ResourceRef) -> bool {
+    matches!(resource.head(4).get(..4), Some(b"SB2\0" | b"STB\0"))
+        && is_valid_script(&resource.bytes())
+}
+
 /// Recognizes complete compiled VM scripts before untagged archive heuristics inspect their headers.
 pub(crate) fn is_valid_script(bytes: &[u8]) -> bool {
     if !matches!(bytes.get(..4), Some(b"SB2\0" | b"STB\0")) {
@@ -428,7 +435,7 @@ pub fn plan_jobs(
     let mut jobs = Vec::new();
     for resource in resources.leaves() {
         let alias = resource.alias.clone();
-        let valid_script = is_valid_script(&resource.bytes());
+        let valid_script = is_script_resource(resource);
         if !publish_scripts && valid_script {
             if !is_script_resource_name(&alias) {
                 return Err(CoreError(format!(
@@ -470,7 +477,7 @@ pub fn verify_archive_work(resources: &ResourceInventory, publish_scripts: bool)
     resources
         .leaves()
         .iter()
-        .filter(|resource| is_valid_script(&resource.bytes()))
+        .filter(|resource| is_script_resource(resource))
         .count() as u64
 }
 
@@ -487,7 +494,7 @@ pub fn verify_archive(
     let lookup = planned_lookup(resources, converted_aliases, profiles, texture_paths);
     let mut character_scripts = BTreeMap::<String, BTreeSet<String>>::new();
     for resource in resources.leaves() {
-        if !publish_scripts || !is_valid_script(&resource.bytes()) {
+        if !publish_scripts || !is_script_resource(resource) {
             continue;
         }
         let alias = &resource.alias;

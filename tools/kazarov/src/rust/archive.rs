@@ -690,6 +690,26 @@ fn read_at(file: &File, mut offset: u64, mut bytes: &mut [u8]) -> CoreResult<()>
     Ok(())
 }
 
+/// With DC2DATA_PROFILE_MEMORY set, says on stderr how large the program's memory is at this point. In the browser
+/// that memory only grows, to at most 4 GiB, so one large read sets what the whole extraction holds.
+pub fn memory_note(label: &str) {
+    static ASKED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if !*ASKED.get_or_init(|| std::env::var_os("DC2DATA_PROFILE_MEMORY").is_some()) {
+        return;
+    }
+    #[cfg(target_os = "emscripten")]
+    {
+        unsafe extern "C" {
+            fn emscripten_get_heap_size() -> usize;
+        }
+        // SAFETY: the function only reads the size of the program's memory.
+        let size = unsafe { emscripten_get_heap_size() };
+        eprintln!("memory: {} MiB at {label}", size >> 20);
+    }
+    #[cfg(not(target_os = "emscripten"))]
+    eprintln!("memory: {label}");
+}
+
 /// A checked, immutable byte range of a retail resource.
 #[derive(Clone)]
 pub struct ResourceRef {
@@ -702,6 +722,9 @@ impl ResourceRef {
     /// The resource's bytes. From a mapped disc image they stay mapped only while the result lives, so a
     /// converter holds them for the one resource it is converting.
     pub fn bytes(&self) -> SourceSlice<'_> {
+        if self.len() >= 32 << 20 {
+            memory_note(&format!("read of {} ({} MiB)", self.alias, self.len() >> 20));
+        }
         self.source
             .slice(self.range.clone())
             .unwrap_or_else(|failure| panic!("{}: cannot read the source: {failure}", self.alias))
@@ -710,6 +733,14 @@ impl ResourceRef {
     pub fn len(&self) -> usize {
         // A resource is read into memory whole, so its length fits in usize.
         (self.range.end - self.range.start) as usize
+    }
+
+    /// The resource's first bytes, at most `count` of them, without reading the rest.
+    pub fn head(&self, count: usize) -> SourceSlice<'_> {
+        let end = self.range.start + count.min(self.len()) as u64;
+        self.source
+            .slice(self.range.start..end)
+            .unwrap_or_else(|failure| panic!("{}: cannot read the source: {failure}", self.alias))
     }
 
     pub fn is_empty(&self) -> bool {

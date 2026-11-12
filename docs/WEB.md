@@ -94,9 +94,17 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   thread of its own with progress on stdout as `extract: <percent> <stage>`, which the page shows over the canvas
   (`port/web/src/firstrun.cpp`). Movies are left out of the extraction (a build without FFmpeg plans no movie
   job, `plan_stream` in `tools/kazarov/src/rust/audio.rs`) and `MoviePlayer` is a no-op
-  (`port/web/src/movie.cpp`): the browser has no FFmpeg. Two conversions run at once, or as many as
-  `CT_WEB_EXTRACT_JOBS` says (1 to 8, `?args=--env+CT_WEB_EXTRACT_JOBS=4`), and the log says how long the
-  extraction ran. WasmFS reads an OPFS file opened only to read through a Blob, an asynchronous round trip for
+  (`port/web/src/movie.cpp`): the browser has no FFmpeg. Half the device's processors
+  convert at once, two to eight of them (four on a phone with eight), or as many as `CT_WEB_EXTRACT_JOBS` says
+  (1 to 8, `?args=--env+CT_WEB_EXTRACT_JOBS=4`); the log has a line for each stage with the seconds so far and
+  the size of the program's memory, and one for how long the extraction ran. The build's allocator is mimalloc
+  (`-sMALLOC=mimalloc`, `port/web/web.cmake`): the default one has a single lock for every thread, and with it
+  four conversions at once were slower than two. The program's memory only grows in a browser, so one large read
+  sets what the whole extraction holds: the index, the scripts' plan and the packs' plan each read every disc
+  file whole to look at its first bytes, the 970 MB sound archive and the movies among them, and now ask for
+  those bytes alone (`ResourceRef::head`), which took the memory reached from 3.3 GB to 2.3 GB.
+  `DC2DATA_PROFILE_MEMORY` set in the environment has the extractor say on stderr how large the memory is after
+  each step of the plan and at each read of 32 MiB or more. WasmFS reads an OPFS file opened only to read through a Blob, an asynchronous round trip for
   every read, and gives a file opened to read and write a synchronous access handle: the disc image and
   `data.zip` are opened to read and write for that reason (`open_read` in `tools/kazarov/src/rust/archive.rs`;
   nothing is written through it), which took the stages that read the disc before any conversion from 200 s to
@@ -166,7 +174,7 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
 | `darkchronicle_gl` (WebGL2) | Done: `darkchronicle_gl.wasm` 26.2 MB, `.js` 639 KB; its Chromium smoke passes (`--renderer gl`), and with `--with-marker` it runs 30 frames and exits 0 cleanly |
 | Smoke run under Node without data (exit 3) | Passes (`tools/web/smoke.sh node`; a stand-in canvas lets the game's thread start, `port/web/src/node_canvas.js`) |
 | Smoke run in headless Chromium (SwiftShader) | Passes on WebGPU (`tools/web/smoke.sh browser`): the page isolates, stores the archive, the game reports the missing data, `exit=3`. With a current `data.json` (`--with-marker`) the game creates the WebGPU device, compiles 21860 pipelines and runs 30 frames on the stand-in data |
-| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Played from a `dc2data` extraction, stored and from the server (`--data`), on a PC and on an Android phone. A disc image extracted on the page in headless Chrome on a PC: the 4.7 GB image copied in 20 s and the extraction ran 460 s with two conversions at once (17 s to the first conversion, 140 s of textures, sound and packs, 303 s of models; it was 1123 s while the image was read through a Blob, hashed whole and the archive verified), Chrome's process reached 2.6 GB, `data.zip` came to 2232 MiB without movies, and the game started from it, with the image and after the page removed it |
+| Game data in the browser: disc image, disc files, `data.zip` or `data/` | Played from a `dc2data` extraction, stored and from the server (`--data`), on a PC and on an Android phone. A disc image extracted on the page in headless Chrome on a PC: the 4.7 GB image copied in 20 s and the extraction ran 78 s with eight conversions at once (8 s to the first conversion, 28 s of textures, sound and packs, 41 s of models), 122 s with four and 220 s with two; it was 460 s with two and the default allocator, and 1123 s while the image was also read through a Blob, hashed whole and the archive verified. The program's memory reached 2.3 GB (0.6 GB with the disc indexed, 2.1 GB with the textures planned) and Chrome's process 2.1 GB, `data.zip` came to 2232 MiB without movies, and the game started from it, with the image and after the page removed it |
 | Renderer on WebGPU / WebGL2 with the game's frames | Both draw the title, the towns, the dungeon and the events. On WebGL2 a copy within one image (the eyes' texture animation) read the frame instead until the layer kept the read framebuffer binding (`FramebufferFor`, `port/web/gl/objects.cpp`) |
 | Kazarov's renderer tests in the browser (`kazarov_gfx_tests`) | Not built here yet |
 | Saves in the browser's storage | Written (WasmFS on OPFS); not checked with a save |
@@ -184,10 +192,11 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
   missing-data exit) happen before the renderer exists and are left as they are.
 - **A disc image on a phone.** The page's own extraction of a disc image (`extract:` progress, `firstrun.cpp`)
   runs to the end on a PC; it is still to be run through on a phone, where the image and its extraction both have
-  to fit the browser's storage (about 7 GB until the image is removed) and the extraction's 2.5 GB of memory
-  (reached while the conversion is planned) may be more than the browser gives a page. Converting the whole disc
-  is about 510 seconds of processor time in a native release build on a desktop (`dc2data extract --jobs 2`,
-  movies included), so no phone does it in a minute: a phone is served in seconds by the server's data
+  to fit the browser's storage (about 7 GB until the image is removed) and the extraction's 2.3 GB of memory
+  (2.1 GB of it reached while the textures are planned, which is the next thing to bring down) may be more than
+  the browser gives a page. Converting the whole disc is about 510 seconds of processor time in a native release
+  build on a desktop (`dc2data extract --jobs 2`, movies included) and 78 s on a desktop's eight threads in the
+  browser, so no phone does it in a minute: a phone is served in seconds by the server's data
   (`--data`) or a `data.zip` with its `data.json` made on a PC and picked on the page. Starting from a disc
   image that fast needs the game to convert a file when it first asks for it, which the extractor cannot do yet:
   the archive's index is every converted name, and textures and models are planned across the whole disc.
