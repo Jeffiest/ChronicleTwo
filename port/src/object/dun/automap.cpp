@@ -521,6 +521,113 @@ bool CellRevealed(const CMiniMapSymbol &mm, const float *pos) {
     return grid[(*point)[1] * mm.grid_w + (*point)[0]].visible != 0;
 }
 
+// A part's tile on the map: whether the map shows it (the part has one, its cell is one the map shows, and the
+// tile reaches into the map's rectangle), how bright, and where it lies, in cells from the map's centre.
+struct AerialTile {
+    bool    has_tile = false;
+    bool    shown = false;
+    uint8_t shade = 0x80;
+    float   rate_x = 0.0f;
+    float   rate_z = 0.0f;
+};
+
+AerialTile TileOf(const CMiniMapSymbol &mm, const CAutoMapParts *grid, CMapParts &part, int dimmed) {
+    AerialTile tile;
+    float      pos[4];
+
+    if (part.name[0] == 0 || part.minimap_tile == -1) {
+        return tile;
+    }
+
+    tile.has_tile = true;
+    part.GetPosition(pos);
+
+    if (grid != nullptr) {
+        const auto point = GridPoint(pos, mm.cell_w, mm.cell_d, mm.grid_w, mm.grid_h, false);
+
+        if (!point) {
+            return tile;
+        }
+
+        const CAutoMapParts *cell = &grid[mm.grid_w * (*point)[1] + (*point)[0]];
+
+        if (cell->attr & AUTOMAP_ATTR_HIDE) {
+            return tile;
+        }
+
+        if (!cell->visible) {
+            if (!dimmed) {
+                return tile;
+            }
+
+            tile.shade = 0x30;
+        }
+    }
+
+    const float size = kRetailCellPixels * aerial.zoom;
+    const float map_left = (float) (mm.x - mm.w / 2);
+    const float map_top = (float) (mm.y - mm.h / 2);
+    tile.rate_x = (pos[0] - mm.center[0]) / mm.cell_w;
+    tile.rate_z = (pos[2] - mm.center[2]) / mm.cell_d;
+    // The player sits at the retail map's (x + 8, y + 8).
+    const float dx = (float) mm.x + 8.0f + size * tile.rate_x - size / 2.0f;
+    const float dy = (float) mm.y + 8.0f + size * tile.rate_z - size / 2.0f;
+    tile.shown = !(dx > map_left + mm.w || dy > map_top + mm.h || dx + size < map_left || dy + size < map_top);
+    return tile;
+}
+
+// Leaves in the map's list of parts to draw those whose tiles go onto the map, the parts beside them (a wall
+// may lean over its neighbour's cell) and the parts with no tile, and returns how many. The small map shows a
+// few cells around the player, and from up here no part is too far to draw: the whole floor was four fifths
+// of a frame's draws, made again at every display.
+int KeepShownParts(const CMiniMapSymbol &mm, CMapParts **list, int count, int dimmed) {
+    if (list == nullptr) {
+        return count;
+    }
+
+    const CAutoMapParts               *grid = mm.GridCells().data();
+    std::vector<std::array<float, 2>> shown;
+    float                              pos[4];
+
+    for (CMapParts &part : mm.PlacedParts()) {
+        if (TileOf(mm, grid, part, dimmed).shown) {
+            part.GetPosition(pos);
+            shown.push_back({pos[0], pos[2]});
+        }
+    }
+
+    int kept = 0;
+
+    for (int i = 0; i < count; i++) {
+        bool keep = !TileOf(mm, grid, *list[i], dimmed).has_tile;
+
+        if (!keep) {
+            list[i]->GetPosition(pos);
+            keep = std::any_of(shown.begin(), shown.end(), [&](const std::array<float, 2> &at) {
+                return std::fabs(pos[0] - at[0]) <= 1.5f * mm.cell_w && std::fabs(pos[2] - at[1]) <= 1.5f * mm.cell_d;
+            });
+        }
+
+        if (keep) {
+            list[kept++] = list[i];
+        }
+    }
+
+    return kept;
+}
+
+// Whether a model at pos can reach into the map's rectangle: the models are drawn larger than life.
+bool ModelOnMap(const CMiniMapSymbol &mm, const float *pos) {
+    const float size = kRetailCellPixels * aerial.zoom;
+    const float reach = size * (1.0f + ConfigGet().aerial_map_model_scale);
+    const float dx = (float) mm.x + 8.0f + size * (pos[0] - mm.center[0]) / mm.cell_w;
+    const float dy = (float) mm.y + 8.0f + size * (pos[2] - mm.center[2]) / mm.cell_d;
+    const float map_left = (float) (mm.x - mm.w / 2);
+    const float map_top = (float) (mm.y - mm.h / 2);
+    return dx + reach >= map_left && dx - reach <= map_left + mm.w && dy + reach >= map_top &&
+           dy - reach <= map_top + mm.h;
+}
+
 // ---- Models ----------------------------------------------------------------------------------
 //
 // Monsters, chests and the player are drawn into the floor image itself, so the floor and the
@@ -593,7 +700,7 @@ void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
 
             slot->GetPosition(pos);
 
-            if (!CellRevealed(mm, pos)) {
+            if (!CellRevealed(mm, pos) || !ModelOnMap(mm, pos)) {
                 continue;
             }
 
@@ -618,7 +725,7 @@ void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
 
             monster->GetPosition(pos);
 
-            if (!CellRevealed(mm, pos)) {
+            if (!CellRevealed(mm, pos) || !ModelOnMap(mm, pos)) {
                 continue;
             }
 
@@ -641,7 +748,8 @@ void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
 }
 
 // Renders the floor around center from above into the "aerial_map" target.
-gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, float screen_zoom, float render_zoom) {
+gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, float screen_zoom, float render_zoom,
+                                int dimmed) {
     aerial.valid = false;
 
     CMap *main_map = dc2::dungeon::MainMap().Get();
@@ -757,6 +865,8 @@ gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, f
     }
 
     main_map->PreDraw(view);
+    const int parts_in_view = main_map->draw_parts_num;
+    main_map->draw_parts_num = KeepShownParts(mm, main_map->draw_parts, parts_in_view, dimmed);
     const int parts_listed = main_map->draw_parts_num;
     const int parts_drawn = main_map->Draw();
     main_map->occlusion_num = saved_occlusion;
@@ -774,8 +884,8 @@ gfx::TextureHandle RenderAerial(const CMiniMapSymbol &mm, const float *center, f
 
         if (logged < 3) {
             logged++;
-            std::fprintf(stderr, "aerial_map: parts placed %d listed %d drawn %d (occluders %d)\n",
-                         main_map->place_parts_num, parts_listed, parts_drawn, (int) saved_occlusion);
+            std::fprintf(stderr, "aerial_map: parts placed %d in view %d listed %d drawn %d (occluders %d)\n",
+                         main_map->place_parts_num, parts_in_view, parts_listed, parts_drawn, (int) saved_occlusion);
         }
     }
     mgPreEndDraw(NULL);
@@ -823,52 +933,23 @@ void CompositeAerial(const CMiniMapSymbol &mm, gfx::TextureHandle target, int di
 
     std::vector<gfx::Vertex2D> quads;
     const CAutoMapParts       *grid = mm.GridCells().data();
-    float                      part_pos[4];
 
     for (CMapParts &part : mm.PlacedParts()) {
-        CMapParts *parts = &part;
+        const AerialTile shown = TileOf(mm, grid, part, dimmed);
 
-        if (parts->name[0] == 0 || parts->minimap_tile == -1) {
+        if (!shown.shown) {
             continue;
         }
 
-        parts->GetPosition(part_pos);
-        uint8_t shade = 0x80;
-
-        if (grid != nullptr) {
-            const auto point = GridPoint(part_pos, mm.cell_w, mm.cell_d, mm.grid_w, mm.grid_h, false);
-
-            if (!point) {
-                continue;
-            }
-
-            const CAutoMapParts *cell = &grid[mm.grid_w * (*point)[1] + (*point)[0]];
-
-            if (cell->attr & AUTOMAP_ATTR_HIDE) {
-                continue;
-            }
-
-            if (!cell->visible) {
-                if (!dimmed) {
-                    continue;
-                }
-
-                shade = 0x30;
-            }
-        }
-
-        const float rate_x = (part_pos[0] - mm.center[0]) / mm.cell_w;
-        const float rate_z = (part_pos[2] - mm.center[2]) / mm.cell_d;
-        const float dx = origin_x + tile * rate_x - tile / 2.0f;
+        const uint8_t shade = shown.shade;
+        const float   rate_x = shown.rate_x;
+        const float   rate_z = shown.rate_z;
+        const float   dx = origin_x + tile * rate_x - tile / 2.0f;
         const float dy = origin_y + tile * rate_z - tile / 2.0f;
         const float u = aerial.center_x + aerial.cell_x * rate_x - aerial.cell_x / 2.0f;
         const float v = aerial.center_y + aerial.cell_y * rate_z - aerial.cell_y / 2.0f;
         const float uw = aerial.cell_x;
         const float vh = aerial.cell_y;
-
-        if (dx > map_left + mm.w || dy > map_top + mm.h || dx + tile < map_left || dy + tile < map_top) {
-            continue;
-        }
 
         const gfx::Vertex2D corners[4] = {
             {dx, dy, 0.0f, u, v, {shade, shade, shade, alpha}},
@@ -3321,7 +3402,7 @@ void CMiniMapSymbol::Draw(float *pos) {
             h = (s16) (h * size);
         }
 
-        gfx::TextureHandle target = RenderAerial(*this, center, screen_zoom, render_zoom);
+        gfx::TextureHandle target = RenderAerial(*this, center, screen_zoom, render_zoom, dimmed);
 
         if (target != gfx::kNullTexture) {
             CompositeAerial(*this, target, dimmed, alpha);
