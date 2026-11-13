@@ -18,6 +18,7 @@ DIR/key.pem; when they are missing they are made with openssl, self-signed for t
 device shows a warning to accept once.
 """
 import argparse
+import ctypes
 import email.utils
 import gzip
 import http.server
@@ -38,6 +39,39 @@ DATA_FILES = ("data.zip", "data.json")
 CLIENT_LOG = "/client-log"
 
 
+class TcpInfo(ctypes.Structure):
+    """Windows' TCP_INFO_v0: what the system knows of one connection."""
+    _fields_ = [("State", ctypes.c_int), ("Mss", ctypes.c_uint32), ("ConnectionTimeMs", ctypes.c_uint64),
+                ("TimestampsEnabled", ctypes.c_ubyte), ("RttUs", ctypes.c_uint32), ("MinRttUs", ctypes.c_uint32),
+                ("BytesInFlight", ctypes.c_uint32), ("Cwnd", ctypes.c_uint32), ("SndWnd", ctypes.c_uint32),
+                ("RcvWnd", ctypes.c_uint32), ("RcvBuf", ctypes.c_uint32), ("BytesOut", ctypes.c_uint64),
+                ("BytesIn", ctypes.c_uint64), ("BytesReordered", ctypes.c_uint32),
+                ("BytesRetrans", ctypes.c_uint32), ("FastRetrans", ctypes.c_uint32),
+                ("DupAcksIn", ctypes.c_uint32), ("TimeoutEpisodes", ctypes.c_uint32),
+                ("SynRetrans", ctypes.c_ubyte)]
+
+
+def connection_state(connection):
+    """The connection's round trip (and the least seen), its window, and what had to be sent again, as text
+    for the log; nothing where the system does not say (anything but Windows)."""
+    if os.name != "nt":
+        return ""
+    try:
+        info = TcpInfo()
+        version = ctypes.c_uint32(0)
+        returned = ctypes.c_uint32(0)
+        # SIO_TCP_INFO
+        failed = ctypes.windll.ws2_32.WSAIoctl(ctypes.c_size_t(connection.fileno()), 0xD8000027,
+                                               ctypes.byref(version), ctypes.sizeof(version), ctypes.byref(info),
+                                               ctypes.sizeof(info), ctypes.byref(returned), None, None)
+        if failed:
+            return ""
+        return ", trip %.1f ms (least %.1f), window %d KiB, sent again %d KiB, timeouts %d" % (
+            info.RttUs / 1000, info.MinRttUs / 1000, info.Cwnd >> 10, info.BytesRetrans >> 10, info.TimeoutEpisodes)
+    except (OSError, AttributeError, ValueError):
+        return ""
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, ".wasm": "application/wasm",
                       ".js": "text/javascript", ".mjs": "text/javascript", ".data": "application/octet-stream",
@@ -47,10 +81,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ranges, and over https a connection for each costs a phone a handshake every time.
     protocol_version = "HTTP/1.1"
     timeout = 300
-    # Each answer leaves at once. Held back for the device's acknowledgement of what went before (Nagle), an
-    # answer's last packet waited out the phone's delayed one: a fifth of a second for every range, where the
-    # range itself took a millisecond, and a phone read four ranges a second.
+    # Each answer leaves at once, not held back for the device's acknowledgement of what went before (Nagle).
     disable_nagle_algorithm = True
+    # Ranges answered on this connection, and when the last answer was done.
+    answered = 0
+    answered_at = None
 
     def end_headers(self):
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
@@ -165,10 +200,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         outputfile.flush()
         # How much each read asked for and how long the device took to take it: a slow load is the network when
         # these are long, and the device's own work when they are short with long gaps between them.
+        # Beside them, which of the device's connections this is (its port) and how many ranges it has carried,
+        # how long after the last answer this request came, and the connection's state: a device that waits
+        # long between requests on a connection with a short round trip is slow itself, not its network.
         sent = self.range_left - left
-        took = time.monotonic() - started
-        self.log_message("range %d MiB + %d KiB, %.2f s, %.1f MiB/s", self.range_start >> 20, sent >> 10, took,
-                         sent / 1048576 / max(took, 0.001))
+        done = time.monotonic()
+        took = done - started
+        since = "" if self.answered_at is None else ", %d ms after the last" % ((started - self.answered_at) * 1000)
+        self.answered += 1
+        self.answered_at = done
+        self.log_message("range %d MiB + %d KiB, %.2f s, %.1f MiB/s, port %d #%d%s%s", self.range_start >> 20,
+                         sent >> 10, took, sent / 1048576 / max(took, 0.001), self.client_address[1],
+                         self.answered, since, connection_state(self.connection))
 
     def log_request(self, code="-", size="-"):
         # The page's log arrives every two seconds; its lines are the news, not the request.

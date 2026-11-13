@@ -146,18 +146,29 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
 - **Data from the server**: `tools/web/serve.py --data DIR` serves a `dc2data` extraction at `gamedata/`, and the
   page then plays with it in place of stored data: `storage.cpp` mounts `data.zip` on a WasmFS fetch backend of
   64 KiB chunks, kept in memory up to 192 MiB (`port/web/src/fetch_cache.js`), each request reaching at least
-  128 KiB so an entry's header and a small file come in one, and a read that goes on from where the last one of
-  its file ended reaching twice as far as the one before, up to 1 MiB. The server keeps a device's connection
-  open with answers that leave at once (with Nagle's algorithm on, the last packet of each waited for the
-  phone's delayed acknowledgement: a fifth of a second a read, four files a second), answers an unchanged build
-  with a 304, and logs each range's size and speed, which tells a slow network from a slow device. `--tls DIR`
-  adds https for the other devices on the network, and `--compress` serves gzip copies of the build.
+  128 KiB so an entry's header and a small file come in one. A phone has taken a fifth of a second for each
+  request however small, where a desktop takes a millisecond, so what counts is how few requests a load makes.
+  A read that starts where the last request ended or within 1 MiB after it is a part of the file being read
+  onward (a large file read straight through, or the first bytes of each texture of a folder): each such
+  request reaches twice as far as the one before, up to 2 MiB, and once a read is past the middle of what was
+  last asked for, the stretch after it is asked for without waiting, a read that needs it waiting for that
+  answer and not a second one. Four such parts of a file are followed at once. The requests are not kept by
+  the browser's own cache (`no-store`), which gives one address to one request at a time. The server keeps a
+  device's connection open with answers that leave at once (`TCP_NODELAY`), answers an unchanged build with a
+  304, and logs each range's size and speed, the connection it came on (the device's port and how many ranges
+  that connection has carried), how long after the last answer it was asked for and, on Windows, the
+  connection's round trip, window, bytes sent again and timeouts: a device that waits long between requests on
+  a connection with a short round trip is slow itself, not its network. `--tls DIR` adds https for the other
+  devices on the network, and `--compress` serves gzip copies of the build.
 - **A device's log on the server**: a page playing from the server's data posts its log's lines to the server's
   `client-log` every two seconds, and the server writes them in its own log as `client: ...` beside that
   device's requests. Among them are a line for the device (processors, memory, the screen and its rate), the
-  times of six reads of 128 KiB before the game starts, the game's rates each second (`--log-fps`, which such a
-  page passes; these go to the server and not to the page's log), and every five seconds the reads' count,
-  size and the time the game waited on them (`fetch: ...`, from `fetch_cache.js`). A site without the server
+  times of reads of the server's data as the game starts (`network: ...`, from `probeNetwork` in `shell.js`:
+  of one byte, 128 KiB and 1 MiB one after another, six at once, two after a pause and two the browser's cache
+  may keep, each as the page saw it and as the browser's network clock did), the game's rates each second
+  (`--log-fps`, which such a page passes; these go to the server and not to the page's log), and every five
+  seconds the reads' count, how many of them were sent ahead, their size and the time the game waited on them
+  (`fetch: ...`, from `fetch_cache.js`). A site without the server
   answers the first post with something other than 204 and the page stops sending.
 - **Several games on one site**: a `games.json` beside the page, `[{"name": "Dark Cloud", "href": "../"},
   {"name": "Dark Chronicle", "href": "./"}]`, puts a row of links above the title, the entry for this folder

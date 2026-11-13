@@ -12,11 +12,15 @@ addToLibrary({
     bytes: 0,
     limit: 192 * 1024 * 1024,
     ahead: 128 * 1024,
-    // How far a request reaches when its file is being read straight through.
-    aheadMost: 1024 * 1024,
+    // How far a request reaches when its part of the file is being read onward.
+    aheadMost: 2 * 1024 * 1024,
+    // How far past the last request a read may start and still count as reading onward.
+    near: 1024 * 1024,
+    // How many parts of a file may be read onward at once (the game's threads each read their own).
+    streaks: 4,
     order: new Map(),
     // What the requests since the last report cost, for the log.
-    stats: {since: 0, requests: 0, bytes: 0, waited: 0, worst: 0},
+    stats: {since: 0, requests: 0, ahead: 0, bytes: 0, waited: 0, worst: 0},
   },
 
   _wasmfs_create_fetch_backend_js__deps: [
@@ -45,11 +49,11 @@ addToLibrary({
       }
       var address = url(file);
       var chunkSize = __wasmfs_fetch_get_chunk_size(file);
-      var head = await fetch(address, {method: 'HEAD', headers: {'Range': 'bytes=0-'}});
+      var head = await fetch(address, {method: 'HEAD', headers: {'Range': 'bytes=0-'}, cache: 'no-store'});
       var length = parseInt(head.headers.get('Content-Length') ?? '', 10);
       if (head.ok && head.headers.get('Accept-Ranges') == 'bytes' && length > chunkSize * 2) {
         known = {url: address, size: length, chunkSize: chunkSize, chunks: new Map(), whole: null,
-                 next: -1, ahead: ctFetchCache.ahead};
+                 streaks: [], flying: []};
       } else {
         var response = await fetch(address);
         if (!response.ok) {
@@ -91,24 +95,83 @@ addToLibrary({
       return true;
     }
 
-    // One line in the log for each five seconds with requests in them: how many, how much, and how long the
-    // game waited for them, which says whether a slow load is the network's or the device's.
-    function count(began, bytes) {
+    // One line in the log for each five seconds with requests in them: how many (and how many of those were
+    // sent ahead of the game's reads), how much, and how long the game waited, which says whether a slow load
+    // is the network's or the device's.
+    function report(began) {
       var stats = ctFetchCache.stats;
-      var took = performance.now() - began;
-      if (stats.requests == 0) {
+      if (stats.since == 0) {
         stats.since = began;
         setTimeout(() => {
-          out(`fetch: ${stats.requests} requests, ${(stats.bytes / 1048576).toFixed(1)} MiB, waited ` +
-              `${(stats.waited / 1000).toFixed(1)} s of ${((performance.now() - stats.since) / 1000).toFixed(1)} s, ` +
+          out(`fetch: ${stats.requests} requests (${stats.ahead} ahead), ${(stats.bytes / 1048576).toFixed(1)} MiB, ` +
+              `waited ${(stats.waited / 1000).toFixed(1)} s of ${((performance.now() - stats.since) / 1000).toFixed(1)} s, ` +
               `longest ${Math.round(stats.worst)} ms`);
-          stats.requests = stats.bytes = stats.waited = stats.worst = 0;
+          stats.since = stats.requests = stats.ahead = stats.bytes = stats.waited = stats.worst = 0;
         }, 5000);
       }
+      return stats;
+    }
+
+    // The request under way that covers chunk index, if one does.
+    function flying(known, index) {
+      for (var flight of known.flying) {
+        if (flight.from <= index && index <= flight.to) {
+          return flight;
+        }
+      }
+      return null;
+    }
+
+    // Asks the server for chunks [from, to] and keeps them. Not kept by the browser (no-store): its cache gives
+    // one address to one request at a time, and every request here is for data.zip.
+    function request(file, known, from, to, ahead) {
+      var size = known.chunkSize;
+      var start = from * size;
+      var end = Math.min((to + 1) * size, known.size);
+      var flight = {from: from, to: to, ahead: ahead, done: null};
+      var stats = report(performance.now());
       stats.requests++;
-      stats.bytes += bytes;
-      stats.waited += took;
-      stats.worst = Math.max(stats.worst, took);
+      stats.ahead += ahead ? 1 : 0;
+      flight.done = (async () => {
+        try {
+          var response = await fetch(known.url, {headers: {'Range': `bytes=${start}-${end - 1}`}, cache: 'no-store'});
+          if (!response.ok) {
+            throw response;
+          }
+          var bytes = new Uint8Array(await response.arrayBuffer());
+          ctFetchCache.stats.bytes += bytes.byteLength;
+          if (response.status != 206 && bytes.byteLength == known.size) {
+            bytes = bytes.subarray(start, end);
+          }
+          if (ctFetchFiles[file] !== known) {
+            return;
+          }
+          for (var j = from; j <= to; j++) {
+            if (!known.chunks.has(j)) {
+              var chunk = bytes.slice(j * size - start, Math.min((j + 1) * size, end) - start);
+              known.chunks.set(j, chunk);
+              ctFetchCache.bytes += chunk.byteLength;
+              touch(file, j, chunk);
+            }
+          }
+        } finally {
+          known.flying.splice(known.flying.indexOf(flight), 1);
+        }
+      })();
+      known.flying.push(flight);
+      return flight.done;
+    }
+
+    // The part of the file being read onward that chunk index belongs to: one whose last request ended at or a
+    // little before it.
+    function streakAt(known, index) {
+      var near = Math.ceil(ctFetchCache.near / known.chunkSize);
+      for (var streak of known.streaks) {
+        if (index >= streak.end - streak.reach && index <= streak.end + near) {
+          return streak;
+        }
+      }
+      return null;
     }
 
     // Makes the chunks over [offset, offset + length) present, in one request for those missing.
@@ -120,6 +183,15 @@ addToLibrary({
       var to = -1;
       for (var i = first; i <= last; i++) {
         if (!known.chunks.has(i)) {
+          var flight = flying(known, i);
+          if (flight) {
+            // Already asked for (sent ahead, or another thread's read): wait for that answer, not a second one.
+            try {
+              await flight.done;
+            } catch (_failed) {
+            }
+            return;
+          }
           if (from < 0) {
             from = i;
           }
@@ -130,35 +202,53 @@ addToLibrary({
         return;
       }
       // A request reaches a little past its read: the archive is read an entry's header first (a few dozen
-      // bytes), then its data right after, and for a small file this one request then answers both. A read that
-      // goes on from where the last one ended is a large file read straight through: each of its requests
-      // reaches twice as far as the one before, so a file of megabytes is a few requests, not dozens, and a
-      // network slow to answer each one is felt less.
-      known.ahead = offset == known.next ? Math.min(known.ahead * 2, ctFetchCache.aheadMost) : ctFetchCache.ahead;
-      var reach = Math.min(from + Math.ceil(known.ahead / size) - 1, Math.floor((known.size - 1) / size));
-      while (to < reach && !known.chunks.has(to + 1)) {
-        to++;
-      }
-      var start = from * size;
-      var end = Math.min((to + 1) * size, known.size);
-      var began = performance.now();
-      var response = await fetch(known.url, {headers: {'Range': `bytes=${start}-${end - 1}`}});
-      if (!response.ok) {
-        throw response;
-      }
-      var bytes = new Uint8Array(await response.arrayBuffer());
-      count(began, bytes.byteLength);
-      if (response.status != 206 && bytes.byteLength == known.size) {
-        bytes = bytes.subarray(start, end);
-      }
-      for (var j = from; j <= to; j++) {
-        if (!known.chunks.has(j)) {
-          var chunk = bytes.slice(j * size - start, Math.min((j + 1) * size, end) - start);
-          known.chunks.set(j, chunk);
-          ctFetchCache.bytes += chunk.byteLength;
-          touch(file, j, chunk);
+      // bytes), then its data right after, and for a small file this one request then answers both. A read
+      // that starts where the last request ended, or a little after, is a part of the file being read onward
+      // (a large file read straight through, or the first bytes of each texture of a folder, which lie one
+      // after another with the pictures between): each such request reaches twice as far as the one before.
+      // A phone waits a sixth of a second for every answer however small, so what counts is how few there are.
+      var least = Math.ceil(ctFetchCache.ahead / size);
+      var streak = streakAt(known, from);
+      if (streak) {
+        streak.reach = Math.min(streak.reach * 2, Math.ceil(ctFetchCache.aheadMost / size));
+      } else {
+        streak = {end: 0, reach: least};
+        known.streaks.push(streak);
+        if (known.streaks.length > ctFetchCache.streaks) {
+          known.streaks.shift();
         }
       }
+      var reach = Math.min(from + streak.reach - 1, Math.floor((known.size - 1) / size));
+      while (to < reach && !known.chunks.has(to + 1) && !flying(known, to + 1)) {
+        to++;
+      }
+      streak.end = to + 1;
+      await request(file, known, from, to, false);
+    }
+
+    // Once a part of the file is being read onward and a read is past the middle of what was last asked for,
+    // asks for the stretch after it without waiting, so the answer is on its way, or here, when the game's
+    // reads get there.
+    function sendAhead(file, known, last) {
+      var size = known.chunkSize;
+      var streak = streakAt(known, last);
+      if (!streak || streak.reach <= Math.ceil(ctFetchCache.ahead / size) || last >= streak.end ||
+          last < streak.end - Math.ceil(streak.reach / 2)) {
+        return;
+      }
+      var from = streak.end;
+      var end = Math.floor((known.size - 1) / size);
+      if (from > end || known.chunks.has(from) || flying(known, from) || known.flying.some((flight) => flight.ahead)) {
+        return;
+      }
+      streak.reach = Math.min(streak.reach * 2, Math.ceil(ctFetchCache.aheadMost / size));
+      var to = from;
+      var reach = Math.min(from + streak.reach - 1, end);
+      while (to < reach && !known.chunks.has(to + 1) && !flying(known, to + 1)) {
+        to++;
+      }
+      streak.end = to + 1;
+      request(file, known, from, to, true).catch(() => {});
     }
 
     wasmFS$backends[backend] = {
@@ -197,9 +287,16 @@ addToLibrary({
           }
           // Another read may trim chunks this one found present while its own request was out: ask again
           // until all are here, then copy without awaiting, so none can go before they are copied.
-          do {
-            await load(file, known, offset, length);
-          } while (!present(known, offset, length));
+          if (!present(known, offset, length)) {
+            var began = performance.now();
+            do {
+              await load(file, known, offset, length);
+            } while (!present(known, offset, length));
+            var stats = report(began);
+            var took = performance.now() - began;
+            stats.waited += took;
+            stats.worst = Math.max(stats.worst, took);
+          }
         } catch (failed) {
           return failed?.status === 404 ? -{{{ cDefs.ENOENT }}} : -{{{ cDefs.EIO }}};
         }
@@ -215,7 +312,7 @@ addToLibrary({
           HEAPU8.set(chunk.subarray(start - chunkStart, end - chunkStart), buffer + (start - offset));
           touch(file, i, chunk);
         }
-        known.next = offset + length;
+        sendAhead(file, known, last);
         trim();
         return length;
       },

@@ -171,21 +171,62 @@ function measureRefresh() {
     requestAnimationFrame(step);
 }
 
-// How long the server takes to answer a read like the game's, six of them one after another.
+// How long the server takes to answer reads like the game's: of one byte, of 128 KiB and of 1 MiB one after
+// another, six at once, two with a pause before each, and two the browser's cache may keep. Each is given as
+// the page saw it and, in brackets, as the browser's network clock did (Resource Timing: the wait for the
+// answer's first byte + the rest of it), which a page busy starting the game does not stretch. Which of them
+// are slow says where a phone's time goes: every answer late by the same wait whatever its size, only large
+// ones, only those after a pause, or only one at a time.
 async function probeNetwork() {
-    const times = [];
+    const address = new URL(`${SERVER_DATA}data.zip`, location.href).href;
+    const before = performance.getEntriesByName(address).length;
+    let reads = 0;
+    const read = async (length, cache = 'no-store') => {
+        const from = ++reads * 50331648;
+        const began = performance.now();
+        const answer = await fetch(address, {headers: {Range: `bytes=${from}-${from + length - 1}`}, cache});
+        await answer.arrayBuffer();
+        return Math.round(performance.now() - began);
+    };
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const parts = [];
     try {
-        for (let i = 0; i < 6; i++) {
-            const from = i * 4194304;
-            const began = performance.now();
-            const answer = await fetch(`${SERVER_DATA}data.zip`, {headers: {Range: `bytes=${from}-${from + 131071}`}});
-            await answer.arrayBuffer();
-            times.push(Math.round(performance.now() - began));
-        }
+        const each = async (name, count, length, wait, cache) => {
+            const times = [];
+            for (let i = 0; i < count; i++) {
+                if (wait) {
+                    await pause(wait);
+                }
+                times.push(await read(length, cache));
+            }
+            parts.push([name, times, count]);
+        };
+        await each('1 byte', 3, 1);
+        await each('128 KiB', 3, 131072);
+        await each('1 MiB', 2, 1048576);
+        const began = performance.now();
+        await Promise.all([0, 1, 2, 3, 4, 5].map(() => read(131072)));
+        parts.push([`six of 128 KiB at once, ${Math.round(performance.now() - began)} in all`, [], 6]);
+        await each('128 KiB after a pause of 0.3 s', 2, 131072, 300);
+        await each("128 KiB the browser's cache may keep", 2, 131072, 0, 'default');
     } catch {
-        times.push('failed');
+        parts.push(['failed', [], 0]);
     }
-    log(`network: six reads of 128 KiB took ${times.join(', ')} ms`);
+    await pause(100);
+    const entries = performance.getEntriesByName(address).slice(before);
+    let at = 0;
+    let made = 0;
+    const text = parts.map(([name, times, count]) => {
+        const clock = entries.slice(at, at + count).map((entry) => {
+            made += entry.connectEnd > entry.connectStart ? 1 : 0;
+            return `${Math.round(entry.responseStart - entry.requestStart)}+${Math.round(entry.responseEnd - entry.responseStart)}`;
+        });
+        at += count;
+        return `${name}: ${times.join(', ')}${times.length ? ' ' : ''}(${clock.join(', ')})`;
+    });
+    log(`network: ms for reads of ${text.join('; ')}`);
+    log(`network: ${entries[0]?.nextHopProtocol || 'protocol unknown'}, ${made} of ${entries.length} reads made a ` +
+        `connection`);
 }
 
 function log(text) {
