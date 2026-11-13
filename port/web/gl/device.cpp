@@ -596,6 +596,30 @@ static void CaptureFrame(Image *image, uint32_t width, uint32_t height) {
     }, pixels.data(), width, height, remaining);
 }
 
+// Returns once the browser has had its turn. A timer of no length (emscripten_sleep(0)) is held to 4 ms once
+// timers nest, as one in every frame does: a quarter of a 60 Hz frame spent waiting. A message to this thread
+// itself is a task like the timer's and is not held.
+EM_ASYNC_JS(void, YieldToBrowser, (), {
+    if (!Module.ctYield) {
+        if (typeof MessageChannel === 'undefined') {
+            Module.ctYield = () => new Promise((resolve) => setTimeout(resolve, 0));
+        } else {
+            const channel = new MessageChannel();
+            let waiting = null;
+            channel.port1.onmessage = () => {
+                const resolve = waiting;
+                waiting = null;
+                resolve?.();
+            };
+            Module.ctYield = () => new Promise((resolve) => {
+                waiting = resolve;
+                channel.port2.postMessage(0);
+            });
+        }
+    }
+    await Module.ctYield();
+});
+
 VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue, const VkPresentInfoKHR *info) {
     AssertDeviceThread(__func__);
     VkResult overall = VK_SUCCESS;
@@ -631,7 +655,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkQueuePresentKHR(VkQueue, const VkPresentInfoKHR
         }
     }
     // The browser shows the canvas once this thread yields to it; there is no present call.
-    emscripten_sleep(0);
+    YieldToBrowser();
     return overall;
 }
 

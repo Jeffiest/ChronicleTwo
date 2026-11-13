@@ -34,6 +34,8 @@ import time
 
 DATA_PREFIX = "/gamedata/"
 DATA_FILES = ("data.zip", "data.json")
+# Where the page posts its log lines.
+CLIENT_LOG = "/client-log"
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -45,6 +47,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     # ranges, and over https a connection for each costs a phone a handshake every time.
     protocol_version = "HTTP/1.1"
     timeout = 300
+    # Each answer leaves at once. Held back for the device's acknowledgement of what went before (Nagle), an
+    # answer's last packet waited out the phone's delayed one: a fifth of a second for every range, where the
+    # range itself took a millisecond, and a phone read four ranges a second.
+    disable_nagle_algorithm = True
 
     def end_headers(self):
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
@@ -132,6 +138,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         return source
 
+    def do_POST(self):
+        """The page's log (site/shell.js sends its lines here), so a phone's run is read beside its requests."""
+        length = int(self.headers.get("Content-Length") or 0)
+        if self.path.split("?", 1)[0] != CLIENT_LOG or not 0 <= length <= 1 << 18:
+            self.send_error(404)
+            return
+        for line in self.rfile.read(length).decode("utf-8", "replace").splitlines():
+            if line.strip():
+                self.log_message("client: %s", line[:500])
+        self.send_response(204)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def copyfile(self, source, outputfile):
         if self.range_left is None:
             return super().copyfile(source, outputfile)
@@ -150,6 +169,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         took = time.monotonic() - started
         self.log_message("range %d MiB + %d KiB, %.2f s, %.1f MiB/s", self.range_start >> 20, sent >> 10, took,
                          sent / 1048576 / max(took, 0.001))
+
+    def log_request(self, code="-", size="-"):
+        # The page's log arrives every two seconds; its lines are the news, not the request.
+        if self.command == "POST" and code == 204:
+            return
+        super().log_request(code, size)
 
     def log_message(self, format, *args):
         if os.environ.get("CT_SERVE_QUIET"):

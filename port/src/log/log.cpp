@@ -430,6 +430,11 @@ quill::BackendOptions PortBackendOptions() {
     quill::BackendOptions options;
     options.thread_name = "ct-log";
     options.sleep_duration = std::chrono::milliseconds{1};
+#ifdef __EMSCRIPTEN__
+    // Each wake of a thread in a browser costs far more than on a desktop: a thousand a second were a sixth of
+    // a processor in desktop Chrome with nothing to write.
+    options.sleep_duration = std::chrono::milliseconds{10};
+#endif
     // UTF-8 paths and the game's Shift-JIS text pass through as they are.
     options.check_printable_char = {};
     options.error_notifier = [](const std::string &error) { std::println(stderr, "log: {}", error); };

@@ -29,6 +29,10 @@ drawing with WebGL2, is a second target (`-DCT_WEB_GL_IN_ALL=ON` builds it with 
 Asyncify and `wasm-opt` over the whole game take several minutes and most of the memory, so link one target at a
 time (`web.cmake` puts the links in a job pool of one).
 
+`-DCT_WEB_PROFILING=ON` (`tools/web/build.sh configure -DCT_WEB_PROFILING=ON`) links with the functions' names
+kept, so a browser's profiler says which of the game's functions the time went to; the files are a few megabytes
+larger and the game is otherwise the same.
+
 Kazarov's renderer tests for the two layers are `kazarov_gfx_tests` and `kazarov_gfx_tests_gl`
 (`port/web/test/gfx_tests.html`), not built by default.
 
@@ -130,13 +134,31 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   `darkchronicle.js` elsewhere; `?renderer=gl` or `?renderer=webgpu` chooses, and the log's first lines say which
   ran on what GPU. SDL sizes the canvas by `devicePixelRatio`, about three on a phone; a touch screen draws at no
   more than 1.5 pixels to the CSS pixel and `?scale=1` or `?scale=3` chooses (`pixelRatio` in `shell.js`).
+- **Frames**: a browser has no present mode to hold the game to the screen, and without a limit the game drew
+  three frames for each one shown. The page counts the screen's refresh rate from half a second of its frames
+  and passes it as `CT_WEB_REFRESH`; `PresentSettingsFor` (`main.cpp`) makes it the most frames a second, 60
+  where the page could not tell, unless the configuration names a limit. Each present ends by letting the
+  browser have its turn through a message to the thread itself (`YieldToBrowser` in each layer's `device.cpp`),
+  as a timer of no length is held to 4 ms. The WebGL2 layer keeps the images that are never drawn into (the
+  renderer's scratch image for a copy within one image, several a frame in a menu) for the next of the same
+  format and size, and asks GL for an error only after making an image of 1 MiB or more (`objects.cpp`): each
+  such question waits for the browser's GPU process. The logger's thread wakes every 10 ms, not every 1 ms.
 - **Data from the server**: `tools/web/serve.py --data DIR` serves a `dc2data` extraction at `gamedata/`, and the
   page then plays with it in place of stored data: `storage.cpp` mounts `data.zip` on a WasmFS fetch backend of
   64 KiB chunks, kept in memory up to 192 MiB (`port/web/src/fetch_cache.js`), each request reaching at least
-  128 KiB so an entry's header and a small file come in one. The server keeps a device's connection open, answers
-  an unchanged build with a 304, and logs each range's size and speed, which tells a slow network from a slow
-  device. `--tls DIR` adds https for the other devices on the network, and `--compress` serves gzip copies of the
-  build.
+  128 KiB so an entry's header and a small file come in one, and a read that goes on from where the last one of
+  its file ended reaching twice as far as the one before, up to 1 MiB. The server keeps a device's connection
+  open with answers that leave at once (with Nagle's algorithm on, the last packet of each waited for the
+  phone's delayed acknowledgement: a fifth of a second a read, four files a second), answers an unchanged build
+  with a 304, and logs each range's size and speed, which tells a slow network from a slow device. `--tls DIR`
+  adds https for the other devices on the network, and `--compress` serves gzip copies of the build.
+- **A device's log on the server**: a page playing from the server's data posts its log's lines to the server's
+  `client-log` every two seconds, and the server writes them in its own log as `client: ...` beside that
+  device's requests. Among them are a line for the device (processors, memory, the screen and its rate), the
+  times of six reads of 128 KiB before the game starts, the game's rates each second (`--log-fps`, which such a
+  page passes; these go to the server and not to the page's log), and every five seconds the reads' count,
+  size and the time the game waited on them (`fetch: ...`, from `fetch_cache.js`). A site without the server
+  answers the first post with something other than 204 and the page stops sending.
 - **Several games on one site**: a `games.json` beside the page, `[{"name": "Dark Cloud", "href": "../"},
   {"name": "Dark Chronicle", "href": "./"}]`, puts a row of links above the title, the entry for this folder
   marked (`showGames` in `shell.js`). DC_Web's site writes one for each of its games; a site with this game alone

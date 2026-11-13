@@ -93,7 +93,103 @@ function keepLog(now) {
     }
 }
 
+// With the game data from the page's server (tools/web/serve.py), the log's lines go to it as well, every two
+// seconds, so a phone's run is read on the computer beside its requests. An answer other than the server's 204,
+// or five sends that failed, ends it.
+const REPORT_TO = 'client-log';
+const REPORT_HELD = 2000;
+let report = null;
+let reportFailed = 0;
+
+function reportLine(text) {
+    if (report) {
+        report.push(text);
+        if (report.length > REPORT_HELD) {
+            report.splice(0, report.length - REPORT_HELD);
+        }
+    }
+}
+
+async function sendReport() {
+    if (!report) {
+        return;
+    }
+    if (report.length > 0) {
+        const lines = report.splice(0, report.length).join('\n');
+        try {
+            const answer = await fetch(REPORT_TO, {method: 'POST', body: lines, cache: 'no-store'});
+            reportFailed = answer.status === 204 ? 0 : 5;
+        } catch {
+            reportFailed++;
+        }
+        if (reportFailed >= 5) {
+            report = null;
+            return;
+        }
+    }
+    setTimeout(sendReport, 2000);
+}
+
+function startReport() {
+    report = [];
+    setTimeout(sendReport, 2000);
+    // What is still held when the page goes, the lines before a crash among them.
+    addEventListener('pagehide', () => {
+        if (report && report.length > 0) {
+            navigator.sendBeacon(REPORT_TO, report.splice(0, report.length).join('\n'));
+        }
+    });
+}
+
+// The game's rates, a line a second (--log-fps, which a reporting page asks for): to the server, not the drawer.
+const RATES = /\bpresent: FPS\b/;
+
+// The screen's refresh rate, counted from half a second of its frames while the page waits for Start; 0 until
+// then. The game shows no more frames than the screen does (CT_WEB_REFRESH, port/src/main.cpp).
+let refreshRate = 0;
+
+function measureRefresh() {
+    let first = 0;
+    let frames = 0;
+    const step = (now) => {
+        if (first === 0) {
+            first = now;
+        } else {
+            frames++;
+        }
+        if (now - first < 500) {
+            requestAnimationFrame(step);
+        } else {
+            const measured = frames * 1000 / (now - first);
+            // The rate a screen is sold with nearest the count; a count far from all of them (a page in the
+            // background is held to a few frames a second) says nothing.
+            const known = [60, 72, 75, 90, 120, 144, 165, 240];
+            const nearest = known.reduce((a, b) => (Math.abs(b - measured) < Math.abs(a - measured) ? b : a));
+            refreshRate = Math.abs(nearest - measured) < nearest * 0.08 ? nearest : 0;
+        }
+    };
+    requestAnimationFrame(step);
+}
+
+// How long the server takes to answer a read like the game's, six of them one after another.
+async function probeNetwork() {
+    const times = [];
+    try {
+        for (let i = 0; i < 6; i++) {
+            const from = i * 4194304;
+            const began = performance.now();
+            const answer = await fetch(`${SERVER_DATA}data.zip`, {headers: {Range: `bytes=${from}-${from + 131071}`}});
+            await answer.arrayBuffer();
+            times.push(Math.round(performance.now() - began));
+        }
+    } catch {
+        times.push('failed');
+    }
+    log(`network: six reads of 128 KiB took ${times.join(', ')} ms`);
+}
+
 function log(text) {
+    reportLine(text);
     if (window.ctLogging) {
         kept.push(text);
         if (kept.length > LOG_LINES) {
@@ -500,6 +596,10 @@ function print(text) {
         keepAwake(!text.startsWith('extract: failed'));
         notice(text.slice('extract: '.length));
     }
+    if (report && RATES.test(text)) {
+        reportLine(text);
+        return;
+    }
     log(text);
 }
 
@@ -686,6 +786,12 @@ function start() {
     const args = ['--run-dir', `/opfs/${HOME}`];
     if (server) {
         args.push('--env', `CT_WEB_SERVER_DATA=${new URL(SERVER_DATA, location.href)}`, '--data', '/server/data');
+        // The server takes the page's log, and with it the game's rates.
+        args.push('--log-fps');
+        startReport();
+    }
+    if (refreshRate > 0) {
+        args.push('--env', `CT_WEB_REFRESH=${refreshRate}`);
     }
     if (extra) {
         args.push(...extra.split(/\s+/).filter(Boolean));
@@ -697,6 +803,11 @@ function start() {
     const screenRatio = devicePixelRatio;
     log(`darkchronicle ${args.join(' ')} (${renderer === 'gl' ? 'WebGL2' : 'WebGPU'}, ${gpuName() || 'GPU unknown'}, ` +
         `${pixelRatio()} pixels to the CSS pixel of the screen's ${screenRatio}, page ${innerWidth}x${innerHeight})`);
+    log(`device: ${navigator.hardwareConcurrency} processors, ${navigator.deviceMemory ?? 'unknown'} GiB of memory, ` +
+        `screen ${screen.width}x${screen.height} at ${refreshRate || 'an unknown rate of'} Hz`);
+    if (server) {
+        probeNetwork();
+    }
     const canvas = $('canvas');
     // Threads still running when the game exits can abort as it takes them down; the exit is what matters.
     let exited = false;
@@ -809,6 +920,7 @@ async function main() {
         return;
     }
     navigator.storage.persist?.();
+    measureRefresh();
     server = new URLSearchParams(location.search).has('local') ? null : await serverData();
 
     const choose = (store) => async (event) => {

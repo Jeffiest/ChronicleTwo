@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <deque>
 #include <map>
 #include <string>
 #include <tuple>
@@ -58,6 +59,56 @@ const KnownModule kKnownModules[] = {
 using FramebufferKey = std::tuple<Image *, uint32_t, Image *, uint32_t>;
 std::map<FramebufferKey, GLuint>                       g_framebuffers;
 std::unordered_map<Image *, std::vector<FramebufferKey>> g_framebuffers_of;
+
+// Images lately destroyed, oldest first, kept whole (the texture, and the framebuffers it is in) for the next
+// image of the same format and size. The renderer makes a scratch image for every copy within one image (gfx's
+// Transfer) and destroys it a few frames on, several a frame in a menu: a texture made, an error asked for and
+// a framebuffer checked each time, where each question waits for the GPU's side of the browser to catch up,
+// were a sixth of the game thread's time in desktop Chrome. Only images that are never drawn into are kept,
+// which is those and textures; both are written whole before they are read.
+struct Spare {
+    Image       *image;
+    VkDeviceSize bytes;
+};
+std::deque<Spare>      g_spares;
+VkDeviceSize           g_spare_bytes = 0;
+constexpr size_t       kSpareCount = 16;
+constexpr VkDeviceSize kSpareBytes = VkDeviceSize{32} << 20;
+// An image of this size or more asks GL whether its storage was made; a smaller one does not wait for that.
+constexpr VkDeviceSize kCheckedBytes = VkDeviceSize{1} << 20;
+
+VkDeviceSize ImageBytes(const Image *image) {
+    return VkDeviceSize{image->width} * image->height * TexelBytes(image->vk_format);
+}
+
+void DeleteImage(Image *image) {
+    ForgetFramebuffersOf(image);
+    glDeleteTextures(1, &image->texture);
+    delete image;
+}
+
+// The newest spare of this format and size, taken out of the spares, or null.
+Image *TakeSpare(VkFormat format, uint32_t width, uint32_t height) {
+    for (auto it = g_spares.rbegin(); it != g_spares.rend(); ++it) {
+        Image *image = it->image;
+        if (image->vk_format == format && image->width == width && image->height == height) {
+            g_spare_bytes -= it->bytes;
+            g_spares.erase(std::next(it).base());
+            return image;
+        }
+    }
+    return nullptr;
+}
+
+void KeepSpare(Image *image) {
+    g_spares.push_back({image, ImageBytes(image)});
+    g_spare_bytes += g_spares.back().bytes;
+    while (g_spares.size() > kSpareCount || g_spare_bytes > kSpareBytes) {
+        g_spare_bytes -= g_spares.front().bytes;
+        DeleteImage(g_spares.front().image);
+        g_spares.pop_front();
+    }
+}
 
 void Attach(GLenum attachment, Image *image, uint32_t mip) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, image->texture, static_cast<GLint>(mip));
@@ -313,7 +364,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkBindBufferMemory(VkDevice, VkBuffer buffer, VkD
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice, const VkImageCreateInfo *info, const VkAllocationCallbacks *,
                                              VkImage *image) {
     AssertDeviceThread(__func__);
+    const bool spare = info->mipLevels == 1 && (info->usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) == 0;
+    if (spare) {
+        if (Image *kept = TakeSpare(info->format, info->extent.width, info->extent.height)) {
+            *image = Handle<VkImage>(kept);
+            return VK_SUCCESS;
+        }
+    }
     auto *object = new Image;
+    object->spare = spare;
     object->vk_format = info->format;
     object->internal_format = FormatOf(info->format).internal_format;
     object->width = info->extent.width;
@@ -330,7 +390,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateImage(VkDevice, const VkImageCreateInfo *
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
-    if (glGetError() == GL_OUT_OF_MEMORY) {
+    if (ImageBytes(object) >= kCheckedBytes && glGetError() == GL_OUT_OF_MEMORY) {
         glDeleteTextures(1, &object->texture);
         delete object;
         return VK_ERROR_OUT_OF_DEVICE_MEMORY;
@@ -344,9 +404,11 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyImage(VkDevice, VkImage image, const VkAlloc
     if (object == nullptr) {
         return;
     }
-    ForgetFramebuffersOf(object);
-    glDeleteTextures(1, &object->texture);
-    delete object;
+    if (object->spare && ImageBytes(object) <= kSpareBytes / 4) {
+        KeepSpare(object);
+        return;
+    }
+    DeleteImage(object);
 }
 
 VKAPI_ATTR void VKAPI_CALL vkGetImageMemoryRequirements(VkDevice, VkImage image, VkMemoryRequirements *requirements) {

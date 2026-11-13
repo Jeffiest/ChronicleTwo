@@ -8,7 +8,16 @@
 
 addToLibrary({
   $ctFetchFiles: {},
-  $ctFetchCache: {bytes: 0, limit: 192 * 1024 * 1024, ahead: 128 * 1024, order: new Map()},
+  $ctFetchCache: {
+    bytes: 0,
+    limit: 192 * 1024 * 1024,
+    ahead: 128 * 1024,
+    // How far a request reaches when its file is being read straight through.
+    aheadMost: 1024 * 1024,
+    order: new Map(),
+    // What the requests since the last report cost, for the log.
+    stats: {since: 0, requests: 0, bytes: 0, waited: 0, worst: 0},
+  },
 
   _wasmfs_create_fetch_backend_js__deps: [
     '$wasmFS$backends',
@@ -39,7 +48,8 @@ addToLibrary({
       var head = await fetch(address, {method: 'HEAD', headers: {'Range': 'bytes=0-'}});
       var length = parseInt(head.headers.get('Content-Length') ?? '', 10);
       if (head.ok && head.headers.get('Accept-Ranges') == 'bytes' && length > chunkSize * 2) {
-        known = {url: address, size: length, chunkSize: chunkSize, chunks: new Map(), whole: null};
+        known = {url: address, size: length, chunkSize: chunkSize, chunks: new Map(), whole: null,
+                 next: -1, ahead: ctFetchCache.ahead};
       } else {
         var response = await fetch(address);
         if (!response.ok) {
@@ -81,6 +91,26 @@ addToLibrary({
       return true;
     }
 
+    // One line in the log for each five seconds with requests in them: how many, how much, and how long the
+    // game waited for them, which says whether a slow load is the network's or the device's.
+    function count(began, bytes) {
+      var stats = ctFetchCache.stats;
+      var took = performance.now() - began;
+      if (stats.requests == 0) {
+        stats.since = began;
+        setTimeout(() => {
+          out(`fetch: ${stats.requests} requests, ${(stats.bytes / 1048576).toFixed(1)} MiB, waited ` +
+              `${(stats.waited / 1000).toFixed(1)} s of ${((performance.now() - stats.since) / 1000).toFixed(1)} s, ` +
+              `longest ${Math.round(stats.worst)} ms`);
+          stats.requests = stats.bytes = stats.waited = stats.worst = 0;
+        }, 5000);
+      }
+      stats.requests++;
+      stats.bytes += bytes;
+      stats.waited += took;
+      stats.worst = Math.max(stats.worst, took);
+    }
+
     // Makes the chunks over [offset, offset + length) present, in one request for those missing.
     async function load(file, known, offset, length) {
       var size = known.chunkSize;
@@ -100,18 +130,24 @@ addToLibrary({
         return;
       }
       // A request reaches a little past its read: the archive is read an entry's header first (a few dozen
-      // bytes), then its data right after, and for a small file this one request then answers both.
-      var reach = Math.min(from + Math.ceil(ctFetchCache.ahead / size) - 1, Math.floor((known.size - 1) / size));
+      // bytes), then its data right after, and for a small file this one request then answers both. A read that
+      // goes on from where the last one ended is a large file read straight through: each of its requests
+      // reaches twice as far as the one before, so a file of megabytes is a few requests, not dozens, and a
+      // network slow to answer each one is felt less.
+      known.ahead = offset == known.next ? Math.min(known.ahead * 2, ctFetchCache.aheadMost) : ctFetchCache.ahead;
+      var reach = Math.min(from + Math.ceil(known.ahead / size) - 1, Math.floor((known.size - 1) / size));
       while (to < reach && !known.chunks.has(to + 1)) {
         to++;
       }
       var start = from * size;
       var end = Math.min((to + 1) * size, known.size);
+      var began = performance.now();
       var response = await fetch(known.url, {headers: {'Range': `bytes=${start}-${end - 1}`}});
       if (!response.ok) {
         throw response;
       }
       var bytes = new Uint8Array(await response.arrayBuffer());
+      count(began, bytes.byteLength);
       if (response.status != 206 && bytes.byteLength == known.size) {
         bytes = bytes.subarray(start, end);
       }
@@ -179,6 +215,7 @@ addToLibrary({
           HEAPU8.set(chunk.subarray(start - chunkStart, end - chunkStart), buffer + (start - offset));
           touch(file, i, chunk);
         }
+        known.next = offset + length;
         trim();
         return length;
       },

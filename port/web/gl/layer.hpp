@@ -90,6 +90,8 @@ struct Image {
     uint32_t height = 0;
     uint32_t mips = 1;
     bool     swapchain = false;
+    // Never drawn into, so kept at its destruction for the next image of its kind (objects.cpp's spares).
+    bool spare = false;
     // The mip range sampling last set, as GL keeps it on the texture rather than the view.
     int32_t base_level = 0;
     int32_t max_level = 1000;

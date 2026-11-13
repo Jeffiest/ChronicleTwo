@@ -277,6 +277,16 @@ PresentSettings PresentSettingsFor(const Config &config, const Options &options)
     settings.max_fps = 60.0;
     settings.display_per_tick = 0;
 #endif
+#ifdef __EMSCRIPTEN__
+    // A browser shows no more frames than its screen's refresh rate, which the page counted (CT_WEB_REFRESH,
+    // port/web/site/shell.js), and has no present mode to hold the game to it: without a limit the game drew
+    // three frames for each one shown, and a phone spent its time and heat on them.
+    if (settings.max_fps <= 0.0) {
+        const char  *refresh = std::getenv("CT_WEB_REFRESH");
+        const double rate = refresh != nullptr ? std::strtod(refresh, nullptr) : 0.0;
+        settings.max_fps = rate >= 50.0 && rate <= 360.0 ? rate : 60.0;
+    }
+#endif
     return settings;
 }
 

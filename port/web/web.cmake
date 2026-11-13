@@ -179,6 +179,11 @@ set(CT_WEB_LINK_OPTIONS
     # The fetch backend with a bounded cache, for the server's game data (src/storage.cpp, WebMountServerData).
     "SHELL:--js-library ${CT_WEB_DIR}/src/fetch_cache.js"
     -Wl,--error-limit=0)
+# Function names kept in the .wasm, for the browser's profiler (docs/WEB.md): -DCT_WEB_PROFILING=ON.
+option(CT_WEB_PROFILING "Keep function names in the web build's .wasm" OFF)
+if(CT_WEB_PROFILING)
+    list(APPEND CT_WEB_LINK_OPTIONS --profiling-funcs)
+endif()
 # The link reruns when the pre-js or the library changes (emcc reads them at link time, outside CMake's scan).
 set(CT_WEB_LINK_DEPENDS ${CT_WEB_DIR}/src/node_canvas.js ${CT_WEB_DIR}/src/fetch_cache.js)
 
