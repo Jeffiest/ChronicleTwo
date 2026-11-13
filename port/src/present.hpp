@@ -13,6 +13,9 @@ struct PresentSettings {
     bool interpolation = true;
     // 0 leaves the pace to the present mode.
     double max_fps = 0.0;
+    // max_fps is the screen's own rate, not a limit asked for: where the host's display frames set the pace
+    // (ClockHostFrame) it limits nothing more.
+    bool max_fps_screen = false;
     // An unbounded clock has no real time to fill, so display renders are made per tick at evenly spaced alphas and discarded.
     int             display_per_tick = 0;
     bool            show_fps = false;

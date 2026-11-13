@@ -8,6 +8,46 @@
 
 #include "kazarov/log.hpp"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+// The thread's animation frames, counted from 1 as they arrive; 0 before the first, and where the thread has
+// none. A hidden page gets no frames, so past a tenth of a second without one a timer counts one in its place,
+// and the game goes on, slowly, behind another tab.
+EM_JS(int, ClockWebFrame, (), {
+    if (Module.ctFrames === undefined) {
+        const frames = Module.ctFrames = {serial: 0, at: 0, waiting: null};
+        const arrived = () => {
+            frames.serial = frames.serial % 0x3fffffff + 1;
+            frames.at = performance.now();
+            const resolve = frames.waiting;
+            frames.waiting = null;
+            resolve?.();
+        };
+        const step = () => {
+            requestAnimationFrame(step);
+            arrived();
+        };
+        try {
+            requestAnimationFrame(step);
+            setInterval(() => {
+                if (frames.serial != 0 && performance.now() - frames.at >= 100) {
+                    arrived();
+                }
+            }, 50);
+        } catch (_none) {
+        }
+    }
+    return Module.ctFrames.serial;
+});
+
+EM_ASYNC_JS(void, ClockWebWaitFrame, (), {
+    await new Promise((resolve) => {
+        Module.ctFrames.waiting = resolve;
+    });
+});
+#endif
+
 namespace {
 
 using SteadyClock = std::chrono::steady_clock;
@@ -64,6 +104,14 @@ std::int64_t TickAt(SteadyClock::time_point now) {
 }
 
 void SleepUntil(SteadyClock::time_point deadline) {
+#ifdef __EMSCRIPTEN__
+    if (ClockWebFrame() != 0) {
+        while (SteadyClock::now() < deadline) {
+            ClockWebWaitFrame();
+        }
+        return;
+    }
+#endif
     if (deadline - SteadyClock::now() > kSpinMargin) {
         std::this_thread::sleep_until(deadline - kSpinMargin);
     }
@@ -166,6 +214,20 @@ std::int64_t ClockPump() {
 
 bool ClockPumping() {
     return g_clock.pumping;
+}
+
+std::uint32_t ClockHostFrame() {
+#ifdef __EMSCRIPTEN__
+    return static_cast<std::uint32_t>(ClockWebFrame());
+#else
+    return 0;
+#endif
+}
+
+void ClockWaitHostFrame() {
+#ifdef __EMSCRIPTEN__
+    ClockWebWaitFrame();
+#endif
 }
 
 void ClockWaitNextTick() {

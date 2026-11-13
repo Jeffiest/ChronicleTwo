@@ -49,6 +49,8 @@ struct FpsOverlay {
 PresentSettings   settings;
 PresentStats      stats;
 bool              tick_shown = true;
+// The host's display frame (ClockHostFrame) the last display between ticks went to.
+std::uint32_t     shown_host_frame = 0;
 PresentPacer      pacer;
 Clock::time_point last_log;
 FpsOverlay        overlay;
@@ -620,7 +622,17 @@ bool BetweenTicks(double fraction, Clock::time_point next_tick) {
         return false;
     }
 
-    const auto decision = pacer.Next(Clock::now(), next_tick, settings.max_fps);
+    // Where the host tells of its display frames (a browser), one display goes to each: the wait for the next
+    // frame is the pace, and it ends on time where a timed sleep does not (platform/clock.hpp).
+    const std::uint32_t host_frame = ClockHostFrame();
+    if (host_frame != 0 && host_frame == shown_host_frame) {
+        CT_PROFILE_ZONE("Display frame wait");
+        ClockWaitHostFrame();
+        return true;
+    }
+
+    const double max_fps = host_frame != 0 && settings.max_fps_screen ? 0.0 : settings.max_fps;
+    const auto   decision = pacer.Next(Clock::now(), next_tick, max_fps);
     if (decision.action == PresentPacer::Action::Tick) {
         return false;
     }
@@ -633,6 +645,8 @@ bool BetweenTicks(double fraction, Clock::time_point next_tick) {
     // A game frame spans mgFrameRate ticks, so alpha is the fraction of the game frame elapsed, not of the tick.
     const float alpha = interpolation ? PresentFrameAlpha(static_cast<double>(ClockTickCount() - wait_start), fraction, wait_frames) : 1.0f;
 
+    // Taken before the display: a frame that arrives while it is drawn gets a display of its own.
+    shown_host_frame = host_frame;
     if (!pacer.Present([&] { return DisplayFrame(alpha, true); }, Clock::now)) {
         return false;
     }

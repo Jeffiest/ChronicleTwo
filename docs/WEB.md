@@ -137,7 +137,14 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
 - **Frames**: a browser has no present mode to hold the game to the screen, and without a limit the game drew
   three frames for each one shown. The page counts the screen's refresh rate from half a second of its frames
   and passes it as `CT_WEB_REFRESH`; `PresentSettingsFor` (`main.cpp`) makes it the most frames a second, 60
-  where the page could not tell, unless the configuration names a limit. Each present ends by letting the
+  where the page could not tell, unless the configuration names a limit. That limit is kept by timed sleeps,
+  and a browser's are no finer than its system's timer: in Chrome on Windows a sleep of 1 ms ends up to 15.6 ms
+  later, so a town (two ticks to a game frame, with a display between) showed 34 frames a second of 60 while
+  the thread slept three quarters of the time. The game's thread is a worker with animation frames of its own,
+  which arrive on time, so once the first has come (`ClockHostFrame`, `platform/clock.hpp`) the wait for a tick
+  ends on the first frame at or after it, one display goes to each frame (`BetweenTicks` in `present.cpp`), and
+  the screen's rate limits nothing more; a limit the configuration names still holds. A hidden page gets no
+  frames, and the game then goes on at a tenth of a second a step. Each present ends by letting the
   browser have its turn through a message to the thread itself (`YieldToBrowser` in each layer's `device.cpp`),
   as a timer of no length is held to 4 ms. The WebGL2 layer keeps the images that are never drawn into (the
   renderer's scratch image for a copy within one image, several a frame in a menu) for the next of the same

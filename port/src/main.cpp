@@ -285,6 +285,7 @@ PresentSettings PresentSettingsFor(const Config &config, const Options &options)
         const char  *refresh = std::getenv("CT_WEB_REFRESH");
         const double rate = refresh != nullptr ? std::strtod(refresh, nullptr) : 0.0;
         settings.max_fps = rate >= 50.0 && rate <= 360.0 ? rate : 60.0;
+        settings.max_fps_screen = true;
     }
 #endif
     return settings;

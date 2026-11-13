@@ -81,5 +81,15 @@ void ClockWaitNextTick(ClockWaitHook hook);
 // Elapsed fraction of the current tick, in [0, 1); 1 when unbounded.
 double ClockTickFraction();
 
+// The number of the host's last display frame, where the host tells the thread of each refresh of the screen: a
+// browser's animation frames. 0 where it does not (anywhere else, and in a browser until the first arrives).
+// A browser's timed waits are no finer than its system's timer (in Chrome on Windows a sleep of 1 ms ends up to
+// 15.6 ms later, most of a tick), while its frames arrive on time, so where there are frames the waits for a
+// tick end on the first frame at or after it, and the display paces itself by them.
+std::uint32_t ClockHostFrame();
+
+// Waits for the host's next display frame. Only where ClockHostFrame is not 0.
+void ClockWaitHostFrame();
+
 // What `sceGsSyncV` and the end of a frame do: wait for the next tick, then pump.
 std::int64_t ClockSyncV();
