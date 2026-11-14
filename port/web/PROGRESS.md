@@ -26,6 +26,15 @@ for whoever continues it: what was done, what failed and why, and what was chang
   `fd72338a` ported: `draw_body.glsl`'s `kAemMask` (the palette slot as an AEM mask, flag 2048) and alpha function 8
   (RGB-only source-over). The newer renderer calls one more Vulkan command, `vkGetFenceStatus`, which the WebGPU layer
   already had.
+- Kazarov `584cd2ef` (2026-11-14, with upstream `bcd19672`) is not ported into the shaders, and builds and runs as it
+  is. It added to `draw_body.glsl` the constants 12 `kProg0Mode1Fog`, 13 `kBlackFogInput`, 14 `kZeroSourceAlpha` and
+  15 `kGuardedZeroSourceAlpha`, each a cheaper fragment path that the renderer picks only for draws where it gives
+  what the general path gives. Both web layers pass over a constant their shader does not name (WebGPU keeps only
+  the module's own override ids; WebGL2 defines an `SC_<id>` nothing reads), so those pipelines draw with the
+  general path: the same picture, without the saving. The variants `draw_*_alpha_only_single`,
+  `draw_*_shared_rgb_single`, `draw_*_guard_classifier_single` and `mesh_prog0_unlit.vert` have no port either;
+  their modules are made only with `KZ_PROG0_SHARED_RGB` or `KZ_PROG0_UNLIT_VERTEX` set, which the web never sets.
+  Porting the four constants to `draw.wgsl` and `gl/shaders.cpp` would be the way to try the saving on a phone.
 - `port/web/site`: DC2's page. The data card takes a PAL disc image (`disc.iso`), `data.zip` with `data.json`, or a
   folder (the disc's `DATA.HD4`/`DATA.DAT`/`SOUND.HD3`/`SOUND.DAT`, a PC extraction's folder, or `data/` with
   `data.json`); the game starts with `--run-dir /opfs/chronicletwo`. The mods, PC downloads and animation editor cards of

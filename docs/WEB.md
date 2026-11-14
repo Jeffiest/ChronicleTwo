@@ -198,9 +198,11 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
   started by `--run-dir`; a disc is extracted by Kazarov's Rust extractor in the browser (DC_Web's game reads Dark
   Cloud's disc in place instead). The extractor is why the Rust core is linked into the game, and why the
   standard library is built for wasm32 with atomics.
-- **Kazarov** is this tree's vendored copy (`tools/kazarov`, upstream `fd72338a` plus MoonMod's patch), newer than
+- **Kazarov** is this tree's vendored copy (`tools/kazarov`, upstream `584cd2ef` plus MoonMod's patch), newer than
   DC_Web's; its Emscripten patches were re-applied to it (`port/web/PROGRESS.md` lists each). `draw_body`'s
-  shader ports carry the newer AEM mask and alpha function.
+  shader ports carry the newer AEM mask and alpha function. They do not carry the constants 12 to 15 that
+  `584cd2ef` added for cheaper fragments, nor its single-purpose variants: those pipelines run the general
+  shader on the web (`port/web/PROGRESS.md`).
 - **No movies** on the web (`movie.cpp`), where DC_Web had none to stub.
 - **MoonMod** is applied in-tree, so its Luau mods load as on the desktop; the page has no Mods card yet (below).
 - **Left out** of DC_Web's page: the Mods, PC downloads and animation editor cards, the built-in mods, the co-op

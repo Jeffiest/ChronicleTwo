@@ -8,10 +8,12 @@ what was built for Dark Cloud 1 (Chronicle, MoonMod, DC_Web) and reuses it where
 
 - **The engine host is this repository's `port/`**: ChronicleTwo's own native port (clang, C++26, SDL3,
   Kazarov's Vulkan renderer), taken from upstream `TheMoonPeople/ChronicleTwo` at `7a7d7f29` (its master of
-  2026-11-02). The branch `claude/dark-cloud-2-engine-yr3rlk` is that commit plus the work below. Upstream is
-  merged forward on a schedule (see "Upstream").
-- **Kazarov is vendored** at `tools/kazarov` (upstream's `fd72338a` plus MoonMod's input and camera patch), as
-  DC_Web vendors it, so a clone needs no submodule and the patch stays with the tree.
+  2026-11-02) and merged forward to `bcd19672` (its master of 2026-11-13) on 2026-11-14. The branch
+  `claude/dark-cloud-2-engine-yr3rlk` is upstream plus the work below. Upstream is merged forward on a
+  schedule (see "Upstream").
+- **Kazarov is vendored** at `tools/kazarov` (upstream's `584cd2ef`, the commit `bcd19672` pins, plus MoonMod's
+  input and camera patch), as DC_Web vendors it, so a clone needs no submodule and the patch stays with the
+  tree.
 - **MoonFactory (MoonMod) is applied in-tree** from `MoonMod/ports/chronicle-two/` and is the extension
   framework: Lua mods in a sandbox, a Mod Manager, the `moonmod` API, native plugins. Every new engine
   capability (more characters, NPCs, weapons, items, Georama parts, co-op) is exposed through that API, so a
@@ -92,6 +94,18 @@ rule from DC1 holds: our changes live in `port/` and `tools/kazarov`, never in `
 smallest hooks in game units with the body in `port/src/moonmod/`, `port/src/web/` or `port/include/capacity.hpp`,
 so a merge touches few lines. After every merge the whole gauntlet runs again, and MoonMod's
 `ports/chronicle-two/` patch is regenerated from this tree (`tools/gauntlet/export_moonmod_patch.py`).
+
+A merge with Kazarov vendored: upstream's submodule entry conflicts with the directory and is dropped
+(`git rm --cached` of the entry git sets aside), then the submodule's range between the old pin and the new
+one, as `git diff --binary --full-index OLD NEW` in a Kazarov clone, is applied with
+`git apply --3way --directory=tools/kazarov`. The result is right when `diff -rq` against `git archive NEW`
+names only the files MoonMod's patch and the web build changed.
+
+The merge of 2026-11-14 (`7a7d7f29` to `bcd19672`, Kazarov `fd72338a` to `584cd2ef`) was checked by the web
+build of both renderers in headless Chrome (title, a town, the first floor of the sewers, 60 frames a second)
+and by the native tests of capacity, monsters, the roster stress fixture and event scripts. Still to do for
+it: the whole gauntlet, and MoonMod's patch with its pins (GAUNTLET.md, "Regenerating MoonMod's patch":
+`export_moonmod_patch.py` and `apply-moonfactory.ps1` still name the old pins, which move together).
 
 ## Building here
 
