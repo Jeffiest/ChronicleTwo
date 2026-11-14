@@ -654,7 +654,8 @@ int CCharacter2::DrawDirect() {
     }
 
     lod_frame = ChangeLOD(lod_no);
-    line = outline;
+    // A part whose body was reloaded keeps the old body's outline texture until it is attached again.
+    line = dc2::character::BorrowedResourcesLive(*this) ? outline : nullptr;
 
     if (lod_frame != nullptr) {
         if (line == nullptr) {
@@ -2991,9 +2992,44 @@ bool ResourcesLive(const CCharacter2 &character) {
            std::ranges::all_of(character.shadow_motion, [](const auto &motion) { return motion.frame_info == nullptr && motion.motion_list == nullptr && motion.skin_list == nullptr && motion.base_matrices == nullptr; });
 }
 
+bool BorrowedResourcesLive(const CCharacter2 &character) {
+    if (!character.resource_state.HasValue()) {
+        return true;
+    }
+    const auto resources = character.resource_state.Acquire<ResourceState>();
+    return resources && std::ranges::all_of(resources->producers, [](const auto &producer) {
+               return !BorrowedChannel(producer.channel) || producer.lifetime.IsLive();
+           });
+}
+
 bool ResourcesWouldRetireOnReset(const CCharacter2 &character, const mgCMemory &memory,
                                  dc2::memory::ArenaResetKind kind) {
     return character.resource_state.WouldRetireOnReset(memory, kind);
+}
+
+bool DetachRetiringExtensions(CCharacter2 &character, const mgCMemory &memory, dc2::memory::ArenaResetKind kind) {
+    const auto state = character.resource_state.Acquire<ResourceState>();
+    if (!state || state->anchor.WouldRetireOnReset(memory, kind)) {
+        return false;
+    }
+    bool extension_retires = false;
+    for (const auto &producer : state->producers) {
+        if (!producer.lifetime.WouldRetireOnReset(memory, kind)) {
+            continue;
+        }
+        const bool extension = producer.index > 0 && (producer.channel == ResourceChannel::Motion ||
+                                                      producer.channel == ResourceChannel::ShadowMotion ||
+                                                      producer.channel == ResourceChannel::Image);
+        if (!extension) {
+            return false;
+        }
+        extension_retires = true;
+    }
+    if (!extension_retires) {
+        return false;
+    }
+    character.DeleteExtMotion();
+    return !ResourcesWouldRetireOnReset(character, memory, kind);
 }
 
 bool PublishResources(CCharacter2 &character, ResourceState state) {
@@ -3018,6 +3054,10 @@ bool PublishResources(CCharacter2 &character, ResourceState state) {
     }
     std::vector<dc2::memory::ArenaLifetime> dependencies;
     for (const auto &producer : state.producers) {
+        // A retired borrow stays recorded so the draw path can reject it until the part is re-attached.
+        if (BorrowedChannel(producer.channel)) {
+            continue;
+        }
         if (!producer.lifetime.IsLive()) {
             return false;
         }

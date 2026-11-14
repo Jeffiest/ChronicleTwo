@@ -129,6 +129,7 @@ std::atomic<std::uint64_t> async_display_frames{0};
 std::atomic<std::uint64_t> async_canonical_presents{0};
 std::atomic<std::uint64_t> async_unfinished_pairs{0};
 std::atomic<std::uint64_t> async_replay_ticks{0};
+std::atomic<std::uint64_t> async_held_frames{0};
 
 // Device ownership serializes the idle hook and the pre-canonical endpoint retirement.
 PresentPacer                    render_pacer;
@@ -167,28 +168,6 @@ struct EndpointPreflightMetrics {
 
 /** Lifetime readiness counts shared with the final diagnostic reader. */
 EndpointPreflightMetrics endpoint_preflight_metrics;
-
-/**
- * Selects the default-off idle endpoint feedback experiment.
- */
-bool EndpointPreflightEnabled() {
-    static const bool enabled = [] {
-        const char *setting = std::getenv("DC2_PERF_ENDPOINT_PREFLIGHT");
-        return setting != nullptr && std::string_view{setting} == "1";
-    }();
-    return enabled;
-}
-
-/**
- * Selects the default-off queued canonical overlap experiment.
- */
-bool DeferredCanonicalEnabled() {
-    static const bool enabled = [] {
-        const char *setting = std::getenv("DC2_PERF_DEFERRED_CANONICAL_COMMIT");
-        return setting != nullptr && std::string_view{setting} == "1";
-    }();
-    return enabled;
-}
 
 /**
  * Identifies the publication or scheduling site that produced an observation.
@@ -732,6 +711,81 @@ float AuthoredIntermediateAlpha(const Published &frame) {
     return 1.0f / static_cast<float>(std::max(frame.frame_frames, 1));
 }
 
+/**
+ * Decides when an authored intermediate would make its pair miss a vblank, so that its endpoint shows in its place.
+ *
+ * A miss slows the game and leaves the frame on screen for longer; holding the endpoint keeps both ticks on time.
+ */
+class IntermediateHold {
+public:
+    /**
+     * Reports whether this tick's intermediate should be held, from the pair's expected GPU work and the last pair's length.
+     */
+    [[nodiscard]] bool Next(Clock::time_point now) {
+        if (!Enabled()) {
+            return false;
+        }
+        const gfx::RecentGpuWork work = gfx::GetRecentGpuWork();
+        if (work.canonical_ms > 0.0f && work.replay_ms > 0.0f && work.replay_ms != last_replay_ms) {
+            // A held pair renders no replay, so its cost follows the canonical render's by this ratio.
+            last_replay_ms = work.replay_ms;
+            replay_ratio = std::clamp(work.replay_ms / work.canonical_ms, kMinReplayRatio, kMaxReplayRatio);
+        }
+        // Only a pair that rendered its intermediate says anything about that intermediate's cost.
+        const bool overran = !last_held && last_pair != Clock::time_point{} && now - last_pair > kPairOverrun && now - last_pair < kPairStale;
+        // One missed vblank can stretch two pairs, and the intermediate did not cause it; holding only pays once the CPU stays behind.
+        overruns = overran ? overruns + 1 : 0;
+        if (overruns >= kOverrunsToHold) {
+            cpu_hold = kCpuHoldPairs;
+            overruns = 0;
+        }
+        last_pair = now;
+        if (cpu_hold > 0) {
+            --cpu_hold;
+            last_held = true;
+            return true;
+        }
+        last_held = work.canonical_ms * (1.0f + replay_ratio) > kBudgetMs;
+        return last_held;
+    }
+
+private:
+    static bool Enabled() {
+        static const bool enabled = [] {
+            const char *setting = std::getenv("DC2_PRESENT_HOLD");
+#ifdef __SWITCH__
+            const bool on = setting == nullptr || std::string_view(setting) != "0";
+#else
+            const bool on = setting != nullptr && std::string_view(setting) == "1";
+#endif
+            gfx::SetGpuWorkTracking(on);
+            return on;
+        }();
+        return enabled;
+    }
+
+    // Two 60 Hz frames: a hold repeats a frame just as a miss does, so it must not fire ahead of a likely miss.
+    static constexpr float kBudgetMs = 33.5f;
+    // A pair this long missed a vblank whatever the GPU reported, so the CPU is behind.
+    static constexpr auto kPairOverrun = std::chrono::microseconds(36000);
+    // Longer than this is a pause or a load, not a pair.
+    static constexpr auto kPairStale = std::chrono::milliseconds(100);
+    static constexpr int  kOverrunsToHold = 3;
+    static constexpr int  kCpuHoldPairs = 6;
+    // The samples are a frame or two apart, so one odd pair must not decide the next.
+    static constexpr float kMinReplayRatio = 0.9f;
+    static constexpr float kMaxReplayRatio = 1.4f;
+
+    Clock::time_point last_pair{};
+    float             last_replay_ms = 0.0f;
+    float             replay_ratio = 1.1f;
+    int               cpu_hold = 0;
+    int               overruns = 0;
+    bool              last_held = false;
+};
+
+IntermediateHold intermediate_hold;
+
 // The render thread's idle hook. It presents the newest published tick and returns how long it may sleep.
 std::chrono::steady_clock::duration PresentRenderIdle(void *) {
     Published frame;
@@ -773,7 +827,7 @@ std::chrono::steady_clock::duration PresentRenderIdle(void *) {
         const bool gate = gfx::VsyncGateActive();
         const auto decision = render_pair.NextIdle(now, frame.frame_start + frame.frame_length, frame.settings.max_fps,
                                                    render_pacer, gate);
-        if (decision.action == Action::Endpoint && EndpointPreflightEnabled() &&
+        if (decision.action == Action::Endpoint && frame.settings.endpoint_preflight &&
             !render_pair.IdleEndpointFeedbackReady(decision.action, frame.settings.max_fps, true,
                                                    gfx::PresentedGateActive(), [] {
                                                        endpoint_preflight_metrics.probes.fetch_add(1, std::memory_order_relaxed);
@@ -791,14 +845,16 @@ std::chrono::steady_clock::duration PresentRenderIdle(void *) {
         if (decision.action == Action::Done) {
             return std::chrono::milliseconds(2);
         }
-        const bool shown = decision.action == Action::Endpoint ? PresentAuthoredEndpoint(frame)
-                                                               : render_pacer.Present([&] { return RenderPublished(frame, AuthoredIntermediateAlpha(frame)); }, Clock::now);
+        const bool hold = decision.action == Action::Intermediate && intermediate_hold.Next(now);
+        const bool shown = decision.action == Action::Endpoint || hold ? PresentAuthoredEndpoint(frame)
+                                                                       : render_pacer.Present([&] { return RenderPublished(frame, AuthoredIntermediateAlpha(frame)); }, Clock::now);
         if (shown) {
             render_pair.Presented(decision.action);
             if (decision.action == Action::Endpoint) {
                 async_canonical_presents.fetch_add(1);
             } else {
                 async_display_frames.fetch_add(1);
+                async_held_frames.fetch_add(hold ? 1 : 0);
             }
             NoteAsyncPresented(Clock::now());
         }
@@ -860,6 +916,37 @@ std::chrono::steady_clock::duration PresentRenderIdle(void *) {
 
 namespace dc2::presentation {
 
+PresentSettings SwitchPresentationSettings(PresentSettings value) {
+    value.endpoint_preflight = true;
+    value.deferred_canonical = true;
+    value.max_fps = value.max_fps > 0.0 && value.max_fps < 60.0 ? value.max_fps : 60.0;
+    value.display_per_tick = 0;
+    return value;
+}
+
+void ResumeAfterSuspend() {
+    gfx::RenderLease lease;
+    const auto       epoch = settings_epoch.fetch_add(1) + 1;
+    std::uint64_t    retired_serial = 0;
+    {
+        std::scoped_lock lock{publish_mutex};
+        retired_serial = published.serial;
+        published = {};
+        published.serial = retired_serial;
+        published.epoch = epoch;
+        render_serial = retired_serial;
+    }
+    render_pair.Cancel();
+    render_pacer = {};
+    pacer = {};
+    render_frames = OverlayRate{};
+    render_tick_shown = false;
+    tick_shown = true;
+    dc2::timing::BeginFrame();
+    mgPortCutInterpolation();
+    CT_LOG_INFO(Main, "presentation resume: retired_publication={} epoch={} pending_endpoint=cancelled next_publication=fresh-replay", retired_serial, epoch);
+}
+
 void PrepareSchedulingTrace() {
     const char *setting = std::getenv("DC2_PERF_PRESENT_TRACE");
     if (setting == nullptr || std::string_view{setting} != "1") {
@@ -892,12 +979,17 @@ void EndSchedulingTrace(Clock::time_point now, std::uint64_t native_ns) {
 }
 
 void LogSchedulingTrace() {
-    if (EndpointPreflightEnabled()) {
+    PresentSettings captured_settings;
+    {
+        std::scoped_lock lock{publish_mutex};
+        captured_settings = published.settings;
+    }
+    if (captured_settings.endpoint_preflight) {
         CT_LOG_INFO(Main, "perf endpoint preflight: scope=lifetime feedback={} probes={} pending={}",
                     gfx::PresentedGateActive(), endpoint_preflight_metrics.probes.load(std::memory_order_relaxed),
                     endpoint_preflight_metrics.pending.load(std::memory_order_relaxed));
     }
-    if (DeferredCanonicalEnabled()) {
+    if (captured_settings.deferred_canonical) {
         const auto &metrics = deferred_canonical_metrics;
         CT_LOG_INFO(Main, "perf deferred canonical: scope=lifetime feedback={} attempts={} selected={} rendered={} retired={} fallback_mode={} fallback_pair={} fallback_policy={} fallback_epoch={} fallback_gpu={} fallback_image={} fallback_preservation={}",
                     gfx::PresentedGateActive(), metrics.attempts.load(), metrics.selected.load(), metrics.rendered.load(),
@@ -1010,7 +1102,15 @@ void BeforeCanonical() {
 }
 
 bool TryRenderCanonicalBeforeEndpoint(const gfx::DisplayList &next) {
-    if (!DeferredCanonicalEnabled() || !PresentAsync()) {
+    if (!PresentAsync()) {
+        return false;
+    }
+    Published frame;
+    {
+        std::scoped_lock lock{publish_mutex};
+        frame = published;
+    }
+    if (!frame.settings.deferred_canonical) {
         return false;
     }
     auto &metrics = deferred_canonical_metrics;
@@ -1018,11 +1118,6 @@ bool TryRenderCanonicalBeforeEndpoint(const gfx::DisplayList &next) {
     if (!gfx::PresentedGateActive()) {
         ++metrics.mode;
         return false;
-    }
-    Published frame;
-    {
-        std::scoped_lock lock{publish_mutex};
-        frame = published;
     }
     if (!frame.list || !frame.canonical_image || frame.endpoint_policy != EndpointPolicy::CanonicalAuthored ||
         frame.mouse_fixed || frame.mouse_pointer || frame.suppressed_2d_key != 0 ||
@@ -1072,6 +1167,18 @@ bool PresentMouseActive() {
 
 void PresentSetSettings(const PresentSettings &value) {
     settings = value;
+    const auto resolve = [](const char *name, bool fallback) {
+        const char *setting = std::getenv(name);
+        if (setting != nullptr && std::string_view{setting} == "0") {
+            return false;
+        }
+        if (setting != nullptr && std::string_view{setting} == "1") {
+            return true;
+        }
+        return fallback;
+    };
+    settings.endpoint_preflight = resolve("DC2_PERF_ENDPOINT_PREFLIGHT", value.endpoint_preflight);
+    settings.deferred_canonical = resolve("DC2_PERF_DEFERRED_CANONICAL_COMMIT", value.deferred_canonical);
     settings_epoch.fetch_add(1);
     overlay.on = value.show_fps;
     if (PresentAsync()) {
@@ -1091,6 +1198,7 @@ PresentStats PresentGetStats() {
         result.canonical_presents = async_canonical_presents.load();
         result.unfinished_pairs = async_unfinished_pairs.load();
         result.replay_ticks = async_replay_ticks.load();
+        result.held_frames = async_held_frames.load();
     }
     return result;
 }
@@ -1102,6 +1210,7 @@ void PresentResetStats() {
     async_canonical_presents = 0;
     async_unfinished_pairs = 0;
     async_replay_ticks = 0;
+    async_held_frames = 0;
 }
 
 void PresentTickRendered() {
@@ -1194,7 +1303,10 @@ void Publish(TickPublication tick, const std::optional<gfx::CanonicalImageToken>
     std::optional<ScheduleRow> trace;
     {
         std::scoped_lock lock(publish_mutex);
-        bool             eligible_source = false;
+        if (tick.epoch != settings_epoch.load()) {
+            return;
+        }
+        bool eligible_source = false;
         published.endpoint_policy = EndpointPolicyFor(tick, image, published, published.canonical_image, eligible_source);
         published.canonical_endpoint_source = eligible_source;
         published.canonical_image = image;

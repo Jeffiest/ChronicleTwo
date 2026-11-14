@@ -63,7 +63,10 @@ TEST(Capacity, HeadersTakeTheirPortValuesFromCapacity) {
     static_assert(DNG_PULL_ITEM_NUM == capacity::kPullItems && DNG_PULL_ITEM_NUM == 256);
     static_assert(MONSTER_ACTIVE_MAX == capacity::kActiveMonsters && MONSTER_ACTIVE_MAX == 128);
     static_assert(MONSTER_LOCATE_MAX == capacity::kMonsterLocateEntries && MONSTER_LOCATE_MAX == 128);
-    static_assert(MONSTER_REFER_MAX == capacity::kMonsterKinds && MONSTER_REFER_MAX == 32);
+    static_assert(MONSTER_REFER_MAX == capacity::kMonsterKinds && MONSTER_REFER_MAX == 128);
+    static_assert(MONSTER_TEXB_REFER_NUM == capacity::kMonsterKindBlocks && MONSTER_TEXB_REFER_NUM == 32);
+    static_assert(MONSTER_MORE_MAX == capacity::kActiveMonsters);
+    static_assert(MonsterReferTexb(31) == 0x47 && MonsterReferTexb(32) == MONSTER_TEXB_REFER_EXTRA);
     static_assert(SCENE_CHARA_SLOT_NUM == capacity::kSceneCharaSlots && SCENE_CHARA_SLOT_NUM == 256);
     static_assert(SCENE_VILLAGER_SLOT_NUM == capacity::kVillagerSlots && SCENE_VILLAGER_SLOT_NUM == 16);
     static_assert(SCENE_SUB_VILLAGER_SLOT_NUM == capacity::kSubVillagerSlots && SCENE_SUB_VILLAGER_SLOT_NUM == 8);

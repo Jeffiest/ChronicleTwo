@@ -13,6 +13,7 @@
 #include "editmap.hpp"
 #include "effscript.hpp"
 #include "font.hpp"
+#include "log/log.hpp"
 #include "mainloop.hpp"
 #include "map.hpp"
 #include "mapload.hpp"
@@ -662,7 +663,8 @@ CCharacter2 *CharacterView::Get() const {
         return nullptr;
     }
     const auto &slot = *binding->owner;
-    return slot.status != 0 && slot.ResourcesLive() ? slot.Resource().Get() : nullptr;
+    // Resolving the resource checks the character's liveness, so the slot's own check would repeat it.
+    return slot.status != 0 && slot.CSceneData::ResourcesLive() ? slot.Resource().Get() : nullptr;
 }
 
 /**
@@ -1210,6 +1212,13 @@ void RetireSceneResources(CScene &scene, const mgCMemory &memory, dc2::memory::A
         for (auto &slot : scene.chara) {
             if ((slot.Resource().HasValue() || slot.resource_lifetime.HasValue()) &&
                 (!slot.ResourcesLive() || slot.ResourcesWouldRetireOnReset(memory, kind))) {
+                // An event's extension motions die with its arena; the character they were loaded onto stays.
+                auto *character = slot.ResourcesLive() ? slot.Resource().Get() : nullptr;
+                if (character != nullptr && !slot.CSceneData::ResourcesWouldRetireOnReset(memory, kind) &&
+                    dc2::character::DetachRetiringExtensions(*character, memory, kind) &&
+                    !slot.ResourcesWouldRetireOnReset(memory, kind)) {
+                    continue;
+                }
                 slot.Initialize();
                 retired = true;
             }
@@ -1256,6 +1265,9 @@ CSceneCharacter *CScene::GetSceneCharacter(int index) {
     }
     auto &slot = chara[index];
     if (slot.Resource().HasValue() && !slot.ResourcesLive()) {
+        // Nothing released this character: whatever still expects it in the scene stops seeing it from here on.
+        CT_LOG_WARN(Memory, "scene character {} ({}) dropped: its resources retired without a release",
+                    index, dc2::text::View(slot.name));
         slot.Initialize();
     }
     return &slot;

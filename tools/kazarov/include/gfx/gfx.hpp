@@ -115,6 +115,9 @@ struct RendererConfig {
     bool bindless_textures = true;
     // Also precompiles the Vu_prog0 pipelines that DrawMeshProg0 needs (Dark Chronicle).
     bool prog0_meshes = false;
+    bool presented_feedback = false;  /**< Requests prior-presentation feedback for an onscreen renderer; KZ_PERF_PRESENTED_GATE=0|1 overrides it. */
+    bool split_replay_submit = false; /**< Separates onscreen replay rendering from the final transfer; KZ_PERF_SPLIT_REPLAY_SUBMIT=0|1 overrides it. */
+    bool near_safe_fog = false;       /**< Enables proven vertex-fog specialization; KZ_FOG_NEAR_SAFE=0|1 overrides it. */
     // Lowers the texture and mesh tables for tests; 0 is the build maximum, larger values are clamped to it.
     uint32_t texture_slots = 0;
     uint32_t mesh_slots = 0;
@@ -229,6 +232,20 @@ struct FrameTimings {
 
 void SetFrameTimingEnabled(bool enabled);
 bool FrameTimingEnabled();
+
+/**
+ * GPU milliseconds of the latest finished frames, which a presenter can budget from.
+ */
+struct RecentGpuWork {
+    float canonical_ms = 0.0f; /**< Latest canonical render. */
+    float replay_ms = 0.0f;    /**< Latest display frame that rendered a list rather than copied an image. */
+};
+
+/**
+ * Keeps GPU timestamps running without the rest of the frame timing log.
+ */
+void          SetGpuWorkTracking(bool enabled);
+RecentGpuWork GetRecentGpuWork();
 /**
  * Reports successful activation of the native VI-vsync presentation gate.
  */
@@ -275,6 +292,18 @@ uint64_t PresentationHistoryClockNs();
 /**
  * Starts bounded native presentation-history collection at a measurement boundary.
  */
+/**
+ * Arms a bounded CPU attachment-alpha observation epoch at a measurement boundary.
+ */
+void BeginAttachmentAlphaTrace(uint64_t boundary_ns);
+/**
+ * Closes an observation epoch without adding device waits.
+ */
+void EndAttachmentAlphaTrace(uint64_t boundary_ns);
+/**
+ * Logs retained complete executions after their observation window.
+ */
+void LogAttachmentAlphaTrace();
 void BeginPresentationHistory(uint64_t boundary_ns);
 
 /**
@@ -999,6 +1028,8 @@ struct RenderOptions {
 // False when nothing was rendered: the list belongs to another renderer, a frame is open, or a
 // display render was asked for when the newest main image is not a canonical render (the loading
 // screen presented since) or the window cannot present.
+// Starts interpolating a display frame in the background; a RenderList of exactly this pair takes the result.
+void PrepareInterpolation(DisplayListRef list, DisplayListRef previous, float alpha);
 bool RenderList(const DisplayList &list, float alpha, const RenderOptions &options);
 // Presents the last canonical render as it is (interpolation off, headless runs).
 bool PresentCanonical();

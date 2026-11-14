@@ -2417,8 +2417,9 @@ const Json &ExternalResource(const Json &resource, const std::optional<MotionOwn
  * The named actions of a built motion set and the arena memory that holds them.
  */
 struct BuiltMotion {
-    std::vector<character_motion::Action> actions; /**< Actions with game frames from zero. */
-    std::span<const std::byte>            storage; /**< Arena run holding the actions' channels and the anchor. */
+    std::vector<character_motion::Action> actions;            /**< Actions with game frames from zero. */
+    std::span<const std::byte>            storage;            /**< Arena run holding the actions' channels and the anchor. */
+    mgCMemory                            *producer = nullptr; /**< Arena owning the registered motion anchor. */
 };
 
 /**
@@ -2435,17 +2436,21 @@ BuiltMotion BuildMotion(const std::shared_ptr<Document> &source, tagMOTION_TYPE 
     motion = {};
     if (bind_pose) {
         const auto &matrices = resources.at("bind_poses").at(*bind_pose).at("matrices");
-        if (matrices.size() < document->metadata.at("frames").size()) {
-            throw std::runtime_error("bind pose lacks native frame matrices");
-        }
-        motion.base_matrices = Allocate<sceVu0FMATRIX>(memory, matrices.size());
-        for (std::size_t index = 0; index < matrices.size(); ++index) {
-            const auto value = matrices.at(index).get<Matrix>();
-            std::memcpy(motion.base_matrices[index], value.data(), sizeof(sceVu0FMATRIX));
+        // Mine Moler's model has a frame more than its bind pose, which keeps its own transform.
+        const std::size_t count = std::max(matrices.size(), document->metadata.at("frames").size());
+        motion.base_matrices = Allocate<sceVu0FMATRIX>(memory, count);
+        for (std::size_t index = 0; index < count; ++index) {
+            if (index < matrices.size()) {
+                const auto value = matrices.at(index).get<Matrix>();
+                std::memcpy(motion.base_matrices[index], value.data(), sizeof(sceVu0FMATRIX));
+            } else {
+                sceVu0UnitMatrix(motion.base_matrices[index]);
+            }
         }
     }
     BuiltMotion built;
-    auto       &actions = built.actions;
+    built.producer = &memory;
+    auto &actions = built.actions;
     if (animation) {
         const auto *storage = reinterpret_cast<const std::byte *>(memory.stGetTop());
         if (source->custom->contains("resources")) {
@@ -2491,7 +2496,7 @@ void RegisterActions(const tagMOTION_TYPE &motion, BuiltMotion built, int base) 
         action.base = base;
         base += static_cast<int>(std::ceil(action.duration)) + 2;
     }
-    character_motion::Register(motion.motion_list, std::move(built.actions), built.storage);
+    character_motion::Register(motion.motion_list, std::move(built.actions), built.storage, built.producer);
 }
 
 /**

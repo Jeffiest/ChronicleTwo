@@ -83,6 +83,8 @@ PreparedDataPackets DataPacketStorage::Prepare(DataPacketMode requested_mode, mg
         return {buffers, false};
     }
     for (auto &buffer : buffers) {
+        // Retire the old logical extent before reusing or resizing its independent root mapping.
+        buffer.stSetBuffer(nullptr, 0);
         auto *storage = ArenaBlock(&buffer, static_cast<std::size_t>(quadwords) * sizeof(u_long128));
         // A new layout ends the old one. Rebinding over it would hold the new extent to the old one's, and
         // the loading layout is smaller than the map's: the second return to the town stopped there.

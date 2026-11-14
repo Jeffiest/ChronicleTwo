@@ -729,7 +729,7 @@ void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
                 continue;
             }
 
-            tex_man->ReloadTexture(monster->refer_no + MONSTER_TEXB_REFER, (sceVif1Packet *) NULL);
+            tex_man->ReloadTexture(MonsterReferTexb(monster->refer_no), (sceVif1Packet *) NULL);
             ModelPivot(monster, pivot);
             SetAerialView(pivot, scale);
             monster->DrawDirect();

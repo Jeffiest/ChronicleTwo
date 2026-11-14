@@ -7,6 +7,7 @@
 #include <cstring>
 #include <format>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 
 #include "actionchara.hpp"
@@ -21,6 +22,7 @@
 #include "effscript.hpp"
 #include "gamedata.hpp"
 #include "log/game_output.hpp"
+#include "log/log.hpp"
 #include "mainloop.hpp"
 #include "maintex.hpp"
 #include "mapselect.hpp"
@@ -92,6 +94,39 @@ namespace {
  */
 CCharacter2 *UnitPart(std::span<CCharacter2 *const> parts, std::size_t index) {
     return index < parts.size() ? parts[index] : nullptr;
+}
+
+/**
+ * Reports an equipped part that will not be drawn because it could not be attached to its body.
+ */
+void ReportUnattachedPart(std::string_view unit, std::string_view part, std::string_view reason) {
+    CT_LOG_ERROR(Data, "{}'s {} is not attached: {}", unit, part, reason);
+}
+
+/**
+ * Attaches a human's equipped weapon, second weapon and hat parts to the body at their named frames.
+ */
+void AttachHumanParts(std::span<CActionChara *const, 5> characters, const CGameDataUsed *equip, std::string_view unit,
+                      std::span<char *const, 3> attach_names) {
+    static constexpr std::array<const char *, 3> part_names = {"sword", "shot", "hat"};
+    for (std::size_t part = 0; part < part_names.size(); ++part) {
+        if (equip[part].item_no <= 0) {
+            continue;
+        }
+        CActionChara *attached = characters[part + 1];
+        if (attached == nullptr) {
+            ReportUnattachedPart(unit, part_names[part], "its scene character is missing");
+        } else if (!characters[0]->SetRef(attached, attach_names[part])) {
+            dc2::log::PrintGame("setref failed : %s\n", attach_names[part]);
+            // Town bodies leave the weapons unloaded on purpose.
+            if (attached->GetFrame() != nullptr) {
+                ReportUnattachedPart(unit, part_names[part], std::format("the body has no {} frame", attach_names[part]));
+            }
+        } else {
+            dc2::text::Copy(attached->name, part_names[part]);
+            attached->CopyOutLine(characters[0]);
+        }
+    }
 }
 } // namespace
 
@@ -236,7 +271,7 @@ int SetupMainUnit(std::span<u8> read_buffer, mgCMemory *memory, mgCMemory *stack
 
         if (!edit_mode) {
             int file_size = {};
-            if (!load_file("mainchr/c01.stb", &file_size)) {
+            if (!load_file("mainchr/max.stb", &file_size)) {
                 return false;
             }
             parts[0]->LoadActionFile(reinterpret_cast<char *>(read_buffer.data()), file_size, &stacks[6]);
@@ -310,7 +345,7 @@ int SetupMainUnit(std::span<u8> read_buffer, mgCMemory *memory, mgCMemory *stack
 
         if (!edit_mode) {
             int file_size = {};
-            if (!load_file("mainchr/c02.stb", &file_size)) {
+            if (!load_file("mainchr/monica.stb", &file_size)) {
                 return false;
             }
             parts[0]->LoadActionFile(reinterpret_cast<char *>(read_buffer.data()), file_size, &stacks[6]);
@@ -360,7 +395,7 @@ int SetupMainUnit(std::span<u8> read_buffer, mgCMemory *memory, mgCMemory *stack
         hat->LoadPack(loaded_data, "info", &stacks[2], &stacks[2], &stacks[2], texture, parts[0]);
         SetupUnitMan(scene, user_data, USER_CHARA_ROBO, robo_info);
         int file_size = {};
-        if (!load_file("dungeon/act_script/robo.stb", &file_size)) {
+        if (!load_file("dungeon/act_script/ridepod.stb", &file_size)) {
             return false;
         }
         parts[0]->LoadActionFile(reinterpret_cast<char *>(read_buffer.data()), file_size, &stacks[4]);
@@ -485,12 +520,24 @@ int GetCharaMemAllocPtr(mgCMemory *memory, mgCMemory *stacks, int chara_type, in
 }
 
 void dc2::character::PrepareUnitReload(CScene &scene) {
-    for (int slot = 0; slot < ROBO_MODEL_NUM; ++slot) {
+    // The ridepod hat occupies the slot after its five ordinary model files.
+    for (int slot = 0; slot <= ROBO_MODEL_NUM; ++slot) {
         auto *part = static_cast<CActionChara *>(scene.GetCharacter(slot));
         if (part != nullptr) {
             part->AllDeleteDamage();
             part->Initialize(nullptr);
         }
+    }
+}
+
+void dc2::character::RepartitionUnitStorage(CScene &scene, mgCMemory *memory, mgCMemory *stacks, int unit,
+                                            bool town) {
+    if (memory == nullptr || stacks == nullptr || unit < USER_CHARA_MAX || unit >= USER_CHARA_NUM) {
+        throw std::invalid_argument("party reload requires storage, part workspaces and a valid unit");
+    }
+    PrepareUnitReload(scene);
+    if (GetCharaMemAllocPtr(memory, stacks, unit, town) == 0) {
+        throw std::length_error("party reload could not allocate the replacement workspaces");
     }
 }
 
@@ -556,29 +603,11 @@ static int SetupMints(std::span<CCharacter2 *const> parts_view, CUserDataManager
     SetupNameTable4 attach_names = {
         {"ef00", "gun_hand", "hat", ""}
     };
-    SetupNameTable3 part_names = {
-        {"sword", "shot", "hat"}
-    };
-    int part = {};
-
     if (characters[0] != nullptr) {
         dc2::text::Copy(characters[0]->name, "body");
     }
 
-    for (part = 0; part < 3; part++, equip++) {
-        if (0 < equip->item_no) {
-            if (characters[part + 1] != nullptr) {
-                char *attach_name = attach_names.names[part];
-
-                if (!characters[0]->SetRef(characters[part + 1], attach_name)) {
-                    dc2::log::PrintGame("setref failed : %s\n", attach_name);
-                } else {
-                    dc2::text::Copy(characters[part + 1]->name, part_names.names[part]);
-                    characters[part + 1]->CopyOutLine(characters[0]);
-                }
-            }
-        }
-    }
+    AttachHumanParts(characters, equip, "Max", std::span(attach_names.names).first<3>());
 
     characters[0]->move_type = ACTION_MOVE_HUMAN;
     characters[0]->attack_type = 0;
@@ -606,29 +635,11 @@ static int SetupMonica(std::span<CCharacter2 *const> parts_view, CUserDataManage
     SetupNameTable3 attach_names = {
         {"sword_hand", "wr", "ac"}
     };
-    SetupNameTable3 part_names = {
-        {"sword", "shot", "hat"}
-    };
-    int part = {};
-
     if (characters[0] != nullptr) {
         dc2::text::Copy(characters[0]->name, "body");
     }
 
-    for (part = 0; part < 3; part++, equip++) {
-        if (0 < equip->item_no) {
-            if (characters[part + 1] != nullptr) {
-                char *attach_name = attach_names.names[part];
-
-                if (!characters[0]->SetRef(characters[part + 1], attach_name)) {
-                    dc2::log::PrintGame("setref failed : %s\n", attach_name);
-                } else {
-                    dc2::text::Copy(characters[part + 1]->name, part_names.names[part]);
-                    characters[part + 1]->CopyOutLine(characters[0]);
-                }
-            }
-        }
-    }
+    AttachHumanParts(characters, equip, "Monica", attach_names.names);
 
     characters[0]->move_type = ACTION_MOVE_HUMAN;
     characters[0]->chara_type = ACTION_CHARA_MONICA;
@@ -656,6 +667,7 @@ static int SetupRobo(std::span<CCharacter2 *const> parts_view, CUserDataManager 
         parts[i] = static_cast<CActionChara *>(UnitPart(parts_view, static_cast<std::size_t>(i)));
 
         if (parts[i] == nullptr) {
+            ReportUnattachedPart("The Ridepod", std::format("part {}", i), "its scene character is missing");
             return false;
         }
     }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "kazarov/log.hpp"
@@ -65,6 +66,7 @@ struct ClockState {
     std::int64_t            count = 0;
     ClockTickCallback       callback = nullptr;
     ClockIdleHook           idle = nullptr;
+    ClockResumeCallback     resume_callback = nullptr; /**< Optional game-owned presentation reanchor notification. */
     bool                    pumping = false;
 };
 
@@ -151,6 +153,13 @@ void ClockReset() {
 
 void ClockReanchor() {
     Anchor(SteadyClock::now());
+    if (g_clock.resume_callback != nullptr) {
+        g_clock.resume_callback();
+    }
+}
+
+ClockResumeCallback ClockSetResumeCallback(ClockResumeCallback callback) {
+    return std::exchange(g_clock.resume_callback, callback);
 }
 
 std::int64_t ClockTickCount() {

@@ -37,6 +37,7 @@
 #include "scenesnd.hpp"
 #include "snd_mngr.hpp"
 #include "sound.hpp"
+#include "test_hooks.hpp"
 #include "text/bounded.hpp"
 
 /**
@@ -135,14 +136,18 @@ void InitEvent(CScene *scene) {
 
 int RunEvent(int event_no, CScene *scene) {
     EventScene = scene;
-    ++event_script_generation;
+    const auto generation = ++event_script_generation;
+    dc2::debug::ObserveHalloweenPreambleEvent(event_no, scene, nullptr, 0);
     // Mods may observe or replace an event program; the dispatcher runs the native program when none does.
     const moonmod::Json payload = {{"game", "chronicle-two"}, {"program_no", event_no},
                                    {"frame", moonmod::SharedRuntime().Frame()}};
     const moonmod::ApiCallResult hooked = moonmod::SharedRuntime().DispatchNativeScriptHook(
-        "native.event.run", payload, [event_no]() {
-            return moonmod::ApiCallResult{moonmod::ApiCallStatus::Ok,
-                                          {{"run_status", EventScript.run(event_no)}}, {}};
+        "native.event.run", payload, [event_no, scene, generation]() {
+            const int result = EventScript.run(event_no);
+            if (event_script_generation == generation && EventScript.prog != nullptr && !EventScript.end) {
+                dc2::debug::ObserveHalloweenPreambleEvent(event_no, scene, &EventScript, result);
+            }
+            return moonmod::ApiCallResult{moonmod::ApiCallStatus::Ok, {{"run_status", result}}, {}};
         });
     if (hooked.status == moonmod::ApiCallStatus::Ok && hooked.value.is_object() &&
         hooked.value.contains("run_status") && hooked.value["run_status"].is_number_integer()) {
@@ -578,6 +583,7 @@ dc2::script::DeferredIntegerWriter CaptureEventInteger(void *, RS_STACKDATA &val
 }
 
 void ConfigureEventScriptFunctions() {
+    dc2::debug::ObserveHalloweenPreambleEvent(-1, nullptr, nullptr, 0);
     SetEventFunc(&EventScript);
     ++event_script_generation;
     EventScript.deferred_integer_factory = CaptureEventInteger;
@@ -591,6 +597,7 @@ void ConfigureEventScriptFunctions() {
 } // namespace
 
 void SetEventScript(std::span<u8> program, mgCMemory *memory) {
+    dc2::debug::ObserveHalloweenPreambleEvent(-1, nullptr, nullptr, 0);
     if (memory == nullptr || !EventScript.load(program, event_script_values, event_script_calls)) {
         EventScript.DeleteProgram();
         return;

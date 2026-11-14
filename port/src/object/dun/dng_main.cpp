@@ -348,7 +348,10 @@ void memoryInit() {
     dc2::text::Copy(BuffWorkData.name, dc2::text::View("Work Buffer"));
 
     BuffWorkData.stReset();
-    mgTexManager.SetTableBuffer(0x140, 0xAF, MainBuffer);
+    const bool roster_stress = dc2::debug::RosterStressEnabled();
+    // Every kind slot's block is in the table: mods may load more kinds than the blocks below the laser gun's hold.
+    mgTexManager.SetTableBuffer(roster_stress ? 0x1000 : 0x140, static_cast<int>(MONSTER_TEXB_REFER_EXTRA) + MONSTER_REFER_MAX,
+                                MainBuffer);
     mgTexManager.Initialize(GetVramTopAddress(), -1);
     size = GetCharaMemAllocSize();
     BuffCharacter.stSetChildBuffer(*MainBuffer, MainBuffer->stAlloc64(size), size);
@@ -946,7 +949,7 @@ void EntryEventScript(int no) {
     } else if (EdEventInfo.script_name[0] == 0) {
         const auto        map_no = static_cast<std::int64_t>(no) + 1;
         const std::string map = std::string(map_no < 10 ? "d0" : "d") + std::to_string(map_no);
-        path = "map/d/" + map + "/" + map + "_" + std::to_string(LanguageCode) + ".stb";
+        path = "map/d/" + map + "/" + map + "_" + std::to_string(dc2::debug::JumpScriptLanguage(LanguageCode)) + ".stb";
     } else {
         const auto script_name = dc2::text::View(EdEventInfo.script_name);
         const auto separator = script_name.find('/');

@@ -23,7 +23,9 @@ inline constexpr int kPullItems = 256;                             /**< DNG_PULL
 // Monsters (monster.hpp). The extra active slots are used only with the more_monsters setting.
 inline constexpr int kActiveMonsters = 128;       /**< MONSTER_ACTIVE_MAX; retail 24, upstream port 60. */
 inline constexpr int kMonsterLocateEntries = 128; /**< MONSTER_LOCATE_MAX; retail 32. */
-inline constexpr int kMonsterKinds = 32;          /**< MONSTER_REFER_MAX; retail 12. Texture blocks 0x28..0x47, below the laser gun's 0x4A. */
+inline constexpr int kMonsterKinds = 128;         /**< MONSTER_REFER_MAX; retail 12, upstream 128 for its roster stress fixture. */
+inline constexpr int kMonsterKindBlocks = 32;     /**< MONSTER_TEXB_REFER_NUM: kinds with texture blocks 0x28..0x47, below the laser gun's 0x4A;
+                                                       the kinds past them take blocks past the retail table's end. Upstream 12. */
 
 // Scenes (scenesnd.hpp, scenevillager.hpp). The villager slot blocks keep their retail numbers: retail event
 // scripts address scene slots 8..0x40 by number, so widening the blocks needs a slot remapping layer first.
@@ -64,6 +66,7 @@ inline constexpr int kMapPlacementsDungeon = (kDungeonGrid + 8) * (kDungeonGrid 
 
 static_assert(kDungeonGrid >= 30 && kDungeonRooms >= 64);
 static_assert(kActiveMonsters >= 60 && kMonsterLocateEntries >= kActiveMonsters);
+static_assert(kMonsterKindBlocks >= 12 && kMonsterKindBlocks <= kMonsterKinds && 0x28 + kMonsterKindBlocks <= 0x4A);
 static_assert(kSceneCharaSlots >= 24 + kActiveMonsters);
 static_assert(kSceneCharaSlots >= 0x80, "retail scene slots, the game objects at 0x78..0x7B among them, keep their numbers");
 static_assert(kSaveDungeonFloorRecords >= 162 && (kSaveDungeonFloorRecords - 162) % 7 == 0,
