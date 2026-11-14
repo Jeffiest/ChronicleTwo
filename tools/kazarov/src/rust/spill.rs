@@ -7,12 +7,41 @@
 use super::CoreResult;
 use std::borrow::Cow;
 use std::fs::File;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 
 /// Whether waiting bytes go to the temporary file: on iOS, in the browser (4 GiB of memory, wasm32), and where
 /// tests ask for the iOS source path. The browser's game points TMPDIR at its storage while it extracts
 /// (port/web/src/firstrun.cpp), so the file is not in memory there either.
 const SPILL: bool = cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source));
+
+/// What the temporary file has cost: its writes, their bytes and the nanoseconds the writers waited, then the
+/// same of its reads.
+static IO: [AtomicU64; 6] = [const { AtomicU64::new(0) }; 6];
+
+fn count(first: usize, bytes: usize, started: std::time::Instant) {
+    IO[first].fetch_add(1, Ordering::Relaxed);
+    IO[first + 1].fetch_add(bytes as u64, Ordering::Relaxed);
+    IO[first + 2].fetch_add(started.elapsed().as_nanos() as u64, Ordering::Relaxed);
+}
+
+/// The temporary file's writes and reads so far, for a log beside the source's reads; empty when nothing waits
+/// in a file.
+pub(crate) fn io_text() -> String {
+    let io: [u64; 6] = std::array::from_fn(|index| IO[index].load(Ordering::Relaxed));
+    if io[0] == 0 {
+        return String::new();
+    }
+    format!(
+        "temporary file written {} times, {} MiB, {:.1} s of waiting, and read {} times, {} MiB, {:.1} s",
+        io[0],
+        io[1] >> 20,
+        io[2] as f64 / 1e9,
+        io[3],
+        io[4] >> 20,
+        io[5] as f64 / 1e9
+    )
+}
 
 pub(crate) enum SpilledBytes {
     Memory(Vec<u8>),
@@ -36,7 +65,9 @@ impl SpilledBytes {
             Self::Memory(bytes) => Ok(Cow::Borrowed(bytes)),
             Self::File { offset, length } => {
                 let mut bytes = vec![0u8; *length];
+                let started = std::time::Instant::now();
                 read_at(&spill()?.file, &mut bytes, *offset)?;
+                count(3, *length, started);
                 Ok(Cow::Owned(bytes))
             }
         }
@@ -88,7 +119,9 @@ fn append(bytes: &[u8]) -> CoreResult<u64> {
         .lock()
         .map_err(|_| super::CoreError("spill file lock poisoned".into()))?;
     let offset = *end;
+    let started = std::time::Instant::now();
     write_at(&spill.file, bytes, offset)?;
+    count(0, bytes.len(), started);
     *end += bytes.len() as u64;
     Ok(offset)
 }

@@ -113,10 +113,22 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   dungeon floor hold their frame rate meanwhile. The game running beside the extraction takes the program's
   memory to about 3 GiB at its peak, against 2.3 GiB for the extraction alone. Movies are left out of the extraction (a build without FFmpeg plans no movie
   job, `plan_stream` in `tools/kazarov/src/rust/audio.rs`) and `MoviePlayer` is a no-op
-  (`port/web/src/movie.cpp`): the browser has no FFmpeg. Half the device's processors
-  convert at once, two to eight of them (four on a phone with eight), or as many as `CT_WEB_EXTRACT_JOBS` says
+  (`port/web/src/movie.cpp`): the browser has no FFmpeg. Unpacking the whole disc, two thirds
+  of the device's processors convert at once (six on a phone with nine); with the game playing beside, half of
+  them; two to eight either way, or as many as `CT_WEB_EXTRACT_JOBS` says
   (1 to 8, `?args=--env+CT_WEB_EXTRACT_JOBS=4`); the log has a line for each stage with the seconds so far and
-  the size of the program's memory, and one for how long the extraction ran. The build's allocator is mimalloc
+  the size of the program's memory, and one for how long the extraction ran. It also has a line after each part
+  of the work, `extraction, index built: source read 12237 times, 1770 MiB, 1.7 s of waiting; temporary file
+  written ...`, with what reading the disc image and the temporary file has cost so far, the waiting summed
+  over the workers: a device whose storage is slow shows it there. A browser has no file mappings, so every
+  look at the image is a read, and the index reads each file of the disc once, finds every member inside it in
+  those bytes, keeps each one's first 16 bytes and notes which files hold a texture's or a model's signature,
+  so the planners after it ask the index and not the disc; sound streams and movies are known by their first
+  76 bytes and not read at all until they are converted. The whole extraction reads 6.4 GiB of the image in
+  37,600 reads (it was 15.4 GiB in 174,000). On a PC that changes little, since a PC waits on its processors
+  (76 s against 81 s back to back). The one phone measured (nine processors, 8 GiB) took 723 s for the whole
+  disc with four at a time before this, 149 s of it before the first conversion; the page's estimate for a touch
+  device is 1.3 times what its processor speed alone gives (`kPhoneShare`, `port/web/site/shell.js`). The build's allocator is mimalloc
   (`-sMALLOC=mimalloc`, `port/web/web.cmake`): the default one has a single lock for every thread, and with it
   four conversions at once were slower than two. The program's memory only grows in a browser, so one large read
   sets what the whole extraction holds: the index, the scripts' plan and the packs' plan each read every disc

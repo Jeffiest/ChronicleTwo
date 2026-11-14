@@ -577,19 +577,34 @@ const kReferenceSpeed = 640;
 // The part of a whole unpacking after which the game can start when the rest is unpacked as it plays: 43 s of
 // 77 and 48 s of 85 there, rounded up.
 const kPlayShare = 0.6;
+// What a conversion past half the processors is worth beside one of the first half: on a phone those are its
+// slow processors, on a PC the second threads of the same cores.
+const kLateJob = 0.4;
+// How much longer a phone takes than its speed says. Its storage is slower beside a PC's than its processor is,
+// and the unpacking reads and writes gigabytes: the one phone measured (nine processors, speed 157, four at a
+// time) took 723 s where its speed alone gave 519 s, before the unpacking read the disc half as much.
+const kPhoneShare = 1.3;
 
-// How long unpacking a disc takes here, in seconds: {whole, play}, play being the wait before the game starts
-// when the rest is unpacked behind it. The whole disc took desktop Chrome 220 s with two conversions at a time,
-// 122 s with four and 77 to 85 s with eight, which 373 / n + 34 follows; the game runs half the processors'
-// worth, two to eight (firstrun.cpp, ExtractJobs).
+// How long unpacking a disc takes here, in seconds: {whole, play, playWhole}, play being the wait before the
+// game starts when the rest is unpacked behind it and playWhole all of that unpacking. The whole disc took
+// desktop Chrome 220 s with two conversions at a time, 119 to 122 s with four and 76 to 85 s with eight, which
+// 373 / n + 34 follows. The game runs two thirds of the processors' worth unpacking the whole disc and half of
+// them with the game playing beside, two to eight either way (firstrun.cpp, ExtractJobs).
 let unpackEstimate = null;
 
 function estimateUnpack() {
     if (!unpackEstimate) {
-        const jobs = Math.min(Math.max(Math.floor((navigator.hardwareConcurrency || 4) / 2), 2), 8);
+        const processors = navigator.hardwareConcurrency || 4;
+        const within = (count) => Math.min(Math.max(Math.floor(count), 2), 8);
+        const playJobs = within(processors / 2);
+        const jobs = within(processors * 2 / 3);
         const speed = deviceSpeed();
-        const whole = (373 / jobs + 34) * kReferenceSpeed / speed;
-        unpackEstimate = {whole, play: whole * kPlayShare, speed, jobs};
+        const phone = matchMedia('(pointer: coarse)').matches;
+        const scale = kReferenceSpeed / speed * (phone ? kPhoneShare : 1);
+        const seconds = (worth) => (373 / worth + 34) * scale;
+        const whole = seconds(playJobs + (jobs - playJobs) * kLateJob);
+        const playWhole = seconds(playJobs);
+        unpackEstimate = {whole, play: playWhole * kPlayShare, playWhole, speed, jobs, playJobs, phone};
     }
     return unpackEstimate;
 }
@@ -604,11 +619,11 @@ function about(seconds) {
 
 // The two ways to unpack a stored disc, each with the time it is expected to take on this device.
 function showUnpack() {
-    const {whole, play} = estimateUnpack();
+    const {whole, play, playWhole} = estimateUnpack();
     $('unpack-whole-note').textContent = `The game starts when all of it is unpacked, ${about(whole)} on this ` +
         'device by a rough estimate, and then plays with nothing left to do.';
     $('unpack-play-note').textContent = `The game starts after ${about(play)}, and the rest is unpacked behind it ` +
-        `for ${about(whole - play)} more. Until that is done the game can pause for a moment when it needs something ` +
+        `for ${about(playWhole - play)} more. Until that is done the game can pause for a moment when it needs something ` +
         'not unpacked yet, and the page has to stay open: closed sooner, it starts the unpacking again next time.';
     const memory = navigator.deviceMemory;
     $('unpack-memory').hidden = !(memory && memory < 8);
@@ -975,9 +990,11 @@ function start(unpack = null) {
         `screen ${screen.width}x${screen.height} at ${refreshRate || 'an unknown rate of'} Hz`);
     if (unpack) {
         // Beside the times the game logs, so an estimate that is off shows by how much.
-        const {whole, play, speed, jobs} = estimateUnpack();
-        log(`unpack: ${unpack}, expected ${Math.round(unpack === 'play' ? play : whole)} s before the game starts and ` +
-            `${Math.round(whole)} s in all (${jobs} at a time, device speed ${Math.round(speed)})`);
+        const {whole, play, playWhole, speed, jobs, playJobs, phone} = estimateUnpack();
+        const playing = unpack === 'play';
+        log(`unpack: ${unpack}, expected ${Math.round(playing ? play : whole)} s before the game starts and ` +
+            `${Math.round(playing ? playWhole : whole)} s in all (${playing ? playJobs : jobs} at a time, device ` +
+            `speed ${Math.round(speed)}${phone ? ', a touch device' : ''})`);
     }
     if (server) {
         probeNetwork();

@@ -1661,12 +1661,16 @@ fn plan_root_resource(
     if !possible_texture(resource.len() as u64, key)? {
         return Ok(None);
     }
-    if !resource.bytes().windows(4).any(|signature| {
-        signature == b"TIM2"
-            || signature == b"IMG\0"
-            || signature == b"IM2\0"
-            || signature == b"IM3\0"
-    }) {
+    // The index has looked for the signatures in every root it read whole; any other is read for them here.
+    let signed = inventory.texture_signature(key).unwrap_or_else(|| {
+        resource.bytes().windows(4).any(|signature| {
+            signature == b"TIM2"
+                || signature == b"IMG\0"
+                || signature == b"IM2\0"
+                || signature == b"IM3\0"
+        })
+    });
+    if !signed {
         if texture_extension {
             return Err(fail(format!(
                 "unrecognized standalone texture format: {key}"
@@ -1674,15 +1678,17 @@ fn plan_root_resource(
         }
         return Ok(None);
     }
+    // Read once: from a disc image each `bytes` is a read of its own.
+    let bytes = resource.bytes();
     let no_write = |_: &str, _: usize, _: usize, _: &[u8]| Ok(());
-    let transformed = unit.transform(&no_write, &resource.bytes(), key, 0)?;
+    let transformed = unit.transform(&no_write, &bytes, key, 0)?;
     if transformed.is_some() && texture_extension {
         return Err(fail(format!(
             "unrecognized standalone texture format: {key}"
         )));
     }
     if let Some(next) = transformed {
-        if parse_pack(&resource.bytes()).is_none() && next != *resource.bytes() {
+        if parse_pack(&bytes).is_none() && next != *bytes {
             unit.edits
                 .insert(key.to_owned(), TextureEdit::Replace(next));
         }

@@ -672,7 +672,7 @@ fn extract_stages(
     let phase = reporter.phase(Stage::Extract);
     let (files, bytes) = source_tree.totals();
     archive::memory_note("the source opened");
-    let inventory = inventory::Inventory::build(&source_tree)?;
+    let inventory = pool.install(|| inventory::Inventory::build_parallel(&source_tree))?;
     archive::memory_note("the index built");
     artifacts::profile_note("index built");
     phase.set_total(files);

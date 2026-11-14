@@ -10,7 +10,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 const SECTOR: u64 = 2048;
 const CHUNK: usize = 4 << 20;
@@ -542,6 +542,8 @@ enum SourceData {
     Mapped {
         file: File,
         length: u64,
+        /// The ranges are read, not mapped: the browser's file system has no file mappings.
+        read: bool,
     },
 }
 
@@ -550,6 +552,39 @@ pub enum SourceSlice<'a> {
     Borrowed(&'a [u8]),
     Mapped(memmap2::Mmap),
     Read(Vec<u8>),
+}
+
+/// What reading the source has cost: the reads made, their bytes, and the nanoseconds the readers waited.
+static READS: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
+
+/// The reads of the source so far, for a log: "source read 1234 times, 2048 MiB, 12.3 s of waiting", the waiting
+/// summed over the workers. Empty when the source is in memory or mapped.
+pub fn read_text() -> String {
+    let [reads, bytes, nanos] = [0, 1, 2].map(|index| READS[index].load(Ordering::Relaxed));
+    if reads == 0 {
+        return String::new();
+    }
+    format!(
+        "source read {reads} times, {} MiB, {:.1} s of waiting",
+        bytes >> 20,
+        nanos as f64 / 1e9
+    )
+}
+
+/// Says on stderr what reading the source and the temporary file has cost up to this point. The browser's log
+/// always has it, since a phone's log is all there is to say where its time went; elsewhere
+/// DC2DATA_PROFILE_JOBS asks for it.
+pub fn read_note(label: &str) {
+    if !cfg!(target_os = "emscripten") && std::env::var_os("DC2DATA_PROFILE_JOBS").is_none() {
+        return;
+    }
+    let texts: Vec<String> = [read_text(), super::spill::io_text()]
+        .into_iter()
+        .filter(|text| !text.is_empty())
+        .collect();
+    if !texts.is_empty() {
+        eprintln!("extraction, {label}: {}", texts.join("; "));
+    }
 }
 
 impl std::ops::Deref for SourceSlice<'_> {
@@ -593,10 +628,12 @@ impl SourceBytes {
         phase.set_total(length);
         // iOS's address space and the browser's 4 GiB memory (wasm32) cannot hold a 4.7 GB disc image: there
         // each resource reads its own range of the image while it is converted.
-        if cfg!(any(target_os = "ios", target_os = "emscripten", kazarov_mapped_source)) {
+        // DC2DATA_READ_SOURCE reads the image the browser's way anywhere, to measure and to check that way.
+        let read = cfg!(target_os = "emscripten") || std::env::var_os("DC2DATA_READ_SOURCE").is_some();
+        if read || cfg!(any(target_os = "ios", kazarov_mapped_source)) {
             phase.inc(length);
             phase.add_bytes(length);
-            return Ok(Self(Arc::new(SourceData::Mapped { file, length })));
+            return Ok(Self(Arc::new(SourceData::Mapped { file, length, read })));
         }
         let length = usize::try_from(length).map_err(|_| error("ISO exceeds addressable memory"))?;
         let mut bytes = Vec::with_capacity(length);
@@ -640,12 +677,11 @@ impl SourceBytes {
                 let start = range.start as usize;
                 Ok(SourceSlice::Borrowed(&bytes[start..start + count]))
             }
-            SourceData::Mapped { file, .. } => {
+            SourceData::Mapped { file, read, .. } => {
                 if count == 0 {
                     return Ok(SourceSlice::Borrowed(&[]));
                 }
-                // The browser's file system has no file mappings: it reads the range.
-                if !cfg!(target_os = "emscripten") {
+                if !*read {
                     // SAFETY: the mapping is read-only, and the disc image is not changed during extraction.
                     let mapped = unsafe {
                         memmap2::MmapOptions::new()
@@ -658,8 +694,12 @@ impl SourceBytes {
                         return Ok(SourceSlice::Mapped(map));
                     }
                 }
+                let started = std::time::Instant::now();
                 let mut bytes = vec![0; count];
                 read_at(file, range.start, &mut bytes)?;
+                READS[0].fetch_add(1, Ordering::Relaxed);
+                READS[1].fetch_add(count as u64, Ordering::Relaxed);
+                READS[2].fetch_add(started.elapsed().as_nanos() as u64, Ordering::Relaxed);
                 Ok(SourceSlice::Read(bytes))
             }
         }
@@ -716,7 +756,13 @@ pub struct ResourceRef {
     pub alias: String,
     source: SourceBytes,
     range: Range<u64>,
+    /// The resource's first bytes and how many of them, once the index has had them in hand: the planners ask
+    /// tens of thousands of resources for a signature, and each answer would be a read of the disc image.
+    first: Option<([u8; FIRST], u8)>,
 }
+
+/// How many of a resource's first bytes the index keeps with its reference.
+const FIRST: usize = 16;
 
 impl ResourceRef {
     /// The resource's bytes. From a mapped disc image they stay mapped only while the result lives, so a
@@ -737,6 +783,11 @@ impl ResourceRef {
 
     /// The resource's first bytes, at most `count` of them, without reading the rest.
     pub fn head(&self, count: usize) -> SourceSlice<'_> {
+        if let Some((first, kept)) = &self.first
+            && count.min(self.len()) <= *kept as usize
+        {
+            return SourceSlice::Borrowed(&first[..count.min(self.len())]);
+        }
         let end = self.range.start + count.min(self.len()) as u64;
         self.source
             .slice(self.range.start..end)
@@ -745,6 +796,15 @@ impl ResourceRef {
 
     pub fn is_empty(&self) -> bool {
         self.range.start == self.range.end
+    }
+
+    /// Keeps the resource's first bytes with the reference; `bytes` is the resource from its start, all of it or
+    /// a head of it.
+    pub fn note_first(&mut self, bytes: &[u8]) {
+        let count = bytes.len().min(FIRST).min(self.len());
+        let mut first = [0; FIRST];
+        first[..count].copy_from_slice(&bytes[..count]);
+        self.first = Some((first, count as u8));
     }
 
     pub fn subrange(&self, alias: impl Into<String>, range: Range<usize>) -> CoreResult<Self> {
@@ -765,6 +825,7 @@ impl ResourceRef {
             alias: alias.into(),
             source: self.source.clone(),
             range: start..end,
+            first: None,
         })
     }
 }
@@ -847,6 +908,7 @@ impl SourceTree {
                     alias: item.rel.clone(),
                     source: source_bytes,
                     range,
+                    first: None,
                 },
             );
         }
@@ -928,6 +990,7 @@ impl SourceTree {
                     alias: name.clone(),
                     range: 0..bytes.len(),
                     source: bytes,
+                    first: None,
                 },
             );
         }

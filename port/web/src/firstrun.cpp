@@ -77,18 +77,20 @@ fs::path DiscSource(const fs::path &game_root) {
     return {};
 }
 
-// How many conversions run at once: half the device's processors, two to eight (four on a phone with eight);
-// CT_WEB_EXTRACT_JOBS (1 to 8) sets another. The disc in desktop Chrome took 220 s with two, 122 s with four and
-// 78 s with eight, and the memory the page reached was the same with each: the planning before the first
-// conversion is what holds it.
-std::size_t ExtractJobs() {
+// How many conversions run at once, two to eight. With the game playing beside them, half the device's
+// processors (four on a phone with eight or nine). Unpacking the whole disc there is nothing else to run, so two
+// thirds of them (six on a phone with nine): a phone's processors past its fast ones are slow, but they are
+// idle otherwise. CT_WEB_EXTRACT_JOBS (1 to 8) sets another. The memory the page reached in desktop Chrome was
+// the same with two, four and eight: the planning before the first conversion is what holds it.
+std::size_t ExtractJobs(bool playing) {
     if (const char *asked = std::getenv("CT_WEB_EXTRACT_JOBS")) {
         const long value = std::strtol(asked, nullptr, 10);
         if (value >= 1 && value <= 8) {
             return static_cast<std::size_t>(value);
         }
     }
-    return std::clamp<std::size_t>(std::thread::hardware_concurrency() / 2, 2, 8);
+    const std::size_t processors = std::thread::hardware_concurrency();
+    return std::clamp<std::size_t>(playing ? processors / 2 : processors * 2 / 3, 2, 8);
 }
 
 // Extracts source into root, reporting as it goes; empty when the data is current afterwards.
@@ -104,7 +106,7 @@ std::string Extract(const fs::path &source, const fs::path &root) {
     if (!temporary_error) {
         setenv("TMPDIR", temporary.c_str(), 1);
     }
-    const std::size_t jobs = ExtractJobs();
+    const std::size_t jobs = ExtractJobs(false);
     CT_LOG_INFO(Main, "Extracting with {} conversions at a time", jobs);
     auto worker = std::async(std::launch::async, [source, root, jobs]() -> std::string {
         try {
@@ -162,7 +164,7 @@ std::string ExtractWhilePlaying(const fs::path &source, const fs::path &root) {
     if (!temporary_error) {
         setenv("TMPDIR", temporary.c_str(), 1);
     }
-    const std::size_t jobs = ExtractJobs();
+    const std::size_t jobs = ExtractJobs(true);
     CT_LOG_INFO(Main, "Extracting with {} conversions at a time, playing meanwhile", jobs);
     const auto seconds = [began] {
         return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - began).count();

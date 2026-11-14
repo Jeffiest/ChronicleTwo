@@ -6400,11 +6400,14 @@ pub fn plan_source(
             !lower.ends_with(".pss")
                 && !matches!(lower.as_str(), "sound/sound.dat" | "sound/sound.hd3")
                 && (candidates.contains(*name)
-                    || source.resource(name).is_ok_and(|resource| {
-                        resource
-                            .bytes()
-                            .windows(4)
-                            .any(|signature| signature == b"MDS\0" || signature == b"MDT\0")
+                    // The index has looked for the signatures in every root it read whole.
+                    || inventory.model_signature(name).unwrap_or_else(|| {
+                        source.resource(name).is_ok_and(|resource| {
+                            resource
+                                .bytes()
+                                .windows(4)
+                                .any(|signature| signature == b"MDS\0" || signature == b"MDT\0")
+                        })
                     }))
         })
         .map(str::to_owned)

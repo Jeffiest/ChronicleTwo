@@ -52,6 +52,7 @@ static PROFILE_JOBS: [std::sync::atomic::AtomicU64; 8] =
 /// With DC2DATA_PROFILE_JOBS set, says on stderr how long the jobs of each category have run so far, summed
 /// over the workers.
 pub fn profile_note(label: &str) {
+    super::archive::read_note(label);
     if std::env::var_os("DC2DATA_PROFILE_JOBS").is_none() {
         return;
     }
