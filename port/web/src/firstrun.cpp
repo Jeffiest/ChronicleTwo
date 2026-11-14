@@ -8,6 +8,14 @@
 //   can report its progress to stdout as "extract: <percent> <stage>", which the page shows; "extract: done" or
 //   "extract: failed: <why>" ends it. Movies are left out: the browser has no FFmpeg.
 //
+//   The page offers two ways and names the player's choice in CT_WEB_UNPACK. "whole" (or nothing) is the above:
+//   the game starts when the whole disc is unpacked. "play" starts the game as soon as the extraction can serve
+//   reads (Kazarov's progressive session, platform/progressive_mount.cpp): until then the lines are the same,
+//   with the percentage counting to that moment; after "extract: done" the rest is converted behind the game, a
+//   read of something not converted yet waiting for it, and the page hears "unpack: <percent>" and then
+//   "unpack: done" or "unpack: failed: <why>". data.zip and data.json take their places at the end, so a page
+//   closed before that starts again from the disc.
+//
 // Without either the game logs what to put there and exits with kExitNoData, as the desktop does without a
 // setup window.
 
@@ -18,8 +26,10 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -27,6 +37,7 @@
 #include <fstream>
 #include <future>
 #include <string>
+#include <string_view>
 #include <system_error>
 #include <thread>
 
@@ -136,6 +147,105 @@ std::string Extract(const fs::path &source, const fs::path &root) {
     return failure;
 }
 
+// Set once the game has been let through to play while the disc is still being unpacked.
+std::atomic<bool> playing_while_unpacking{false};
+
+// Starts the extraction of source into root and returns when the game can read from it, the rest going on behind
+// the game; empty then, and otherwise why it could not.
+std::string ExtractWhilePlaying(const fs::path &source, const fs::path &root) {
+    const auto began = std::chrono::steady_clock::now();
+    Say("extract: preparing the game data from " + source.filename().string());
+    std::error_code temporary_error;
+    const fs::path  temporary = root.parent_path() / ".extract-tmp";
+    fs::remove_all(temporary, temporary_error);
+    fs::create_directories(temporary, temporary_error);
+    if (!temporary_error) {
+        setenv("TMPDIR", temporary.c_str(), 1);
+    }
+    const std::size_t jobs = ExtractJobs();
+    CT_LOG_INFO(Main, "Extracting with {} conversions at a time, playing meanwhile", jobs);
+    const auto seconds = [began] {
+        return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - began).count();
+    };
+    const auto memory_mib = [] { return emscripten_get_heap_size() >> 20; };
+    kazarov::progressive_begin();
+    std::thread([source, root, jobs, temporary, seconds, memory_mib] {
+        std::string failure;
+        try {
+            kazarov::progressive_run(source.string(), root.string(), jobs, kazarov::ScriptPublicationPolicy::LuauOnly);
+        } catch (const std::exception &error) {
+            failure = error.what();
+        }
+        std::error_code error;
+        fs::remove_all(temporary, error);
+        if (failure.empty() && FirstRunDataMissing(root)) {
+            failure = "the extraction finished without current game data";
+        }
+        CT_LOG_INFO(Main, "The extraction ran for {} s (memory {} MiB)", seconds(), memory_mib());
+        // Before the game began, the wait below reports a failure; after, the page does.
+        if (!playing_while_unpacking.load()) {
+            return;
+        }
+        if (failure.empty()) {
+            Say("unpack: done");
+        } else {
+            Say("unpack: failed: " + failure);
+            CT_LOG_ERROR(Main, "Game data setup: {}", failure);
+        }
+    }).detach();
+    const float ready = std::max(kazarov::progressive_ready_fraction(), 0.01f);
+    std::string last;
+    std::string last_stage;
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        const auto status = kazarov::progressive_status();
+        if (status.phase == 4) {
+            return std::string(status.error).empty() ? "the extraction stopped" : std::string(status.error);
+        }
+        if (status.phase >= 2) {
+            playing_while_unpacking.store(true);
+            break;
+        }
+        const int         percent = static_cast<int>(std::clamp(status.fraction / ready, 0.0f, 0.99f) * 100.0f);
+        const std::string stage(status.stage);
+        const std::string line = "extract: " + std::to_string(percent) + " " + stage;
+        if (line != last) {
+            last = line;
+            Say(line);
+        }
+        if (stage != last_stage) {
+            last_stage = stage;
+            CT_LOG_INFO(Main, "Extraction, {} s: {} (memory {} MiB)", seconds(), stage, memory_mib());
+        }
+    }
+    CT_LOG_INFO(Main, "The game can start after {} s (memory {} MiB); the rest is extracted behind it", seconds(),
+                memory_mib());
+    // What is left, for the page: the conversions done of those the game may ask for.
+    std::thread([] {
+        int last_percent = -1;
+        while (true) {
+            const auto status = kazarov::progressive_status();
+            if (status.phase != 2) {
+                return;
+            }
+            const int percent =
+                status.total == 0 ? 0 : static_cast<int>(std::min<std::uint64_t>(status.done * 100 / status.total, 99));
+            if (percent != last_percent) {
+                last_percent = percent;
+                Say("unpack: " + std::to_string(percent));
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    }).detach();
+    return {};
+}
+
+// Whether the page asked for the game to start while the disc is still being unpacked.
+bool PlayWhileUnpacking() {
+    const char *asked = std::getenv("CT_WEB_UNPACK");
+    return asked != nullptr && std::string_view(asked) == "play";
+}
+
 } // namespace
 
 bool FirstRunDataMissing(const fs::path &root) {
@@ -168,7 +278,7 @@ void FirstRunRequireData(const fs::path &root, bool) {
     const fs::path source = DiscSource(root.parent_path());
     if (!source.empty()) {
         CT_LOG_INFO(Main, "No current game data at {}: extracting {}", PathsDisplay(root), PathsDisplay(source));
-        const std::string failure = Extract(source, root);
+        const std::string failure = PlayWhileUnpacking() ? ExtractWhilePlaying(source, root) : Extract(source, root);
         if (failure.empty()) {
             Say("extract: done");
             return;

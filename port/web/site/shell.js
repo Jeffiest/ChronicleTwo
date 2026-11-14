@@ -8,7 +8,9 @@
 // What the player chooses is stored in chronicletwo/ as one of:
 // - data.zip and data.json, as dc2data extract writes them on a PC (or a data/ folder and data.json);
 // - disc.iso, an image of the PAL disc, or disc/ (DATA.HD4, DATA.DAT, SOUND.HD3, SOUND.DAT), which the game
-//   extracts into data.zip and data.json when it first starts (port/web/src/firstrun.cpp).
+//   extracts into data.zip and data.json when it first starts (port/web/src/firstrun.cpp). The player chooses
+//   how (showUnpack): the whole disc before the game starts, or the game started as soon as it can be and the
+//   rest unpacked behind it.
 // Storing one removes the others. saves/, config.json and logs/ beside them are the game's own and stay.
 //
 // A server that offers the game data (tools/web/serve.py --data) serves data.zip and data.json at gamedata/; the
@@ -541,10 +543,88 @@ async function serverData() {
     }
 }
 
+// How fast this device computes: MiB a second through a CRC-32 written in JavaScript, the best of the passes that
+// fit in a tenth of a second. The unpacking is the same kind of work (compression, checksums, pictures), so its
+// time on another device is taken to be longer or shorter by this.
+function deviceSpeed() {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; ++n) {
+        let c = n;
+        for (let k = 0; k < 8; ++k) {
+            c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        }
+        table[n] = c;
+    }
+    const data = new Uint8Array(1 << 20);
+    for (let i = 0; i < data.length; ++i) {
+        data[i] = (i * 2654435761) >>> 24;
+    }
+    let best = 0;
+    const until = performance.now() + 100;
+    do {
+        const began = performance.now();
+        let crc = 0xffffffff;
+        for (let i = 0; i < data.length; ++i) {
+            crc = table[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
+        }
+        best = Math.max(best, 1000 / Math.max(performance.now() - began, 0.01));
+    } while (performance.now() < until);
+    return best;
+}
+
+// What deviceSpeed gives on the PC the times below were measured on (desktop Chrome, 24 processors).
+const kReferenceSpeed = 640;
+// The part of a whole unpacking after which the game can start when the rest is unpacked as it plays: 43 s of
+// 77 and 48 s of 85 there, rounded up.
+const kPlayShare = 0.6;
+
+// How long unpacking a disc takes here, in seconds: {whole, play}, play being the wait before the game starts
+// when the rest is unpacked behind it. The whole disc took desktop Chrome 220 s with two conversions at a time,
+// 122 s with four and 77 to 85 s with eight, which 373 / n + 34 follows; the game runs half the processors'
+// worth, two to eight (firstrun.cpp, ExtractJobs).
+let unpackEstimate = null;
+
+function estimateUnpack() {
+    if (!unpackEstimate) {
+        const jobs = Math.min(Math.max(Math.floor((navigator.hardwareConcurrency || 4) / 2), 2), 8);
+        const speed = deviceSpeed();
+        const whole = (373 / jobs + 34) * kReferenceSpeed / speed;
+        unpackEstimate = {whole, play: whole * kPlayShare, speed, jobs};
+    }
+    return unpackEstimate;
+}
+
+function about(seconds) {
+    if (seconds < 45) {
+        return 'under a minute';
+    }
+    const minutes = Math.round(seconds / 60);
+    return minutes === 1 ? 'about a minute' : `about ${minutes} minutes`;
+}
+
+// The two ways to unpack a stored disc, each with the time it is expected to take on this device.
+function showUnpack() {
+    const {whole, play} = estimateUnpack();
+    $('unpack-whole-note').textContent = `The game starts when all of it is unpacked, ${about(whole)} on this ` +
+        'device by a rough estimate, and then plays with nothing left to do.';
+    $('unpack-play-note').textContent = `The game starts after ${about(play)}, and the rest is unpacked behind it ` +
+        `for ${about(whole - play)} more. Until that is done the game can pause for a moment when it needs something ` +
+        'not unpacked yet, and the page has to stay open: closed sooner, it starts the unpacking again next time.';
+    const memory = navigator.deviceMemory;
+    $('unpack-memory').hidden = !(memory && memory < 8);
+    if (memory && memory < 8) {
+        $('unpack-memory').textContent = `This device reports ${memory} GiB of memory. Unpacking a disc takes ` +
+            'about 2.3 GiB at its peak, and about 3 GiB with the game running beside it, so it may not finish ' +
+            'here, the second way least of all. The data.zip and data.json a PC extracted play without unpacking.';
+    }
+}
+
 async function refresh() {
     if (server) {
         $('pick').hidden = true;
         $('ready').hidden = false;
+        $('unpack').hidden = true;
+        $('start').hidden = false;
         $('forget').hidden = true;
         $('stored').textContent = `The game data comes from the computer serving this page (data.zip, ${mib(server.size)}).`;
         setStatus('Ready. The game reads the data over the network as it plays; saves stay in this browser.');
@@ -560,10 +640,16 @@ async function refresh() {
         $('forget-disc').textContent = what.kind === 'disc.iso'
             ? `Remove the disc image (frees ${mib(what.size)})` : "Remove the disc's files";
     }
+    // A disc not unpacked yet: the two ways to unpack it stand in for Start.
+    const packed = what !== null && !what.marker && (what.kind === 'disc.iso' || what.kind === 'disc');
+    $('unpack').hidden = !packed;
+    $('start').hidden = packed;
     if (what) {
         $('stored').textContent = describe(what);
-        setStatus(what.marker || what.kind === 'data.zip' || what.kind === 'data' ? 'Ready.'
-            : 'Ready. The game extracts the disc when it first starts, which takes a while.');
+        setStatus(packed ? 'Ready. Choose how to unpack the disc.' : 'Ready.');
+        if (packed) {
+            showUnpack();
+        }
     } else {
         setStatus('No game data in this browser yet.');
     }
@@ -622,12 +708,35 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+// The rest of a disc being unpacked behind the game ("unpack: <percent>", then "unpack: done" or "unpack: failed:
+// <why>", firstrun.cpp): a line in the corner, the screen kept on, and a question before the page is closed.
+let unpacking = false;
+
+function showUnpacking(text) {
+    $('unpacking').hidden = text === null;
+    $('unpacking').textContent = text ?? '';
+}
+
+window.addEventListener('beforeunload', (event) => {
+    if (unpacking) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
+
 function print(text) {
     const extract = /^extract: (\d+) (.*)$/.exec(text);
     if (extract) {
         keepAwake(true);
-        notice(`Extracting the game data, once. Keep this page open and on screen. ${extract[2]}`,
-            Number(extract[1]) / 100);
+        notice(`${unpackChoice === 'play' ? 'Unpacking what the game needs to start' : 'Unpacking the game data'}, ` +
+            `once. Keep this page open and on screen. ${extract[2]}`, Number(extract[1]) / 100);
+        return;
+    }
+    const rest = /^unpack: (\d+)$/.exec(text);
+    if (rest) {
+        unpacking = true;
+        keepAwake(true);
+        showUnpacking(`Unpacking the rest of the disc: ${rest[1]}%. Keep this page open.`);
         return;
     }
     if (text === 'extract: done') {
@@ -636,6 +745,17 @@ function print(text) {
     } else if (text.startsWith('extract: ')) {
         keepAwake(!text.startsWith('extract: failed'));
         notice(text.slice('extract: '.length));
+    } else if (text === 'unpack: done') {
+        unpacking = false;
+        keepAwake(false);
+        showUnpacking('The disc is unpacked.');
+        setTimeout(() => showUnpacking(null), 8000);
+    } else if (text.startsWith('unpack: failed')) {
+        unpacking = false;
+        keepAwake(false);
+        showUnpacking(null);
+        notice(`Unpacking the disc stopped (${text.slice('unpack: failed: '.length)}). ` +
+            'Reload the page to start it again.');
     }
     if (report && RATES.test(text)) {
         reportLine(text);
@@ -820,7 +940,11 @@ function pixelRatio() {
     return ratio;
 }
 
-function start() {
+// How the player chose to unpack a stored disc, 'whole' or 'play'; null when there is nothing to unpack.
+let unpackChoice = null;
+
+function start(unpack = null) {
+    unpackChoice = unpack;
     $('setup').hidden = true;
     $('game').hidden = false;
     const extra = new URLSearchParams(location.search).get('args');
@@ -834,6 +958,9 @@ function start() {
     if (refreshRate > 0) {
         args.push('--env', `CT_WEB_REFRESH=${refreshRate}`);
     }
+    if (unpack) {
+        args.push('--env', `CT_WEB_UNPACK=${unpack}`);
+    }
     if (extra) {
         args.push(...extra.split(/\s+/).filter(Boolean));
     }
@@ -846,6 +973,12 @@ function start() {
         `${pixelRatio()} pixels to the CSS pixel of the screen's ${screenRatio}, page ${innerWidth}x${innerHeight})`);
     log(`device: ${navigator.hardwareConcurrency} processors, ${navigator.deviceMemory ?? 'unknown'} GiB of memory, ` +
         `screen ${screen.width}x${screen.height} at ${refreshRate || 'an unknown rate of'} Hz`);
+    if (unpack) {
+        // Beside the times the game logs, so an estimate that is off shows by how much.
+        const {whole, play, speed, jobs} = estimateUnpack();
+        log(`unpack: ${unpack}, expected ${Math.round(unpack === 'play' ? play : whole)} s before the game starts and ` +
+            `${Math.round(whole)} s in all (${jobs} at a time, device speed ${Math.round(speed)})`);
+    }
     if (server) {
         probeNetwork();
     }
@@ -982,7 +1115,9 @@ async function main() {
     };
     $('file').addEventListener('change', choose(storeFiles));
     $('folder').addEventListener('change', choose(storeFolder));
-    $('start').addEventListener('click', start);
+    $('start').addEventListener('click', () => start());
+    $('unpack-whole').addEventListener('click', () => start('whole'));
+    $('unpack-play').addEventListener('click', () => start('play'));
     $('forget').addEventListener('click', async () => {
         await removeAll();
         await refresh();

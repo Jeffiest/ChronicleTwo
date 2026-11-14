@@ -122,6 +122,14 @@ into the game root only after verification. Earlier data is moved aside first an
 publication fails. A retry discards the private partial stage and rebuilds the archive before
 verification and publication.
 
+A game can read from an extraction that is still running (`tools/kazarov/src/rust/progressive.rs`, used by
+the web build's "unpack as you play"). Every job declares the names it will write before it runs, so once
+the run is planned the session lists every name; a read of an entry already written comes from
+`data.zip.partial` by position, and a read of one still to be converted moves its job to the front and waits.
+The session lets go of the file while the stage is sealed and while it is moved into the game root, and
+reads from the published `data.zip` after that. The archive holds the same entries with the same contents as
+one extracted without a reader; only their order in the file can differ.
+
 ## Verification
 
 `dc2data current <source> <game-root>/data` reads only metadata. It succeeds when the marker has

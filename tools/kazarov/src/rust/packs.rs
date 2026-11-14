@@ -1,6 +1,6 @@
 //! Publishes ordinary retail PACK containers as directly readable asset directories.
 use super::archive::ResourceRef;
-use super::artifacts::{ArtifactBytes, AssetSink, Category, Job};
+use super::artifacts::{ArtifactBytes, AssetSink, Category, Job, Output};
 use super::inventory::Inventory;
 use super::progress::Phase;
 use super::{CoreError, CoreResult, models};
@@ -158,6 +158,7 @@ pub fn plan_jobs(
                 label: name.clone(),
                 work: 1,
                 estimated_bytes: bytes.len(),
+                outputs: None,
                 run: Box::new(move |sink| {
                     sink.submit(name, ArtifactBytes::Owned(bytes), Category::Pack)
                 }),
@@ -196,6 +197,11 @@ pub fn plan_jobs(
             label: name.clone(),
             work: resource.len().max(1) as u64,
             estimated_bytes: resource.len(),
+            outputs: Some(vec![Output {
+                name: name.clone(),
+                optional: false,
+                extent: None,
+            }]),
             run: Box::new(move |sink| {
                 sink.submit(
                     name,

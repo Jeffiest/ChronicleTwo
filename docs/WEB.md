@@ -96,7 +96,22 @@ All of it is in `port/web/`, `tools/web/` or behind `__EMSCRIPTEN__` / `if(EMSCR
   with `--run-dir /opfs/chronicletwo`, so `data.zip` is read in place and saves, `config.json` and the logs live
   beside it. A disc is extracted at the game's first start by Kazarov's extractor, as `dc2data` does on a PC, on a
   thread of its own with progress on stdout as `extract: <percent> <stage>`, which the page shows over the canvas
-  (`port/web/src/firstrun.cpp`). Movies are left out of the extraction (a build without FFmpeg plans no movie
+  (`port/web/src/firstrun.cpp`). The page asks how, once a disc is stored and not yet extracted (`showUnpack` in
+  `shell.js`), and passes the answer as `CT_WEB_UNPACK`. **Unpack the whole disc** (`whole`) is the extraction
+  above: the game starts when `data.zip` is published. **Unpack as you play** (`play`) starts the game as soon
+  as the extraction can serve reads, about 55% of the way through: by then the run is planned and every
+  converted name is known, so the game indexes the names (`port/src/platform/progressive_mount.cpp`) and reads
+  entries out of the archive as it is being written; a read of an entry not converted yet moves its conversion
+  to the front and waits for it (`tools/kazarov/src/rust/progressive.rs`). The rest goes on behind the game,
+  reported as `unpack: <percent>` once a second and then `unpack: done` or `unpack: failed: <why>`, which the
+  page shows as a line at the top of the canvas; it keeps the screen on and asks before the page is closed,
+  since an extraction cut short starts again from the beginning. Either way ends with the same `data.zip` and
+  `data.json`. Each choice is shown with the time it is expected to take on the device (`estimateUnpack`): the
+  time measured on a desktop for the number of conversions the device will run at once, scaled by how fast the
+  device gets through a CRC-32 in JavaScript beside that desktop. On that desktop (eight at a time) the whole
+  disc takes 77 to 85 s and the game starts after 43 to 48 s when the rest is unpacked behind it; a town and a
+  dungeon floor hold their frame rate meanwhile. The game running beside the extraction takes the program's
+  memory to about 3 GiB at its peak, against 2.3 GiB for the extraction alone. Movies are left out of the extraction (a build without FFmpeg plans no movie
   job, `plan_stream` in `tools/kazarov/src/rust/audio.rs`) and `MoviePlayer` is a no-op
   (`port/web/src/movie.cpp`): the browser has no FFmpeg. Half the device's processors
   convert at once, two to eight of them (four on a phone with eight), or as many as `CT_WEB_EXTRACT_JOBS` says
@@ -239,9 +254,11 @@ Against DC_Web's layer for Dark Cloud, this tree's web build differs in:
   the browser gives a page. Converting the whole disc is about 510 seconds of processor time in a native release
   build on a desktop (`dc2data extract --jobs 2`, movies included) and 78 s on a desktop's eight threads in the
   browser, so no phone does it in a minute: a phone is served in seconds by the server's data
-  (`--data`) or a `data.zip` with its `data.json` made on a PC and picked on the page. Starting from a disc
-  image that fast needs the game to convert a file when it first asks for it, which the extractor cannot do yet:
-  the archive's index is every converted name, and textures and models are planned across the whole disc.
+  (`--data`) or a `data.zip` with its `data.json` made on a PC and picked on the page. "Unpack as you play"
+  starts the game a little past half of that time, and is also still to be run through on a phone: it needs
+  more memory than the whole extraction does (about 3 GiB with the game beside it), and the planning that every
+  converted name waits for (textures and models are planned across the whole disc) is most of the wait before
+  the game starts, so starting sooner than that needs the planning itself split up.
 - **Kazarov's renderer tests** (`kazarov_gfx_tests`, `kazarov_gfx_tests_gl`) in Chromium: `cmake --build --preset web
   --target kazarov_gfx_tests`, then `port/web/test/gfx_tests.mjs`. DC_Web's CI runs them on both layers; this tree's
   renderer is newer and the layers were ported, so the suite is the check that the port holds.

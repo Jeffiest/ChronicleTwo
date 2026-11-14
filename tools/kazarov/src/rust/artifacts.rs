@@ -1,12 +1,12 @@
 //! Bounded in-memory asset submission to one private ZIP writer.
 use super::archive::{ResourceRef, SourceSlice};
 use super::progress::Phase;
-use super::zip_archive::{self, PreparedEntry, StreamWriter, Written};
+use super::zip_archive::{self, Placed, PreparedEntry, StreamWriter, Written};
 use super::{CoreError, CoreResult};
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{SyncSender, sync_channel};
+use std::sync::mpsc::{SyncSender, TryRecvError, sync_channel};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -44,13 +44,86 @@ pub enum Category {
 
 type JobRunner = Box<dyn FnOnce(&AssetSink) -> CoreResult<()> + Send>;
 
+static PROFILE_NANOS: [std::sync::atomic::AtomicU64; 8] =
+    [const { std::sync::atomic::AtomicU64::new(0) }; 8];
+static PROFILE_JOBS: [std::sync::atomic::AtomicU64; 8] =
+    [const { std::sync::atomic::AtomicU64::new(0) }; 8];
+
+/// With DC2DATA_PROFILE_JOBS set, says on stderr how long the jobs of each category have run so far, summed
+/// over the workers.
+pub fn profile_note(label: &str) {
+    if std::env::var_os("DC2DATA_PROFILE_JOBS").is_none() {
+        return;
+    }
+    static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+    let start = *START.get_or_init(Instant::now);
+    let names = [
+        "texture", "model", "audio", "movie", "script", "pack", "preserved", "gameplay",
+    ];
+    let mut line = format!("dc2data profile {:7.2}s {label}:", start.elapsed().as_secs_f64());
+    for (index, name) in names.iter().enumerate() {
+        let jobs = PROFILE_JOBS[index].load(Ordering::Relaxed);
+        if jobs != 0 {
+            line.push_str(&format!(
+                " {name} {:.1}s/{jobs}",
+                PROFILE_NANOS[index].load(Ordering::Relaxed) as f64 / 1e9
+            ));
+        }
+    }
+    eprintln!("{line}");
+}
+
+/// An entry a job names before it runs.
+#[derive(Clone, Debug)]
+pub struct Output {
+    pub name: String,
+    /// The job may end without writing it.
+    pub optional: bool,
+    /// A picture's width and height, known from planning.
+    pub extent: Option<(u32, u32)>,
+}
+
 /// A conversion task admitted by byte estimate before its closure runs.
 pub struct Job {
     pub category: Category,
     pub label: String,
     pub work: u64,
     pub estimated_bytes: usize,
+    /// The entries the job writes, when planning knows them all: a conversion a game reads from while it
+    /// runs lists them ahead and runs the job when one is asked for. None for a job that has to run before
+    /// anything is read.
+    pub outputs: Option<Vec<Output>>,
     pub run: JobRunner,
+}
+
+/// Follows a stream as it is written, for a reader of the unfinished archive.
+pub trait Observer: Send + Sync {
+    /// The file the stream grows in.
+    fn opened(&self, partial: &Path);
+    /// Entries now readable from that file, in the order written, and the declared jobs that have ended.
+    fn published(&self, entries: Vec<Placed>, finished: Vec<usize>);
+    /// True while a reader waits, so each entry is handed over as it is written.
+    fn hurried(&self) -> bool;
+}
+
+/// Flushes what the stream has appended and tells its observer of it.
+fn publish(
+    writer: &mut StreamWriter,
+    observer: &Option<Arc<dyn Observer>>,
+    pending: &mut Vec<Placed>,
+    finished: &mut Vec<usize>,
+    unpublished: &mut u64,
+) -> CoreResult<()> {
+    let Some(observer) = observer else {
+        return Ok(());
+    };
+    if pending.is_empty() && finished.is_empty() {
+        return Ok(());
+    }
+    writer.flush()?;
+    *unpublished = 0;
+    observer.published(std::mem::take(pending), std::mem::take(finished));
+    Ok(())
 }
 
 impl super::jobs::ClassJob for Job {
@@ -74,6 +147,9 @@ impl Job {
         let started = Instant::now();
         let result = (self.run)(sink);
         let elapsed = started.elapsed();
+        PROFILE_NANOS[self.category as usize]
+            .fetch_add(elapsed.as_nanos() as u64, Ordering::Relaxed);
+        PROFILE_JOBS[self.category as usize].fetch_add(1, Ordering::Relaxed);
         if elapsed >= Duration::from_secs(1) && std::env::var_os("DC2DATA_PROFILE_JOBS").is_some() {
             eprintln!(
                 "dc2data job {:?} [{}]: {:.3}s",
@@ -183,6 +259,10 @@ impl Drop for MemoryPermit {
 enum Message {
     Entry(PreparedEntry, MemoryPermit, Category),
     Completed(u64),
+    /// A declared job has written everything it will.
+    JobDone(usize),
+    /// Answered once everything sent before it is in the file and its observer knows.
+    Barrier(std::sync::mpsc::Sender<()>),
     Finish,
     Abort,
 }
@@ -232,7 +312,7 @@ impl AssetSink {
     }
 
     pub fn start(stage: &Path, budget_bytes: usize) -> CoreResult<Self> {
-        Self::start_with_progress(stage, budget_bytes, Phase::noop(), 0)
+        Self::start_with_progress(stage, budget_bytes, Phase::noop(), 0, None)
     }
 
     pub fn start_with_progress(
@@ -240,9 +320,13 @@ impl AssetSink {
         budget_bytes: usize,
         phase: Phase,
         total_work: u64,
+        observer: Option<Arc<dyn Observer>>,
     ) -> CoreResult<Self> {
         std::fs::create_dir_all(stage)?;
         let writer = StreamWriter::new(&stage.join("data.zip"))?;
+        if let Some(observer) = &observer {
+            observer.opened(writer.partial());
+        }
         if total_work != 0 {
             phase.set_total(total_work);
         }
@@ -258,17 +342,76 @@ impl AssetSink {
             .spawn(move || {
                 let result = (|| -> CoreResult<Written> {
                     let mut writer = writer;
-                    while let Ok(message) = receiver.recv() {
+                    // An observed stream hands over what it has written whenever it has nothing to
+                    // write, at each megabyte, and at once while a reader waits.
+                    let mut pending = Vec::new();
+                    let mut finished = Vec::new();
+                    let mut unpublished = 0u64;
+                    loop {
+                        let message = match receiver.try_recv() {
+                            Ok(message) => message,
+                            Err(TryRecvError::Empty) => {
+                                publish(
+                                    &mut writer,
+                                    &observer,
+                                    &mut pending,
+                                    &mut finished,
+                                    &mut unpublished,
+                                )?;
+                                match receiver.recv() {
+                                    Ok(message) => message,
+                                    Err(_) => break,
+                                }
+                            }
+                            Err(TryRecvError::Disconnected) => break,
+                        };
+                        let mut hand_over = false;
                         match message {
                             Message::Entry(entry, _permit, _category) => {
-                                phase.add_bytes(writer.append(entry)?);
+                                let placed = writer.append(entry)?;
+                                phase.add_bytes(placed.written);
+                                if let Some(observer) = &observer {
+                                    unpublished += placed.written;
+                                    pending.push(placed);
+                                    hand_over = unpublished >= 1 << 20 || observer.hurried();
+                                }
                             }
                             Message::Completed(work) => phase.inc(work),
+                            Message::JobDone(job) => {
+                                finished.push(job);
+                                hand_over = observer.as_ref().is_some_and(|o| o.hurried());
+                            }
+                            Message::Barrier(reply) => {
+                                publish(
+                                    &mut writer,
+                                    &observer,
+                                    &mut pending,
+                                    &mut finished,
+                                    &mut unpublished,
+                                )?;
+                                let _ = reply.send(());
+                            }
                             Message::Finish => {
+                                publish(
+                                    &mut writer,
+                                    &observer,
+                                    &mut pending,
+                                    &mut finished,
+                                    &mut unpublished,
+                                )?;
                                 let written = writer.finish()?;
                                 return Ok(written);
                             }
                             Message::Abort => return Err(fail("ZIP stream aborted")),
+                        }
+                        if hand_over {
+                            publish(
+                                &mut writer,
+                                &observer,
+                                &mut pending,
+                                &mut finished,
+                                &mut unpublished,
+                            )?;
                         }
                     }
                     Err(fail("ZIP writer stopped before finish"))
@@ -398,6 +541,29 @@ impl AssetSink {
                 self.cancel();
                 fail("ZIP writer stopped before completing a job")
             })
+    }
+
+    /// Tells the stream's observer that a declared job has written everything it will. Sent by the job's
+    /// own thread after its entries, so it reaches the observer after them.
+    pub fn finished(&self, job: usize) -> CoreResult<()> {
+        self.inner.sender.send(Message::JobDone(job)).map_err(|_| {
+            self.cancel();
+            self.first_failure()
+                .unwrap_or_else(|| fail("ZIP writer stopped before a job ended"))
+        })
+    }
+
+    /// Waits until everything submitted so far is in the file and the stream's observer has been told.
+    pub fn barrier(&self) -> CoreResult<()> {
+        let (reply, done) = std::sync::mpsc::channel();
+        self.inner
+            .sender
+            .send(Message::Barrier(reply))
+            .map_err(|_| fail("ZIP writer stopped before a barrier"))?;
+        done.recv().map_err(|_| {
+            self.first_failure()
+                .unwrap_or_else(|| fail("ZIP writer stopped at a barrier"))
+        })
     }
 
     pub fn finish(self) -> CoreResult<Written> {

@@ -159,6 +159,7 @@ DataReadPathNameExt DivPathNameExt(std::string_view path) {
 #include "platform/config_catalog.hpp"
 #include "platform/datapacks.hpp"
 #include "platform/paths.hpp"
+#include "platform/progressive_mount.hpp"
 #include "platform/texture_catalog.hpp"
 #include "platform/vfs.hpp"
 #include "profile.hpp"
@@ -879,7 +880,19 @@ void DataReadIndex(const fs::path &root) {
     std::shared_ptr<const vfs::Mount> base;
     fs::path                          location = data_root;
     std::error_code                   error;
-    if (fs::is_regular_file(archive, error)) {
+    bool                              growing = false;
+    try {
+        // An extraction that is still writing data.zip (the web's "unpack as you play") serves it meanwhile.
+        base = ProgressiveMountOpen();
+        growing = base != nullptr;
+    } catch (const std::exception &exception) {
+        CT_LOG_ERROR(Data, "dataread: {}: {}", PathsDisplay(archive), exception.what());
+        growing = true;
+    }
+    if (growing) {
+        location = archive;
+        CT_LOG_INFO(Data, "dataread: reading {} while it is extracted", PathsDisplay(archive));
+    } else if (fs::is_regular_file(archive, error)) {
         location = archive;
         try {
             base = ArchiveMountOpen(archive);

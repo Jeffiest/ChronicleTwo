@@ -1,6 +1,6 @@
 //! Converts retail sound resources to PCM WAV and semantic JSON before publication.
 use super::archive::ResourceRef;
-use super::artifacts::{ArtifactBytes, AssetSink, Category, Job};
+use super::artifacts::{ArtifactBytes, AssetSink, Category, Job, Output};
 use super::inventory::Inventory;
 use super::progress::Phase;
 use super::{CoreError, CoreResult};
@@ -1183,6 +1183,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                 label: key.clone(),
                 work: (hd.len() + bd.len()) as u64,
                 estimated_bytes: bd.len().saturating_mul(4).saturating_add(hd.len()),
+                outputs: None,
                 run: Box::new(move |sink| {
                     bank_with(&key, &hd.bytes(), &bd.bytes(), &mut |name, bytes| {
                         sink.submit(
@@ -1202,6 +1203,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                 label: key.clone(),
                 work: input.len() as u64,
                 estimated_bytes: input.len().saturating_mul(4),
+                outputs: None,
                 run: Box::new(move |sink| {
                     let mut emit = |name: &str, bytes| {
                         sink.submit(
@@ -1231,6 +1233,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                 label: key.clone(),
                 work: input.len() as u64,
                 estimated_bytes: input.len().saturating_mul(3),
+                outputs: None,
                 run: Box::new(move |sink| {
                     let mp4 = movie_mp4_memory(&input.bytes())?;
                     sink.submit(
@@ -1248,6 +1251,11 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
                 label: key.clone(),
                 work: input.len() as u64,
                 estimated_bytes: input.len().saturating_mul(3),
+                outputs: Some(vec![Output {
+                    name: format!("{}.wav", key.trim_end_matches(".wav")),
+                    optional: false,
+                    extent: None,
+                }]),
                 run: Box::new(move |sink| {
                     sink.submit(
                         format!("{}.wav", key.trim_end_matches(".wav")),
@@ -1298,6 +1306,7 @@ pub fn plan_stream(inventory: &Inventory) -> CoreResult<AudioPlan> {
             label: group.clone(),
             work: 4096,
             estimated_bytes: 4096,
+            outputs: None,
             run: Box::new(move |sink| submit_json(sink, &output, &document)),
         });
         consumed.insert(original_group);

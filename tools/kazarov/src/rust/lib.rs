@@ -32,6 +32,19 @@ mod ffi {
         stage: String,
     }
 
+    /// Where a progressive extraction is.
+    struct ProgressiveStatus {
+        /// 0 none, 1 preparing (nothing can be read yet), 2 ready, 3 published, 4 failed.
+        phase: u8,
+        /// The whole run's progress from 0 to 1, and the stage it is in.
+        fraction: f32,
+        stage: String,
+        /// Declared conversion jobs done and in all, once ready.
+        done: u64,
+        total: u64,
+        error: String,
+    }
+
     enum ScriptPublicationPolicy {
         Retain,
         LuauOnly,
@@ -56,6 +69,31 @@ mod ffi {
             policy: ScriptPublicationPolicy,
         ) -> Result<ExtractReport>;
         fn extract_status() -> ExtractStatus;
+        /// Starts a progressive extraction's session, so its status can be asked before
+        /// progressive_run has begun on its own thread.
+        fn progressive_begin();
+        /// Extracts while the game reads: returns once data.zip is published, long after the session
+        /// became ready. Runs on a thread of its own.
+        fn progressive_run(
+            source: &str,
+            data_out: &str,
+            jobs: usize,
+            policy: ScriptPublicationPolicy,
+        ) -> Result<()>;
+        fn progressive_status() -> ProgressiveStatus;
+        /// The share of the run's progress at which a session becomes ready, about.
+        fn progressive_ready_fraction() -> f32;
+        /// The session's entries, sorted by name; fixed once it is ready.
+        fn progressive_count() -> usize;
+        fn progressive_name(index: usize) -> Result<String>;
+        /// Whether the entry exists. Waits only for one its conversion may leave out.
+        fn progressive_present(index: usize) -> Result<bool>;
+        /// These wait for the entry's conversion, which a read moves to the front.
+        fn progressive_size(index: usize) -> Result<u64>;
+        fn progressive_read(index: usize, out: &mut [u8]) -> Result<()>;
+        /// The entry's first bytes, at most its size; returns how many. A picture's first 24 bytes are
+        /// given from its planned size without converting it.
+        fn progressive_prefix(index: usize, out: &mut [u8]) -> Result<usize>;
         fn extract_with_script_policy(
             source: &str,
             data_out: &str,
@@ -209,6 +247,94 @@ fn extract_status() -> ffi::ExtractStatus {
         fraction,
         stage: stage.to_owned(),
     }
+}
+
+static PROGRESSIVE: std::sync::Mutex<Option<std::sync::Arc<core::progressive::Session>>> =
+    std::sync::Mutex::new(None);
+
+fn progressive_session() -> Result<std::sync::Arc<core::progressive::Session>, core::CoreError> {
+    PROGRESSIVE
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or_else(|| core::CoreError("no progressive extraction is running".into()))
+}
+
+fn progressive_begin() {
+    *PROGRESSIVE.lock().unwrap() = Some(std::sync::Arc::new(core::progressive::Session::new()));
+}
+
+fn progressive_run(
+    source: &str,
+    data_out: &str,
+    jobs: usize,
+    policy: ffi::ScriptPublicationPolicy,
+) -> Result<(), core::CoreError> {
+    let session = progressive_session()?;
+    let policy = match core_script_publication_policy(policy) {
+        Ok(policy) => policy,
+        Err(error) => {
+            session.fail(&error.to_string());
+            return Err(error);
+        }
+    };
+    core::extract_progressive(source.as_ref(), data_out.as_ref(), jobs, &session, policy)?;
+    Ok(())
+}
+
+fn progressive_status() -> ffi::ProgressiveStatus {
+    let Ok(session) = progressive_session() else {
+        return ffi::ProgressiveStatus {
+            phase: 0,
+            fraction: 0.0,
+            stage: String::new(),
+            done: 0,
+            total: 0,
+            error: String::new(),
+        };
+    };
+    let status = session.status();
+    ffi::ProgressiveStatus {
+        phase: match status.phase {
+            core::progressive::Phase::Preparing => 1,
+            core::progressive::Phase::Ready => 2,
+            core::progressive::Phase::Sealed => 3,
+            core::progressive::Phase::Failed => 4,
+        },
+        fraction: status.fraction,
+        stage: status.stage.to_owned(),
+        done: status.done as u64,
+        total: status.total as u64,
+        error: status.error,
+    }
+}
+
+fn progressive_ready_fraction() -> f32 {
+    core::progressive::READY_FRACTION
+}
+
+fn progressive_count() -> usize {
+    progressive_session().map_or(0, |session| session.count())
+}
+
+fn progressive_name(index: usize) -> Result<String, core::CoreError> {
+    progressive_session()?.name(index)
+}
+
+fn progressive_present(index: usize) -> Result<bool, core::CoreError> {
+    progressive_session()?.present(index)
+}
+
+fn progressive_size(index: usize) -> Result<u64, core::CoreError> {
+    progressive_session()?.size(index)
+}
+
+fn progressive_read(index: usize, out: &mut [u8]) -> Result<(), core::CoreError> {
+    progressive_session()?.read(index, out)
+}
+
+fn progressive_prefix(index: usize, out: &mut [u8]) -> Result<usize, core::CoreError> {
+    progressive_session()?.prefix(index, out)
 }
 
 fn extract(

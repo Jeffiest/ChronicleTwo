@@ -461,6 +461,7 @@ pub fn plan_jobs(
             label: alias,
             work: resource.len().max(1) as u64,
             estimated_bytes: resource.len().saturating_mul(2),
+            outputs: None,
             run: Box::new(move |sink: &AssetSink| {
                 let (bytes, _) = migrate(&resource.bytes(), &lookup)?;
                 sink.submit(name, ArtifactBytes::Owned(bytes), Category::Script)

@@ -22,6 +22,9 @@
   button.secondary, label.secondary, a.secondary { background: #2a2a33; color: var(--fg); }
   input[type=file] { display: none; }
   progress { width: 100%; margin-top: 12px; }
+  /* The two ways to unpack a stored disc (shell.js, showUnpack): a button each, with what it means under it. */
+  .option { margin-top: 16px; }
+  .option p { margin: 6px 0 0; }
   /* The games this site offers (games.json, shell.js): this one marked, the others links to their pages. */
   #games { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 24px; }
   #games a { background: #2a2a33; color: var(--fg); padding: 6px 14px; border-radius: 4px; text-decoration: none; }
@@ -37,6 +40,11 @@
   #notice { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 28, 0.92);
     padding: 16px 20px; border-radius: 8px; min-width: min(360px, 80vw); text-align: center; }
   #notice progress { margin-top: 8px; }
+  /* While the rest of the disc is unpacked behind the game: at the top between the game's own corners, and
+     touches go through it. */
+  #unpacking { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); max-width: 60%;
+    background: rgba(20, 20, 28, 0.8); padding: 4px 10px; border-radius: 4px; font-size: 13px; text-align: center;
+    pointer-events: none; }
   #drawer { position: absolute; left: 0; right: 0; bottom: 0; height: 40vh; background: rgba(0, 0, 0, 0.9); }
   /* The on-screen gamepad on a touch screen (shell.js): the buttons take touches, the space between them goes
      to the canvas. Sizes in vmin fit a phone held either way. */
@@ -81,8 +89,9 @@
         accept=".iso,.zip,.json" multiple></label>
       <label class="button secondary">A folder<input id="folder" type="file" webkitdirectory></label>
     </div>
-    <p style="margin-top: 12px">A disc image is extracted by the game when it first starts, as <code>dc2data</code> does
-      on a PC; that takes a while and the page shows its progress. A folder can be the disc's files
+    <p style="margin-top: 12px">A disc image is unpacked by the game, as <code>dc2data</code> does on a PC: all of it
+      before the game starts, or the rest of it while you play, as you choose once it is stored. A folder can be the
+      disc's files
       (<code>DATA.HD4</code>, <code>DATA.DAT</code>, <code>SOUND.HD3</code> and <code>SOUND.DAT</code>), or a PC
       extraction: the folder holding <code>data.zip</code> and <code>data.json</code>, or <code>data/</code> beside
       <code>data.json</code> (only those are copied, so the folder may hold the disc image too), or a folder holding
@@ -97,6 +106,19 @@
       <button id="forget-disc" class="secondary" hidden>Remove the disc image</button>
       <button id="forget" class="secondary">Remove the game data</button>
     </div>
+    <div id="unpack" hidden>
+      <p style="margin-top: 12px">The disc is unpacked into this browser's storage once, before it can be played.
+        Choose how:</p>
+      <div class="option">
+        <button id="unpack-whole">Unpack the whole disc</button>
+        <p id="unpack-whole-note"></p>
+      </div>
+      <div class="option">
+        <button id="unpack-play">Unpack as you play</button>
+        <p id="unpack-play-note"></p>
+      </div>
+      <p id="unpack-memory" style="margin-top: 12px" hidden></p>
+    </div>
     <p style="margin-top: 12px">Saves and settings stay in this browser's storage when the data is removed. An
       extracted disc is no longer read, so it can be removed to free its space; the game then plays from the
       extraction alone.</p>
@@ -106,6 +128,7 @@
 <div id="game" hidden>
   <canvas id="canvas" tabindex="-1"></canvas>
   <div id="notice" hidden><div id="notice-text"></div><progress id="notice-progress" hidden></progress></div>
+  <div id="unpacking" hidden></div>
   <div id="toolbar">
     <button id="fullscreen" title="Fullscreen (F11 also works)">Fullscreen</button>
     <button id="log-toggle" title="Show what the game prints">Log</button>

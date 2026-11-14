@@ -1,5 +1,5 @@
 use super::archive::ResourceRef;
-use super::artifacts::{ArtifactBytes, AssetSink, Category, Job};
+use super::artifacts::{ArtifactBytes, AssetSink, Category, Job, Output};
 use super::progress::Phase;
 use super::{CoreError, CoreResult};
 use rayon::prelude::*;
@@ -1041,6 +1041,8 @@ struct Unit {
     pictures: Vec<PictureRecord>,
     pairs: Vec<(String, String, String)>,
     written: BTreeSet<String>,
+    /// Width and height of each picture written, by the name it was written under.
+    extents: BTreeMap<String, (usize, usize)>,
     asset_counts: BTreeMap<String, usize>,
     raster_origins: BTreeMap<String, (String, usize)>,
     edits: BTreeMap<String, TextureEdit>,
@@ -1138,6 +1140,7 @@ impl Unit {
             pictures: Vec::new(),
             pairs: Vec::new(),
             written: BTreeSet::new(),
+            extents: BTreeMap::new(),
             asset_counts: BTreeMap::new(),
             raster_origins: BTreeMap::new(),
             edits: BTreeMap::new(),
@@ -1167,6 +1170,7 @@ impl Unit {
         *count += 1;
         write(&relative, w, h, pixels)?;
         self.written.insert(relative.clone());
+        self.extents.insert(relative.clone(), (w, h));
         Ok(relative)
     }
     #[allow(clippy::too_many_arguments)]
@@ -1471,6 +1475,8 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
     state.record_variants = true;
     state.plan_only = true;
     let mut roots = Vec::new();
+    // The pictures each root's job will write, as planning named them, with their sizes.
+    let mut root_outputs = Vec::new();
     let no_write = |_: &str, _: usize, _: usize, _: &[u8]| Ok(());
     let planned: Vec<CoreResult<Option<Unit>>> = inventory
         .roots()
@@ -1499,6 +1505,7 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
             }
         }
         roots.push(resource.clone());
+        root_outputs.push(unit.extents);
     }
     bake_variants(&mut state, &no_write, &|name| inventory.get(name).is_some())?;
     let layout = std::sync::Arc::new(TextureLayout::new(&state)?);
@@ -1525,6 +1532,7 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
             label: job_name.clone(),
             work: 1,
             estimated_bytes: bytes.len(),
+            outputs: None,
             run: Box::new(move |sink| {
                 sink.submit(job_name, ArtifactBytes::Owned(bytes), Category::Texture)
             }),
@@ -1536,15 +1544,26 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
         });
     }
     let png_names = layout.pngs.values().cloned().collect();
-    for resource in roots {
+    for (resource, written) in roots.into_iter().zip(root_outputs) {
         let layout = layout.clone();
         let label = resource.alias.clone();
         let estimate = resource.len().saturating_mul(3).max(1 << 20);
+        let outputs = written
+            .into_iter()
+            .filter_map(|(name, (width, height))| {
+                layout.pngs.get(&name).map(|png| Output {
+                    name: png.clone(),
+                    optional: false,
+                    extent: Some((width as u32, height as u32)),
+                })
+            })
+            .collect();
         jobs.push(Job {
             category: Category::Texture,
             label,
             work: 1 + (resource.len() as u64).div_ceil(256 << 10),
             estimated_bytes: estimate,
+            outputs: Some(outputs),
             run: Box::new(move |sink| emit_base_rasters(&resource, sink, &layout)),
         });
     }
@@ -1552,6 +1571,16 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
         for name in &mut variant.names {
             *name = layout.pngs[name].clone();
         }
+        let outputs = variant
+            .names
+            .iter()
+            .zip(&variant.picture.levels)
+            .map(|(name, level)| Output {
+                name: name.clone(),
+                optional: false,
+                extent: Some((level.width as u32, level.height as u32)),
+            })
+            .collect();
         let label = variant.names.first().cloned().unwrap_or_default();
         let estimate = variant
             .picture
@@ -1564,6 +1593,7 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
             label,
             work: 1,
             estimated_bytes: estimate,
+            outputs: Some(outputs),
             run: Box::new(move |sink| emit_variant(variant, sink)),
         });
     }
@@ -1589,6 +1619,7 @@ pub fn plan_source(inventory: &super::inventory::Inventory) -> CoreResult<Textur
                 label: name.clone(),
                 work: 1 + (estimated_bytes as u64).div_ceil(256 << 10),
                 estimated_bytes,
+                outputs: None,
                 run: Box::new(move |sink| {
                     sink.submit(name, ArtifactBytes::Owned(bytes), Category::Texture)
                 }),
@@ -2578,6 +2609,7 @@ mod tests {
             label,
             work: 1,
             estimated_bytes: 1,
+            outputs: None,
             run: Box::new(|_| Ok(())),
         };
         let plan = TexturePlan {

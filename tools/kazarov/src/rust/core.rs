@@ -30,6 +30,8 @@ pub mod native_scripts;
 pub mod packs;
 #[path = "progress.rs"]
 pub mod progress;
+#[path = "progressive.rs"]
+pub mod progressive;
 #[path = "publish.rs"]
 pub mod publish;
 #[path = "spill.rs"]
@@ -275,9 +277,12 @@ pub fn extract_with_policy(
     jobs: usize,
     script_policy: ScriptPublicationPolicy,
 ) -> CoreResult<ExtractReport> {
+    if std::env::var_os("DC2DATA_PROGRESSIVE").is_some() {
+        return progressive_self_test(source, data_out, jobs, script_policy);
+    }
     Reporter::new(&|_, _| {})
         .with_console()
-        .run(|reporter| extract_stages(source, data_out, jobs, reporter, script_policy))
+        .run(|reporter| extract_stages(source, data_out, jobs, reporter, script_policy, None))
 }
 
 /// Recognizes a complete, verified archive staged for the unchanged source.
@@ -321,7 +326,140 @@ pub fn extract_with_progress_policy(
     script_policy: ScriptPublicationPolicy,
 ) -> CoreResult<ExtractReport> {
     Reporter::new(progress)
-        .run(|reporter| extract_stages(source, data_out, jobs, reporter, script_policy))
+        .run(|reporter| extract_stages(source, data_out, jobs, reporter, script_policy, None))
+}
+
+/// Extracts and publishes data while `session` serves reads of it: once the session is ready a game can
+/// start, and whatever it asks for is converted ahead of the rest. Returns when the archive is published.
+pub fn extract_progressive(
+    source: &Path,
+    data_out: &Path,
+    jobs: usize,
+    session: &std::sync::Arc<progressive::Session>,
+    script_policy: ScriptPublicationPolicy,
+) -> CoreResult<ExtractReport> {
+    run_progressive(source, data_out, jobs, session, script_policy, false)
+}
+
+fn run_progressive(
+    source: &Path,
+    data_out: &Path,
+    jobs: usize,
+    session: &std::sync::Arc<progressive::Session>,
+    script_policy: ScriptPublicationPolicy,
+    console: bool,
+) -> CoreResult<ExtractReport> {
+    let progress = |fraction: f32, stage: &'static str| session.progress(fraction, stage);
+    let reporter = Reporter::new(&progress);
+    let reporter = if console {
+        reporter.with_console()
+    } else {
+        reporter
+    };
+    let result = reporter.run(|reporter| {
+        extract_stages(source, data_out, jobs, reporter, script_policy, Some(session))
+    });
+    match &result {
+        Ok(_) => session.sealed(),
+        Err(error) => session.fail(&error.to_string()),
+    }
+    result
+}
+
+/// DC2DATA_PROGRESSIVE: extracts as a game would have it while it plays, with a reader that asks for
+/// scattered entries from the moment they are listed, then checks the listing against the archive.
+fn progressive_self_test(
+    source: &Path,
+    data_out: &Path,
+    jobs: usize,
+    script_policy: ScriptPublicationPolicy,
+) -> CoreResult<ExtractReport> {
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
+    let session = Arc::new(progressive::Session::new());
+    let started = Instant::now();
+    let reader = {
+        let session = session.clone();
+        std::thread::spawn(move || -> CoreResult<String> {
+            loop {
+                let status = session.status();
+                match status.phase {
+                    progressive::Phase::Preparing => std::thread::sleep(Duration::from_millis(20)),
+                    progressive::Phase::Failed => return Err(CoreError(status.error)),
+                    _ => break,
+                }
+            }
+            let ready = started.elapsed();
+            let fraction = session.status().fraction;
+            let count = session.count();
+            let (mut reads, mut absent, mut bytes, mut headers, mut wrong) = (0u32, 0u32, 0u64, 0u32, 0u32);
+            let mut waited = Duration::ZERO;
+            let mut longest = (Duration::ZERO, String::new());
+            for step in 0..count.min(400) {
+                let index = (step * 7919 + 13) % count;
+                let name = session.name(index)?;
+                let begun = Instant::now();
+                if !session.present(index)? {
+                    absent += 1;
+                    continue;
+                }
+                let picture = name.ends_with(".png");
+                let mut header = [0u8; 24];
+                if picture {
+                    session.prefix(index, &mut header)?;
+                }
+                let mut out = vec![0u8; session.size(index)? as usize];
+                session.read(index, &mut out)?;
+                let took = begun.elapsed();
+                if picture {
+                    headers += 1;
+                    if out.len() < 24 || out[..24] != header {
+                        wrong += 1;
+                    }
+                }
+                reads += 1;
+                bytes += out.len() as u64;
+                waited += took;
+                if took > longest.0 {
+                    longest = (took, name);
+                }
+            }
+            Ok(format!(
+                "ready after {:.1}s at {:.1}% of the run, {count} names listed; {reads} reads of {} \
+                 waited {:.1}s in all, the longest {:.2}s ({}); {absent} optional names absent; \
+                 {headers} picture headers asked ahead, {wrong} wrong",
+                ready.as_secs_f64(),
+                fraction * 100.0,
+                progress::size(bytes),
+                waited.as_secs_f64(),
+                longest.0.as_secs_f64(),
+                longest.1,
+            ))
+        })
+    };
+    let result = run_progressive(source, data_out, jobs, &session, script_policy, true);
+    let read = reader
+        .join()
+        .map_err(|_| CoreError("progressive reader panicked".into()))?;
+    let report = result?;
+    eprintln!("dc2data progressive: {}", read?);
+    let root = data_out
+        .parent()
+        .ok_or_else(|| CoreError("output must be <game-root>/data".into()))?;
+    let archive = zip_archive::Archive::open(&root.join(publish::ARCHIVE))?;
+    eprintln!("dc2data progressive: {}", session.compare(&archive)?);
+    let count = session.count();
+    let mut after = 0u32;
+    for step in 0..count.min(64) {
+        let index = (step * 104_729 + 7) % count;
+        if session.present(index)? {
+            let mut out = vec![0u8; session.size(index)? as usize];
+            session.read(index, &mut out)?;
+            after += 1;
+        }
+    }
+    eprintln!("dc2data progressive: {after} entries read through the session after publishing");
+    Ok(report)
 }
 
 const WORKER_STACK: usize = 16 << 20;
@@ -424,21 +562,30 @@ fn execute_jobs(
     phases: &[Option<Phase>; 8],
     remaining: &[std::sync::atomic::AtomicU64; 8],
 ) -> CoreResult<()> {
-    use std::sync::atomic::Ordering;
     jobs::run_interleaved(pool, jobs, phases.len(), |job| {
-        let category = job.category as usize;
-        let work = job.work;
-        let phase = phases[category]
-            .as_ref()
-            .ok_or_else(|| CoreError("unplanned asset category".into()))?;
-        phase.item(&job.label);
-        job.execute(sink)?;
-        phase.inc(work);
-        if remaining[category].fetch_sub(work, Ordering::AcqRel) == work {
-            phase.done();
-        }
-        Ok(())
+        run_job(job, sink, phases, remaining)
     })
+}
+
+fn run_job(
+    job: artifacts::Job,
+    sink: &artifacts::AssetSink,
+    phases: &[Option<Phase>; 8],
+    remaining: &[std::sync::atomic::AtomicU64; 8],
+) -> CoreResult<()> {
+    use std::sync::atomic::Ordering;
+    let category = job.category as usize;
+    let work = job.work;
+    let phase = phases[category]
+        .as_ref()
+        .ok_or_else(|| CoreError("unplanned asset category".into()))?;
+    phase.item(&job.label);
+    job.execute(sink)?;
+    phase.inc(work);
+    if remaining[category].fetch_sub(work, Ordering::AcqRel) == work {
+        phase.done();
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -488,6 +635,7 @@ fn extract_stages(
     jobs: usize,
     reporter: &Reporter<'_>,
     script_policy: ScriptPublicationPolicy,
+    progressive: Option<&std::sync::Arc<progressive::Session>>,
 ) -> CoreResult<ExtractReport> {
     use std::collections::HashSet;
     use std::sync::{Arc, atomic::AtomicU64};
@@ -510,6 +658,7 @@ fn extract_stages(
     let gameplay_documents = configs::gameplay_documents(Some(root))?;
     configs::initialize_character_plans(&gameplay_documents)?;
     let pool = jobs::worker_pool(jobs, "dc2data", WORKER_STACK)?;
+    artifacts::profile_note("start");
     let phase = reporter.phase(Stage::Fingerprint);
     let initial_state = source_state(&source)?;
     // The owned source image is shared by hashing, indexing, every converter and final validation.
@@ -525,6 +674,7 @@ fn extract_stages(
     archive::memory_note("the source opened");
     let inventory = inventory::Inventory::build(&source_tree)?;
     archive::memory_note("the index built");
+    artifacts::profile_note("index built");
     phase.set_total(files);
     reporter.done(Stage::Extract);
     let gameplay_plan_sha256 = configs::asset_plan_fingerprint();
@@ -550,6 +700,7 @@ fn extract_stages(
     let texture_plan = texture_plan?;
     let audio_plan = audio_plan?;
     archive::memory_note("textures and sound planned");
+    artifacts::profile_note("textures and sound planned");
     let texture_paths: std::collections::BTreeMap<String, String> = texture_plan
         .documents
         .iter()
@@ -571,6 +722,7 @@ fn extract_stages(
         )
     })?;
     archive::memory_note("models planned");
+    artifacts::profile_note("models planned");
     let profiles = models::planned_profile_names(&inventory)?;
     let mut consumed: HashSet<String> = texture_plan.consumed.iter().cloned().collect();
     consumed.extend(audio_plan.consumed);
@@ -609,6 +761,7 @@ fn extract_stages(
     all_jobs.extend(script_jobs);
     all_jobs.extend(packs::plan_jobs(&inventory, &consumed, &texture_members)?);
     archive::memory_note("packs planned");
+    artifacts::profile_note("packs planned");
     for chunk in gameplay_documents.chunks(128) {
         let documents = chunk.to_vec();
         all_jobs.push(artifacts::Job {
@@ -616,6 +769,7 @@ fn extract_stages(
             label: documents[0].0.to_owned(),
             work: documents.len() as u64,
             estimated_bytes: documents.iter().map(|(_, bytes)| bytes.len()).sum(),
+            outputs: None,
             run: Box::new(move |sink| {
                 for (path, bytes) in documents {
                     sink.submit(
@@ -662,31 +816,73 @@ fn extract_stages(
         conversion_memory_budget(),
         archive_phase,
         totals.iter().sum(),
+        progressive.map(|session| session.clone() as Arc<dyn artifacts::Observer>),
     )?;
-    let (model_jobs, other_jobs): (Vec<_>, Vec<_>) = all_jobs
-        .into_iter()
-        .partition(|job| job.category == artifacts::Category::Model);
-    let (other_conversion, model_conversion) = pool.install(|| {
-        rayon::join(
-            || {
-                execute_jobs(other_jobs, &pool, &sink, &phases, &remaining)?;
-                expand_model_memory_budget(&sink)
-            },
-            || {
-                execute_jobs(model_jobs, &pool, &sink, &phases, &remaining)?;
-                let deferred = model_plan.finish_jobs(&sink, &|work, label| {
-                    let category = artifacts::Category::Model as usize;
-                    if let Some(phase) = &phases[category] {
-                        phase.item(label);
-                        phase.inc(work);
-                        remaining[category].fetch_sub(work, std::sync::atomic::Ordering::AcqRel);
-                    }
-                })?;
-                execute_jobs(deferred, &pool, &sink, &phases, &remaining)
-            },
-        )
-    });
-    let conversion = other_conversion.and(model_conversion);
+    let model_progress = |work: u64, label: &str| {
+        let category = artifacts::Category::Model as usize;
+        if let Some(phase) = &phases[category] {
+            phase.item(label);
+            phase.inc(work);
+            remaining[category].fetch_sub(work, std::sync::atomic::Ordering::AcqRel);
+        }
+    };
+    let conversion = if let Some(session) = progressive {
+        // Only what cannot name its outputs ahead runs before the game may read: the documents every
+        // scene's listing needs, and the model passes that decide which document each model job owns.
+        // The rest is listed by name, and runs in the order below unless a read asks for it sooner.
+        let (lazy, eager): (Vec<_>, Vec<_>) =
+            all_jobs.into_iter().partition(|job| job.outputs.is_some());
+        let (model_jobs, other_jobs): (Vec<_>, Vec<_>) = eager
+            .into_iter()
+            .partition(|job| job.category == artifacts::Category::Model);
+        let (other_conversion, model_conversion) = pool.install(|| {
+            rayon::join(
+                || execute_jobs(other_jobs, &pool, &sink, &phases, &remaining),
+                || {
+                    execute_jobs(model_jobs, &pool, &sink, &phases, &remaining)?;
+                    artifacts::profile_note("models analysed");
+                    let deferred = model_plan.finish_jobs(&sink, &model_progress)?;
+                    artifacts::profile_note("models previewed");
+                    Ok(deferred)
+                },
+            )
+        });
+        other_conversion
+            .and(model_conversion)
+            .and_then(|deferred| {
+                let mut lazy = lazy;
+                lazy.extend(deferred);
+                sink.barrier()?;
+                session.ready(jobs::interleave(lazy, phases.len()))?;
+                artifacts::profile_note("ready to be read");
+                pool.broadcast(|_| {
+                    session.work(&sink, &|job, sink| run_job(job, sink, &phases, &remaining))
+                })
+                .into_iter()
+                .collect::<CoreResult<Vec<()>>>()
+                .map(|_| ())
+            })
+    } else {
+        let (model_jobs, other_jobs): (Vec<_>, Vec<_>) = all_jobs
+            .into_iter()
+            .partition(|job| job.category == artifacts::Category::Model);
+        let (other_conversion, model_conversion) = pool.install(|| {
+            rayon::join(
+                || {
+                    execute_jobs(other_jobs, &pool, &sink, &phases, &remaining)?;
+                    expand_model_memory_budget(&sink)
+                },
+                || {
+                    execute_jobs(model_jobs, &pool, &sink, &phases, &remaining)?;
+                    artifacts::profile_note("models analysed");
+                    let deferred = model_plan.finish_jobs(&sink, &model_progress)?;
+                    artifacts::profile_note("models previewed");
+                    execute_jobs(deferred, &pool, &sink, &phases, &remaining)
+                },
+            )
+        });
+        other_conversion.and(model_conversion)
+    };
     if let Err(error) = conversion {
         let error = sink.first_failure().unwrap_or(error);
         let _ = sink.abort();
@@ -699,7 +895,15 @@ fn extract_stages(
         "script_publication_policy":format!("{script_policy:?}"),
         "texture_sources":texture_sources,
     });
+    artifacts::profile_note("converted");
+    // The growing file takes its final name here and its place in the game's folder further down. A
+    // session reading it lets go of it for each move: a file some systems will not rename while it is open.
+    let suspended = progressive.map(|session| session.suspend()).transpose()?;
     publish::seal_stream(sink, &published, marker)?;
+    if let Some(suspended) = suspended {
+        suspended.resume(&published.join(publish::ARCHIVE))?;
+    }
+    artifacts::profile_note("sealed");
     reporter.done(Stage::Seal);
     // No validation begins until every converter and the streaming writer have completed.
     // In the browser the whole archive is not read back and checked again, minutes a phone does not have:
@@ -727,7 +931,11 @@ fn extract_stages(
     }
     reporter.phase(Stage::Publish);
     let marker = publish::read_marker(&published)?;
+    let suspended = progressive.map(|session| session.suspend()).transpose()?;
     publish::publish_verified(&published, root)?;
+    if let Some(suspended) = suspended {
+        suspended.resume(&root.join(publish::ARCHIVE))?;
+    }
     let stage_path = stage.path().to_path_buf();
     drop(stage);
     remove_private_stage(&stage_path, &stage_path, root)?;

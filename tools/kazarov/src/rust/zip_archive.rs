@@ -237,6 +237,52 @@ fn decompress_exact(source: &[u8], out: &mut [u8]) -> CoreResult<()> {
     Ok(())
 }
 
+/// Where an appended entry lies in a growing archive: enough to read it back before the archive is sealed.
+#[derive(Clone, Debug)]
+pub struct Placed {
+    pub name: String,
+    pub method: u16,
+    pub crc: u32,
+    pub compressed: u64,
+    pub size: u64,
+    /// Offset of the entry's data in the file.
+    pub data: u64,
+    /// Bytes the entry added to the file, its header and padding included.
+    pub written: u64,
+}
+
+/// Reads one placed entry's uncompressed bytes into `out` and verifies its CRC-32.
+pub fn read_placed(file: &File, placed: &Placed, out: &mut [u8]) -> CoreResult<()> {
+    if out.len() as u64 != placed.size {
+        return Err(fail(format!(
+            "buffer size {} does not match entry size {}: {}",
+            out.len(),
+            placed.size,
+            placed.name
+        )));
+    }
+    if placed.method == METHOD_STORED {
+        read_exact_at(file, out, placed.data)?;
+    } else {
+        let mut source = vec![0u8; placed.compressed as usize];
+        read_exact_at(file, &mut source, placed.data)?;
+        decompress_exact(&source, out).map_err(|e| fail(format!("{}: {e}", placed.name)))?;
+    }
+    if crc32fast::hash(out) != placed.crc {
+        return Err(fail(format!("CRC mismatch: {}", placed.name)));
+    }
+    Ok(())
+}
+
+/// Reads the first bytes of a stored placed entry. Its CRC is not checked: that takes the whole entry.
+pub fn read_placed_prefix(file: &File, placed: &Placed, out: &mut [u8]) -> CoreResult<()> {
+    if placed.method != METHOD_STORED || out.len() as u64 > placed.size {
+        return Err(fail(format!("no stored prefix to read: {}", placed.name)));
+    }
+    read_exact_at(file, out, placed.data)?;
+    Ok(())
+}
+
 impl Archive {
     /// Opens and validates an archive's central directory, preferring a memory map. On iOS it is read with
     /// positioned reads instead: a map of the whole published archive, about 4 GB, takes address space the app
@@ -688,7 +734,18 @@ impl StreamWriter {
         Ok(Self(ProgressiveWriter::new(output)?))
     }
 
-    pub(crate) fn append(&mut self, entry: PreparedEntry) -> CoreResult<u64> {
+    /// The file the stream grows in until it is finished.
+    pub(crate) fn partial(&self) -> &Path {
+        &self.0.partial
+    }
+
+    /// Hands every appended byte to the file, so another handle can read it.
+    pub(crate) fn flush(&mut self) -> CoreResult<()> {
+        self.0.out.inner.flush()?;
+        Ok(())
+    }
+
+    pub(crate) fn append(&mut self, entry: PreparedEntry) -> CoreResult<Placed> {
         if self.0.contains_name(&entry.name) {
             return Err(fail(format!(
                 "archive entry names collide ignoring case: {}",
@@ -700,14 +757,24 @@ impl StreamWriter {
             PreparedPayload::Compressed(bytes) => bytes.len() as u64,
         };
         let local = self.0.out.position;
-        self.0.out.put(&local_header(
+        let header = local_header(
             &entry.name,
             entry.method,
             entry.crc,
             compressed,
             entry.size,
             local,
-        ))?;
+        );
+        let mut placed = Placed {
+            name: entry.name.clone(),
+            method: entry.method,
+            crc: entry.crc,
+            compressed,
+            size: entry.size,
+            data: local + header.len() as u64,
+            written: 0,
+        };
+        self.0.out.put(&header)?;
         match &entry.payload {
             PreparedPayload::Stored(bytes) => self.0.out.put(&bytes.as_slice())?,
             PreparedPayload::Compressed(bytes) => self.0.out.put(bytes)?,
@@ -727,7 +794,8 @@ impl StreamWriter {
         });
         self.0.seen.insert(entry.name.to_ascii_lowercase());
         self.0.exact_names.insert(entry.name);
-        Ok(self.0.out.position - local)
+        placed.written = self.0.out.position - local;
+        Ok(placed)
     }
 
     pub(crate) fn finish(self) -> CoreResult<Written> {

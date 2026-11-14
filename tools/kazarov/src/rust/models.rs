@@ -1,6 +1,6 @@
 //! Converts retail scene, mesh, skeleton and animation records into glTF and typed JSON.
 use super::actions::{KeyAction, NameBook};
-use super::artifacts::{ArtifactBytes, AssetSink, Category, Job};
+use super::artifacts::{ArtifactBytes, AssetSink, Category, Job, Output};
 use super::progress::Phase;
 use super::{CoreError, CoreResult};
 use rayon::prelude::*;
@@ -6091,7 +6091,45 @@ impl ModelPlan {
         let final_weights = final_model_weights(&preview_nanos, &external_ops);
         let final_work = apportion_model_work(&final_weights, final_budget);
         let mut jobs = Vec::with_capacity(count.max(1));
+        // The documents each final job owns: what it will write is known here, before it runs.
+        let mut owned = vec![Vec::new(); count];
+        for (name, &owner) in owners.iter() {
+            if let Some(list) = owned.get_mut(owner) {
+                list.push(name.clone());
+            }
+        }
         for (index, job) in native_jobs.into_iter().enumerate() {
+            let mut outputs = Vec::new();
+            for name in std::mem::take(&mut owned[index]) {
+                outputs.push(Output {
+                    name: Path::new(&name)
+                        .with_extension("game.json")
+                        .to_string_lossy()
+                        .replace('\\', "/"),
+                    optional: false,
+                    extent: None,
+                });
+                // A document with no buffer has no file for one.
+                outputs.push(Output {
+                    name: buffer_path(&name),
+                    optional: true,
+                    extent: None,
+                });
+                outputs.push(Output {
+                    name,
+                    optional: false,
+                    extent: None,
+                });
+            }
+            for icon in &job.icons {
+                for name in [&icon.path, &icon.image] {
+                    outputs.push(Output {
+                        name: name.clone(),
+                        optional: false,
+                        extent: None,
+                    });
+                }
+            }
             let work = final_work[index];
             let estimate = job.estimated_expanded_bytes();
             let documents = documents.clone();
@@ -6109,6 +6147,7 @@ impl ModelPlan {
                 label,
                 work,
                 estimated_bytes: estimate,
+                outputs: Some(outputs),
                 run: Box::new(move |sink| {
                     let mut pairs = BTreeMap::new();
                     let mut local = ConversionReport::default();
@@ -6160,6 +6199,7 @@ impl ModelPlan {
                 label: "models-finalize".into(),
                 work: self.deferred_work,
                 estimated_bytes: 1,
+                outputs: None,
                 run: Box::new(|_| Ok(())),
             });
         }
@@ -6390,6 +6430,7 @@ pub fn plan_source(
             label: alias.clone(),
             work,
             estimated_bytes: (len as usize).saturating_mul(16).max(1 << 20),
+            outputs: None,
             run: Box::new(move |_| {
                 let mut analysis = analyze_file(
                     &source,

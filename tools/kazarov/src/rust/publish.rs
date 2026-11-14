@@ -113,11 +113,12 @@ pub fn begin_stream(
     budget_bytes: usize,
     phase: Phase,
     total_work: u64,
+    observer: Option<std::sync::Arc<dyn super::artifacts::Observer>>,
 ) -> CoreResult<AssetSink> {
     if root.join("data").exists() || root.join("port_data").exists() {
         return Err(fail("streaming publication cannot use a staged asset tree"));
     }
-    AssetSink::start_with_progress(root, budget_bytes, phase, total_work)
+    AssetSink::start_with_progress(root, budget_bytes, phase, total_work, observer)
 }
 
 /// Completes a streamed ZIP and records its content identity beside the archive.
