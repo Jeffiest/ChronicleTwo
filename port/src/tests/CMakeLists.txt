@@ -812,7 +812,7 @@ local headless_enemy = assert(game.content.register({
     stats = {hp = 300, attack = 75, defense = 41}, assets = {}}
 }))
 assert(headless_enemy.status == "registered" and headless_enemy.kind == "enemy")
-assert(headless_enemy.model == "e201a" and headless_enemy.script == "e201a")
+assert(headless_enemy.model == "e201a" and headless_enemy.script == "sewer_rat")
 local loaded_enemy = assert(game.characters.get(headless_enemy.id))
 assert(loaded_enemy.native_monster_id == headless_enemy.native_monster_id and loaded_enemy.stats.hp == 300)
 moonmod.log("info", "MOONMOD_HEADLESS_CHARACTER_REGISTERED:" .. headless_enemy.id)

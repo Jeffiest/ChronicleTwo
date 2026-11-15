@@ -305,7 +305,7 @@ TEST(MoonModCharacterRegistration, LuaAdapterAddsADataOnlyEnemyToTheNativeMonste
     EXPECT_EQ(registration.value.value("kind", ""), "enemy");
     EXPECT_EQ(registration.value.value("status", ""), "registered");
     EXPECT_EQ(registration.value.value("model", ""), "e201a");
-    EXPECT_EQ(registration.value.value("script", ""), "e201a");
+    EXPECT_EQ(registration.value.value("script", ""), "sewer_rat");
     EXPECT_EQ(registration.value.at("stats").value("hp", 0), 300);
     EXPECT_EQ(registration.value.at("stats").value("attack", 0), 75);
     EXPECT_EQ(registration.value.at("stats").value("defense", 0), 41);
@@ -316,7 +316,7 @@ TEST(MoonModCharacterRegistration, LuaAdapterAddsADataOnlyEnemyToTheNativeMonste
     ASSERT_NE(native_definition, nullptr);
     EXPECT_STREQ(native_definition->name, "Bright Sentinel");
     EXPECT_STREQ(native_definition->model, "e201a");
-    EXPECT_STREQ(native_definition->script, "e201a");
+    EXPECT_STREQ(native_definition->script, "sewer_rat");
     EXPECT_EQ(native_definition->life, 300);
     EXPECT_EQ(native_definition->attack, 75);
     EXPECT_EQ(native_definition->defense, 41);

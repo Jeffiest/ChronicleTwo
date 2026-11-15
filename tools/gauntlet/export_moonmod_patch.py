@@ -1,12 +1,12 @@
 """Regenerate MoonMod's ports/chronicle-two patches from this tree.
 
   python3 -I tools/gauntlet/export_moonmod_patch.py OUT.patch
-      git diff <upstream pin> -- port/ scripts/ CMakeLists.txt CMakePresets.json docs/, without tools/kazarov
+      git diff <upstream pin> -- port/ scripts/ CMakeLists.txt CMakePresets.json docs/ ps2/, without tools/kazarov
       and port/web: what apply-moonfactory.ps1 applies to a clean ChronicleTwo at the pin with Kazarov as
       the submodule it pins. (.gitmodules and DC2_PLAN.md differ too and are left out on purpose: MoonMod's
       checkout keeps Kazarov as a submodule, and the plan is this tree's.)
   python3 -I tools/gauntlet/export_moonmod_patch.py --kazarov OUT.patch
-      the diff of tools/kazarov against upstream Kazarov at its pin (fd72338a), cloned once into
+      the diff of tools/kazarov against upstream Kazarov at its pin (584cd2ef), cloned once into
       tools/gauntlet/.cache/kazarov-upstream with GIT_LFS_SKIP_SMUDGE=1 (archive downloads are blocked
       here; git clones work).
   --check             also `git apply --check` the written patch in a throwaway worktree at the pin: for the
@@ -17,8 +17,8 @@
                       flight (use it for what goes to MoonMod). Without it the working tree is diffed and
                       the script warns about uncommitted edits and untracked files under the paths, which
                       the patch carries and lacks respectively.
-  --pin SHA           another upstream pin (default: the one apply-moonfactory.ps1 names, 7a7d7f29...)
-  --kazarov-pin SHA   another Kazarov pin (default fd72338a...)
+  --pin SHA           another upstream pin (default: the one apply-moonfactory.ps1 names, bcd19672...)
+  --kazarov-pin SHA   another Kazarov pin (default 584cd2ef...)
 
 Exit 0 when the patch was written (and, with --check, applies); 1 otherwise.
 """
@@ -31,11 +31,11 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-UPSTREAM_PIN = "7a7d7f29ae544a04e65634278d244b785d801066"
-KAZAROV_PIN = "fd72338a6aebf5c119947bb3150bba580217fec9"
+UPSTREAM_PIN = "bcd1967255b238c745cb7f6ac085e2119207a60a"
+KAZAROV_PIN = "584cd2ef008d8c51b519b6e8d36212e49e8215dc"
 UPSTREAM_URL = "https://github.com/TheMoonPeople/chronicletwo"
 KAZAROV_URL = "https://github.com/TheMoonPeople/Kazarov"
-PATHS = ["port/", "scripts/", "CMakeLists.txt", "CMakePresets.json", "docs/"]
+PATHS = ["port/", "scripts/", "CMakeLists.txt", "CMakePresets.json", "docs/", "ps2/"]
 EXCLUDE = [":(exclude)tools/kazarov", ":(exclude)port/web", ":(exclude)port/build"]
 
 
