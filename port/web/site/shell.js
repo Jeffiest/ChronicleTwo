@@ -634,6 +634,88 @@ function showUnpack() {
     }
 }
 
+// The mods a site builds in beside this page (mods/builtin/index.json; DC_Web makes it with port/web/mods/builtin.py
+// --game chronicle-two): each one's files are put in the game's saves/mods/<id>/ when it is missing or older, so a
+// player has them (the co-op mod among them) without adding them. A mod folder that was there before the page put
+// one in is the player's own and is left alone. What the page put in, and at which version, is kept in
+// BUILTIN_STATE. A page with no index (the game's own server, a local build) installs nothing.
+const BUILTIN_STATE = 'builtin-mods.json';
+const kModId = /^[a-z0-9][a-z0-9._-]*$/;
+
+async function installBuiltinMods() {
+    let index;
+    try {
+        const response = await fetch('mods/builtin/index.json', {cache: 'no-cache'});
+        if (!response.ok) {
+            return true;
+        }
+        index = await response.json();
+    } catch {
+        return true;
+    }
+    const home = await gameDirectory();
+    let state = {};
+    try {
+        state = JSON.parse(await (await (await home.getFileHandle(BUILTIN_STATE)).getFile()).text()) ?? {};
+    } catch {
+        state = {};
+    }
+    const writeState = async () => {
+        const writable = await (await home.getFileHandle(BUILTIN_STATE, {create: true})).createWritable();
+        await writable.write(JSON.stringify(state, null, 2));
+        await writable.close();
+    };
+    const saves = await home.getDirectoryHandle('saves', {create: true});
+    const mods = await saves.getDirectoryHandle('mods', {create: true});
+    const due = [];
+    for (const mod of index.mods ?? []) {
+        if (!kModId.test(String(mod.id)) || !Array.isArray(mod.files)) {
+            continue;
+        }
+        const record = state[mod.id] ?? {};
+        if (record.own || record.version === mod.version) {
+            continue;
+        }
+        if (record.version === undefined && (await entry(mods, mod.id)) !== null) {
+            state[mod.id] = {own: true};
+            continue;
+        }
+        due.push(mod);
+    }
+    if (due.length === 0) {
+        await writeState();
+        return true;
+    }
+    try {
+        setStatus(`Installing the built-in mods (${due.map((mod) => mod.name ?? mod.id).join(', ')})…`);
+        for (const mod of due) {
+            const files = [];
+            for (const path of mod.files) {
+                const parts = String(path).split('/').filter(Boolean);
+                if (parts.length === 0 || parts.some((part) => part === '..' || part === '.')) {
+                    throw new Error(`${mod.id}: ${path} is not a path inside the mod`);
+                }
+                const response = await fetch(`mods/builtin/${mod.id}/${parts.map(encodeURIComponent).join('/')}`,
+                                             {cache: 'no-cache'});
+                if (!response.ok) {
+                    throw new Error(`${mod.id}/${path}: ${response.status}`);
+                }
+                files.push([['saves', 'mods', mod.id, ...parts].join('/'), await response.blob()]);
+            }
+            // An older version the page put in goes first, so a file the new one no longer has does not stay.
+            await mods.removeEntry(mod.id, {recursive: true}).catch(() => {});
+            await copyFiles(files);
+            state[mod.id] = {version: mod.version};
+            await writeState();
+        }
+        return true;
+    } catch (error) {
+        setStatus(`Could not install the built-in mods: ${error.message ?? error}`);
+        $('progress').hidden = true;
+        return false;
+    }
+}
+
 async function refresh() {
     if (server) {
         $('pick').hidden = true;
@@ -642,6 +724,9 @@ async function refresh() {
         $('start').hidden = false;
         $('forget').hidden = true;
         $('stored').textContent = `The game data comes from the computer serving this page (data.zip, ${mib(server.size)}).`;
+        if (!await installBuiltinMods()) {
+            return;
+        }
         setStatus('Ready. The game reads the data over the network as it plays; saves stay in this browser.');
         return;
     }
@@ -661,6 +746,9 @@ async function refresh() {
     $('start').hidden = packed;
     if (what) {
         $('stored').textContent = describe(what);
+        if (!await installBuiltinMods()) {
+            return;
+        }
         setStatus(packed ? 'Ready. Choose how to unpack the disc.' : 'Ready.');
         if (packed) {
             showUnpack();
