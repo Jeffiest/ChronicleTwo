@@ -94,7 +94,11 @@ In Dark Chronicle a player who joins brings one of their own saves, and the host
   nothing else of it. The save is read, the things replaced, and the file written by `SaveSlotWriteOwnThings`
   (`save_slots.cpp`: `SaveSlotWrite` without its rule that a visit writes no save). Before the first write to a
   save in a run the file is copied to `<save root>/moonmod/coop-own-saves/<name>.YYYYMMDD-HHMMSS-NN<ext>`: a new
-  copy each run, never written over an older one, and the newest five copies of each save kept (2026-11-15).
+  copy each run, never written over an older one, and the newest five copies of each save kept (2026-11-15). A
+  copy taken in the same second as others gets the number after theirs, not a number the pruning freed. Its test
+  (`SaveSlotTest.CoopCopiesASaveAsideEachRun...`, seven runs inside a second or two) still fails about one run in
+  ten on a loaded machine with a copy's contents one run behind; not understood yet, and not seen in play, where
+  runs are far apart.
 - Since 2026-11-15 the save keeps its own townsfolk (`party_chara`: who has been recruited, who lives where) as it
   keeps its own hero; only the player's things are the visit's. Only a JSON save is read or written: an old
   memory-card save is refused ("open it once outside a visit to convert it"), and the game does not convert one

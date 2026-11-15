@@ -885,15 +885,24 @@ bool CopyAside(const std::filesystem::path &path, std::string &error) {
 #endif
     char stamp[32] = {};
     std::strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &local);
-    std::filesystem::path aside;
-    for (int n = 0; n < 100; ++n) {
-        char number[4] = {};
-        std::snprintf(number, sizeof(number), "%02d", n);
-        const std::string name = stem + "." + stamp + "-" + number + extension; // (two in one second sort in order)
-        if (!std::filesystem::exists(folder / name, failed)) {
-            aside = folder / name;
-            break;
+    // The number after the highest one this second already has, not the first free one: a copy the pruning below
+    // took away frees its number, and a newer copy given it would sort before the older ones of the same second.
+    const std::string prefix = stem + "." + stamp + "-";
+    int               next   = 0;
+    for (const auto &entry : std::filesystem::directory_iterator(folder, failed)) {
+        const std::string name = entry.path().filename().string();
+        if (name.size() == prefix.size() + 2 + extension.size() && name.starts_with(prefix) && name.ends_with(extension)) {
+            const std::string digits = name.substr(prefix.size(), 2);
+            if (std::isdigit(static_cast<unsigned char>(digits[0])) && std::isdigit(static_cast<unsigned char>(digits[1]))) {
+                next = std::max(next, std::stoi(digits) + 1);
+            }
         }
+    }
+    std::filesystem::path aside;
+    if (next < 100) {
+        char number[4] = {};
+        std::snprintf(number, sizeof(number), "%02d", next);
+        aside = folder / (prefix + number + extension); // (two in one second sort in order)
     }
     if (aside.empty()) {
         error = "the save could not be copied aside before writing to it: no free name";
