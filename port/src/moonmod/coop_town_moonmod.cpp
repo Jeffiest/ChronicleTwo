@@ -12,11 +12,14 @@
 
 #include "moonmod/coop.hpp"
 
+#include <cmath>
+#include <cstdio>
 #include <cstring>
 
 #include "editevent.hpp"
 #include "editloop.hpp"
 #include "editmap.hpp"
+#include "editmode.hpp"
 #include "mainloop.hpp"
 #include "mapjump.hpp"
 #include "mapselect.hpp"
@@ -42,6 +45,29 @@ CEditMap *TownMap(int &town) {
     return static_cast<CEditMap *>(map);
 }
 
+// After a rebuild, a player standing where a part just landed is set down on the nearest spot the game would let
+// them walk out of Georama mode onto (CheckEditToWalk's test): rings of 40 to 800 units around them, 16 spots each.
+// A spot that was not walkable before the rebuild (a bridge, a part's top) is left alone: the part did not cover it.
+void MovePlayerAside(CScene *scene, CCharacter2 *player, const float *stood) {
+    float ground[4];
+    if (CheckEditWalkSpot(scene, stood, ground) != 0) return;
+    for (int ring = 1; ring <= 20; ++ring) {
+        const float radius = 40.0f * static_cast<float>(ring);
+        for (int turn = 0; turn < 16; ++turn) {
+            const float angle = static_cast<float>(turn) * 3.14159265f / 8.0f;
+            const float spot[4] = {stood[0] + radius * std::cos(angle), stood[1], stood[2] + radius * std::sin(angle), 1.0f};
+            if (CheckEditWalkSpot(scene, spot, ground) == 0) continue;
+            float to[4] = {ground[0], ground[1] + 0.01f, ground[2], 1.0f}; // as EndEditMode sets the player down
+            player->SetPosition(to);
+            std::fprintf(stderr, "co-op: a part landed where the player stood (%.0f,%.0f,%.0f): moved to %.0f,%.0f,%.0f\n", stood[0],
+                         stood[1], stood[2], to[0], to[1], to[2]);
+            return;
+        }
+    }
+    std::fprintf(stderr, "co-op: a part landed where the player stood (%.0f,%.0f,%.0f) and no free spot is within 800\n", stood[0],
+                 stood[1], stood[2]);
+}
+
 // The game's own load of a town (EditDataLoad) without its last step, the analysis: what the town now fulfils is
 // worked out by the game that built the part and comes with the town's record. This game writes nothing.
 void RebuildNow() {
@@ -53,12 +79,24 @@ void RebuildNow() {
     if (map == nullptr || save == nullptr || on_screen != town) return;
     CEditData *record = save->GetEditData(town);
     if (record == nullptr) return;
+    // Where the player stands, and whether they could walk there before the town changed.
+    CScene      *shown = GetMainScene();
+    CCharacter2 *player = shown != nullptr ? shown->GetCharacter(shown->player_chara) : nullptr;
+    float        stood[4] = {};
+    bool         stood_free = false;
+    if (player != nullptr) {
+        float ground[4];
+        player->GetPosition(stood);
+        stood[3] = 1.0f;
+        stood_free = CheckEditWalkSpot(shown, stood, ground) != 0;
+    }
     map->ClearAllParts();
     map->LoadData(record);
     map->InitialPlaceParts(record);
     map->GroundBalance(0);
     map->UpdateHouse();
     if (CScene *scene = GetMainScene(); scene != nullptr) GeoUpdateNpcPos(scene);
+    if (player != nullptr && stood_free) MovePlayerAside(shown, player, stood);
 }
 
 } // namespace
@@ -75,8 +113,13 @@ void TownLiveSync() {
     CEditMap *map = TownMap(town);
     CSaveData *save = GetSaveData();
     if (map == nullptr || save == nullptr) return;
+    if (!TownRecordWritable(town)) return;
     if (CEditData *record = save->GetEditData(town); record != nullptr) map->SaveData(record);
 }
+
+// A live map behind its record (another player's change not yet built here) is never written over the record:
+// that would take the other player's part away, here and, sent back, in their game too.
+bool TownRecordWritable(int town) { return g_rebuild_town < 0 || g_rebuild_town != town; }
 
 void TownRebuildWanted(int town) { g_rebuild_town = town; }
 

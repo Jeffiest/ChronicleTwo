@@ -3,6 +3,7 @@
 
 #include "moonmod/coop.hpp"
 #include "moonmod/coop_down.hpp"
+#include "moonmod/chronicle_two_adapter.hpp"
 
 #include <algorithm>
 #include <array>
@@ -12,6 +13,7 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "character.hpp"
@@ -22,6 +24,7 @@
 #include "editctrl.hpp"
 #include "gamedata.hpp"
 #include "mainloop.hpp"
+#include "menuchr.hpp"
 #include "mglib.hpp"
 #include "mg_memory.hpp"
 #include "monster.hpp"
@@ -72,6 +75,10 @@ public:
     std::vector<std::shared_ptr<CCharacter2>> parts;
     float       at[3] = {0.0f, 0.0f, 0.0f}, heading = 0.0f;
     bool        placed = false;
+    // Drawn as the ridepod or the monster itself (not the hero standing in): it plays the reported motions. The
+    // ridepod's parts play them too, as the game's own CActionChara::SetMotion has every part of the chain do.
+    bool        shaped = false;
+    bool        parts_move = false;
     int         motion = -1;
     int         stand_in_gait = -1, stand_in_shown = -1; // a stand-in: 1 running, 0 standing
     int         town = 0;
@@ -90,7 +97,7 @@ public:
         }
         SetPosition(at[0], at[1], at[2]);
         SetRotation(0.0f, heading, 0.0f);
-        if (target.stand_in) {
+        if (target.stand_in && !shaped) {
             // The hero standing in for a ridepod or a monster's form: their motion numbers are not the hero's, so
             // the hero runs while the reports move and stands when they stop (the names every hero's body has).
             if (far > 2.0f) stand_in_gait = 1;
@@ -106,6 +113,9 @@ public:
             if (target.motion != motion) {
                 motion = target.motion;
                 SetMotion(std::max(0, motion), 2);
+                if (parts_move) {
+                    for (const std::shared_ptr<CCharacter2> &part : parts) part->SetMotion(std::max(0, motion), 2);
+                }
             }
         }
         CCharacter2::Step();
@@ -123,7 +133,56 @@ public:
         const int drawn = CCharacter2::DrawDirect();
         for (const std::shared_ptr<CCharacter2> &part : parts) part->DrawDirect();
         if (tinted) mgSetAmbient(saved);
+        label_drawn = MeasureLabel();
         return drawn;
+    }
+
+    // Where the player's name goes on the screen, measured as the scene draws the body, with the camera it is drawn
+    // with: the points over its head and under its feet. DrawAvatarNames takes it in the 2D pass after the scene, once.
+    bool  label_drawn = false;
+    float label_head[2] = {0.0f, 0.0f}, label_feet[2] = {0.0f, 0.0f};
+
+private:
+    // A world point's place on the screen (from its top left, in the screen's own units), or false when it is behind
+    // the camera or off the screen.
+    static bool OnScreen(float *point, float out[2]) {
+        float clip[4];
+        sceVu0ApplyMatrix(clip, mgRenderInfo.world_screen, point);
+        if (!(clip[3] >= 1.0f)) return false; // behind the eye, or at it
+        int screen[4];
+        if (mgTransWorldScreen(screen, point) == 0) return false;
+        out[0] = static_cast<float>(screen[0]) / 16.0f;
+        out[1] = static_cast<float>(screen[1]) / 16.0f;
+        return std::isfinite(out[0]) && std::isfinite(out[1]);
+    }
+
+    // The highest joint of the body and its parts as they are drawn (the head's, or the hat's, or the ridepod's), and
+    // a fifth of the height again over it for the hair and the hat's crown. A body with no joints to read is taken
+    // by its info file's height.
+    bool MeasureLabel() {
+        float feet[4] = {at[0], at[1], at[2], 1.0f};
+        float top = -1.0e30f;
+        const auto reach = [&top](CCharacter2 &chara) {
+            mgCFrame *root = chara.CObjectFrame::frame;
+            if (root == nullptr || root->frame_list == nullptr) return;
+            for (int i = 0; i < root->frame_num; ++i) {
+                if (root->frame_list[i] == nullptr) continue;
+                float joint[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+                root->frame_list[i]->GetWorldPosition0(joint);
+                if (std::isfinite(joint[1])) top = std::max(top, joint[1]);
+            }
+        };
+        // (a hero's own joints only: a weapon held up would lift the name in every swing; its head joint sits at the
+        // neck, so a fifth again reaches over the hair. The ridepod's and a monster's joints are their shape's own.)
+        reach(*this);
+        if (shaped) {
+            for (const std::shared_ptr<CCharacter2> &part : parts) reach(*part);
+        }
+        const float over = shaped ? 1.1f : 1.2f;
+        float       height = top - feet[1];
+        if (!(height > 1.0f && height < 1000.0f)) height = (body_height > 1.0f ? body_height : 16.0f) / over;
+        float head[4] = {feet[0], feet[1] + height * over, feet[2], 1.0f};
+        return OnScreen(head, label_head) && OnScreen(feet, label_feet);
     }
 };
 
@@ -133,7 +192,7 @@ struct Avatar {
     std::shared_ptr<AvatarBody> body;
     int                         loaded_character = -1;
     int                         loaded_town = -1;
-    int                         loaded_outfit[5] = {-1, -1, -1, -1, -1}; // head, clothes, feet, weapon, second weapon as asked
+    std::array<int, 12>         loaded_look{}; // what the body was loaded as (LookOf): a new look is loaded in its place
     int                         slot = -1;
     CScene                     *scene = nullptr;
     int                         loop = -1;
@@ -178,16 +237,44 @@ unsigned char *Aligned(unsigned char *raw) {
     return reinterpret_cast<unsigned char *>((reinterpret_cast<std::uintptr_t>(raw) + 63) & ~std::uintptr_t{63});
 }
 
-bool Load(int index, CScene *scene, int slot, int town) {
-    Avatar &a = g_avatars[static_cast<std::size_t>(index)];
-    Unload(index);
+// What an avatar is drawn as, all in one row: when any of it changes the body is loaded again in its place.
+std::array<int, 12> LookOf(const AvatarState &s) {
+    return {s.character, s.stand_in ? 1 : 0, s.head, s.clothes, s.feet, s.weapon, s.sub, s.ridepod[0], s.ridepod[1], s.ridepod[2], s.ridepod[3], s.form};
+}
+
+// The shapes an avatar's body can be loaded as.
+enum class Shape { Hero, Ridepod, Monster };
+
+// The shape a report asks for: the ridepod or the monster on a floor when the other game said which parts or which
+// form, else the hero (standing in, if the player rides or wears a form).
+Shape WantedShape(const AvatarState &s, int town) {
+    if (town != 0 || !s.stand_in) return Shape::Hero;
+    if (s.character == USER_CHARA_MAX && std::ranges::all_of(s.ridepod, [](int item_no) { return item_no > 0; })) return Shape::Ridepod;
+    if (s.character == USER_CHARA_MONICA && s.form >= 0) return Shape::Monster;
+    return Shape::Hero;
+}
+
+// A frame by name on the body or on any part already hung on it, as CActionChara::SearchObject looks down the chain.
+mgCFrame *FindFrame(AvatarBody &body, const char *name) {
+    if (body.CObjectFrame::frame != nullptr) {
+        if (mgCFrame *found = body.CObjectFrame::frame->SearchFrame(name); found != nullptr) return found;
+    }
+    for (const std::shared_ptr<CCharacter2> &part : body.parts) {
+        if (part->CObjectFrame::frame == nullptr) continue;
+        if (mgCFrame *found = part->CObjectFrame::frame->SearchFrame(name); found != nullptr) return found;
+    }
+    return nullptr;
+}
+
+// Builds one body of a shape into the avatar's own memory: the file buffer and the stacks the game sizes for that
+// character (GetCharaMemAllocPtr). Gives nullptr when a file is missing or a frame to hang a part on is not there.
+std::shared_ptr<AvatarBody> Build(Avatar &a, int index, int town, Shape shape) {
     const int character = a.target.character;
-    const std::optional<std::string> model = MainCharaModelName(character, town);
-    if (!model || model->empty()) return false;
+    const int memory_kind = shape == Shape::Ridepod ? USER_CHARA_ROBO : shape == Shape::Monster ? USER_CHARA_MONSTER : USER_CHARA_MAX;
     const int quadwords = GetCharaMemAllocSize() + CHARA_MEM_STACK_NUM * 4 + 64;
     a.arena.assign(static_cast<std::size_t>(quadwords) * 16 + 64, 0);
     a.memory.stSetBuffer(reinterpret_cast<u_long128 *>(Aligned(a.arena.data())), quadwords);
-    if (!GetCharaMemAllocPtr(&a.memory, a.stacks, USER_CHARA_MAX, town)) return false;
+    if (!GetCharaMemAllocPtr(&a.memory, a.stacks, memory_kind, town)) return nullptr;
     a.file.assign(kFileBytes + 64, 0);
     const std::span<unsigned char> buffer(Aligned(a.file.data()), kFileBytes);
     auto load = [&buffer](const std::string &path) {
@@ -195,13 +282,12 @@ bool Load(int index, CScene *scene, int slot, int town) {
         int         size = 0;
         return !path.empty() && LoadFile(mutable_path.data(), buffer, &size) > 0 && size > 0;
     };
-    auto body = std::make_shared<AvatarBody>();
+    auto *pack = reinterpret_cast<unsigned int *>(buffer.data());
+    auto  body = std::make_shared<AvatarBody>();
     body->Initialize();
     body->target = a.target;
     body->town = town;
     const int block = kTextureBlockBase + index;
-    if (!load(dc2::character::ModelAssetPath(town != 0 ? "chara" : "mainchr", *model, false))) return false;
-    body->LoadPack(reinterpret_cast<unsigned int *>(buffer.data()), "info", &a.stacks[0], &a.stacks[0], &a.stacks[0], block, nullptr);
     // What the hero wears and carries: the other player's own, as their game said it; what it did not say is as this
     // game's own hero of that name has it.
     constexpr int kEquipSlots = 5; // CHARA_DATA::equip, by CHARA_EQUIP_SLOT
@@ -212,32 +298,109 @@ bool Load(int index, CScene *scene, int slot, int town) {
         }
     }
     const auto worn = [&own](int said, int equip_slot) { return said > 0 ? said : own[equip_slot]; };
-    const int  clothes = worn(a.target.clothes, CHARA_EQUIP_CLOTHES), feet = worn(a.target.feet, CHARA_EQUIP_FEET);
+    // A part loaded from a file and hung on a frame of the body or of a part before it; false when either is missing.
+    const auto hang_file = [&](const std::string &path, const char *profile, int stack, const char *frame_name) {
+        if (body->CObjectFrame::frame == nullptr || !load(path)) return false;
+        auto part = std::make_shared<CCharacter2>();
+        part->Initialize();
+        part->LoadPack(pack, profile, &a.stacks[stack], &a.stacks[stack], &a.stacks[stack], block, body.get());
+        mgCFrame *at = FindFrame(*body, frame_name);
+        if (part->CObjectFrame::frame == nullptr || at == nullptr) return false;
+        part->CObjectFrame::frame->DeleteReference();
+        part->CObjectFrame::frame->SetReference(at);
+        body->parts.push_back(std::move(part));
+        return true;
+    };
+
+    if (shape == Shape::Ridepod) {
+        // The ridepod as the game builds it (charasetup.cpp: SetupMainUnit, SetupRobo, BuildRoboPartsInfoCore): the
+        // leg is the body, then the arm on the leg's body<n> frame (n the arm's own number), the body on "spine", Max
+        // seated in it ("mints", one model per body type and outfit) on "joint2", the energy pack on "joint1" and
+        // Max's hat on "hat"; last, the arm's "ude" frame takes the matrix of the body's arm<n> frame.
+        const int leg = a.target.ridepod[0], arm = a.target.ridepod[1], hull = a.target.ridepod[2], energy = a.target.ridepod[3];
+        CDataRoboPart *arm_info = GetRoboPartInfoData(arm), *hull_info = GetRoboPartInfoData(hull);
+        const auto     leg_name = ItemFileName(leg, 0), arm_name = ItemFileName(arm, 0), hull_name = ItemFileName(hull, 0),
+                   energy_name = ItemFileName(energy, 0);
+        if (arm_info == nullptr || hull_info == nullptr || !leg_name || !arm_name || !hull_name || !energy_name) return nullptr;
+        CGameData *game_data = GetGameDataPt();
+        CSaveData *save = GetSaveData();
+        int        costume = worn(a.target.clothes, CHARA_EQUIP_CLOTHES) - (game_data != nullptr ? game_data->GetDataTypeStartListNo(ITEM_DATA_MAX_CLOTHES) : 0);
+        costume = std::clamp(costume, 0, 5);
+        int body_type = hull_info->offset_no;
+        if (save != nullptr && save->GetBitFlag(SAVE_FLAG_COSTUME_UNLOCK)) body_type += 10;
+        char mints[32];
+        std::snprintf(mints, sizeof(mints), "mints%02d%c.gltf", body_type, static_cast<char>('a' + costume));
+        const std::string arm_frame = "body" + std::to_string(arm_info->GetOffsetNo());
+        const std::string mount_frame = "arm" + std::to_string(hull_info->GetOffsetNo());
+        if (!load(dc2::character::ModelAssetPath("dungeon/robo", *leg_name, true))) return nullptr;
+        body->LoadPack(pack, "info", &a.stacks[0], &a.stacks[0], &a.stacks[0], block, nullptr);
+        if (!hang_file(dc2::character::ModelAssetPath("dungeon/robo", *arm_name, true), "info", 1, arm_frame.c_str()) ||
+            !hang_file(dc2::character::ModelAssetPath("dungeon/robo", *hull_name, true), "info", 2, "spine") ||
+            !hang_file(dc2::character::ModelAssetPath("dungeon/robo", mints, false), "info", 2, "joint2") ||
+            !hang_file(dc2::character::ModelAssetPath("dungeon/robo", *energy_name, true), "info", 3, "joint1")) {
+            return nullptr;
+        }
+        // (Max's hat goes on if he wears one; the ridepod is whole without it)
+        if (const auto hat = ItemFilePath(worn(a.target.head, CHARA_EQUIP_HEAD), 0)) hang_file(*hat, "info", 2, "hat");
+        mgCFrame *ude = FindFrame(*body, "ude"), *mount = FindFrame(*body, mount_frame.c_str());
+        if (ude == nullptr || mount == nullptr) return nullptr;
+        sceVu0FMATRIX matrix;
+        sceVu0CopyMatrix(matrix, mount->trans_matrix);
+        ude->SetTransMatrix(matrix);
+        body->shaped = true;
+        body->parts_move = true;
+        return body;
+    }
+
+    if (shape == Shape::Monster) {
+        // A monster's form as the game loads it for Monica (SetupMainUnit): the monster's model, read with its own
+        // profile name.
+        const auto model = GetMonsterModelFile(a.target.form, MONSTER_FILE_MODEL);
+        const auto config = GetMonsterModelFile(a.target.form, MONSTER_FILE_CONFIG);
+        if (!model || !config || model->empty() || config->empty() || !load("dungeon/monster/" + *model)) return nullptr;
+        body->LoadPack(pack, config->c_str(), &a.stacks[0], &a.stacks[0], &a.stacks[0], block, nullptr);
+        if (body->CObjectFrame::frame == nullptr) return nullptr;
+        body->shaped = true;
+        return body;
+    }
+
+    const std::optional<std::string> model = MainCharaModelName(character, town);
+    if (!model || model->empty() || !load(dc2::character::ModelAssetPath(town != 0 ? "chara" : "mainchr", *model, false))) return nullptr;
+    body->LoadPack(pack, "info", &a.stacks[0], &a.stacks[0], &a.stacks[0], block, nullptr);
+    const int clothes = worn(a.target.clothes, CHARA_EQUIP_CLOTHES), feet = worn(a.target.feet, CHARA_EQUIP_FEET);
     if (const auto path = ItemFilePath(clothes, 0); clothes > 0 && path && load(*path)) {
-        body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[1], block);
+        body->LoadSkin(pack, const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[1], block);
     }
     if (const auto path = ItemFilePath(feet, 0); feet > 0 && path && load(*path)) {
-        body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[5], block);
+        body->LoadSkin(pack, const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[5], block);
     }
     // The parts, each on the body's frame the game hangs it on (charasetup.cpp, SetupMainUnit): the weapons only on
     // a floor, except Monica's armband, which she wears in town too.
     const bool monica = character == USER_CHARA_MONICA;
     const auto hang = [&](int item_no, int stack, const char *frame_name) {
-        if (item_no <= 0 || body->CObjectFrame::frame == nullptr) return;
-        const auto path = ItemFilePath(item_no, 0);
-        if (!path || !load(*path)) return;
-        auto part = std::make_shared<CCharacter2>();
-        part->Initialize();
-        part->LoadPack(reinterpret_cast<unsigned int *>(buffer.data()), "info", &a.stacks[stack], &a.stacks[stack], &a.stacks[stack], block, body.get());
-        mgCFrame *at = body->CObjectFrame::frame->SearchFrame(const_cast<char *>(frame_name));
-        if (part->CObjectFrame::frame == nullptr || at == nullptr) return;
-        part->CObjectFrame::frame->DeleteReference();
-        part->CObjectFrame::frame->SetReference(at);
-        body->parts.push_back(std::move(part));
+        if (item_no <= 0) return;
+        if (const auto path = ItemFilePath(item_no, 0)) hang_file(*path, "info", stack, frame_name);
     };
     if (town == 0) hang(worn(a.target.weapon, CHARA_EQUIP_MELEE), 2, monica ? "sword_hand" : "ef00");
     if (town == 0 || monica) hang(worn(a.target.sub, CHARA_EQUIP_SUB), 3, monica ? "wr" : "gun_hand");
     hang(worn(a.target.head, CHARA_EQUIP_HEAD), 4, monica ? "ac" : "hat");
+    return body;
+}
+
+bool Load(int index, CScene *scene, int slot, int town) {
+    Avatar &a = g_avatars[static_cast<std::size_t>(index)];
+    Unload(index);
+    // The ridepod or the monster when asked for and it loads; else (or when it does not) the hero, standing in.
+    const Shape wanted = WantedShape(a.target, town);
+    std::shared_ptr<AvatarBody> body = Build(a, index, town, wanted);
+    if (!body && wanted != Shape::Hero) {
+        std::fprintf(stderr, "co-op: avatar %d's %s did not load; the hero stands in\n", index + 1, wanted == Shape::Ridepod ? "ridepod" : "monster form");
+        body = Build(a, index, town, Shape::Hero);
+    } else if (body && wanted != Shape::Hero) {
+        std::fprintf(stderr, "co-op: avatar %d is drawn as the %s\n", index + 1, wanted == Shape::Ridepod ? "ridepod" : "monster form");
+    }
+    if (!body) return false;
+    const int block = kTextureBlockBase + index;
     if (scene->AssignChara(slot, dc2::scene::CharacterResource::FromOwned(body), "coop_avatar") != slot) return false;
     scene->SetType(SCENE_DATA_CHARA, slot, SCENE_CHARA_TYPE_EVENT);
     scene->SetCharaTexb(slot, block);
@@ -245,10 +408,9 @@ bool Load(int index, CScene *scene, int slot, int town) {
     scene->SetActive(SCENE_DATA_CHARA, slot);
     body->SetPosition(a.target.x, a.target.y, a.target.z);
     a.body = std::move(body);
-    a.loaded_character = character;
+    a.loaded_character = a.target.character;
     a.loaded_town = town;
-    const int asked[5] = {a.target.head, a.target.clothes, a.target.feet, a.target.weapon, a.target.sub};
-    std::copy(asked, asked + 5, a.loaded_outfit);
+    a.loaded_look = LookOf(a.target);
     a.slot = slot;
     a.scene = scene;
     a.loop = GetNowLoopNo();
@@ -425,6 +587,18 @@ bool AvatarAt(int slot, float out[3]) {
     return true;
 }
 
+bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &name) {
+    if (!AvatarShown(slot)) return false;
+    const Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
+    // (measured when the scene drew the body; a body the scene did not draw since has no place for a name)
+    const bool drawn = std::exchange(a.body->label_drawn, false);
+    if (!drawn || !a.body->placed || a.target.name.empty()) return false;
+    std::copy(a.body->label_head, a.body->label_head + 2, head);
+    std::copy(a.body->label_feet, a.body->label_feet + 2, feet);
+    name = a.target.name;
+    return true;
+}
+
 void AvatarsStep() {
     CScene *scene = PlaceScene();
     const int loop = GetNowLoopNo();
@@ -439,11 +613,14 @@ void AvatarsStep() {
         }
         if (!a.wanted || scene == nullptr) continue;
         const int town = InTown() ? 1 : 0;
-        const int asked[5] = {a.target.head, a.target.clothes, a.target.feet, a.target.weapon, a.target.sub};
-        const bool changed = !std::equal(asked, asked + 5, a.loaded_outfit); // the other player changed what they wear
+        // (the other player changed hero, what they wear, or climbed into the ridepod or took a form)
+        const bool changed = LookOf(a.target) != a.loaded_look;
         if (a.loaded_character != a.target.character || a.loaded_town != town || !a.body || changed) {
             const int slot = (town != 0 ? kTownSlotBase : kDungeonSlotBase) + i;
-            const bool taken = scene->IsActive(SCENE_DATA_CHARA, slot) != 0 && scene->GetCharacter(slot) != nullptr;
+            // (the slot holding this avatar's own body is not taken: a new hero, outfit or shape loads in its place,
+            // Load putting the old body out first)
+            const bool taken = scene->IsActive(SCENE_DATA_CHARA, slot) != 0 && scene->GetCharacter(slot) != nullptr &&
+                               (a.body == nullptr || scene->GetCharacter(slot) != a.body.get());
             if (taken || !Load(i, scene, slot, town)) {
                 a.wanted = false; // a hero that can't be shown isn't tried every frame
                 std::fprintf(stderr, "co-op: avatar %d can't be shown here (slot %d %s)\n", i + 1, slot, taken ? "taken" : "failed to load");
@@ -456,21 +633,73 @@ void AvatarsStep() {
 
 // ---- Monsters: the API ---------------------------------------------------------------------------------------------
 
-bool PuppetSet(int slot, const Puppet &puppet) {
+namespace {
+
+// Gone on the leader: gone here, without a death (no drops, no count). The slot is freed as the game frees a dead
+// monster's (CMonsterMan::ThinkHost): the kind goes too, since the floor's clear counts every slot of a script
+// monster's kind, so a copy left with it would keep this game's floor from ever being cleared.
+void FreeMonsterSlot(int slot) {
     CActiveMonster *monster = Monster(slot);
-    if (monster == nullptr) return false;
+    if (monster == nullptr || (monster->state == ACTIVE_MONSTER_NONE && monster->chara_kind != ACTION_KIND_SCRIPT)) return;
+    monster->state = ACTIVE_MONSTER_NONE;
+    monster->chara_kind = ACTION_KIND_NONE;
+    monster->damage_req = ACTION_DAMAGE_REQ_NONE;
+    monster->life = 0;
+    if (DngMainScene != nullptr) DngMainScene->ResetActive(SCENE_DATA_CHARA, DNG_CHARA_SLOT_MONSTER + slot);
+}
+
+// The kinds a slot could not be given, each said once on the log (slot * 65536 + kind).
+std::vector<int> g_unmade;
+
+// A monster the leader's game gained after the floor was built (a mod's spawn, a boss's summons, an event's) is in
+// no slot here: one of its kind is made in the leader's slot, where it stands there, through the game's own
+// placement (CMonsterMan::SetActiveMonster), and becomes the copy. A monster of another kind in that slot is not on
+// the leader's floor and goes first. A kind this game does not know (a mod's enemy no mod here registered) is not
+// made: that slot alone is refused.
+CActiveMonster *MakePuppet(int slot, const Puppet &puppet) {
+    if (ActiveMonster == nullptr || DngMainScene == nullptr) return nullptr;
+    std::string why;
+    const int   refer = moonmod::ChronicleTwoMonsterReferFor(puppet.kind, why);
+    if (refer < 0) {
+        const int key = slot * 65536 + puppet.kind;
+        if (std::ranges::find(g_unmade, key) == g_unmade.end() && g_unmade.size() < 256) {
+            g_unmade.push_back(key);
+            std::fprintf(stderr, "co-op: the leader's monster in slot %d (kind %d) can't be made here: %s\n", slot, puppet.kind, why.c_str());
+        }
+        return nullptr;
+    }
+    FreeMonsterSlot(slot);
+    float at[4] = {puppet.x, puppet.y, puppet.z, 1.0f};
+    float turn[4] = {0.0f, puppet.heading, 0.0f, 1.0f};
+    CActiveMonster *made = ActiveMonster->SetActiveMonster(refer, at, turn, -1, slot);
+    if (made == nullptr || made->chara_type != DNG_CHARA_SLOT_MONSTER + slot) return nullptr;
+    DngMainScene->SetActive(SCENE_DATA_CHARA, DNG_CHARA_SLOT_MONSTER + slot);
+    std::fprintf(stderr, "co-op: made the leader's monster in slot %d (kind %d) here\n", slot, puppet.kind);
+    return made;
+}
+
+} // namespace
+
+bool PuppetSet(int slot, const Puppet &puppet) {
+    if (!OnFloor() || ActiveMonster == nullptr || slot < 0 || slot >= MONSTER_ACTIVE_MAX) return false;
+    CActiveMonster *monster = Monster(slot);
     PuppetSlot &p = g_puppets[static_cast<std::size_t>(slot)];
     if (puppet.state <= 0 || puppet.kind < 0) {
-        // Gone on the host: gone here, without a death (no drops, no count).
-        if (monster->state != ACTIVE_MONSTER_NONE) {
-            monster->state = ACTIVE_MONSTER_NONE;
-            monster->life = 0;
-            if (DngMainScene != nullptr) DngMainScene->ResetActive(SCENE_DATA_CHARA, DNG_CHARA_SLOT_MONSTER + slot);
-        }
+        FreeMonsterSlot(slot);
         p = PuppetSlot{};
         return true;
     }
-    if (monster->state == ACTIVE_MONSTER_NONE || (monster->monster_id != puppet.kind && puppet.kind >= 0)) return false;
+    if (monster == nullptr || monster->state == ACTIVE_MONSTER_NONE || monster->monster_id != puppet.kind) {
+        // Struck down on the leader already: nothing to make here.
+        if (puppet.state != ACTIVE_MONSTER_LIVE || puppet.hp <= 0) {
+            if (monster != nullptr && monster->monster_id != puppet.kind) FreeMonsterSlot(slot);
+            p = PuppetSlot{};
+            return true;
+        }
+        monster = MakePuppet(slot, puppet);
+        if (monster == nullptr) return false;
+        p = PuppetSlot{};
+    }
     p.used = true;
     p.host = puppet;
     monster->life = std::clamp(puppet.hp, 0, 1000000);
@@ -756,6 +985,7 @@ void WorldReset() {
     }
     for (PuppetSlot &p : g_puppets) p = PuppetSlot{};
     g_puppets_pause = false;
+    g_unmade.clear();
     g_puppet_hits.clear();
     g_avatar_hits.clear();
     g_player_swapped = false;

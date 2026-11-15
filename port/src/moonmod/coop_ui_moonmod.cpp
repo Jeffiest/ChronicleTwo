@@ -206,6 +206,13 @@ bool ChoiceOpen(Choice choice) {
     return true;
 }
 
+bool ChoiceCloseQuietly(std::string_view owner) {
+    if (!g_choice || g_choice->owner != owner) return false;
+    g_choice.reset();
+    g_choice_grace = 0;
+    return true;
+}
+
 bool ChoiceIsOpen() { return g_choice.has_value(); }
 bool PanelHoldsPad() { return g_choice.has_value() && !g_choice_reads; }
 const Choice *OpenChoice() { return g_choice ? &*g_choice : nullptr; }
@@ -237,6 +244,7 @@ void ChoiceStep() {
 }
 
 void Draw2D() {
+    DrawAvatarNames(); // the other players' names, under the panel
     if (!g_choice) return;
     const Choice &choice = *g_choice;
     const int rows = static_cast<int>(choice.options.size());
@@ -476,6 +484,8 @@ bool TitleBeginVisit(MENU_INIT_ARG &menu_arg) {
                                                       {"map", save->area_no}, {"map_no", map}, {"frame", SharedRuntime().Frame()}});
     return true;
 }
+
+void VisitStartForTests(std::string_view owner) { g_visit = Visit{std::string(owner), "test"}; }
 
 void EndVisit(std::string_view reason) {
     if (!g_visit) return;

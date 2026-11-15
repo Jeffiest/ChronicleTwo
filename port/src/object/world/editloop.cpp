@@ -1386,6 +1386,8 @@ int EditLoop() {
             } else if (LoopMode == EDIT_LOOP_EDIT_MENU) {
                 MainScene->GetMap(MainScene->active_map);
                 MainScene->GetCharacter(MainScene->player_chara);
+                // co-op: a town another player changed is brought up to its record before this editor can edit it
+                moonmod::coop::TownBeforeSave();
                 LoopMode = EDIT_LOOP_EDIT;
                 MainScene->before_camera = MainScene->active_camera;
                 MainScene->active_camera = 3;
@@ -1786,6 +1788,7 @@ int EditLoop() {
                         ResetViewMode(MainScene);
                         MainScene->before_camera = MainScene->active_camera;
                         MainScene->active_camera = 3;
+                        moonmod::coop::TownBeforeSave(); // co-op: as above, before the editor opens
                         StartEditMode(MainScene);
                         LoopMode = EDIT_LOOP_EDIT;
                         KeepEditAnalyze();

@@ -589,11 +589,13 @@ public:
      *
      * Places a monster of a loaded kind on the floor and runs its initialising program.
      *
+     * @param wanted_slot The slot to place it in (it must be free), or -1 for the first free one as retail does;
+     *        co-op places a copy of another game's monster in the slot that monster has there.
      * @mangled SetActiveMonster__11CMonsterManFiPfPfi
      * @address 0x1DD050
      * @size 0xA98
      */
-    CActiveMonster *SetActiveMonster(int refer_no, float *pos, float *rot, int param);
+    CActiveMonster *SetActiveMonster(int refer_no, float *pos, float *rot, int param, int wanted_slot = -1);
 
     /**
      * Removes a live mod-spawned monster without running the native kill, reward, or gate-drop path.

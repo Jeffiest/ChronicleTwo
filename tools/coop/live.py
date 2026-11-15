@@ -153,8 +153,9 @@ def floor_first():
 
 @scenario('clear')
 def clear():
-    """A floor cleared for both: the two stand on a floor, the host strikes every monster down, and the joiner's
-    floor is empty too, with the joiner still playing on it."""
+    """A floor cleared for both: the two stand on a floor, the host strikes every monster down (from where it stands:
+    most of them out of its sight), the joiner's floor is empty too, and each game gives the floor's own clear (no
+    monster in the game's count, no mimic chest, system script 1500), with the joiner still in the visit there."""
     host = [
         {'when': 'town', 'after': 1800, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 2},
         {'when': 'playing', 'after': 1500, 'op': 'strike_all'},
@@ -226,12 +227,85 @@ def look():
     return sc
 
 
+@scenario('look_town')
+def look_town():
+    """For the eye: the two in Palm Brinks. A game started with --jump town:10 stands the host at the map's origin,
+    and the joiner comes in at the map's entrance, some 570 units away, and walks down on the stick. The host's game
+    ends first. The way the stick walks depends on the camera the visit starts with, which is not the same from run
+    to run, so the joiner is not always in the host's last frame."""
+    host = [{'when': 'town', 'after': 300, 'op': 'mark', 'text': 'in town'}]
+    guest = [{'when': 'visit', 'op': 'mark', 'text': 'arrived'}]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 6000, 'guest_frames': 7800,
+            'guest_moves': [(3600, 128, 255, 125)]}
+
+
+@checks('look_town')
+def check_look_town(host, guest, result):
+    c = Checks(host, guest, result)
+    c.visit()
+    c.together('T', 'in town')
+    return c.list
+
+
 @scenario('look_guest')
 def look_guest():
     """The same from the other side: the host walks, and the joiner's game ends first."""
     sc = floor_together(0, 2)
     sc.update({'host_frames': 9000, 'guest_frames': 5400, 'host_walk': 4800})
     return sc
+
+
+# A button pressed for six frames (an input script's line: the frame, the button; then the frame it is let go). A
+# chord "a+b+c" holds a and b first and adds c three frames later, so c's press comes while the others are held.
+PRESS_AT = """%d %s
+%d
+"""
+
+
+def press_lines(presses):
+    lines = ''
+    for frame, button in presses:
+        *held, last = button.split('+')
+        if held:
+            lines += '%d %s\n' % (frame, ' '.join(held))
+            frame += 3
+        lines += PRESS_AT % (frame, ' '.join(held + [last]), frame + 6)
+    return lines
+
+# The ridepod as the story gives it: its first four parts, then the Core, which fits them and brings the ridepod into
+# the party (CUserDataManager::GetItemNotOver); --give gives them on arrival, in this order.
+RIDEPOD_GIFTS = '%d,%d,%d,%d,%d' % (0x87, 0x91, 0x9B, 0xA5, 0xF6)
+
+
+@scenario('ridepod')
+def ridepod():
+    """For the eye and the logs: both on a floor, the host (Max) climbs into the ridepod (R3, the game's own change)
+    and walks a few steps, and the joiner's game ends first, so its last frame shows the host's ridepod as itself."""
+    sc = floor_together(0, 2)
+    # (the Core brings an empty ridepod, which cannot be climbed into: it is filled first, in town)
+    sc['host'].insert(0, {'when': 'town', 'after': 120, 'op': 'ridepod_fuel', 'amount': 300})
+    sc['host'].insert(2, {'when': 'playing', 'after': 2700, 'op': 'player_log'})
+    # Neither player falls (while the joiner is down, R3 is also the host's Revive). A game started with --jump
+    # starts in the debug mode, where R3 on a floor opens the debug menu instead of the change: the second pad's
+    # Circle, the main loop's own switch, turns the debug mode off first (on one pad, L2 and Select held stand for
+    # the second pad).
+    sc.update({'host_frames': 9000, 'guest_frames': 5700, 'host_presses': [(4100, 'l2+select+circle'), (4200, 'r3')],
+               'host_walk': 4900,
+               'host_extra': ['--invincible', '--give', RIDEPOD_GIFTS], 'guest_extra': ['--invincible']})
+    return sc
+
+
+@checks('ridepod')
+def check_ridepod(host, guest, result):
+    c = Checks(host, guest, result)
+    c.visit()
+    c.together('D', 'on the floor')
+    rode = [s for s in host['drive'] if s.get('character') == 'ridepod']
+    c.check(rode, 'the host rides the ridepod', [s.get('character') for s in host['drive']][-4:])
+    drawn = [l for l in guest['lines'] if 'is drawn as the ridepod' in l]
+    failed = [l for l in guest['lines'] if 'ridepod did not load' in l]
+    c.check(drawn and not failed, "the joiner's game draws the ridepod itself, not the hero standing in", (drawn + failed)[:3])
+    return c.list
 
 
 @scenario('preset')
@@ -345,6 +419,58 @@ def build():
     return {'host': host, 'guest': guest, 'host_jump': 'town:0', 'host_frames': 7200, 'guest_frames': 6600}
 
 
+# The host's walk in Sindain from where it stands (0,0,0): the left stick held forward and to the right from frame
+# 900 for 64 frames, which (walk_probe, 2026-11-15; the camera turns as the hero goes) leaves the hero at 390,0,28.
+WALK_RIGHT = """%d 255 0 128 128
+%d
+"""
+SHOVE_WALK = (900, 900 + 64)
+SHOVE_SPOT = (390, 28)
+# The nearest spot to it that the town takes the test's house at (house_probe, 2026-11-15): 40 units off, so the house
+# stands over the hero.
+SHOVE_HOUSE = (350, 28)
+
+
+@scenario('walk_probe')
+def walk_probe():
+    """For writing scenarios: one game alone in Sindain walks forward and to the right, and logs where it stands each
+    second (DRIVE state pos=)."""
+    host = [{'when': 'town', 'after': 1500, 'op': 'mark', 'text': 'end'}]
+    return {'host': host, 'guest': [], 'host_jump': 'town:0', 'host_frames': 2100, 'guest_frames': 0, 'solo': True,
+            'host_input': WALK_RIGHT % SHOVE_WALK}
+
+
+@scenario('shove')
+def shove():
+    """A part put up where a player stands: the host walks to a spot in Sindain (SHOVE_SPOT), the
+    joiner puts one up there, and in the host's game, rebuilt where it stands, the host is set down beside the house
+    on ground it can walk (not inside the house), and walks on."""
+    house = {'template': 47, 'town': 0}
+    host = [
+        dict({'when': 'town', 'after': 600, 'op': 'georama_probe'}, **house),
+        {'after': 4800, 'op': 'georama_probe', 'town': 0},
+        {'after': 300, 'op': 'mark', 'text': 'end'},
+    ]
+    guest = [
+        {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
+        dict({'when': 'town', 'after': 900, 'op': 'part_place', 'spots': [list(SHOVE_HOUSE)]}, **house),
+        {'after': 600, 'op': 'georama_probe', 'town': 0},
+    ]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:0', 'host_frames': 7200, 'guest_frames': 6600,
+            'host_input': WALK_RIGHT % SHOVE_WALK}
+
+
+@scenario('house_probe')
+def house_probe():
+    """For writing scenarios: one game alone in Sindain tries the test's house at spots nearest SHOVE_SPOT first, and
+    logs which the placement rules take (the first one logged is the nearest that takes it)."""
+    spots = sorted(([SHOVE_SPOT[0] + dx, SHOVE_SPOT[1] + dz] for dx in range(-200, 201, 40) for dz in range(-200, 201, 40)),
+                   key=lambda s: (s[0] - SHOVE_SPOT[0]) ** 2 + (s[1] - SHOVE_SPOT[1]) ** 2)
+    host = [{'when': 'town', 'after': 600, 'op': 'part_place', 'template': 47, 'town': 0, 'stock': 50, 'spots': spots},
+            {'after': 60, 'op': 'mark', 'text': 'end'}]
+    return {'host': host, 'guest': [], 'host_jump': 'town:0', 'host_frames': 1200, 'guest_frames': 0, 'solo': True}
+
+
 @scenario('place_probe')
 def place_probe():
     """For writing scenarios: one game alone in Sindain tries to put down parts made from several of the town's own
@@ -440,6 +566,20 @@ class Checks:
         self.check(h >= 3, where + ' the host shows the guest', '%d seconds' % h)
         self.check(g >= 3, where + ' the guest shows the host', '%d seconds' % g)
 
+    def same_monsters(self):
+        """The joiner's floor holds the host's monsters: the most each counted, and the count at the end, match (a
+        monster the host gained after the floor was built, such as a foe the test spawns, is made in the joiner's game
+        in the same slot); and the joiner was never out of step with the host."""
+        def living(side):
+            return [int(s['monsters']) for s in side['drive'] if s.get('context') == 'dungeon' and s.get('monsters', '').isdigit()]
+        h, g = living(self.host), living(self.guest)
+        self.check(h and g and max(h) == max(g), "the joiner's floor holds as many monsters as the host's at most",
+                   'host up to %s, joiner up to %s' % (max(h or [0]), max(g or [0])))
+        self.check(h and g and h[-1] == g[-1], 'and as many at the end', 'host %s, joiner %s' % (h[-1:], g[-1:]))
+        made = [l.strip() for l in self.guest['lines'] if "co-op: made the leader's monster" in l or "can't be made here" in l]
+        out = [l.strip() for l in self.guest['lines'] if 'out of step' in l.lower()]
+        self.check(not out, 'the joiner is never out of step with the host', out[:3] + made[:4])
+
     def no_errors(self):
         bad = [side + ': ' + l.strip() for side in ('host', 'guest') for l in getattr(self, side)['lines']
                if ('moonmod.coop' in l and ('error' in l.lower() or 'traceback' in l.lower()))
@@ -504,7 +644,9 @@ def check_own(host, guest, result):
     made = sorted((out / 'own-save' / 'saves').glob('*.json'))
     name = made[0].name if made else 'none'
     before, after = read_save(made[0]) if made else None, read_save(out / 'guest' / 'save' / 'saves' / name)
-    aside = read_save(out / 'guest' / 'save' / 'moonmod' / 'coop-own-saves' / name)
+    # (the copy is named <stem>.<date>-<time>-<n>.json, one per run of the game, the newest five kept)
+    copies = sorted((out / 'guest' / 'save' / 'moonmod' / 'coop-own-saves').glob(Path(name).stem + '.*' + Path(name).suffix))
+    aside = read_save(copies[0]) if copies else None
     c.check(before is not None and after is not None, "the joiner's save is there before and after", name)
     if before is not None and after is not None:
         was, now = find_key(before, 'money'), find_key(after, 'money')
@@ -609,6 +751,50 @@ def check_build(host, guest, result):
     return c.list
 
 
+@checks('walk_probe')
+def check_walk_probe(host, guest, result):
+    seen = [s.get('pos') for s in host['drive'] if s.get('context') in ('town', 'georama')]
+    return [(bool(seen), 'the host walked (where it stood each second)', seen)]
+
+
+@checks('shove')
+def check_shove(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    c.together('T', 'in Sindain')
+    put = [e for e in guest['events'] if e.startswith('DRIVE part placed')]
+    c.check(put, 'the joiner puts up a house in Sindain', [e for e in guest['events'] if 'part' in e][:4])
+
+    def pos(s):
+        try:
+            return [float(v) for v in s.get('pos', '').split(',')]
+        except ValueError:
+            return None
+    stood = [(int(s.get('frame', 0)), pos(s), s.get('walking')) for s in host['drive'] if s.get('context') in ('town', 'georama') and pos(s)]
+    moved = [l.strip() for l in host['lines'] if 'co-op: a part landed where the player stood' in l]
+    c.check(moved and 'moved to' in moved[0], "in the host's game the house lands where the host stands, and the host is set down beside it",
+            moved[:2] or [s[1] for s in stood[-3:]])
+    near = [p for _, p, _ in stood if abs(p[0] - SHOVE_SPOT[0]) < 60 and abs(p[2] - SHOVE_SPOT[1]) < 60]
+    c.check(near, 'the host stood at the house spot first', [s[1] for s in stood[:6]])
+    last = stood[-1:] if stood else []
+    c.check(last and last[0][2] == 'true', 'and walks on afterwards', last)
+    m = re.search(r'moved to (-?\d+),(-?\d+),(-?\d+)', moved[0]) if moved else None
+    if m and last:
+        to = [float(v) for v in m.groups()]
+        c.check(abs(last[0][1][0] - to[0]) < 40 and abs(last[0][1][2] - to[2]) < 40, 'where it was set down (not pushed back in)',
+                'set down at %s, at the end %s' % (to, last[0][1]))
+    c.check(not any('back to its entrance' in l for l in host['lines']), 'never sent back to the entrance')
+    c.no_errors()
+    return c.list
+
+
+@checks('house_probe')
+def check_house_probe(host, guest, result):
+    seen = [e for e in host['events'] if e.startswith('DRIVE part placed')]
+    return [(bool(seen), 'the house is taken somewhere near the spot', seen[:3])]
+
+
 @checks('place_probe')
 def check_place_probe(host, guest, result):
     seen = [e for e in host['events'] if e.startswith(('DRIVE georama town', 'DRIVE georama anchor', 'DRIVE part', 'DRIVE step'))]
@@ -689,6 +875,7 @@ def check_down(host, guest, result):
     c.check(toast(host, 'is down!'), 'the host is told, and how to revive them', toasts(host))
     c.check(toast(guest, 'revived you'), 'the host, holding Revive beside them, gets the joiner up', toasts(guest))
     c.check(toast(host, 'is back on their feet'), 'and hears that it worked', toasts(host))
+    c.same_monsters()
     ended = [e for e in guest['events'] if e.startswith('COOPTEST session_ended')]
     states = [s for s in guest['drive'] if s.get('context') == 'dungeon']
     c.check(states and states[-1].get('session') == 'visit', 'the joiner is still on the floor, in the visit, at the end',
@@ -709,8 +896,24 @@ def check_clear(host, guest, result):
     h, g = living(host), living(guest)
     c.check(h and max(h) > 0 and h[-1] == 0, 'the host strikes every monster on the floor down', 'from %s to %s' % (max(h or [0]), h[-1:]))
     c.check(g and max(g) > 0 and g[-1] == 0, "and the joiner's floor is empty too", 'from %s to %s' % (max(g or [0]), g[-1:]))
+
+    # The game's own clear (IsEventRun): no monster left in its count (a monster struck down counts until its death
+    # has played out), no mimic chest unopened, and the floor-cleared system script run, in each game.
+    def counted(side):
+        return [(s.get('counted'), s.get('mimics'), s.get('cleared')) for s in side['drive'] if s.get('context') == 'dungeon']
+    for name, side in (('host', host), ('joiner', guest)):
+        seen = counted(side)
+        c.check(seen and seen[-1][0] == '0' and seen[-1][1] == '0', "the %s's game counts no monster and no mimic left" % name,
+                'counted, mimics, cleared at the end: %s (at most %s counted)' % (seen[-1:], max((int(x[0]) for x in seen if x[0].isdigit()), default=None)))
+        ran = [l.strip() for l in side['lines'] if 'RUN SYS_SCRIPT 1500' in l]
+        c.check(ran and seen and seen[-1][2] == 'true', "and the %s's game gives the floor's own clear (system script 1500)" % name,
+                '%s; cleared=%s' % (ran[:1] or 'not run', seen[-1][2] if seen else None))
+    # (the clear's own scene, play_floor_clear, ends in two messages that wait for a button; a headless game presses
+    # none, so after its clear a game stays in that scene: walking is false there, as it is for a player reading it)
     last = [s for s in guest['drive'] if s.get('context') == 'dungeon'][-1:]
-    c.check(last and last[0].get('session') == 'visit' and last[0].get('walking') == 'true', 'the joiner still plays on the cleared floor', last)
+    c.check(last and last[0].get('session') == 'visit' and last[0].get('floor') == '2' and
+            (last[0].get('walking') == 'true' or last[0].get('cleared') == 'true'),
+            'the joiner is still in the visit on the cleared floor (playing, or in its clear scene)', last)
     c.no_errors()
     return c.list
 
@@ -725,6 +928,7 @@ def check_hurt(host, guest, result):
     c.check(blows, "in the host's game a monster's blow lands on the joiner's hero", blows[:3])
     struck = [e for e in guest['events'] if e.startswith('COOPTEST struck hit=true')]
     c.check(struck, "and costs the joiner life in their own game", [e for e in guest['events'] if 'struck' in e][:3])
+    c.same_monsters()
     c.no_errors()
     return c.list
 
@@ -928,11 +1132,20 @@ def main():
     out.mkdir(parents=True)
     sc = SCENARIOS[args.scenario]()
     guest_walk = WALK_AT % (sc['guest_walk'], sc['guest_walk'] + 14) if sc.get('guest_walk') else ''
+    # (or a longer walk: from a frame, the left stick held at x y, for so many frames)
+    guest_walk += ''.join('%d %d %d 128 128\n%d\n' % (frame, x, y, frame + frames) for frame, x, y, frames in sc.get('guest_moves', []))
     (out / 'guest_title.input').write_text(GUEST_TITLE_INPUT + guest_walk, encoding='utf-8')
     host_input = None
-    if sc.get('host_walk'):
+    if sc.get('host_walk') or sc.get('host_presses'):
+        # (the presses, then the walk: an input script's lines go in frame order)
+        lines = press_lines(sc.get('host_presses', []))
+        if sc.get('host_walk'):
+            lines += WALK_AT % (sc['host_walk'], sc['host_walk'] + 14)
         host_input = out / 'host_walk.input'
-        host_input.write_text(WALK_AT % (sc['host_walk'], sc['host_walk'] + 14), encoding='utf-8')
+        host_input.write_text(lines, encoding='utf-8')
+    if sc.get('host_input'):
+        host_input = out / 'host.input'
+        host_input.write_text(sc['host_input'], encoding='utf-8')
 
     port = free_port()
     relay_url = 'ws://127.0.0.1:%d' % port
@@ -982,7 +1195,8 @@ def main():
             guest_save = make_save(out / 'guest', moonmod, 'Guest', relay_url, dict({'role': 'guest', 'code': code}, **sc.get('guest_autotest', {})),
                                    sc['guest'], own_saves=own_saves, settings=sc.get('guest_settings'))
             guest, gl = launch(exe, data, guest_save, 'title', sc['guest_frames'], out / 'guest.log', relay_url,
-                               input_script=out / 'guest_title.input', extra=shot('guest'))
+                               input_script=out / 'guest_title.input',
+                               extra=tuple(sc.get('guest_extra', ())) + shot('guest'))
             logs.append(gl)
         limit = time.time() + max(sc['host_frames'], sc['guest_frames']) / 60 * 8 + 120
         while time.time() < limit and (host.poll() is None or (guest is not None and guest.poll() is None)):

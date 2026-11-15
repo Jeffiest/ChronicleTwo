@@ -96,8 +96,13 @@ std::vector<SlotInfo> SlotsList();
 // The chapter a story progress stands for, as GetNowChapter gives it for a loaded save.
 int                   ChapterOfProgress(int progress);
 bool                  SlotPlayerExport(int slot, std::string &text, int &progress, std::string &error);
-// Before the first write to a save in a run of the game the file is copied to
-// <save root>/moonmod/coop-own-saves/<its name>: the save as it was before this session touched it.
+// Only a JSON save is written (an old memory-card save is refused until the game has converted it). The save keeps
+// its own hero and its own townsfolk (party_chara); the rest of the player's things are the text's. Before the first
+// write to a save in a run of the game the file is copied to
+// <save root>/moonmod/coop-own-saves/<its name>.YYYYMMDD-HHMMSS-NN<ext>: a new copy each run, never over an older
+// one, and the newest five of each save kept.
 bool                  SlotPlayerImport(int slot, std::string_view text, std::string &error);
+// Forgets which saves were copied aside in this run, so the next write copies again (as a new run of the game does).
+void                  SlotCopiesForget();
 
 } // namespace moonmod::coop

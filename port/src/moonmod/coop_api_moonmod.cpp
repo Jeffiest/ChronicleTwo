@@ -17,6 +17,7 @@
 #include <set>
 #include <string>
 
+#include "dng_event.hpp"
 #include "dng_main.hpp"
 #include "gamedata.hpp"
 #include "mainloop.hpp"
@@ -416,11 +417,11 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
 
 ApiCallResult AvatarSetCall(const Json &args) {
     static constexpr const char *kUsage =
-        "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, x, y, z, heading, motion, tint = {r, g, b} or nil, name = text or nil, down = true or nil}";
+        "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, ridepod = {leg, arm, body, pack} item_nos or nil, form = monster_id or nil, x, y, z, heading, motion, tint = {r, g, b} or nil, name = text or nil, down = true or nil}";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
     const Json &request = args[0];
     std::string unknown;
-    if (!OnlyFields(request, {"slot", "character", "weapon", "outfit", "x", "y", "z", "heading", "motion", "tint", "name", "down"}, unknown)) {
+    if (!OnlyFields(request, {"slot", "character", "weapon", "outfit", "ridepod", "form", "x", "y", "z", "heading", "motion", "tint", "name", "down"}, unknown)) {
         return Invalid("unknown field: " + unknown);
     }
     int slot = 0;
@@ -431,8 +432,9 @@ ApiCallResult AvatarSetCall(const Json &args) {
     if (character == "max") state.character = USER_CHARA_MAX;
     else if (character == "monica") state.character = USER_CHARA_MONICA;
     else if (character == "ridepod" || character == "monster") {
-        // Max's ridepod and Monica's monster forms are not drawn yet: the hero stands in for them (AvatarState::stand_in),
-        // so the other player is still seen where they are, and still someone a monster goes for.
+        // Max's ridepod and Monica's monster forms are drawn as themselves when ridepod (its parts) or form (the
+        // monster) says which; else, or when they fail to load, the hero stands in for them (AvatarState::stand_in), so
+        // the other player is still seen where they are, and still someone a monster goes for.
         state.character = character == "ridepod" ? USER_CHARA_MAX : USER_CHARA_MONICA;
         state.stand_in = true;
     } else return Invalid("character must be \"max\", \"monica\", \"ridepod\" or \"monster\"");
@@ -450,6 +452,20 @@ ApiCallResult AvatarSetCall(const Json &args) {
                 return Invalid("outfit must be {head, clothes, feet, sub}, each an item_no or left out");
             }
         }
+    }
+    if (request.contains("ridepod") && !request["ridepod"].is_null()) {
+        // The ridepod's four parts, as player.get's ridepod gives them: the leg, the arm, the body and the energy pack.
+        static constexpr const char *kRidepodUsage = "ridepod must be {leg, arm, body, pack}, each an item_no";
+        const Json &parts = request["ridepod"];
+        std::string strange;
+        if (!parts.is_object() || !OnlyFields(parts, {"leg", "arm", "body", "pack"}, strange)) return Invalid(kRidepodUsage);
+        const char *keys[4] = {"leg", "arm", "body", "pack"};
+        for (int part = 0; part < 4; ++part) {
+            if (!ReadBoundedInt(parts, keys[part], 1, ITEM_NO_MAX - 1, state.ridepod[part])) return Invalid(kRidepodUsage);
+        }
+    }
+    if (request.contains("form") && !request["form"].is_null() && !ReadBoundedInt(request, "form", 0, 4095, state.form)) {
+        return Invalid("form must be a monster_id");
     }
     if (!ReadNumber(request, "x", state.x, false) || !ReadNumber(request, "y", state.y, false) || !ReadNumber(request, "z", state.z, false) ||
         !ReadNumber(request, "heading", state.heading, false)) {
@@ -527,9 +543,14 @@ ApiCallResult PuppetSetCall(const Json &args) {
         named[static_cast<std::size_t>(slot)] = true;
         (PuppetSet(slot, puppet) ? followed : refused).push_back(slot);
     }
-    // A slot the host no longer lists is gone there.
+    // A slot the leader no longer lists is gone there, and so is a monster of this floor's the leader never listed
+    // (one the leader struck down before this game came onto the floor): the list is the leader's whole floor, and
+    // a monster left standing here would keep this game's floor from its clear.
     for (int slot = 0; slot < MONSTER_ACTIVE_MAX; ++slot) {
-        if (!named[static_cast<std::size_t>(slot)] && IsPuppet(slot)) PuppetSet(slot, Puppet{});
+        if (named[static_cast<std::size_t>(slot)]) continue;
+        const CActiveMonster *monster = ActiveMonster->GetActiveMonster(slot);
+        const bool            here = monster != nullptr && (monster->state != ACTIVE_MONSTER_NONE || monster->chara_kind == ACTION_KIND_SCRIPT);
+        if (IsPuppet(slot) || here) PuppetSet(slot, Puppet{});
     }
     Json hits = Json::array();
     for (const PuppetHit &hit : TakePuppetHits()) hits.push_back({{"slot", hit.slot}, {"damage", hit.damage}});
@@ -663,6 +684,15 @@ ApiCallResult ChoiceOpenCall(std::string_view mod_id, const Json &args) {
     return Ok({{"id", std::string(mod_id) + ":" + request["id"].get<std::string>()}, {"open", true}});
 }
 
+// ui.choice_close {}: the calling mod's own open panel closes, with no ui.choice_made; a panel another mod opened
+// stays. {closed = true} when a panel closed, {closed = false} when this mod had none open.
+ApiCallResult ChoiceCloseCall(std::string_view mod_id, const Json &args) {
+    static constexpr const char *kUsage = "expected {} or no argument";
+    if (!args.is_array() || args.size() > 1) return Invalid(kUsage);
+    if (args.size() == 1 && !(args[0].is_object() && args[0].empty()) && !args[0].is_null()) return Invalid(kUsage);
+    return Ok({{"closed", ChoiceCloseQuietly(mod_id)}});
+}
+
 } // namespace
 
 int MotionNumberOf(CCharacter2 &chara) {
@@ -699,9 +729,19 @@ void ExtendPlayer(Json &player) {
     player["motion"] = std::max(0, MotionNumberOf(*hero));            // the motion the hero plays (the avatars play it on other screens)
     if (CUserDataManager *user = GetUserDataMan(); user != nullptr) {
         const int character = user->GetActiveChrNo();
-        if (character == USER_CHARA_MAX || character == USER_CHARA_MONICA) {
-            if (loop == LOOP_EDIT) player["town_character"] = CharacterName(character);
-            if (CHARA_DATA *data = user->GetCharaDataPtr(character); data != nullptr && !player.contains("weapon")) {
+        if (character == USER_CHARA_ROBO) {
+            // The ridepod's parts, for the other games to build it as it is (world.avatar_set's ridepod).
+            const ROBO_DATA &robo = user->robo_data;
+            player["ridepod"] = {{"leg", robo.parts[ROBO_PART_LEG].item_no}, {"arm", robo.parts[ROBO_PART_ARM].item_no},
+                                 {"body", robo.parts[ROBO_PART_BODY].item_no}, {"pack", robo.parts[ROBO_PART_PACK].item_no}};
+        } else if (character == USER_CHARA_MONSTER) {
+            player["form"] = user->monster_id; // the monster whose form Monica wears (world.avatar_set's form)
+        }
+        // A ridepod or a form is the hero's second shape: what the hero wears goes with it (Max sits in the ridepod).
+        const int hero = character == USER_CHARA_ROBO ? USER_CHARA_MAX : character == USER_CHARA_MONSTER ? USER_CHARA_MONICA : character;
+        if (hero == USER_CHARA_MAX || hero == USER_CHARA_MONICA) {
+            if (loop == LOOP_EDIT && hero == character) player["town_character"] = CharacterName(character);
+            if (CHARA_DATA *data = user->GetCharaDataPtr(hero); data != nullptr && !player.contains("weapon")) {
                 const int item_no = data->equip[CHARA_EQUIP_MELEE].item_no;
                 if (item_no > 0) player["weapon"] = {{"id", "chronicle-two:item:" + std::to_string(item_no)}, {"item_no", item_no}, {"slot", CHARA_EQUIP_MELEE}};
                 // What the hero wears and carries besides, for the other games to draw (world.avatar_set's outfit).
@@ -747,6 +787,12 @@ void ExtendWorld(Json &world) {
         if (const std::optional<std::string> layout = FloorLayoutHash()) world["floor_layout"] = *layout;
         // Playing on the floor: the hero is there and no scene, menu or floor change holds the game.
         world["walking"] = MainChara__2 != nullptr && DngStatus.mode == DNG_STATUS_FIELD && !ChoiceIsOpen();
+        // The floor's clear as the game itself decides it (IsEventRun): the monsters it still counts (a monster
+        // struck down counts until its death has played out and its slot is free), the mimic chests not yet opened
+        // (a mimic is a monster to the rule), and whether the floor's clear has been given.
+        if (ActiveMonster != nullptr) world["monsters_counted"] = ActiveMonster->GetMonsterNum(-1.0f);
+        if (TreasureBoxMan != nullptr) world["mimic_chests"] = TreasureBoxMan->MimicCount();
+        if (BattleAreaScene != nullptr) world["floor_cleared"] = BattleAreaScene->battle_clear != 0;
         // The map this dungeon's own way out leads to (the game's table, as its menu's way out of a dungeon uses it).
         static constexpr const char *kWayOut[7] = {"d01e01", "s02", "g02", "g03", "g04", "d06e01", "m05"};
         if (DngStatus.dungeon_no >= 0 && DngStatus.dungeon_no < 7 && GetMapNameCount() > 0) {
@@ -937,6 +983,7 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
     if (path == "items.owned") return ItemsOwned(args);
     if (path == "georama.town_export" || path == "georama.town_import") return TownExportImport(operation, args);
     if (path == "ui.choice_open") return ChoiceOpenCall(mod_id, args);
+    if (path == "ui.choice_close") return ChoiceCloseCall(mod_id, args);
     if (path == "title.mode_register") return RegisterTitleMode(mod_id, args);
     if (path == "title.mode_set") return SetTitleMode(mod_id, args);
     if (path == "title.mode_remove") return RemoveTitleMode(mod_id, args);
@@ -956,7 +1003,7 @@ void AddCapabilities(RuntimeConfig &config) {
                              "world.avatar_set", "world.avatar_clear", "world.enter_map",
                              "monsters.mirror_get", "monsters.puppet_set", "monsters.puppet_clear", "monsters.mirror_hit",
                              "dungeons.set_seed", "dungeons.enter_floor", "dungeons.shared_events_get", "dungeons.shared_event_run",
-                             "combat.strike_player", "items.owned", "georama.town_export", "georama.town_import", "ui.choice_open",
+                             "combat.strike_player", "items.owned", "georama.town_export", "georama.town_import", "ui.choice_open", "ui.choice_close",
                              "title.mode_register", "title.mode_set", "title.mode_remove"}) {
         config.api_capabilities.push_back({path, true, {}});
     }

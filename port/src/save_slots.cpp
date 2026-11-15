@@ -400,7 +400,9 @@ void ImportLegacy(const LegacySave &legacy, SaveSlotList &list, std::map<std::pa
     auto document = std::make_unique<SaveDocument>();
     if (SaveSlotRead(legacy.source, *document) == SaveSlotState::Ready) {
         bool imported = AlreadyConverted(entries, ConvertedInfo(document->image));
-        if (!imported && !list.read_failed) {
+        // Not during a co-op visit: every save write is held back then (SaveSlotWrite answers written and writes
+        // nothing), so a conversion would archive the legacy save with no JSON save in its place.
+        if (!imported && !list.read_failed && !moonmod::coop::VisitActive()) {
             auto key = std::make_pair(legacy.number, legacy.second_card);
             if (entries.contains(key)) {
                 const int number = FirstFree(list.occupied);

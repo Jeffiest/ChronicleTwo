@@ -23,6 +23,11 @@ int ChronicleTwoGeoramaNativePartId(std::string_view piece_id, int town_id);
 void ChronicleTwoTrackModSpawnedEnemy(std::string_view owner, std::string_view character_id, int slot,
                                       unsigned int generation, int native_monster_id);
 void ChronicleTwoEnemyDefeated(::CActiveMonster *monster, const char *source);
+// The floor's loaded monster reference (CMonsterMan::refer) for a monster kind, loaded now when the floor lacks it:
+// a mod's enemy as characters.spawn loads it, one of the game's own through its monster loader. -1 with why in
+// `error` when the kind is unknown to this game or cannot be loaded. Co-op makes a copy of another game's monster
+// with it.
+int ChronicleTwoMonsterReferFor(int native_monster_id, std::string &error);
 float ApplyChronicleTwoCombatDamageFormula(float damage);
 void ResetChronicleTwoCombatFormulasForTests();
 void ResetChronicleTwoContentForTests();

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
+#include "moonmod/coop.hpp"
 #include "moonmod/coop_save.hpp"
 
 #include <algorithm>
@@ -1833,6 +1834,7 @@ TEST_F(SaveSlotTest, FailedSaveAdoptionKeepsPlayTimeFraction) {
 // Co-op: a player who joins a room picks one of their own saves; its things come along and go back into it, and
 // nothing else of it changes (moonmod/coop_save.hpp, save.slots_list and save.slot_player_export/import).
 TEST_F(SaveSlotTest, CoopListsThePlayersSavesAndMovesTheirThingsWithoutTheirStory) {
+    moonmod::coop::SlotCopiesForget();
     image->save_data.game_progress = 2;
     image->save_data.user_data.money = 700;
     image->save_data.SetBitFlag(100, 1);
@@ -1877,10 +1879,15 @@ TEST_F(SaveSlotTest, CoopListsThePlayersSavesAndMovesTheirThingsWithoutTheirStor
     EXPECT_NE(read->image.save_data.GetBitFlag(100), 0);
     EXPECT_EQ(moonmod::coop::SlotsList()[0].progress, 2);
 
-    // Before that first write the save was copied aside as it was.
-    const fs::path aside = root / "moonmod" / "coop-own-saves" / SaveSlotPath(0).filename();
-    auto           before = std::make_unique<SaveDocument>();
-    ASSERT_EQ(SaveSlotRead(aside, *before), SaveSlotState::Ready);
+    // Before that first write the save was copied aside as it was, under its name and the time of the copy.
+    std::vector<fs::path> copies;
+    for (const auto &entry : fs::directory_iterator(root / "moonmod" / "coop-own-saves")) copies.push_back(entry.path());
+    ASSERT_EQ(copies.size(), 1u);
+    const std::string stem = SaveSlotPath(0).stem().string();
+    EXPECT_TRUE(copies[0].filename().string().starts_with(stem + ".2")) << copies[0];
+    EXPECT_EQ(copies[0].extension(), ".json");
+    auto before = std::make_unique<SaveDocument>();
+    ASSERT_EQ(SaveSlotRead(copies[0], *before), SaveSlotState::Ready);
     EXPECT_EQ(before->image.save_data.user_data.money, 700);
 
     // What is not a player's things, or names no save, writes nothing.
@@ -1888,4 +1895,65 @@ TEST_F(SaveSlotTest, CoopListsThePlayersSavesAndMovesTheirThingsWithoutTheirStor
     EXPECT_FALSE(moonmod::coop::SlotPlayerImport(9, after, error));
     ASSERT_EQ(SaveSlotRead(SaveSlotPath(0), *read), SaveSlotState::Ready);
     EXPECT_EQ(read->image.save_data.user_data.money, 12345);
+}
+
+// Co-op's copies of a save before it writes to it: one each run, none over another, the newest five kept (review R1);
+// the save keeps its own townsfolk (R7); and an old memory-card save is not written to (R10).
+TEST_F(SaveSlotTest, CoopCopiesASaveAsideEachRunKeepsFiveAndWritesOnlyAJsonSave) {
+    image->save_data.user_data.money = 700;
+    image->save_data.user_data.party_chara[3].chara_no = 14;
+    image->save_data.user_data.party_chara[3].status = PARTY_CHARA_STATUS_IN_HOUSE | PARTY_CHARA_STATUS_IN_PARTY;
+    Write(SaveSlotPath(0));
+    auto played = std::make_unique<SAVEDATA_FORMAT>();
+    std::memcpy(static_cast<void *>(played.get()), image.get(), sizeof(*image));
+    played->save_data.user_data.party_chara[3].chara_no = 2;
+    played->save_data.user_data.party_chara[3].status = 0; // the host's world had nobody there
+    const fs::path folder = root / "moonmod" / "coop-own-saves";
+    const auto     copies = [&folder] {
+        std::vector<fs::path> found;
+        for (const auto &entry : fs::directory_iterator(folder)) found.push_back(entry.path());
+        std::ranges::sort(found);
+        return found;
+    };
+    std::string error;
+    for (int run = 0; run < 7; ++run) {
+        moonmod::coop::SlotCopiesForget(); // a new run of the game
+        played->save_data.user_data.money = 1000 + run;
+        ASSERT_TRUE(moonmod::coop::SlotPlayerImport(0, moonmod::coop::ExportPlayer(played->save_data), error)) << error;
+        // A second write in the same run copies nothing more.
+        ASSERT_TRUE(moonmod::coop::SlotPlayerImport(0, moonmod::coop::ExportPlayer(played->save_data), error)) << error;
+        EXPECT_EQ(copies().size(), static_cast<std::size_t>(std::min(run + 1, 5))) << "run " << run;
+    }
+    // The five kept are the newest: the copies taken before runs 2 to 6, the save as runs 1 to 5 left it.
+    const std::vector<fs::path> kept = copies();
+    ASSERT_EQ(kept.size(), 5u);
+    for (std::size_t i = 0; i < kept.size(); ++i) {
+        auto copy = std::make_unique<SaveDocument>();
+        ASSERT_EQ(SaveSlotRead(kept[i], *copy), SaveSlotState::Ready) << kept[i];
+        EXPECT_EQ(copy->image.save_data.user_data.money, static_cast<int>(1001 + i)) << kept[i];
+    }
+    // The save's townsfolk are its own story's, whatever the visit's world had.
+    auto read = std::make_unique<SaveDocument>();
+    ASSERT_EQ(SaveSlotRead(SaveSlotPath(0), *read), SaveSlotState::Ready);
+    EXPECT_EQ(read->image.save_data.user_data.money, 1006);
+    EXPECT_EQ(read->image.save_data.user_data.party_chara[3].chara_no, 14);
+    EXPECT_EQ(read->image.save_data.user_data.party_chara[3].status, PARTY_CHARA_STATUS_IN_HOUSE | PARTY_CHARA_STATUS_IN_PARTY);
+
+    // An old memory-card save during a visit (when the game does not convert it): co-op neither reads its things nor
+    // writes to it, and says why. (Another story than slot 0's, which the game would take as converted already.)
+    image->unique_counter = 77;
+    image->save_data.play_time = 999;
+    WriteRaw(Raw(4));
+    const auto legacy = Bytes(Raw(4));
+    moonmod::coop::VisitStartForTests("test.coop");
+    moonmod::coop::SlotCopiesForget();
+    std::string things;
+    int         progress = 0;
+    EXPECT_FALSE(moonmod::coop::SlotPlayerExport(4, things, progress, error));
+    EXPECT_NE(error.find("old memory-card save"), std::string::npos) << error;
+    EXPECT_FALSE(moonmod::coop::SlotPlayerImport(4, moonmod::coop::ExportPlayer(played->save_data), error));
+    EXPECT_NE(error.find("old memory-card save"), std::string::npos) << error;
+    EXPECT_EQ(Bytes(Raw(4)), legacy) << "the legacy save is as it was";
+    moonmod::coop::ResetForTests();
+    moonmod::coop::SlotCopiesForget();
 }

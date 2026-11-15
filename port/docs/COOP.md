@@ -20,8 +20,18 @@ in-memory game that writes no save.
 The other players are drawn as avatars (`world.avatar_set`, slots 1-3): Max's or Monica's dungeon model (town
 model in a town), this game's hero's clothes and shoes, eased to the last report, tinted through the ambient light
 (a guest in blue). They take the scene's last three event slots on a floor and the last three talk slots in a town,
-stepped and drawn by the scene itself. A weapon is not shown yet; names appear in the HUD layer the mod keeps
-(`coop_who`), not over heads.
+stepped and drawn by the scene itself.
+
+Each avatar carries its player's name (`world.avatar_set {name}`) over its head, in towns and on floors
+(`coop_avatar_names_moonmod.cpp`, `DrawAvatarNames`). The place is measured while the scene draws the body, with the
+scene's own camera (`AvatarBody::MeasureLabel`): the highest joint of the drawn pose (a hero's body; a ridepod or a
+monster with all its parts) is raised a little, a fifth for a hero and a tenth for the other shapes, and goes through
+the camera's world-to-screen matrix with the feet. The 2D pass reads that measure once (`AvatarNameOnScreen`, which
+also forgets it, so a body the scene stops drawing loses its name) and centres the name over the head in the game's
+own font, outlined. It is not drawn behind the camera, when the hero is drawn
+shorter than 14 lines of the screen's 448 (too far to read, fading in up to 30), while the scene hides the avatar,
+nor during an event scene, a photo, the floor's menus or the Georama editor. The choice panel's `Draw2D` calls it
+first, so a panel lies over the names.
 
 ## The relay
 
@@ -40,7 +50,7 @@ environment and the mod's `server` setting override it. A build without a socket
 - `port/src/moonmod/coop_api_moonmod.cpp`: the operations (dispatched before the adapter's own in
   `chronicle_two_adapter.cpp`'s `Call`), `player.get`/`world.get`'s extra fields.
 - `coop_world_moonmod.cpp`: avatars, puppets, nearest-player targeting, shared events, the floor seed.
-- `coop_ui_moonmod.cpp`: the choice panel (`ui.choice_open` / `ui.choice_made`), title modes (`title.mode_*`,
+- `coop_ui_moonmod.cpp`: the choice panel (`ui.choice_open` / `ui.choice_close` / `ui.choice_made`), title modes (`title.mode_*`,
   `game.title.opened/selected`), visits (`session.*`, `game.session.started/ended/failed`).
 - `coop_save_moonmod.cpp`: `DCW2`/`DCP2`/`DCT2` records and the accounts.
 - Hooks in game units, one line each: `main.cpp` (`FrameStep`), `automap.cpp` (`FloorSeed`), `dng_event.cpp`
@@ -83,7 +93,13 @@ In Dark Chronicle a player who joins brings one of their own saves, and the host
 - `save.slot_player_import {slot, data}`: during the mod's visit, the player's things back into that save and
   nothing else of it. The save is read, the things replaced, and the file written by `SaveSlotWriteOwnThings`
   (`save_slots.cpp`: `SaveSlotWrite` without its rule that a visit writes no save). Before the first write to a
-  save in a run the file is copied to `<save root>/moonmod/coop-own-saves/`.
+  save in a run the file is copied to `<save root>/moonmod/coop-own-saves/<name>.YYYYMMDD-HHMMSS-NN<ext>`: a new
+  copy each run, never written over an older one, and the newest five copies of each save kept (2026-11-15).
+- Since 2026-11-15 the save keeps its own townsfolk (`party_chara`: who has been recruited, who lives where) as it
+  keeps its own hero; only the player's things are the visit's. Only a JSON save is read or written: an old
+  memory-card save is refused ("open it once outside a visit to convert it"), and the game does not convert one
+  while a visit runs (`ImportLegacy` in `save_slots.cpp` waits), because a visit writes no save and the old one
+  would be archived with nothing in its place.
 
 The accounts (`save.account_*`) stay for a mod that keeps a guest's things with the host, as Dark Cloud 1's does.
 
@@ -109,6 +125,15 @@ makes and takes the other game's, without a hook in any game unit:
 
 Each map's own flags (a town's opened chests) are not shared: chests are each player's own.
 
+Since 2026-11-15:
+
+- **Progress only goes forward.** A `progress` change from another game is taken only when it is higher: this
+  game's progress becomes the higher of the two, and the agreed value is theirs (so a game ahead tells its own
+  again, and both end at the higher).
+- **Who walks with whom is each game's own.** A `recruit`'s status is shared without its in-party bit
+  (`PARTY_CHARA_STATUS_IN_PARTY`): recruited and housed are the world's, and whether the townsperson walks with
+  this game's player stays this game's. A player taking a townsperson into the party tells nothing.
+
 **What the story gives.** Each player has a bag of their own, and the story's scripts give items to whoever stood
 in the scene (`_ADD_ITEM`). In a room that would leave the host's world without a thing its story needs whenever
 the joiner saw the scene alone. So an item an event script gives is told as `gift` (id the item's number, value
@@ -116,6 +141,14 @@ how many) and `world.change_apply` adds it to the other game's bag with the game
 is only one of is not given twice; what does not fit goes where the game puts it). A dungeon's system scripts are
 left out (`SystemScriptBegan`, from `EventScriptSetup`): a chest's content, a floor's prize and a Spheda win are
 the player's own. One line each in `event_func.cpp` and `dng_main.cpp`.
+
+Since 2026-11-15 a gift is told only when the story moved beside it: a story flag, a counter or the progress
+changed within 300 frames of it, before or after. A gift with no such change after 300 frames is dropped (it stays
+in this player's bag only). In the decompiled town scripts every story gift found sets a story flag in the same
+script around its `add_item` (Sindain's Lafrescia seed, Badge Box and Jurak's gun set `FLAG_SINDAIN_EVENT_272` and
+`_285_SEEN`; the gold paint sets `FLAG_GOLD_PAINT_RECEIVED`), while a dungeon chest sets only its box's state under
+a system script (already left out). No town-map chest script was found giving through `add_item`, so the rule's
+first use is the case of a script that gives without moving the story (a shop, a trade), which now stays here.
 
 ## A town as it is built (2026-11-14)
 
@@ -143,12 +176,31 @@ them together only when its player leaves the editor (`EditDataSave`) or walks i
 - **One builder's town is taken whole.** `MergeTown` (a joiner's town with the one it was changed from) takes
   the edited town as it is when this game's town still equals the one it was changed from, which is every time
   while one player builds part by part: the parts keep their order and the placement log that indexes them.
-  Only when both changed the town is it merged by parts, and then the log is theirs or dropped.
+  Only when both changed the town is it merged by parts. Since 2026-11-15 the placement log is kept then too,
+  renumbered: this game's entries and theirs for the parts they added, each with its parts' places in the merged
+  list, and an entry whose part was taken away goes with it. (`CEditMap::LoadData` loads a part saved as placed as
+  unplaced, and places it only through a log entry that rests it on a placed part: a merged town with no log loaded
+  with its parts standing unplaced. `GeoramaParts.AMergedTownLoadsEveryPartBothGamesPlaced` loads one.) The
+  town's `save_count`, which the game bumps at every house entered and map changed, is left out of
+  `TownFingerprint` and of the "nobody here changed it" comparison.
 - **Built parts are the world's.** `build_parts_num` is shared as `stock`, so a part one player builds can be
   placed by the other.
 
-Not done: a player standing where a part lands is not moved aside; two players in the same town's editor at once
-do not see each other's parts until one leaves it (the mod then merges both), nor each other's cursor.
+Since 2026-11-15:
+
+- **The editor writes no stale map.** The town is brought up to its record (`TownBeforeSave`) where `editloop.cpp`
+  enters Georama mode too (from the menu and from walking), and `TownLiveSync` never writes a live map over its
+  record while a rebuild from the record is pending for that town (`TownRecordWritable`).
+- **A player is not left inside a part.** After a rebuild, a player standing where a part just landed is set down
+  on the nearest spot the game would let them walk out of Georama mode onto (`CheckEditWalkSpot`, retail's
+  `CheckEditToWalk` for any spot: walkable town ground, no river, nothing over it), searched in rings of 40 to 800
+  units, 16 spots each. A spot that was not walkable before the rebuild is left alone. The log says
+  `co-op: a part landed where the player stood (...): moved to ...`. Live scenario `shove`.
+- `LayoutFromBytes` refuses a river grid whose cells are not `num_x` by `num_z` or whose counts are below zero,
+  and an import refuses a text that gives one field twice.
+
+Not done: two players in the same town's editor at once do not see each other's parts until one leaves it (the mod
+then merges both), nor each other's cursor.
 
 ## Down, not out (2026-11-14)
 
@@ -162,16 +214,24 @@ room each game plays one hero, so that would be Game Over at every fall. `coop_d
   for while the life is at nothing (`HeroIsDown` in `IsRunDeadEvent` and `CheckStatusError`), and each frame the
   hero's grace is kept up (`DownStep`), so nothing strikes them. `player.get().down` says so.
 - `player.revive {hp, x, y, z}`: life back, the normal program again, two seconds of grace. `player.give_up`:
-  the death event is raised after all.
+  the death event is raised after all. Turning the rule off while the hero is down gives up too (2026-11-15).
 - The others: `world.avatar_set`'s `down` marks another player's hero as down; a monster's turn does not go for
   it and its blows are not tested against it. A game whose own hero is down has its monsters go for any other
   player on the floor first.
 - `world.get().exit_map` on a floor: the map the dungeon's own way out leads to (the table the game's menu uses),
   for the mod to walk a fallen party out with `world.enter_map`.
 
-A player in the ridepod or a monster's form is shown as their hero standing in for it (`world.avatar_set` takes
-`"ridepod"` and `"monster"`): seen where they are, in the hero's first motion. Drawing the ridepod and the forms
-themselves is not done.
+A player in the ridepod or a monster's form is drawn as it (`world.avatar_set` takes `"ridepod"` with
+`ridepod = {leg, arm, body, pack}`, the parts' item numbers, and `"monster"` with `form = monster_id`; their game's
+`player.get()` gives `ridepod` and `form` while it plays them). The ridepod is built as `SetupMainUnit` and
+`SetupRobo` build the player's (`charasetup.cpp`): the leg's model is the body, the arm hangs on its `body<n>` frame
+(n the arm's number), the body on `spine`, Max seated (`mints<type><outfit>`, from the body's type and the outfit the
+other player sent) on `joint2`, the energy pack on `joint1` and Max's hat on `hat`, each found down the chain of
+parts already hung as `CActionChara::SearchObject` finds it; the arm's `ude` frame takes the matrix of the body's
+`arm<n>` frame. The motion numbers the other game sends are its leg's, and every part plays the same number, as the
+game's own `CActionChara::SetMotion` has the chain do. A form is the monster's model read with its own profile
+(`GetMonsterModelFile`). When the parts or the form are not said, or a model or a frame is missing, the hero stands
+in, running while the reports move. A change of shape, hero or outfit loads the new body in the avatar's own slot.
 
 Three lines in game units: `actionchara.cpp` (two) and `dng_main.cpp` (two guards). Not done: the hero's own
 Resurrection Powder is not looked at before they go down; the ridepod and monster forms go down like a hero but
@@ -200,6 +260,40 @@ The story's party fields (`party_member`, `chara_change`, `chara_change_mask`) a
 split (`DCW2` fields 14-16), no longer a player's; a joiner's own save keeps the character it plays as when its
 things are written back.
 
+## A floor cleared for both (2026-11-15)
+
+The game clears a floor when its own count is at nothing (`IsEventRun`: `GetMonsterNum(-1)`, every active slot whose
+`chara_kind` is a script's, and `MimicCount`), and then runs system script 1500 (`play_floor_clear`). Two things
+kept that count above nothing in a room:
+
+- **A monster struck down out of sight never died.** `ThinkHost` skips a monster `CheckView` puts out of view unless
+  its state is already dead, so a `damage_req` of dead set on one far away was never taken up, and its slot kept
+  counting. Retail only kills monsters in sight; a co-op host also takes blows from another player's game, far
+  from its own hero. A dying monster (death asked, or life at nothing) now passes the view test.
+- **A guest's copies kept their slots.** A monster gone on the leader set the copy's state to none but left its
+  `chara_kind`, so the guest's count never fell. `monsters.puppet_set` lists the leader's whole floor: a slot it
+  does not name is freed (state, `chara_kind`, life, the scene's active bit).
+
+`world.get()` on a floor gives `monsters_counted` (the game's own count), `mimic_chests` and `floor_cleared`. Live
+scenario `clear`: both games count nothing, run system script 1500 and stay in the visit. (The clear's own scene
+ends in two messages that wait for a button; a headless game stays in it.)
+
+## Monsters the leader gains (2026-11-15)
+
+A monster the leader gains after the floor is built (a mod's foe, a monster the floor sends in) is made in the
+follower's game in the same slot: `CMonsterMan::SetActiveMonster` takes the slot to use (`wanted_slot`, refused
+unless free), and `ChronicleTwoMonsterReferFor` finds or loads the kind (a refer loaded already, a mod's enemy as
+`characters.spawn` loads it, or one of the game's own kinds through its loader). A kind this game cannot make is
+refused for that slot only, once in the log (`co-op: the leader's monster in slot N (kind K) can't be made here`);
+the others still follow. A leader's monster already dead is not made. Live scenarios `hurt` and `down` check that
+the follower's count matches the leader's and that it is never out of step.
+
+## A mod closes its own panel (2026-11-15)
+
+`ui.choice_close {}` closes the calling mod's own open choice panel without a `ui.choice_made` (the mod closed it,
+so it knows) and answers `{closed = true}`; with no panel of its own open it answers `{closed = false}`, and a
+panel another mod opened stays open.
+
 ## What is not finished (reported, never silently passed)
 
 - **Blows on avatars** are measured since 2026-11-14: each frame the attack primitives aimed at the player's side
@@ -210,9 +304,9 @@ things are written back.
   blow that reaches the avatar's body lands.
 - **Puppets** pause every monster script on a guest's floor (`DNG_PAUSE_MONSTER_AI`) and step the copies themselves.
 - **Avatars** wear and carry what the other player's own hero does (`world.avatar_set {outfit}`, from
-  `player.get().outfit`): the hat or hair piece and the weapons hang on the body's frames as the hero's own do. They
-  are Max or Monica only (not the ridepod or a monster form) and have no name label over the head; a slot the game
-  is using (an event character in one of the last three event slots) refuses the avatar for that scene.
+  `player.get().outfit`): the hat or hair piece and the weapons hang on the body's frames as the hero's own do. A
+  slot the game is using (an event character in one of the last three event slots) refuses the avatar for that scene.
+  The names over heads are not hidden by walls between (no depth test against the map).
 - **Shared events** cover map events (doors, gates, switches) started with the action or item button; a remote run
   re-finds the event point at the sent position, so it needs the same floor layout (the shared seed). The exit gate's
   event is shared too, which also moves the other player's floor; the mod's floor following handles the rest.
@@ -230,7 +324,7 @@ things are written back.
   `MoonModNet.AHostAndAGuestMeetThroughTheRelay` dials the relay; without it the case is skipped.
 - Two games: `python3 tools/coop/two_games.py --build port/build/pc` starts the relay, runs two headless games on
   synthetic data with a fixture mod that hosts and joins, and checks the `COOP_E2E` markers on both sides.
-- Two games on the disc: `python3 -I tools/coop/live.py --scenario meet|floor --keep --out DIR` runs a host and a
+- Two games on the disc: `python3 -I tools/coop/live.py --scenario meet|floor|clear|hurt|down|build|shove --keep --out DIR` runs a host and a
   guest on extracted retail data (`--data`, `DC2_DATA` or the gauntlet's cache) with MoonMod's co-op mod and its
   test driver (`--moonmod`), and checks what both logged: the visit, each game showing the other in town and on a
   floor, the same seed and `floor_layout`, the guest's monsters copying the host's, a kill ending on both. With no

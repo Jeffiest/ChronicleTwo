@@ -1679,6 +1679,59 @@ bool IsSpawnHandleLive(const ModCharacterSpawn &record) {
     return monster != nullptr && monster->state == ACTIVE_MONSTER_LIVE && monster->life > 0;
 }
 
+// The floor's loaded monster reference for a mod's enemy, loaded now when the floor does not have it yet: a custom
+// model through the game's own monster loader, else a copy of its template's reference under the enemy's own
+// number. Returns the reference's index, or -1 with why in `error`.
+int LoadModEnemyRefer(const ModCharacter &definition, std::string &error) {
+    CScene      *scene = DngMainScene;
+    CMonsterMan *manager = ActiveMonster;
+    if (scene == nullptr || manager == nullptr || manager->GetScene() != scene) {
+        error = "characters.spawn requires an active Chronicle Two dungeon";
+        return -1;
+    }
+    int refer_index = manager->SearchBaseIndex(definition.native_monster_id);
+    if (refer_index < 0) {
+        if (!definition.model_id.empty()) {
+            if (!IsMonsterManagerReadyForModSpawn(scene)) {
+                error = "the dungeon's native monster table is still loading; retry characters.spawn next tick";
+                return -1;
+            }
+            mgCMemory *memory = scene->GetStack(3);
+            if (memory == nullptr || !manager->EntryRefer(definition.native_monster_id, memory)) {
+                error = "Chronicle Two could not load the registered custom model through its native monster loader";
+                return -1;
+            }
+            refer_index = manager->SearchBaseIndex(definition.native_monster_id);
+            if (refer_index < 0) {
+                error = "the custom model did not enter the native monster reference table";
+                return -1;
+            }
+        } else {
+            int template_refer = manager->SearchBaseIndex(definition.template_monster_id);
+            if (template_refer < 0) {
+                error = IsMonsterManagerReadyForModSpawn(scene)
+                            ? "the enemy's template was not preloaded during floor setup; register characters before entering the floor"
+                            : "the dungeon's native monster table is still loading; retry characters.spawn next tick";
+                return -1;
+            }
+            refer_index = manager->SearchReferBlock();
+            if (refer_index < 0) {
+                error = "the dungeon monster reference table is full";
+                return -1;
+            }
+            manager->refer[refer_index] = manager->refer[template_refer];
+            manager->refer[refer_index].id = definition.native_monster_id;
+            manager->refer[refer_index].chara.tbl = GetMonsterTable(definition.native_monster_id);
+        }
+    }
+    if (manager->refer[refer_index].chara.GetFrame() == nullptr) {
+        error = !definition.model_id.empty() ? "the registered custom model was not usable by the native monster loader"
+                                             : "the enemy's inherited model is unavailable in the current game data";
+        return -1;
+    }
+    return refer_index;
+}
+
 ApiCallResult SpawnCharacter(std::string_view mod_id, const Json &args) {
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) {
         return Invalid("expected {character = registered_enemy_id, position = {x, y, z}, rotation = optional {x, y, z}}");
@@ -1714,41 +1767,9 @@ ApiCallResult SpawnCharacter(std::string_view mod_id, const Json &args) {
     if (scene == nullptr || manager == nullptr || manager->GetScene() != scene) {
         return Failed("characters.spawn requires an active Chronicle Two dungeon");
     }
-    int refer_index = manager->SearchBaseIndex(definition->second.native_monster_id);
-    if (refer_index < 0) {
-        if (!definition->second.model_id.empty()) {
-            if (!IsMonsterManagerReadyForModSpawn(scene)) {
-                return Failed("the dungeon's native monster table is still loading; retry characters.spawn next tick");
-            }
-            mgCMemory *memory = scene->GetStack(3);
-            if (memory == nullptr || !manager->EntryRefer(definition->second.native_monster_id, memory)) {
-                return Failed("Chronicle Two could not load the registered custom model through its native monster loader");
-            }
-            refer_index = manager->SearchBaseIndex(definition->second.native_monster_id);
-            if (refer_index < 0) return Failed("the custom model did not enter the native monster reference table");
-        } else {
-            int template_refer = manager->SearchBaseIndex(definition->second.template_monster_id);
-            if (template_refer < 0) {
-                const bool ready = IsMonsterManagerReadyForModSpawn(scene);
-                if (!ready) {
-                    return Failed("the dungeon's native monster table is still loading; retry characters.spawn next tick");
-                }
-                return Failed("the enemy's template was not preloaded during floor setup; register characters before entering the floor");
-            }
-            refer_index = manager->SearchReferBlock();
-            if (refer_index < 0) return Failed("the dungeon monster reference table is full");
-            manager->refer[refer_index] = manager->refer[template_refer];
-            manager->refer[refer_index].id = definition->second.native_monster_id;
-            manager->refer[refer_index].chara.tbl = GetMonsterTable(definition->second.native_monster_id);
-        }
-    }
-    if (refer_index < 0) return Failed("the enemy was not added to the dungeon's loaded monster table");
-    if (manager->refer[refer_index].chara.GetFrame() == nullptr) {
-        if (!definition->second.model_id.empty()) {
-            return Failed("the registered custom model was not usable by the native monster loader");
-        }
-        return Failed("the enemy's inherited model is unavailable in the current game data");
-    }
+    std::string refer_error;
+    const int refer_index = LoadModEnemyRefer(definition->second, refer_error);
+    if (refer_index < 0) return Failed(refer_error);
 
     for (auto entry = g_character_spawns.begin(); entry != g_character_spawns.end();) {
         if (!IsSpawnHandleCurrent(entry->second)) entry = g_character_spawns.erase(entry);
@@ -6760,6 +6781,47 @@ void ChronicleTwoNativeItemPickedUp(int item_no, int count) {
                                {{"id", stable_id}, {"kind", is_weapon ? "weapon" : "item"},
                                 {"native_item_no", item_no}, {"count", count}, {"source", "native"},
                                 {"frame", SharedRuntime().Frame()}});
+}
+
+int ChronicleTwoMonsterReferFor(int native_monster_id, std::string &error) {
+    CScene      *scene = DngMainScene;
+    CMonsterMan *manager = ActiveMonster;
+    if (GetNowLoopNo() != LOOP_DUNGEON || scene == nullptr || manager == nullptr || manager->GetScene() != scene) {
+        error = "not on a dungeon floor";
+        return -1;
+    }
+    if (native_monster_id < 0) {
+        error = "no such monster kind";
+        return -1;
+    }
+    if (const int loaded = manager->SearchBaseIndex(native_monster_id); loaded >= 0 && manager->refer[loaded].chara.GetFrame() != nullptr) {
+        return loaded;
+    }
+    // A mod's enemy: as characters.spawn loads it (both games run the same mods, so its number is the same in each).
+    const auto mod_enemy = std::ranges::find_if(g_characters, [native_monster_id](const auto &entry) {
+        return entry.second.native_monster_id == native_monster_id;
+    });
+    if (mod_enemy != g_characters.end()) return LoadModEnemyRefer(mod_enemy->second, error);
+    // One of the game's own kinds this floor did not load: through the game's own loader, as a floor's setup does.
+    if (manager->GetReferPtr2(native_monster_id) == nullptr) {
+        error = "no such monster kind in this game";
+        return -1;
+    }
+    if (!IsMonsterManagerReadyForModSpawn(scene)) {
+        error = "the dungeon's native monster table is still loading";
+        return -1;
+    }
+    mgCMemory *memory = scene->GetStack(3);
+    if (memory == nullptr || !manager->EntryRefer(native_monster_id, memory)) {
+        error = "the game's monster loader could not load this kind";
+        return -1;
+    }
+    const int loaded = manager->SearchBaseIndex(native_monster_id);
+    if (loaded < 0 || manager->refer[loaded].chara.GetFrame() == nullptr) {
+        error = "the kind did not enter the floor's monster table";
+        return -1;
+    }
+    return loaded;
 }
 
 void ChronicleTwoTrackModSpawnedEnemy(std::string_view owner, std::string_view character_id, int slot,

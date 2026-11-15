@@ -113,7 +113,7 @@ TEST(MoonModCoopApi, TheCatalogueNamesEveryCoopOperationAndNetSaysWhetherItHasAS
                              "world.avatar_set", "world.avatar_clear", "world.enter_map", "monsters.mirror_get", "monsters.puppet_set",
                              "monsters.puppet_clear", "monsters.mirror_hit", "dungeons.set_seed", "dungeons.enter_floor",
                              "dungeons.shared_events_get", "dungeons.shared_event_run", "combat.strike_player", "items.owned",
-                             "georama.town_export", "georama.town_import", "ui.choice_open", "title.mode_register", "title.mode_set"}) {
+                             "georama.town_export", "georama.town_import", "ui.choice_open", "ui.choice_close", "title.mode_register", "title.mode_set"}) {
         EXPECT_TRUE(api.Supported(path)) << path;
     }
     // mods.* are the runtime's own (every game has them), not the adapter's.
@@ -160,6 +160,37 @@ TEST(MoonModCoopApi, AvatarsTakeASlotOnTheFloorAndAreCleared) {
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 1}}})).status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 9}}})).status, ApiCallStatus::InvalidArgument);
+}
+
+TEST(MoonModCoopApi, ARidepodSaysItsFourPartsAndAFormItsMonster) {
+    FloorFixture floor;
+    Api          api;
+    const auto   at = [](Json extra) {
+        Json request = {{"slot", 1}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0}, {"name", "Host"}};
+        for (auto field = extra.begin(); field != extra.end(); ++field) request[field.key()] = field.value();
+        return Json::array({request});
+    };
+    // The ridepod's parts by item_no (leg, arm, body, pack), all four or none; a form by its monster_id.
+    const ApiCallResult riding = api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {{"leg", 155}, {"arm", 145}, {"body", 135}, {"pack", 165}}}}));
+    ASSERT_EQ(riding.status, ApiCallStatus::Ok) << riding.message;
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "monster"}, {"form", 12}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", nullptr}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {{"leg", 155}, {"arm", 145}, {"body", 135}}}})).status,
+              ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {{"leg", 155}, {"arm", 145}, {"body", 135}, {"pack", 0}}}})).status,
+              ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {{"leg", 155}, {"arm", 145}, {"body", 135}, {"pack", 165}, {"wheel", 1}}}})).status,
+              ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {155, 145, 135, 165}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "monster"}, {"form", -1}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "monster"}, {"form", "frog"}})).status, ApiCallStatus::InvalidArgument);
+    // Without a disc nothing loads: no body, so no name over a head, and the names' draw has nothing to draw.
+    float       head[2] = {}, feet[2] = {};
+    std::string name;
+    EXPECT_FALSE(moonmod::coop::AvatarNameOnScreen(0, head, feet, name));
+    EXPECT_FALSE(moonmod::coop::AvatarNameOnScreen(7, head, feet, name));
+    moonmod::coop::DrawAvatarNames();
+    EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
 }
 
 TEST(MoonModCoopApi, TheHostMirrorsItsMonstersAndAGuestFollowsThemAsPuppets) {
@@ -212,6 +243,35 @@ TEST(MoonModCoopApi, TheHostMirrorsItsMonstersAndAGuestFollowsThemAsPuppets) {
     EXPECT_FALSE(hit.value.at("killed").get<bool>());
     EXPECT_EQ((*floor.slots)[0].life, 35);
     EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 0}}})).status, ApiCallStatus::InvalidArgument);
+}
+
+TEST(MoonModCoopApi, AFollowersMonstersTheLeaderNoLongerHasLeaveTheFloorsCountForItsClear) {
+    FloorFixture floor;
+    Api          api;
+    floor.Live(0, 12, 80).chara_kind = ACTION_KIND_SCRIPT;
+    floor.Live(1, 3, 10).chara_kind = ACTION_KIND_SCRIPT;
+    floor.Live(2, 7, 30).chara_kind = ACTION_KIND_SCRIPT;
+    ASSERT_EQ(ActiveMonster->GetMonsterNum(-1.0f), 3);
+    const ApiCallResult before = api.Call("world.get");
+    ASSERT_EQ(before.status, ApiCallStatus::Ok) << before.message;
+    EXPECT_EQ(before.value.at("monsters_counted"), 3);
+    EXPECT_FALSE(before.value.at("floor_cleared").get<bool>());
+
+    // The leader lists slots 0 and 2: slot 1 (struck down there before this game came) goes here, slot and kind.
+    const Json slot0 = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 80}};
+    const Json slot2 = {{"slot", 2}, {"kind", 7}, {"state", 1}, {"hp", 30}};
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0, slot2})}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ((*floor.slots)[1].state, ACTIVE_MONSTER_NONE);
+    EXPECT_EQ((*floor.slots)[1].chara_kind, ACTION_KIND_NONE);
+    EXPECT_EQ(ActiveMonster->GetMonsterNum(-1.0f), 2);
+    // The leader's copy of slot 2 dies and its slot empties there: the copy here leaves the count too.
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0})}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ((*floor.slots)[2].chara_kind, ACTION_KIND_NONE);
+    EXPECT_EQ(ActiveMonster->GetMonsterNum(-1.0f), 1);
+    // The leader's floor is empty: so is this one, and the game's own rule (IsEventRun) now gives its clear.
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array()}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(ActiveMonster->GetMonsterNum(-1.0f), 0);
+    EXPECT_EQ(api.Call("world.get").value.at("monsters_counted"), 0);
 }
 
 TEST(MoonModCoopApi, AMonstersTurnLooksAtTheNearestPlayerAndTheSwapIsUndone) {
@@ -411,14 +471,14 @@ TEST(MoonModCoopApi, TheSharedWorldIsToldAsItChangesAndTakenWithoutAnEcho) {
     ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "counter"}, {"id", 9}, {"value", -4}}})).status, ApiCallStatus::Ok);
     ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "progress"}, {"id", 0}, {"value", 4}}})).status, ApiCallStatus::Ok);
     ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "party"}, {"id", 0}, {"value", 3}}})).status, ApiCallStatus::Ok);
-    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "recruit"}, {"id", 2}, {"value", {14, 1}}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "recruit"}, {"id", 2}, {"value", {14, 3}}}})).status, ApiCallStatus::Ok);
     EXPECT_NE(save.GetBitFlag(207), 0);
     EXPECT_EQ(save.GetBitFlag(100), 0);
     EXPECT_EQ(save.short_flag[9], -4);
     EXPECT_EQ(save.game_progress, 4);
     EXPECT_EQ(save.user_data.party_member, 3);
     EXPECT_EQ(save.user_data.party_chara[2].chara_no, 14);
-    EXPECT_EQ(save.user_data.party_chara[2].status, 1);
+    EXPECT_EQ(save.user_data.party_chara[2].status, PARTY_CHARA_STATUS_JOINED) << "joined, and not walking with this player";
     // A floor's record is merged: what either game did on the floor stands.
     DNG_FLOOR_SAVE &record = save.save_dungeon.floor_info[40];
     record.flag = 0x1;
@@ -516,9 +576,15 @@ TEST(MoonModCoopApi, UnderTheRuleAHeroGoesDownInsteadOfDyingAndIsRevivedOrGivesU
     ASSERT_EQ(api.Call("player.give_up", Json::array()).status, ApiCallStatus::Ok);
     EXPECT_FALSE(HeroIsDown());
     EXPECT_EQ(DngMainScene->battle_area.script.event_no, 1200);
-    // The rule goes with the mod that set it.
+    // The rule turned off while the hero lies down: the game's own death goes on, as when its mod goes away.
+    max->hp.now = 0.0f;
+    EXPECT_TRUE(HeroFalls(MainChara__2));
+    DngMainScene->battle_area.script.event_no = -1;
     ASSERT_EQ(api.Call("player.down_rule_set", Json::array({{{"enabled", false}}})).status, ApiCallStatus::Ok);
     EXPECT_FALSE(DownRule());
+    EXPECT_FALSE(HeroIsDown());
+    EXPECT_EQ(DngMainScene->battle_area.script.event_no, 1200);
+    // The rule goes with the mod that set it.
     EXPECT_FALSE(HeroFalls(MainChara__2));
     DngMainScene->battle_area.script.event_no = -1;
 }
@@ -538,10 +604,14 @@ TEST(MoonModCoopApi, ATownTakenOffScreenIsBuiltWhenNextWalkedInto) {
     // A rebuild wanted for a town that is no longer on screen is dropped: the town loads from its record.
     TownRebuildWanted(2);
     EXPECT_TRUE(TownRebuildPending());
+    // While it is pending the town's live map is not written over its record (it lacks the other player's change).
+    EXPECT_FALSE(TownRecordWritable(2));
+    EXPECT_TRUE(TownRecordWritable(1)) << "another town's map is";
     TownBeforeSave(); // (no live map to bring up to the record)
     EXPECT_TRUE(TownRebuildPending());
     TownRebuildStep();
     EXPECT_FALSE(TownRebuildPending());
+    EXPECT_TRUE(TownRecordWritable(2));
     TownLiveSync(); // and no editor runs, so nothing is written
 }
 
@@ -587,6 +657,118 @@ TEST(MoonModCoopApi, TitleModesArePagesAModDrivesAndAVisitStartsFromAnOpenOne) {
     EXPECT_FALSE(moonmod::coop::TitlePageOpen());
     EXPECT_EQ(api.Call("title.mode_remove", Json::array({{{"id", "coop"}}})).status, ApiCallStatus::Ok);
     EXPECT_EQ(moonmod::coop::TitleExtraRows(), 0);
+}
+
+// Review R6 and R7: the story's progress only goes forward (each game keeps the higher), and a townsperson's state
+// is shared without the in-party bit, which says who walks with this game's own player.
+TEST(MoonModCoopApi, TheRegisterKeepsTheHigherProgressAndEachGamesOwnPartyBit) {
+    FloorFixture floor;
+    Api          api;
+    CSaveData   &save = *floor.save;
+    ASSERT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", true}}})).status, ApiCallStatus::Ok);
+    save.game_progress = 6;
+    moonmod::coop::RegisterStep();
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "progress"}, {"id", 0}, {"value", 4}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(save.game_progress, 6) << "a game behind does not take this one's story back";
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "progress"}, {"id", 0}, {"value", 9}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(save.game_progress, 9);
+    // Townsperson 3 walks with this game's player; the other game's says recruited and housed, and in its party.
+    save.user_data.party_chara[3].chara_no = 14;
+    save.user_data.party_chara[3].status = PARTY_CHARA_STATUS_JOINED | PARTY_CHARA_STATUS_IN_PARTY;
+    const int theirs = PARTY_CHARA_STATUS_IN_HOUSE | PARTY_CHARA_STATUS_JOINED | PARTY_CHARA_STATUS_IN_PARTY;
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "recruit"}, {"id", 3}, {"value", {14, theirs}}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(save.user_data.party_chara[3].status, PARTY_CHARA_STATUS_IN_HOUSE | PARTY_CHARA_STATUS_JOINED | PARTY_CHARA_STATUS_IN_PARTY)
+        << "still walking here";
+    // Townsperson 4 walks with nobody here; theirs walks with the other player: here they are recruited, not in the party.
+    save.user_data.party_chara[4].chara_no = 15;
+    save.user_data.party_chara[4].status = 0;
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "recruit"}, {"id", 4}, {"value", {15, PARTY_CHARA_STATUS_JOINED | PARTY_CHARA_STATUS_IN_PARTY}}}})).status,
+              ApiCallStatus::Ok);
+    EXPECT_EQ(save.user_data.party_chara[4].status, PARTY_CHARA_STATUS_JOINED);
+    // The player here takes townsperson 4 into the party: that is not a change of the world, so nothing is told.
+    save.user_data.party_chara[4].status |= PARTY_CHARA_STATUS_IN_PARTY;
+    moonmod::coop::RegisterStep();
+    ASSERT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", false}}})).status, ApiCallStatus::Ok);
+}
+
+// Review R9: an item the game gives is told to the other game only when the story moved (a flag, a counter or the
+// progress) within 300 frames of it: a story scene's gift. A chest, a shop or a trade moves no story and stays here.
+TEST(MoonModCoopApi, AGiftIsToldOnlyWhenTheStoryMovesBesideIt) {
+    FloorFixture floor;
+    Api          api;
+    CSaveData   &save = *floor.save;
+    ASSERT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", true}}})).status, ApiCallStatus::Ok);
+    moonmod::coop::RegisterStep();
+    moonmod::coop::StoryGave(100, 1); // a chest in a town: no flag goes with it
+    for (int i = 0; i < 302; ++i) moonmod::coop::RegisterStep();
+    EXPECT_EQ(moonmod::coop::RegisterGiftsTold(), 0);
+    save.SetBitFlag(300, 1); // ...and a story flag set long after it does not bring it back
+    moonmod::coop::RegisterStep();
+    EXPECT_EQ(moonmod::coop::RegisterGiftsTold(), 0);
+    for (int i = 0; i < 302; ++i) moonmod::coop::RegisterStep(); // (well clear of that flag)
+    // A scene that gives an item and sets its flag a few frames later: told.
+    moonmod::coop::StoryGave(101, 1);
+    for (int i = 0; i < 20; ++i) moonmod::coop::RegisterStep();
+    EXPECT_EQ(moonmod::coop::RegisterGiftsTold(), 0) << "held while the story may still move";
+    save.SetBitFlag(301, 1);
+    moonmod::coop::RegisterStep();
+    EXPECT_EQ(moonmod::coop::RegisterGiftsTold(), 1);
+    // A scene that sets its flag first and then gives: told at once.
+    save.short_flag[7] = 3;
+    moonmod::coop::RegisterStep();
+    moonmod::coop::StoryGave(102, 2);
+    moonmod::coop::RegisterStep();
+    EXPECT_EQ(moonmod::coop::RegisterGiftsTold(), 2);
+    ASSERT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", false}}})).status, ApiCallStatus::Ok);
+}
+
+// Job 2: a monster the leader has and this game does not (gained after the floor was built) is made here in the
+// leader's slot. A kind this game cannot make is refused for that slot only; the others still follow.
+TEST(MoonModCoopApi, AMonsterThisGameCannotMakeIsRefusedForItsSlotOnly) {
+    FloorFixture floor;
+    Api          api;
+    floor.Live(0, 12, 80);
+    floor.Live(2, 7, 30);
+    const Json slot0 = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 80}};
+    const Json slot1 = {{"slot", 1}, {"kind", 32000}, {"state", 1}, {"hp", 10}}; // no such kind in this game
+    const Json slot2 = {{"slot", 2}, {"kind", 7}, {"state", 1}, {"hp", 30}};
+    const ApiCallResult followed = api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0, slot1, slot2})}}}));
+    ASSERT_EQ(followed.status, ApiCallStatus::Ok) << followed.message;
+    EXPECT_EQ(followed.value.at("followed"), Json::array({0, 2}));
+    EXPECT_EQ(followed.value.at("refused"), Json::array({1}));
+    EXPECT_EQ((*floor.slots)[1].state, ACTIVE_MONSTER_NONE) << "nothing half made in the refused slot";
+    // The leader's monster in slot 1 already struck down there: nothing to make, and nothing refused.
+    const Json gone = {{"slot", 1}, {"kind", 32000}, {"state", ACTIVE_MONSTER_DEAD}, {"hp", 0}};
+    const ApiCallResult dead = api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0, gone, slot2})}}}));
+    ASSERT_EQ(dead.status, ApiCallStatus::Ok) << dead.message;
+    EXPECT_TRUE(dead.value.at("refused").empty());
+    // A slot here holding another kind than the leader's, whose monster is gone there: freed here too.
+    floor.Live(1, 5, 20).chara_kind = ACTION_KIND_SCRIPT;
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0, gone, slot2})}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ((*floor.slots)[1].state, ACTIVE_MONSTER_NONE);
+    EXPECT_EQ((*floor.slots)[1].chara_kind, ACTION_KIND_NONE);
+}
+
+// Review R11: a mod closes its own choice panel quietly; another mod's panel stays open.
+TEST(MoonModCoopApi, AModClosesItsOwnChoicePanelAndNoOneElses) {
+    FloorFixture floor;
+    Api          api;
+    const Json open = Json::array({{{"id", "ask"}, {"title", "Join?"}, {"options", Json::array({{{"title", "Yes"}}, {{"title", "No"}}})}}});
+    ASSERT_EQ(api.Call("ui.choice_open", open).status, ApiCallStatus::Ok);
+    const ApiCallResult other = api.Call("ui.choice_close", Json::array({Json::object()}), "another.mod");
+    ASSERT_EQ(other.status, ApiCallStatus::Ok) << other.message;
+    EXPECT_FALSE(other.value.at("closed").get<bool>());
+    EXPECT_TRUE(moonmod::coop::ChoiceIsOpen()) << "another mod's panel stays";
+    const ApiCallResult own = api.Call("ui.choice_close", Json::array({Json::object()}));
+    ASSERT_EQ(own.status, ApiCallStatus::Ok) << own.message;
+    EXPECT_TRUE(own.value.at("closed").get<bool>());
+    EXPECT_FALSE(moonmod::coop::ChoiceIsOpen());
+    EXPECT_FALSE(moonmod::coop::PanelHoldsPad());
+    EXPECT_FALSE(api.Call("ui.choice_close").value.at("closed").get<bool>()) << "nothing open: nothing closed";
+    EXPECT_EQ(api.Call("ui.choice_close", Json::array({{{"id", "ask"}}})).status, ApiCallStatus::InvalidArgument);
+    // Closed quietly, the mod may open the next one at once.
+    EXPECT_EQ(api.Call("ui.choice_open", open).status, ApiCallStatus::Ok);
+    moonmod::coop::ResetForTests();
 }
 
 TEST(MoonModCoopApi, AChoicePanelOpensOverTheFloorAndAnswersThroughTheOwner) {

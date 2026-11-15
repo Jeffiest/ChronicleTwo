@@ -17,7 +17,9 @@
 #include "editmap.hpp"
 #include "editparts.hpp"
 #include "mg_memory.hpp"
+#include "moonmod/coop_save.hpp"
 #include "save_json.hpp"
+#include "savedata.hpp"
 #include "stubs/editmap.hpp"
 
 int CheckFenceChain(CEditParts *a, CEditParts *b);
@@ -448,6 +450,79 @@ TEST(GeoramaParts, SavedTownsOfThousandsOfPartsLoadBack) {
     town.map->SaveData(again.get());
     ASSERT_NE(PortFindTownLayout(*again), nullptr);
     EXPECT_EQ(PortFindTownLayout(*again)->parts.size(), count);
+}
+
+// Co-op (review R3): when both games built in one town, the merged town keeps a placement log renumbered to its
+// merged parts, and loading it places every part. A part saved as placed loads as placed only through the log
+// (LoadData), so a merged town without one would load with its parts standing unplaced.
+TEST(GeoramaParts, AMergedTownLoadsEveryPartBothGamesPlaced) {
+    Town  town;
+    auto &ground = town.Define(1, EDIT_PARTS_ATR_GROUND);
+    town.Define(2, 0);
+    town.fixed.push_back({});
+    town.fixed[0].id = ground.id;
+    town.map->info_mngr.fix_parts = town.fixed.data();
+    town.map->info_mngr.fix_parts_num = 1;
+    town.map->ClearAllParts();
+    ASSERT_EQ(town.Part(0).state, EDIT_PARTS_STATE_PLACED);
+    const auto place = [&town](int base, float x) {
+        const int slot = town.Build(2);
+        town.Part(slot).state = EDIT_PARTS_STATE_PLACED;
+        town.Part(slot).SetPosition(x, 0.0f, 3.0f);
+        town.Rest(slot, base);
+        return slot;
+    };
+    // The town both games agreed on: three parts on the ground and one on top of another.
+    const int first = place(0, 10.0f);
+    place(0, 20.0f);
+    place(first, 30.0f);
+    place(0, 40.0f);
+    auto host = std::make_unique<CSaveData>();
+    host->Initialize();
+    town.map->SaveData(&host->edit_data[1]);
+    const std::string agreed = moonmod::coop::ExportTown(*host, 1);
+    host->edit_data[1].save_count += 3; // the host walked through houses since: its save count says nothing of the town
+
+    // The builder adds a part on the agreed first part, and one on the ground.
+    auto        builder = std::make_unique<CSaveData>();
+    std::string error;
+    builder->Initialize();
+    ASSERT_TRUE(moonmod::coop::ImportTown(agreed, 1, *builder, error)) << error;
+    TownLayout &theirs = PortTownLayout(builder->edit_data[1]);
+    ASSERT_EQ(theirs.parts.size(), 5u);
+    TownPart added = theirs.parts[static_cast<std::size_t>(first)];
+    added.pos = {50, 0, 3};
+    theirs.parts.push_back(added);
+    theirs.place_log.push_back({.parts_no = 5, .base_no = static_cast<s16>(first)});
+    added.pos = {60, 0, 3};
+    theirs.parts.push_back(added);
+    theirs.place_log.push_back({.parts_no = 6, .base_no = 0});
+    const std::string edited = moonmod::coop::ExportTown(*builder, 1);
+
+    // The host built too: a part on the ground, and its own live map saved since.
+    place(0, 70.0f);
+    town.map->SaveData(&host->edit_data[1]);
+    ASSERT_TRUE(moonmod::coop::MergeTown(agreed, edited, 1, *host, error)) << error;
+    const TownLayout *merged = PortFindTownLayout(host->edit_data[1]);
+    ASSERT_NE(merged, nullptr);
+    ASSERT_EQ(merged->parts.size(), 8u) << "the ground, four agreed, the host's one and the builder's two";
+    EXPECT_FALSE(merged->place_log.empty());
+
+    town.map->ClearAllParts();
+    town.map->LoadData(&host->edit_data[1]);
+    std::vector<int> xs;
+    for (int i = 1; i < town.map->edit_parts_max; ++i) {
+        CEditParts &part = town.Part(i);
+        if (part.name[0] == '\0') continue;
+        EXPECT_EQ(part.state, EDIT_PARTS_STATE_PLACED) << "slot " << i;
+        float pos[4];
+        part.GetPosition(pos);
+        xs.push_back(static_cast<int>(pos[0]));
+    }
+    std::ranges::sort(xs);
+    EXPECT_EQ(xs, (std::vector<int>{10, 20, 30, 40, 50, 60, 70}));
+    for (CEditData &data : host->edit_data) PortClearTownLayout(data);
+    for (CEditData &data : builder->edit_data) PortClearTownLayout(data);
 }
 
 TEST(GeoramaPartsStorage, OversizedScriptTableDoesNotConstructOutsideTheArena) {

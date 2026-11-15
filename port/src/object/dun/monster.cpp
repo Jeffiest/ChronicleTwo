@@ -1086,7 +1086,7 @@ int CMonsterMan::EntryRefer(int monster_id, mgCMemory *memory) {
     return true;
 }
 
-CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0FVECTOR rot, int param) {
+CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0FVECTOR rot, int param, int wanted_slot) {
     const auto activation_scene = scene_view;
     auto      *scene = activation_scene.Get();
     if (scene == nullptr) {
@@ -1107,7 +1107,19 @@ CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0F
         return nullptr;
     }
 
-    slot = SearchActiveMonsterBlock();
+    if (wanted_slot >= 0) {
+        // A slot asked for by name is taken only when it is free, as SearchActiveMonsterBlock judges one.
+        if (wanted_slot >= MONSTER_ACTIVE_MAX) {
+            return nullptr;
+        }
+        const CActiveMonster *occupant = GetActiveMonster(wanted_slot);
+        if (occupant != nullptr && occupant->state != ACTIVE_MONSTER_NONE) {
+            return nullptr;
+        }
+        slot = wanted_slot;
+    } else {
+        slot = SearchActiveMonsterBlock();
+    }
 
     if (slot < 0) {
         return nullptr;
@@ -2770,7 +2782,11 @@ void CMonsterMan::ThinkHost() {
                 monster->camera_dist = mgDistVector(camera_pos, own_pos);
             }
 
-            if (monster->state != ACTIVE_MONSTER_DEAD && monster->CheckView(priority_limit) == MONSTER_VIEW_OUT) {
+            // A monster out of sight rests, but one struck down still dies: a blow that reaches it out of sight (a
+            // mod's combat.damage, another co-op player's kill) would otherwise leave it in its slot, counted by the
+            // floor's clear, until the player came near. Retail only ever kills a monster in sight.
+            const bool dying = monster->damage_req == ACTION_DAMAGE_REQ_DEAD || (monster->max_life > 0 && monster->life <= 0);
+            if (monster->state != ACTIVE_MONSTER_DEAD && !dying && monster->CheckView(priority_limit) == MONSTER_VIEW_OUT) {
                 continue;
             }
         }

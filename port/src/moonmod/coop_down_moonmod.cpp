@@ -31,8 +31,16 @@ bool OnFloorWithHero() { return GetNowLoopNo() == LOOP_DUNGEON && MainChara__2 !
 } // namespace
 
 void SetDownRule(std::string_view owner, bool enabled) {
-    if (enabled) g_rule_owner = std::string(owner);
-    else if (g_rule_owner == owner) g_rule_owner.clear();
+    if (enabled) {
+        g_rule_owner = std::string(owner);
+        return;
+    }
+    if (g_rule_owner != owner) return;
+    g_rule_owner.clear();
+    // A hero lying under the rule when it ends is not left lying: the game's own death goes on, as when the mod
+    // that set the rule goes away.
+    std::string ignored;
+    if (g_down) HeroGiveUp(ignored);
 }
 
 bool DownRule() { return !g_rule_owner.empty(); }

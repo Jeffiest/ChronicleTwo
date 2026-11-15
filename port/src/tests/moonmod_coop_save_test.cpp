@@ -11,6 +11,9 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include "moonmod/coop_save.hpp"
 #include "save_json.hpp"
@@ -316,6 +319,146 @@ TEST(MoonModCoopSave, ATownBuiltPartByPartByOneIsTakenWholeEachTime) {
     EXPECT_EQ(merged->parts.front().id, 43);
     EXPECT_EQ(merged->place_log.size(), theirs.place_log.size());
     EXPECT_NE(ExportTown(host.save(), 1), edited) << "the host's own culture points stand";
+}
+
+// Standard base64, as the text uses (unpacked form, from PlainText).
+std::string FromBase64(std::string_view in) {
+    static constexpr std::string_view kTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    unsigned    value = 0;
+    int         bits = 0;
+    for (const char c : in) {
+        if (c == '=') break;
+        value = (value << 6) | static_cast<unsigned>(kTable.find(c));
+        bits += 6;
+        if (bits >= 8) {
+            bits -= 8;
+            out.push_back(static_cast<char>((value >> bits) & 0xFF));
+        }
+    }
+    return out;
+}
+std::string ToBase64(std::string_view bytes) {
+    static constexpr char kTable[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    for (std::size_t i = 0; i < bytes.size(); i += 3) {
+        const auto     at = [&bytes](std::size_t k) { return static_cast<unsigned>(static_cast<unsigned char>(bytes[k])); };
+        const unsigned v = (at(i) << 16) | ((i + 1 < bytes.size() ? at(i + 1) : 0) << 8) | (i + 2 < bytes.size() ? at(i + 2) : 0);
+        out.push_back(kTable[(v >> 18) & 63]);
+        out.push_back(kTable[(v >> 12) & 63]);
+        out.push_back(i + 1 < bytes.size() ? kTable[(v >> 6) & 63] : '=');
+        out.push_back(i + 2 < bytes.size() ? kTable[v & 63] : '=');
+    }
+    return out;
+}
+
+// Review R3: a town's save_count is bumped by the game at every house entered and every map change; it says nothing
+// of the town, so neither the fingerprint nor the merge's "nobody here changed it" looks at it.
+TEST(MoonModCoopSave, ATownsSaveCountIsNotPartOfTheTown) {
+    using moonmod::coop::TownFingerprint;
+    Save host(21), builder(22);
+    PortTownLayout(host.save().edit_data[1]) = SampleLayout(1);
+    const std::uint64_t built = TownFingerprint(host.save(), 1);
+    host.save().edit_data[1].save_count += 7;
+    EXPECT_EQ(TownFingerprint(host.save(), 1), built) << "a walk through a house is the same town";
+    host.save().edit_data[1].save_count -= 7;
+    const std::string agreed = ExportTown(host.save(), 1);
+    std::string       error;
+    ASSERT_TRUE(ImportTown(agreed, 1, builder.save(), error)) << error;
+    // The host walked through a house; the builder placed a part. The host's town is the builder's, taken whole.
+    host.save().edit_data[1].save_count += 2;
+    TownLayout &theirs = PortTownLayout(builder.save().edit_data[1]);
+    TownPart    part = theirs.parts.back();
+    part.pos = {90, 0, 9};
+    theirs.parts.push_back(part);
+    theirs.place_log.push_back({.parts_no = static_cast<s16>(theirs.parts.size() - 1), .base_no = 0});
+    const std::string edited = ExportTown(builder.save(), 1);
+    ASSERT_TRUE(moonmod::coop::MergeTown(agreed, edited, 1, host.save(), error)) << error;
+    EXPECT_EQ(ExportTown(host.save(), 1), edited) << "taken whole, log and all";
+}
+
+// Review R3: when both built, the placement log is kept, its parts renumbered to the merged order; an entry whose
+// part the other game took away goes with it.
+TEST(MoonModCoopSave, AMergedTownKeepsItsPlacementLogRenumbered) {
+    Save host(23), builder(24);
+    TownLayout base;
+    for (int i = 0; i < 4; ++i) {
+        TownPart part;
+        part.id = i == 0 ? 1 : 2;
+        part.state = 2;
+        part.pos = {static_cast<s16>(i * 10), 0, 0};
+        base.parts.push_back(part);
+    }
+    base.place_log = {{.parts_no = 1, .base_no = 0}, {.parts_no = 2, .base_no = 0}, {.parts_no = 3, .base_no = 2}};
+    PortTownLayout(host.save().edit_data[1]) = base;
+    const std::string agreed = ExportTown(host.save(), 1);
+    std::string       error;
+    ASSERT_TRUE(ImportTown(agreed, 1, builder.save(), error)) << error;
+    // The host puts a part (at x 40) on part 3; the builder takes part 1 away and puts one (at x 50) on part 2.
+    TownLayout &mine = PortTownLayout(host.save().edit_data[1]);
+    TownPart    put = mine.parts[1];
+    put.pos = {40, 0, 0};
+    mine.parts.push_back(put);
+    mine.place_log.push_back({.parts_no = 4, .base_no = 3});
+    TownLayout &theirs = PortTownLayout(builder.save().edit_data[1]);
+    theirs.parts.erase(theirs.parts.begin() + 1);
+    theirs.place_log = {{.parts_no = 1, .base_no = 0}, {.parts_no = 2, .base_no = 1}};
+    put.pos = {50, 0, 0};
+    theirs.parts.push_back(put);
+    theirs.place_log.push_back({.parts_no = 3, .base_no = 1});
+    ASSERT_TRUE(moonmod::coop::MergeTown(agreed, ExportTown(builder.save(), 1), 1, host.save(), error)) << error;
+    const TownLayout *merged = PortFindTownLayout(host.save().edit_data[1]);
+    ASSERT_NE(merged, nullptr);
+    // Parts: 0, 20, 30, the host's 40, the builder's 50.
+    ASSERT_EQ(merged->parts.size(), 5u);
+    const std::vector<int> xs = {merged->parts[0].pos[0], merged->parts[1].pos[0], merged->parts[2].pos[0], merged->parts[3].pos[0],
+                                 merged->parts[4].pos[0]};
+    EXPECT_EQ(xs, (std::vector<int>{0, 20, 30, 40, 50}));
+    // Log: 20 on 0, 30 on 20, 40 on 30 (the host's own, renumbered), 50 on 20 (theirs, renumbered); 10's entry gone.
+    ASSERT_EQ(merged->place_log.size(), 4u);
+    const auto entry = [&merged](std::size_t i) { return std::pair<int, int>(merged->place_log[i].parts_no, merged->place_log[i].base_no); };
+    EXPECT_EQ(entry(0), (std::pair<int, int>(1, 0)));
+    EXPECT_EQ(entry(1), (std::pair<int, int>(2, 1)));
+    EXPECT_EQ(entry(2), (std::pair<int, int>(3, 2)));
+    EXPECT_EQ(entry(3), (std::pair<int, int>(4, 1)));
+}
+
+// Review R8: a river grid whose cells are not num_x by num_z, or with a count below zero, is damaged; so is a text
+// that gives one field twice (and so leaves another out).
+TEST(MoonModCoopSave, AGridOfTheWrongSizeOrAFieldGivenTwiceIsRefused) {
+    TownLayout  layout = SampleLayout(1);
+    TownLayout  back;
+    std::string error;
+    ASSERT_TRUE(moonmod::coop::LayoutFromBytes(moonmod::coop::LayoutBytes(layout), back, error)) << error;
+    layout.grids[0].cells.pop_back(); // three cells for a 2 by 2 grid
+    EXPECT_FALSE(moonmod::coop::LayoutFromBytes(moonmod::coop::LayoutBytes(layout), back, error));
+    layout.grids[0].cells.clear();
+    layout.grids[0].num_x = -1;
+    layout.grids[0].num_z = 0;
+    EXPECT_FALSE(moonmod::coop::LayoutFromBytes(moonmod::coop::LayoutBytes(layout), back, error));
+    layout.grids[0].num_x = -2;
+    layout.grids[0].num_z = -2;
+    layout.grids[0].cells = {0, 0, 0, 0};
+    EXPECT_FALSE(moonmod::coop::LayoutFromBytes(moonmod::coop::LayoutBytes(layout), back, error));
+
+    // A town's text: its record (field 1) twice and no layout (field 2).
+    Save        town(25);
+    Save        other(26);
+    PortTownLayout(town.save().edit_data[1]) = SampleLayout(1);
+    const std::string plain = PlainText(ExportTown(town.save(), 1));
+    const std::size_t colon = plain.find(':');
+    ASSERT_NE(colon, std::string::npos);
+    const std::string tag = plain.substr(0, colon + 1);
+    const std::string bytes = FromBase64(plain.substr(colon + 1));
+    ASSERT_GE(bytes.size(), 6u);
+    std::uint32_t first = 0;
+    for (int k = 0; k < 4; ++k) first |= static_cast<std::uint32_t>(static_cast<unsigned char>(bytes[2 + k])) << (8 * k);
+    const std::string record = bytes.substr(0, 6 + first);
+    ASSERT_TRUE(ImportTown(tag + ToBase64(bytes), 1, other.save(), error)) << error << " (the codec here reads the text back)";
+    const std::string before = ExportTown(other.save(), 1);
+    EXPECT_FALSE(ImportTown(tag + ToBase64(record + record), 1, other.save(), error));
+    EXPECT_NE(error.find("twice"), std::string::npos) << error;
+    EXPECT_EQ(ExportTown(other.save(), 1), before);
 }
 
 struct TempDir {

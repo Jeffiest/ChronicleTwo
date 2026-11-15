@@ -387,3 +387,10 @@ int CheckWalkToEdit(CScene *scene, float *pos);
  * @size 0x270
  */
 int CheckEditToWalk(CScene *scene, float *position);
+
+/**
+ * CheckEditToWalk's test at any spot instead of the cursor: 1 when a player may stand there (walkable town ground,
+ * no river, nothing standing over it), with the ground point in position. A town without a "geo_check" part
+ * answers 1, as retail does.
+ */
+int CheckEditWalkSpot(CScene *scene, const float *spot, float *position);

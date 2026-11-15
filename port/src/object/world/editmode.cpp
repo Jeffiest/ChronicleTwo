@@ -2265,15 +2265,18 @@ int CheckWalkToEdit(CScene *scene, float *position) {
     return 1;
 }
 
-int CheckEditToWalk(CScene *scene, float *position) {
+int CheckEditToWalk(CScene *scene, float *position) { return CheckEditWalkSpot(scene, eCurPos, position); }
+
+// Retail's CheckEditToWalk, for any spot rather than the cursor alone (co-op asks it of where a player stands).
+int CheckEditWalkSpot(CScene *scene, const float *spot, float *position) {
     float     cursor[4];
     float     ground_hit[4];
     mgVu0FBOX box{};
     CCPoly    polys[512];
     float     hit_positions[64][4];
     int       hit_indices[64];
-    std::memmove(cursor, eCurPos, sizeof(float) * 4);
-    std::memmove(position, eCurPos, sizeof(float) * 4);
+    std::memmove(cursor, spot, sizeof(float) * 4);
+    std::memmove(position, spot, sizeof(float) * 4);
     CEditMap *map = static_cast<CEditMap *>(scene->GetMap(scene->active_map));
 
     if (map == nullptr) {
@@ -2290,8 +2293,8 @@ int CheckEditToWalk(CScene *scene, float *position) {
         return 0;
     }
 
-    std::memmove(box.max, eCurPos, sizeof(float) * 4);
-    std::memmove(box.min, eCurPos, sizeof(float) * 4);
+    std::memmove(box.max, spot, sizeof(float) * 4);
+    std::memmove(box.min, spot, sizeof(float) * 4);
     cursor[1] = 1000.0f;
     box.max[0] += 20.0f;
     box.max[1] = 10000.0f;

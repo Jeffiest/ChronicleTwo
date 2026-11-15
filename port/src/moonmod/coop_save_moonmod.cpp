@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
+#include <array>
 #include <fstream>
 #include <functional>
 #include <iterator>
@@ -303,6 +305,11 @@ bool Import(const std::string &tag, std::string_view text, const std::vector<Fie
             error = "the data comes from another build of the game; play on the same build";
             return false;
         }
+        // A field given twice would be taken twice and stand for one left out: the text is damaged.
+        if (std::ranges::any_of(found, [&field](const auto &seen) { return seen.first == &*field; })) {
+            error = "the data is damaged (a field given twice)";
+            return false;
+        }
         const std::string_view data(bytes.data() + at, size);
         if (field->variable() && !field->check(data, error)) return false;
         found.emplace_back(&*field, data);
@@ -476,6 +483,11 @@ bool LayoutFromBytes(std::string_view bytes, TownLayout &layout, std::string &er
             if (!r.I16(p)) return damaged();
         }
         if (!r.U32(cells) || cells > kLayoutCellsMax) return damaged();
+        // The game reads a river grid's cells as num_x by num_z (CEditMap::LoadData): no other count is a grid.
+        if (grid.num_x < 0 || grid.num_z < 0 ||
+            static_cast<std::uint64_t>(grid.num_x) * static_cast<std::uint64_t>(grid.num_z) != cells) {
+            return damaged();
+        }
         grid.cells.resize(cells);
         if (!r.Bytes(grid.cells.data(), cells)) return damaged();
     }
@@ -484,14 +496,36 @@ bool LayoutFromBytes(std::string_view bytes, TownLayout &layout, std::string &er
     return true;
 }
 
+namespace {
+
+// A town's record as the two games compare it: without save_count, which the game bumps each time it writes the
+// town (every house entered, every town edit event, every map change), so it says nothing about the town.
+std::unique_ptr<CEditData> ComparableRecord(const CEditData &record) {
+    auto copy = std::make_unique<CEditData>();
+    std::memcpy(static_cast<void *>(copy.get()), &record, sizeof(CEditData));
+    copy->save_count = 0;
+    return copy;
+}
+
+bool SameRecord(const CEditData &a, const CEditData &b) {
+    return std::memcmp(static_cast<const void *>(ComparableRecord(a).get()), static_cast<const void *>(ComparableRecord(b).get()),
+                       sizeof(CEditData)) == 0;
+}
+
+} // namespace
+
 std::uint64_t TownFingerprint(const CSaveData &save, int town) {
     std::uint64_t hash = 1469598103934665603ull;
     const auto    mix = [&hash](std::string_view bytes) {
         for (const char c : bytes) hash = (hash ^ static_cast<unsigned char>(c)) * 1099511628211ull;
     };
     for (const Field &field : TownFields(const_cast<CSaveData &>(save), town)) {
-        if (field.variable()) mix(field.write());
-        else mix(std::string_view(static_cast<const char *>(field.data), field.size));
+        if (field.variable()) {
+            mix(field.write());
+        } else {
+            const std::unique_ptr<CEditData> record = ComparableRecord(*static_cast<const CEditData *>(field.data));
+            mix(std::string_view(reinterpret_cast<const char *>(record.get()), sizeof(CEditData)));
+        }
     }
     return hash;
 }
@@ -560,7 +594,6 @@ bool SamePart(const TownPart &a, const TownPart &b) {
 bool SameGrid(const TownGrid &a, const TownGrid &b) {
     return a.num_x == b.num_x && a.num_z == b.num_z && a.pos == b.pos && a.cells == b.cells;
 }
-bool SameLog(const EditPlaceLog &a, const EditPlaceLog &b) { return std::memcmp(&a, &b, sizeof(a)) == 0; }
 
 // The parts a layout holds (slots with a definition), by value.
 std::vector<TownPart> Placed(const TownLayout &layout) {
@@ -593,7 +626,7 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
     // builder): theirs is the town. Taken whole it keeps its parts in their order and the placement log that
     // indexes them, which a merge by parts cannot (below).
     const bool untouched = LayoutBytes(now->layout) == LayoutBytes(before->layout);
-    if (untouched && std::memcmp(static_cast<const void *>(now->record.get()), static_cast<const void *>(before->record.get()), sizeof(CEditData)) == 0) {
+    if (untouched && SameRecord(*now->record, *before->record)) {
         return ImportTown(edited, town, save, error);
     }
 
@@ -625,9 +658,13 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
         layout.grids[i] = after->layout.grids[i];
     }
     // The placed parts: what both lists hold is neither taken away nor added (one for one, as a part may stand twice).
-    std::vector<TownPart> placed = Placed(layout), removed = Placed(before->layout), added = Placed(after->layout);
+    std::vector<TownPart>                   removed = Placed(before->layout);
+    std::vector<std::pair<TownPart, int>> added; // their new parts, each with its index in their layout
+    for (std::size_t j = 0; j < after->layout.parts.size(); ++j) {
+        if (after->layout.parts[j].id != 0) added.emplace_back(after->layout.parts[j], static_cast<int>(j));
+    }
     for (auto it = removed.begin(); it != removed.end();) {
-        const auto kept = std::ranges::find_if(added, [&](const TownPart &part) { return SamePart(part, *it); });
+        const auto kept = std::ranges::find_if(added, [&](const auto &part) { return SamePart(part.first, *it); });
         if (kept != added.end()) {
             added.erase(kept);
             it = removed.erase(it);
@@ -635,21 +672,71 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
             ++it;
         }
     }
-    for (const TownPart &gone : removed) {
-        const auto found = std::ranges::find_if(placed, [&](const TownPart &part) { return SamePart(part, gone); });
-        if (found != placed.end()) placed.erase(found);
+    // The merged parts: this game's, less what they took away, then what they added. Each keeps where it came from,
+    // so the placement log can follow it.
+    std::vector<TownPart> merged;
+    std::vector<int>      mine_to_merged(layout.parts.size(), -1), theirs_to_merged(after->layout.parts.size(), -1);
+    for (std::size_t i = 0; i < layout.parts.size(); ++i) {
+        const TownPart &part = layout.parts[i];
+        if (part.id == 0) continue;
+        const auto gone = std::ranges::find_if(removed, [&](const TownPart &taken) { return SamePart(taken, part); });
+        if (gone != removed.end()) {
+            removed.erase(gone);
+            continue;
+        }
+        mine_to_merged[i] = static_cast<int>(merged.size());
+        merged.push_back(part);
     }
-    for (const TownPart &part : added) placed.push_back(part);
-    if (placed.size() > kLayoutPartsMax) placed.resize(kLayoutPartsMax);
-    layout.parts = std::move(placed);
-    // The placement log indexes parts, which moved: theirs is taken when it changed, else dropped (the game rebuilds
-    // what it needs from the parts on load).
-    bool log_changed = before->layout.place_log.size() != after->layout.place_log.size();
-    for (std::size_t i = 0; !log_changed && i < after->layout.place_log.size(); ++i) {
-        log_changed = !SameLog(before->layout.place_log[i], after->layout.place_log[i]);
+    const std::size_t mine_end = merged.size();
+    std::vector<bool> theirs_added(after->layout.parts.size(), false);
+    for (const auto &[part, j] : added) {
+        theirs_to_merged[static_cast<std::size_t>(j)] = static_cast<int>(merged.size());
+        theirs_added[static_cast<std::size_t>(j)] = true;
+        merged.push_back(part);
     }
-    if (log_changed) layout.place_log = after->layout.place_log;
-    else layout.place_log.clear();
+    // Their parts both games have: the same part among this game's.
+    std::vector<bool> matched(mine_end, false);
+    for (std::size_t j = 0; j < after->layout.parts.size(); ++j) {
+        if (theirs_to_merged[j] >= 0 || after->layout.parts[j].id == 0) continue;
+        for (std::size_t k = 0; k < mine_end; ++k) {
+            if (!matched[k] && SamePart(merged[k], after->layout.parts[j])) {
+                matched[k] = true;
+                theirs_to_merged[j] = static_cast<int>(k);
+                break;
+            }
+        }
+    }
+    const auto mapped = [](const std::vector<int> &map, int index) {
+        return index >= 0 && static_cast<std::size_t>(index) < map.size() && map[static_cast<std::size_t>(index)] >= 0 &&
+                       map[static_cast<std::size_t>(index)] < static_cast<int>(kLayoutPartsMax)
+                   ? map[static_cast<std::size_t>(index)]
+                   : -1;
+    };
+    // The placement log: a part saved as placed loads as placed only when the log says what it rests on
+    // (CEditMap::LoadData), so it is kept, never dropped. This game's entries, and theirs for the parts they added,
+    // each with its parts renumbered to the merged order; an entry whose part is gone goes with it.
+    std::vector<EditPlaceLog> log;
+    const auto keep = [&log](EditPlaceLog entry, int part, int base) {
+        if (part < 0 || part > 32767 || base > 32767) return;
+        entry.parts_no = static_cast<s16>(part);
+        entry.base_no = static_cast<s16>(base);
+        if (log.size() < kLayoutLogMax) log.push_back(entry);
+    };
+    for (const EditPlaceLog &entry : layout.place_log) {
+        if (entry.parts_no < 0) continue;
+        const int base = entry.base_no < 0 ? entry.base_no : mapped(mine_to_merged, entry.base_no);
+        if (entry.base_no >= 0 && base < 0) continue;
+        keep(entry, mapped(mine_to_merged, entry.parts_no), base);
+    }
+    for (const EditPlaceLog &entry : after->layout.place_log) {
+        if (entry.parts_no < 0 || static_cast<std::size_t>(entry.parts_no) >= theirs_added.size() || !theirs_added[static_cast<std::size_t>(entry.parts_no)]) continue;
+        const int base = entry.base_no < 0 ? entry.base_no : mapped(theirs_to_merged, entry.base_no);
+        if (entry.base_no >= 0 && base < 0) continue;
+        keep(entry, mapped(theirs_to_merged, entry.parts_no), base);
+    }
+    if (merged.size() > kLayoutPartsMax) merged.resize(kLayoutPartsMax);
+    layout.parts = std::move(merged);
+    layout.place_log = std::move(log);
 
     std::memcpy(static_cast<void *>(&save.edit_data[town]), now->record.get(), sizeof(CEditData));
     PortTownLayout(save.edit_data[town]) = std::move(now->layout);
@@ -775,11 +862,71 @@ bool AccountsStore() { return AccountsSave(AccountsDirectory()); }
 namespace {
 
 std::set<int> g_slots_copied; // saves copied aside in this run of the game, before their first write
+constexpr std::size_t kCopiesKept = 5; // copies kept of each save, the newest
+
+// A save is copied aside before co-op first writes to it in a run of the game: a new copy each time, named with the
+// date and time it was taken and a number for copies taken in the same second (<name>.YYYYMMDD-HHMMSS-NN<ext>), never
+// over an older one, which may be the only good one. The newest five copies of that save are kept.
+bool CopyAside(const std::filesystem::path &path, std::string &error) {
+    const std::filesystem::path folder = PathsSaveRoot() / "moonmod" / "coop-own-saves";
+    std::error_code             failed;
+    std::filesystem::create_directories(folder, failed);
+    if (failed) {
+        error = "the save could not be copied aside before writing to it: " + failed.message();
+        return false;
+    }
+    const std::string stem = path.stem().string(), extension = path.extension().string();
+    const std::time_t now = std::time(nullptr);
+    std::tm           local{};
+#if defined(_WIN32)
+    localtime_s(&local, &now);
+#else
+    localtime_r(&now, &local);
+#endif
+    char stamp[32] = {};
+    std::strftime(stamp, sizeof(stamp), "%Y%m%d-%H%M%S", &local);
+    std::filesystem::path aside;
+    for (int n = 0; n < 100; ++n) {
+        char number[4] = {};
+        std::snprintf(number, sizeof(number), "%02d", n);
+        const std::string name = stem + "." + stamp + "-" + number + extension; // (two in one second sort in order)
+        if (!std::filesystem::exists(folder / name, failed)) {
+            aside = folder / name;
+            break;
+        }
+    }
+    if (aside.empty()) {
+        error = "the save could not be copied aside before writing to it: no free name";
+        return false;
+    }
+    std::filesystem::copy_file(path, aside, std::filesystem::copy_options::none, failed);
+    if (failed) {
+        error = "the save could not be copied aside before writing to it: " + failed.message();
+        return false;
+    }
+    // The copies of this save (its own name, a stamp, its extension), oldest first by their stamps; the oldest go.
+    std::vector<std::filesystem::path> copies;
+    for (const auto &entry : std::filesystem::directory_iterator(folder, failed)) {
+        const std::string name = entry.path().filename().string();
+        if (name.size() > stem.size() + extension.size() + 1 && name.starts_with(stem + ".2") && name.ends_with(extension)) {
+            copies.push_back(entry.path());
+        }
+    }
+    std::ranges::sort(copies);
+    for (std::size_t i = 0; i + kCopiesKept < copies.size(); ++i) std::filesystem::remove(copies[i], failed);
+    return true;
+}
 
 // Reads one numbered save whole. A save document is large: the caller holds it on the heap.
 bool ReadSlot(int slot, SaveDocument &document, std::filesystem::path &path, std::string &error) {
     for (const SaveSlot &found : SaveSlotScan(false).saves) {
         if (found.autosave || found.second_card || found.number != slot) continue;
+        // Only a save of this port's own kind: a legacy memory-card save is converted when the game lists saves
+        // outside a visit, and written here it would be JSON text over a binary file.
+        if (found.path.extension() != ".json") {
+            error = "that save is an old memory-card save; open it once outside a visit to convert it";
+            return false;
+        }
         const SaveSlotState state = SaveSlotRead(found.path, document);
         if (state != SaveSlotState::Ready) {
             error = std::string("that save can't be read: ") + SaveSlotStatus(state);
@@ -795,6 +942,8 @@ bool ReadSlot(int slot, SaveDocument &document, std::filesystem::path &path, std
 } // namespace
 
 int ChapterOfProgress(int progress) { return progress < 2 ? 0 : progress < 4 ? 1 : progress - 2; }
+
+void SlotCopiesForget() { g_slots_copied.clear(); }
 
 std::vector<SlotInfo> SlotsList() {
     std::vector<SlotInfo> slots;
@@ -827,18 +976,16 @@ bool SlotPlayerImport(int slot, std::string_view text, std::string &error) {
     std::filesystem::path path;
     if (!ReadSlot(slot, *document, path, error)) return false;
     // Who the save plays as is its own story's: a visit may have been played as the other hero, or in a second shape.
-    const s16 plays_as = document->image.save_data.user_data.active_chr_no;
+    // So are its townsfolk (who has been recruited and lives where is the story's; the host's world had its own).
+    CUserDataManager &user = document->image.save_data.user_data;
+    const s16         plays_as = user.active_chr_no;
+    auto              townsfolk = std::make_unique<std::array<unsigned char, sizeof(user.party_chara)>>();
+    std::memcpy(townsfolk->data(), &user.party_chara, sizeof(user.party_chara));
     if (!ImportPlayer(text, document->image.save_data, error)) return false;
-    document->image.save_data.user_data.active_chr_no = plays_as;
+    user.active_chr_no = plays_as;
+    std::memcpy(&user.party_chara, townsfolk->data(), sizeof(user.party_chara));
     if (!g_slots_copied.contains(slot)) {
-        const std::filesystem::path aside = PathsSaveRoot() / "moonmod" / "coop-own-saves" / path.filename();
-        std::error_code             failed;
-        std::filesystem::create_directories(aside.parent_path(), failed);
-        if (!failed) std::filesystem::copy_file(path, aside, std::filesystem::copy_options::overwrite_existing, failed);
-        if (failed) {
-            error = "the save could not be copied aside before writing to it: " + failed.message();
-            return false;
-        }
+        if (!CopyAside(path, error)) return false;
         g_slots_copied.insert(slot);
     }
     if (SaveSlotWriteOwnThings(path, *document) != FilesResult::kWritten) {

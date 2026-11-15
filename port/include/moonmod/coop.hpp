@@ -41,6 +41,8 @@ void OwnerUnloaded(std::string_view mod_id);
 void FrameStep();
 // Everything co-op holds goes back to the start (tests).
 void ResetForTests();
+// Tests: a visit runs, owned by this mod, as TitleBeginVisit leaves one (ResetForTests ends it).
+void VisitStartForTests(std::string_view owner);
 // player.get and world.get carry co-op's extra fields: heading, motion, the weapon and the town hero's place;
 // map_no, town_map, editing and the floor's seed (the adapter calls these as it builds its answers).
 void ExtendPlayer(Json &player);
@@ -87,10 +89,15 @@ struct AvatarState {
     float       tint[3] = {-1.0f, -1.0f, -1.0f}; // ambient 0-128 each, or negative for none
     std::string name;
     bool        down = false; // that player is down: this game's monsters neither go for the hero nor strike it
-    // That player rides the ridepod or wears a monster's form, which this game cannot draw yet: their hero's own body
-    // stands in for it, where they are and facing as they face, in its first motion (their motion numbers are the
-    // ridepod's or the monster's, not the hero's).
+    // That player rides the ridepod (character is then USER_CHARA_MAX) or wears a monster's form (USER_CHARA_MONICA).
+    // The avatar is drawn as the ridepod or the monster when the parts or the form below are known and load; else
+    // their hero's own body stands in for it, where they are and facing as they face, running while they move (their
+    // motion numbers are the ridepod's or the monster's, not the hero's).
     bool        stand_in = false;
+    // The ridepod's parts by item_no, in the order leg, arm, body, energy pack (0: not said), and the monster whose
+    // form Monica wears, by its monster_id (-1: not said).
+    int         ridepod[4] = {0, 0, 0, 0};
+    int         form = -1;
 };
 bool AvatarSet(int slot, const AvatarState &state);
 void AvatarClear(int slot); // -1: every slot
@@ -98,6 +105,15 @@ bool AvatarShown(int slot);
 bool AvatarAt(int slot, float out[3]);
 // The avatar bodies on the floor or in the town: made in free scene slots, stepped and drawn by the scene.
 void AvatarsStep();
+// Where an avatar's name goes on the screen (from its top left, in the screen's units): the point just over its head
+// and the point it stands on, as measured when the scene last drew the body with its camera, and the name the mod gave
+// (UTF-8). Each drawing is given once. False for an avatar the scene has not drawn since (none, hidden, elsewhere,
+// behind the camera) or one with no name.
+bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &name);
+// The other players' names over their heroes' heads (coop_avatar_names_moonmod.cpp), drawn with the game's own
+// font in the 2D pass after the scene, with its camera: the choice panel's Draw2D calls it first, so a panel lies
+// over them.
+void DrawAvatarNames();
 
 // ---- Monsters: the host's (coop_world_moonmod.cpp) -----------------------------------------------------------------
 
@@ -160,12 +176,14 @@ std::optional<std::string> FloorLayoutHash();
 
 // world.watch_set: the mod is told (game.world.changed {kind, id, value}) of each change this game makes to the parts
 // of the save two games share while they play: a story flag ("flag", value true or false), a story counter
-// ("counter"), the story's progress ("progress", id 0), who the story has in the party ("party", id 0 the members, 1
-// who can be changed to, 2 the mask), a townsperson who can join ("recruit", value {chara_no, status}), a dungeon
+// ("counter"), the story's progress ("progress", id 0; taken as the higher of the two games'), who the story has in
+// the party ("party", id 0 the members, 1 who can be changed to, 2 the mask), a townsperson who can join ("recruit",
+// value {chara_no, status}, the status without its in-party bit, which is each player's own pick), a dungeon
 // floor's record ("floor", id its place in the save's records, value its nine numbers), how many of a Georama part
 // are built and waiting to be placed ("stock", id the part's number), an item one of the story's scripts gave the
-// player ("gift", id the item's number, value how many; not a chest's or a floor's prize, which are the player's
-// own; world.change_apply adds it to this game's bag) and a town's Georama ("town", id 0-4: only that
+// player ("gift", id the item's number, value how many; told only when a story flag, counter or progress changed within
+// 300 frames of it, so not a chest's, a shop's or a floor's prize, which are the player's own; world.change_apply adds
+// it to this game's bag) and a town's Georama ("town", id 0-4: only that
 // it changed; the mod sends the town with georama.town_export). A town or a floor beginning (a save loaded, a visit
 // begun) is where the two games start from, not a change.
 void RegisterWatch(std::string_view owner, bool enabled);
@@ -179,6 +197,8 @@ void RegisterStep();
 bool RegisterApply(std::string_view kind, int id, const Json &value, std::string &error);
 // georama.town_import: the town as it stands after another game's is what the games share (no "town" change told).
 void RegisterTownAgreed(int town);
+// How many gifts the register has told since it was reset (a gift is told only when the story moved around it).
+int RegisterGiftsTold();
 
 // ---- Down, not out (coop_down_moonmod.cpp) --------------------------------------------------------------------------
 // player.down_rule_set {enabled}: while it holds, a hero whose life runs out on a floor plays their death and stays
@@ -202,6 +222,9 @@ void DownReset();
 // live map into the record (TownBeforeSave, from EditDataSave).
 bool TownOnScreen(int town); // the town loop runs that town (its own map or a house's inside)
 void TownLiveSync();
+// Whether this town's live map may be written over its record: not while a rebuild from the record is pending for it
+// (the map lacks the other player's change, and writing it would take that change away).
+bool TownRecordWritable(int town);
 void TownRebuildWanted(int town);
 bool TownRebuildPending();
 void TownRebuildStep();
@@ -223,6 +246,9 @@ struct Choice {
     std::size_t               cursor = 0;
 };
 bool          ChoiceOpen(Choice choice);
+// Closes the panel if this mod opened it, with no ui.choice_made (the mod closed it, so it knows); another mod's panel
+// is left open. Answers whether a panel was closed.
+bool          ChoiceCloseQuietly(std::string_view owner);
 bool          ChoiceIsOpen();
 const Choice *OpenChoice();
 // Every frame while open: the pad moves the cursor; a pick or a cancel publishes ui.choice_made to the owner.

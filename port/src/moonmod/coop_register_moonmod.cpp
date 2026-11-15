@@ -50,10 +50,22 @@ struct Shared {
     std::array<s16, kStock>              stock{}; // Georama parts built and waiting to be placed
 };
 
-// What the story's scripts gave this game's player since the last step: {item_no, count}.
-std::vector<std::array<int, 2>> g_gifts;
+// What the scripts gave this game's player and is not told yet: {item_no, count, the step it was given at}. A
+// gift is the story's (for both players) only when the story itself moves around it: a story event that gives an
+// item sets a story flag in the same scene (the scripts set the event's flag, then add_item). A gift with no shared
+// story flag, counter or progress change within kGiftWindow steps of it (a chest, a shop, a villager's trade, kept
+// by a map flag or by nothing) is the player's own and is dropped.
+std::vector<std::array<int, 3>> g_gifts;
 bool                            g_system_script = false; // a dungeon's system script runs: its gifts are the player's own
 constexpr std::size_t           kGiftsKept = 32;
+constexpr int                   kGiftWindow = 300;
+int                             g_steps = 0;            // RegisterStep's own clock: one a frame while watched
+int                             g_story_moved = -1000000; // the step this game's story flags, counters or progress last changed at
+int                             g_gifts_told = 0;
+
+// A townsperson's state as the world has it: recruited, living in a house. Who walks with a player (IN_PARTY) is
+// that player's own pick, never told and never taken.
+int WorldRecruitStatus(int status) { return status & ~PARTY_CHARA_STATUS_IN_PARTY; }
 
 std::unique_ptr<Shared> g_shared;
 std::string             g_watcher; // the mod told of changes; empty: nobody watches
@@ -106,7 +118,7 @@ void Rebase(const CSaveData &save) {
     shared.progress = save.game_progress;
     for (int field = 0; field < 3; ++field) shared.party[static_cast<std::size_t>(field)] = PartyField(save.user_data, field);
     for (int i = 0; i < kRecruits; ++i) {
-        shared.recruits[static_cast<std::size_t>(i)] = {save.user_data.party_chara[i].chara_no, save.user_data.party_chara[i].status};
+        shared.recruits[static_cast<std::size_t>(i)] = {save.user_data.party_chara[i].chara_no, WorldRecruitStatus(save.user_data.party_chara[i].status)};
     }
     std::copy(std::begin(save.save_dungeon.floor_info), std::end(save.save_dungeon.floor_info), shared.floors.begin());
     for (int town = 0; town < kTowns; ++town) shared.towns[static_cast<std::size_t>(town)] = TownFingerprint(save, town);
@@ -138,14 +150,19 @@ void RegisterReset() {
     g_shared.reset();
     g_gifts.clear();
     g_system_script = false;
+    g_steps = 0;
+    g_story_moved = -1000000;
+    g_gifts_told = 0;
 }
+
+int RegisterGiftsTold() { return g_gifts_told; }
 
 void SystemScriptBegan() { g_system_script = true; }
 
 void StoryGave(int item_no, int count) {
     if (g_watcher.empty() || item_no <= 0 || count <= 0) return;
     if (GetNowLoopNo() == LOOP_DUNGEON && g_system_script) return; // a chest, a prize: each player's own
-    if (g_gifts.size() < kGiftsKept) g_gifts.push_back({item_no, std::min(count, 999)});
+    if (g_gifts.size() < kGiftsKept) g_gifts.push_back({item_no, std::min(count, 999), g_steps});
 }
 
 void RegisterStep() {
@@ -160,9 +177,11 @@ void RegisterStep() {
         g_running = false;
         return;
     }
+    ++g_steps;
     if (!g_running) { // a town or a floor begins (a save loaded, a visit begun): nothing to tell
         Rebase(*save);
         g_running = true;
+        g_gifts.clear();
         return;
     }
     Shared &shared = *g_shared;
@@ -172,10 +191,7 @@ void RegisterStep() {
         SharedRuntime().PublishToMod(g_watcher, "game.world.changed",
                                      {{"kind", kind}, {"id", id}, {"value", std::move(value)}, {"frame", SharedRuntime().Frame()}});
     };
-    // What a scene gave this player: told once, as it was given (not a difference of the save: the bag is the
-    // player's own, and only the story's gifts are for both).
-    for (const std::array<int, 2> &gift : g_gifts) tell("gift", gift[0], gift[1]);
-    g_gifts.clear();
+    const int told_before_story = told;
     for (int word = 0; word < kFlags / 32 && told < kChangesAFrame; ++word) {
         u32 differs = save->bit_flag[word] ^ shared.flags[static_cast<std::size_t>(word)];
         for (int bit = 0; differs != 0 && bit < 32 && told < kChangesAFrame; ++bit) {
@@ -195,6 +211,21 @@ void RegisterStep() {
         shared.progress = save->game_progress;
         tell("progress", 0, save->game_progress);
     }
+    if (told > told_before_story) g_story_moved = g_steps;
+    // What a story scene gave this player: told once, as it was given (not a difference of the save: the bag is the
+    // player's own, and only the story's gifts are for both); a gift the story did not move around is dropped.
+    for (auto gift = g_gifts.begin(); gift != g_gifts.end();) {
+        const int at = (*gift)[2];
+        if (g_story_moved >= at - kGiftWindow && g_story_moved <= at + kGiftWindow) {
+            tell("gift", (*gift)[0], (*gift)[1]);
+            ++g_gifts_told;
+            gift = g_gifts.erase(gift);
+        } else if (g_steps - at > kGiftWindow) {
+            gift = g_gifts.erase(gift);
+        } else {
+            ++gift;
+        }
+    }
     for (int field = 0; field < 3 && told < kChangesAFrame; ++field) {
         const int now = PartyField(save->user_data, field);
         if (now == shared.party[static_cast<std::size_t>(field)]) continue;
@@ -202,7 +233,7 @@ void RegisterStep() {
         tell("party", field, now);
     }
     for (int i = 0; i < kRecruits && told < kChangesAFrame; ++i) {
-        const std::array<int, 2> now = {save->user_data.party_chara[i].chara_no, save->user_data.party_chara[i].status};
+        const std::array<int, 2> now = {save->user_data.party_chara[i].chara_no, WorldRecruitStatus(save->user_data.party_chara[i].status)};
         if (now == shared.recruits[static_cast<std::size_t>(i)]) continue;
         shared.recruits[static_cast<std::size_t>(i)] = now;
         tell("recruit", i, Json::array({now[0], now[1]}));
@@ -280,7 +311,10 @@ bool RegisterApply(std::string_view kind, int id, const Json &value, std::string
             error = "the story's progress is {id = 0, value = 0-1000}";
             return false;
         }
-        save->game_progress = shared.progress = static_cast<s32>(number);
+        // Two games moving the story at once: the further one stands. What they sent is agreed, so a higher value
+        // here is told back on the next step and both end at the higher one.
+        save->game_progress = std::max(save->game_progress, static_cast<s32>(number));
+        shared.progress = static_cast<s32>(number);
         return true;
     }
     if (kind == "party") {
@@ -302,9 +336,12 @@ bool RegisterApply(std::string_view kind, int id, const Json &value, std::string
             error = "a townsperson is {id = 0-31, value = {chara_no, status}}";
             return false;
         }
+        // The world's part of the state is theirs; whether this one walks with this game's player stays this game's.
+        const int world = WorldRecruitStatus(static_cast<int>(status));
+        const int walks = save->user_data.party_chara[id].status & PARTY_CHARA_STATUS_IN_PARTY;
         save->user_data.party_chara[id].chara_no = static_cast<s16>(chara_no);
-        save->user_data.party_chara[id].status = static_cast<u16>(status);
-        shared.recruits[static_cast<std::size_t>(id)] = {static_cast<int>(chara_no), static_cast<int>(status)};
+        save->user_data.party_chara[id].status = static_cast<u16>(world | (world != 0 ? walks : 0));
+        shared.recruits[static_cast<std::size_t>(id)] = {static_cast<int>(chara_no), world};
         return true;
     }
     if (kind == "floor") {

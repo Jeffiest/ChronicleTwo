@@ -232,6 +232,7 @@ constexpr ApiOperationSpec kApiCatalog[] = {
     {"dungeons.shared_event_run", "dungeons", "shared_event_run", "simulation", "game.write", "Co-op: run another player's floor-changing event here, at its place, once the player is free; the key it asks for is taken as given."},
     {"items.owned", "items", "owned", "any", "game.read", "The items the player carries (the bag and the active slots), each with its id, name and count."},
     {"ui.choice_open", "ui", "choice_open", "simulation", "game.write", "Open a panel of 1-6 options over the game until the player picks one or backs out (ui.choice_made)."},
+    {"ui.choice_close", "ui", "choice_close", "simulation", "game.write", "Close this mod's own open choice panel without a ui.choice_made; answers {closed}. Another mod's panel stays."},
     {"net.host", "net", "host", "any", "net.session", "Open an online room through the co-op relay; net.receive's connected event names its code."},
     {"net.join", "net", "join", "any", "net.session", "Join another player's online room by its five-letter code."},
     {"net.leave", "net", "leave", "any", "net.session", "Leave the online room (a host leaving ends it for everyone)."},
