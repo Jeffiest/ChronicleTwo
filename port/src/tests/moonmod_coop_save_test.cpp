@@ -7,6 +7,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <cstdio>
 #include <memory>
 #include <random>
 #include <string>
@@ -23,6 +24,7 @@ using moonmod::coop::ExportWorld;
 using moonmod::coop::ImportPlayer;
 using moonmod::coop::ImportTown;
 using moonmod::coop::ImportWorld;
+using moonmod::coop::PlainText;
 
 struct Save {
     std::unique_ptr<CSaveData> data = std::make_unique<CSaveData>();
@@ -90,6 +92,20 @@ TEST(MoonModCoopSave, TheWorldCrossesWithoutThePlayersThings) {
     EXPECT_FLOAT_EQ(guest.save().now_time, 13.5f);
     EXPECT_EQ(guest.save().area_no, 3);
     EXPECT_EQ(guest.save().user_data.money, 55); // the guest keeps their own Gilda
+    // Who the story has in the party is the story's: it crosses with the world, not with a player's things.
+    const u16 story_party = host.save().user_data.party_member, story_change = host.save().user_data.chara_change;
+    host.save().user_data.party_member = 0x7;
+    host.save().user_data.chara_change = 0x3;
+    guest.save().user_data.party_member = 0x1;
+    ASSERT_TRUE(ImportWorld(ExportWorld(host.save()), guest.save(), error)) << error;
+    EXPECT_EQ(guest.save().user_data.party_member, 0x7);
+    EXPECT_EQ(guest.save().user_data.chara_change, 0x3);
+    ASSERT_TRUE(ImportPlayer(ExportPlayer(host.save()), guest.save(), error)) << error;
+    guest.save().user_data.party_member = 0x1;
+    ASSERT_TRUE(ImportPlayer(ExportPlayer(host.save()), guest.save(), error)) << error;
+    EXPECT_EQ(guest.save().user_data.party_member, 0x1) << "a player's things carry no party";
+    host.save().user_data.party_member = guest.save().user_data.party_member = story_party;
+    host.save().user_data.chara_change = guest.save().user_data.chara_change = story_change;
     ASSERT_NE(PortFindTownLayout(guest.save().edit_data[2]), nullptr);
     EXPECT_TRUE(SameLayout(*PortFindTownLayout(guest.save().edit_data[2]), SampleLayout(1)));
     EXPECT_EQ(ExportWorld(guest.save()), world);
@@ -125,12 +141,70 @@ TEST(MoonModCoopSave, DamagedOrMistakenDataChangesNothing) {
     EXPECT_FALSE(ImportPlayer(world, guest.save(), error));
     EXPECT_FALSE(ImportWorld(world.substr(0, world.size() / 2), guest.save(), error)); // cut short
     EXPECT_FALSE(ImportWorld("DCW2***", guest.save(), error));
-    // A field another build sized differently: the first field's size, one byte more.
-    std::string other = world;
+    // A field another build sized differently: the first field's size, one byte more (in the unpacked text, where
+    // the field's size is at a known place).
+    std::string other = PlainText(world);
     other[4 + 3] = other[4 + 3] == 'A' ? 'B' : 'A';
     EXPECT_FALSE(ImportWorld(other, guest.save(), error));
     EXPECT_NE(error.find("another build"), std::string::npos);
     EXPECT_EQ(ExportWorld(guest.save()) + ExportPlayer(guest.save()), before);
+}
+
+TEST(MoonModCoopSave, ATownsFingerprintFollowsItsGeorama) {
+    Save a(11), b(12);
+    using moonmod::coop::TownFingerprint;
+    EXPECT_EQ(TownFingerprint(a.save(), 2), TownFingerprint(b.save(), 2)) << "two new games' towns are the same town";
+    const std::uint64_t empty = TownFingerprint(a.save(), 2);
+    PortTownLayout(a.save().edit_data[2]) = SampleLayout(1);
+    const std::uint64_t built = TownFingerprint(a.save(), 2);
+    EXPECT_NE(built, empty) << "a part placed is another town";
+    EXPECT_EQ(TownFingerprint(a.save(), 1), TownFingerprint(b.save(), 1)) << "the town next door is as it was";
+    // The same town in another game, taken across, has the same number.
+    std::string error;
+    ASSERT_TRUE(ImportTown(ExportTown(a.save(), 2), 2, b.save(), error)) << error;
+    EXPECT_EQ(TownFingerprint(b.save(), 2), built);
+    a.save().edit_data[2].culture_point += 5;
+    EXPECT_NE(TownFingerprint(a.save(), 2), built) << "a record field changed is another town";
+}
+
+TEST(MoonModCoopSave, TheTextIsPackedSmallAndEitherFormReadsBack) {
+    Save host(7), guest(8);
+    host.save().SetBitFlag(100, 1);
+    host.save().user_data.used_data[5].item_no = 77;
+    const std::string world = ExportWorld(host.save());
+    const std::string player = ExportPlayer(host.save());
+    // An operation answers 64 KiB at most, and so does one argument of a visit: a new game's world and things fit.
+    EXPECT_EQ(world[4], '!');
+    // A new game's world is 176316 characters plain (measured 2026-11-14); packed it has to leave most of the
+    // 64 KiB for what a played save adds.
+    EXPECT_LT(world.size(), 16u * 1024u) << "a new game's world is " << world.size() << " characters";
+    EXPECT_LT(player.size(), 16u * 1024u) << "a new game's things are " << player.size() << " characters";
+    // Unpacked it is the same record at its full size, and it reads back the same.
+    const std::string plain = PlainText(world);
+    EXPECT_GT(plain.size(), world.size() * 8);
+    EXPECT_EQ(plain.find('!'), std::string::npos);
+    std::string error;
+    ASSERT_TRUE(ImportWorld(plain, guest.save(), error)) << error;
+    EXPECT_NE(guest.save().GetBitFlag(100), 0);
+    EXPECT_EQ(ExportWorld(guest.save()), world);
+    ASSERT_TRUE(ImportPlayer(PlainText(player), guest.save(), error)) << error;
+    EXPECT_EQ(guest.save().user_data.used_data[5].item_no, 77);
+    // A save with things in it that do not repeat packs less and still reads back byte for byte.
+    Save played(9), other(10);
+    for (int i = 0; i < 300; ++i) played.save().user_data.used_data[i].item_no = static_cast<s16>((i * 37 + 11) % 400);
+    for (int i = 0; i < 2048; i += 3) played.save().SetBitFlag(i, 1);
+    for (int i = 0; i < 128; ++i) played.save().short_flag[i] = static_cast<s16>(i * 259);
+    const std::string busy_world = ExportWorld(played.save()), busy_things = ExportPlayer(played.save());
+    ASSERT_TRUE(ImportWorld(busy_world, other.save(), error)) << error;
+    ASSERT_TRUE(ImportPlayer(busy_things, other.save(), error)) << error;
+    EXPECT_EQ(PlainText(ExportWorld(other.save())), PlainText(busy_world));
+    EXPECT_EQ(PlainText(ExportPlayer(other.save())), PlainText(busy_things));
+    EXPECT_EQ(other.save().user_data.used_data[299].item_no, played.save().user_data.used_data[299].item_no);
+    std::printf("packed sizes: new world %zu, new things %zu, busy world %zu, busy things %zu\n", world.size(), player.size(),
+                busy_world.size(), busy_things.size());
+    // A packed text cut short is refused whole.
+    EXPECT_FALSE(ImportWorld(world.substr(0, world.size() - 40), guest.save(), error));
+    EXPECT_EQ(PlainText("not an export"), "not an export");
 }
 
 TEST(MoonModCoopSave, ATownsLayoutIsCheckedWholeBeforeAnythingIsWritten) {
@@ -206,6 +280,42 @@ TEST(MoonModCoopSave, TwoBuildingInOneTownBothKeepTheirWork) {
     EXPECT_EQ(merged->houses[0].npc_no, 99);
     EXPECT_EQ(merged->grids[0].cells, (std::vector<u8>{1, 1, 1, 1})); // the host's grid stays
     EXPECT_FALSE(moonmod::coop::MergeTown(base, ExportTown(scratch.save(), 1), 2, host.save(), error)); // another town's
+}
+
+TEST(MoonModCoopSave, ATownBuiltPartByPartByOneIsTakenWholeEachTime) {
+    Save host(13), builder(14);
+    std::string error;
+    PortTownLayout(host.save().edit_data[1]) = SampleLayout(0);
+    ASSERT_TRUE(ImportTown(ExportTown(host.save(), 1), 1, builder.save(), error)) << error; // the visit begins
+    std::string agreed = ExportTown(builder.save(), 1);
+    for (int step = 1; step <= 3; ++step) {
+        // The builder places a part in a slot of its own choosing (the front), and its log names parts by index.
+        TownLayout &theirs = PortTownLayout(builder.save().edit_data[1]);
+        TownPart    part;
+        part.id = static_cast<s16>(40 + step);
+        part.state = 2;
+        theirs.parts.insert(theirs.parts.begin(), part);
+        EditPlaceLog log{};
+        log.parts_no = 0;
+        log.base_no = static_cast<s16>(step);
+        theirs.place_log.push_back(log);
+        const std::string edited = ExportTown(builder.save(), 1);
+        ASSERT_TRUE(moonmod::coop::MergeTown(agreed, edited, 1, host.save(), error)) << error;
+        EXPECT_EQ(ExportTown(host.save(), 1), edited) << "part " << step << ": the host's town is the builder's, to the byte";
+        agreed = edited;
+    }
+    // The host's own record moved on (its culture points): the layout is still theirs whole, the record merged.
+    host.save().edit_data[1].culture_point += 3;
+    TownLayout &theirs = PortTownLayout(builder.save().edit_data[1]);
+    theirs.parts.erase(theirs.parts.begin() + 1);
+    const std::string edited = ExportTown(builder.save(), 1);
+    ASSERT_TRUE(moonmod::coop::MergeTown(agreed, edited, 1, host.save(), error)) << error;
+    const TownLayout *merged = PortFindTownLayout(host.save().edit_data[1]);
+    ASSERT_NE(merged, nullptr);
+    EXPECT_EQ(merged->parts.size(), theirs.parts.size());
+    EXPECT_EQ(merged->parts.front().id, 43);
+    EXPECT_EQ(merged->place_log.size(), theirs.place_log.size());
+    EXPECT_NE(ExportTown(host.save(), 1), edited) << "the host's own culture points stand";
 }
 
 struct TempDir {

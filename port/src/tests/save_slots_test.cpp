@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
+#include "moonmod/coop_save.hpp"
+
 #include <algorithm>
 #include <array>
 #include <barrier>
@@ -1826,4 +1828,64 @@ TEST_F(SaveSlotTest, FailedSaveAdoptionKeepsPlayTimeFraction) {
     PlayTimeReset();
     PortPlayTimeCountFlag = old_flag;
     ClockSetTickRate(old_rate);
+}
+
+// Co-op: a player who joins a room picks one of their own saves; its things come along and go back into it, and
+// nothing else of it changes (moonmod/coop_save.hpp, save.slots_list and save.slot_player_export/import).
+TEST_F(SaveSlotTest, CoopListsThePlayersSavesAndMovesTheirThingsWithoutTheirStory) {
+    image->save_data.game_progress = 2;
+    image->save_data.user_data.money = 700;
+    image->save_data.SetBitFlag(100, 1);
+    Write(SaveSlotPath(0));
+    image->save_data.game_progress = 1;
+    Write(SaveSlotPath(3));
+    const std::vector<moonmod::coop::SlotInfo> slots = moonmod::coop::SlotsList();
+    ASSERT_EQ(slots.size(), 2u);
+    EXPECT_EQ(slots[0].slot, 0);
+    EXPECT_TRUE(slots[0].ready);
+    EXPECT_EQ(slots[0].progress, 2);
+    EXPECT_EQ(slots[0].chapter, 1);
+    EXPECT_EQ(slots[0].play_time, 123456u);
+    EXPECT_EQ(slots[1].slot, 3);
+    EXPECT_EQ(slots[1].progress, 1);
+    EXPECT_EQ(slots[1].chapter, 0);
+    EXPECT_EQ(moonmod::coop::ChapterOfProgress(7), 5);
+
+    std::string things, error;
+    int         progress = 0;
+    ASSERT_TRUE(moonmod::coop::SlotPlayerExport(0, things, progress, error)) << error;
+    EXPECT_EQ(progress, 2);
+    EXPECT_TRUE(things.starts_with("DCP2"));
+    std::string none;
+    EXPECT_FALSE(moonmod::coop::SlotPlayerExport(7, none, progress, error));
+    EXPECT_NE(error.find("no save has the number 7"), std::string::npos);
+
+    // The things as a visit leaves them, taken from a game whose world is another's.
+    auto played = std::make_unique<SAVEDATA_FORMAT>();
+    std::memcpy(static_cast<void *>(played.get()), image.get(), sizeof(*image));
+    played->save_data.user_data.money = 12345;
+    played->save_data.game_progress = 9;
+    played->save_data.user_data.active_chr_no = USER_CHARA_MONICA; // the visit was played as the other hero
+    played->save_data.SetBitFlag(100, 0);
+    const std::string after = moonmod::coop::ExportPlayer(played->save_data);
+    ASSERT_TRUE(moonmod::coop::SlotPlayerImport(0, after, error)) << error;
+    auto read = std::make_unique<SaveDocument>();
+    ASSERT_EQ(SaveSlotRead(SaveSlotPath(0), *read), SaveSlotState::Ready);
+    EXPECT_EQ(read->image.save_data.user_data.money, 12345);
+    EXPECT_EQ(read->image.save_data.game_progress, 2); // its own story
+    EXPECT_EQ(read->image.save_data.user_data.active_chr_no, USER_CHARA_MAX) << "the save plays as its own story's hero";
+    EXPECT_NE(read->image.save_data.GetBitFlag(100), 0);
+    EXPECT_EQ(moonmod::coop::SlotsList()[0].progress, 2);
+
+    // Before that first write the save was copied aside as it was.
+    const fs::path aside = root / "moonmod" / "coop-own-saves" / SaveSlotPath(0).filename();
+    auto           before = std::make_unique<SaveDocument>();
+    ASSERT_EQ(SaveSlotRead(aside, *before), SaveSlotState::Ready);
+    EXPECT_EQ(before->image.save_data.user_data.money, 700);
+
+    // What is not a player's things, or names no save, writes nothing.
+    EXPECT_FALSE(moonmod::coop::SlotPlayerImport(0, "DCW2!AAAA", error));
+    EXPECT_FALSE(moonmod::coop::SlotPlayerImport(9, after, error));
+    ASSERT_EQ(SaveSlotRead(SaveSlotPath(0), *read), SaveSlotState::Ready);
+    EXPECT_EQ(read->image.save_data.user_data.money, 12345);
 }

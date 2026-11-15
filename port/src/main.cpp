@@ -599,7 +599,10 @@ int Run(int argc, const char **argv) {
     std::atexit(AudioShutdown);
 
     ClockSetTickRate(kConfigTickRateDefault);
-    ClockSetUnbounded(options.headless);
+    // DC2_HEADLESS_BOUNDED=1 keeps a headless game at the real tick rate: the live co-op tests run two games on one
+    // clock (tools/coop/live.py), where a headless game otherwise runs as fast as it can.
+    const char *headless_bounded = SettingsEnv("HEADLESS_BOUNDED");
+    ClockSetUnbounded(options.headless && !(headless_bounded && *headless_bounded && *headless_bounded != '0'));
     ClockAddPumpHook(PumpHost);
     StartMoonMod();
     ClockAddPumpHook(PumpMoonMod);

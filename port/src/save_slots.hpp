@@ -81,6 +81,9 @@ int SaveSlotRefresh(CMemoryCardManager &manager, bool include_autosave);
 CMemoryCardManager *SaveSlotManager();
 
 FilesResult SaveSlotWrite(const std::filesystem::path &path, const SaveDocument &document, bool replace);
+// MoonMod: SaveSlotWrite without its rule that a co-op visit writes no save (a visitor's own things go back into
+// their own save: save.slot_player_import).
+FilesResult SaveSlotWriteOwnThings(const std::filesystem::path &path, const SaveDocument &document, bool replace = true);
 
 /**
  * Writes the current town save and optional spawn or the recorded dungeon floor-entry save, preserving the

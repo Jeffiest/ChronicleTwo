@@ -1648,6 +1648,9 @@ int EditLoop() {
             menu_requested = PadCtrl.Btn(PAD_BTN_MENU) != 0 || sgGetItemOver() != 0;
             menu_button = PadCtrl.Btn(PAD_BTN_MENU);
             quick_change = EditOnGround() != 0 && PadCtrl.Btn(PAD_BTN_QUICK_CHANGE) != 0 && !SubGameRunning();
+            if (moonmod::coop::RoomHeroTownChange()) { // MoonMod: the hero played is not the co-op room's
+                quick_change = EditOnGround() != 0 && !SubGameRunning();
+            }
             CScene *const fade_scene = MainScene;
             int           cross_fading = fade_scene->fade.NowFade() && fade_scene->fade.cross;
 
@@ -2549,6 +2552,10 @@ int EditExitInterior(int interior_no) {
 void EditDataSave() {
     CEditData *edit_data = {};
     CEditMap  *map = {};
+
+    // Co-op: a town taken from another game while this one could not rebuild its map (a scene, a menu) is rebuilt
+    // now, so the save below does not write the old map over what came.
+    moonmod::coop::TownBeforeSave();
 
     if (InInterior() == 0) {
         edit_data = GetSaveData()->GetEditData(MapNo);

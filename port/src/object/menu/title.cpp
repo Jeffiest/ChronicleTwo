@@ -1736,7 +1736,7 @@ static int TitleModeKey() {
                     TitlePhase = TITLE_PHASE_CONTINUE;
                     TitleScene->fade.FadeOut(0x1E, 0.0f, 0.0f, 0.0f);
                     MenuSePlay(SYSTEM_SE_DECIDE);
-                } else if (TitleInfo->select == TITLE_MENU_HDD_INSTALL) {
+                } else if (TitleInfo->select == TITLE_MENU_HDD_INSTALL && TitleInfo->select <= last_native_row) { // MoonMod: with no hard disk row, that number is the first mod row's
                     if (0 < HDDINFO.connect) {
                         TitlePhase = TITLE_PHASE_HDD_INSTALL;
                         TitleScene->fade.FadeOut(0x1E, 0.0f, 0.0f, 0.0f);

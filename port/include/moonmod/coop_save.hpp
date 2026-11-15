@@ -11,7 +11,12 @@
 // Both travel as text: a tag ("DCW2" a world, "DCP2" a player), then each field's number, size and bytes, base64.
 // A fixed field whose size differs from this build's (another build's layout, another capacity) refuses the whole
 // import; a town's layout is a variable field, checked whole before anything is written.
+//
+// The bytes are packed before they become base64 (what repeats is written once), marked by "!" after the tag:
+// a save's records are mostly empty, and unpacked a world is several hundred kilobytes, over what an operation may
+// answer and far more than a mod's messages should carry. Text without the mark is read as plain base64.
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -36,6 +41,14 @@ bool        ImportTown(std::string_view text, int town, CSaveData &save, std::st
 // they changed takes their value, the parts they placed are added and those they took away taken away; anything
 // they left alone stays as this save has it now, so two players building at once both keep their work.
 bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveData &save, std::string &error);
+
+// An export with its bytes unpacked: the tag, then plain base64 (what "!" was packed from). For the tests, and for
+// looking at an export by hand; every import reads either form. Text that is not a packed export comes back as it is.
+std::string PlainText(std::string_view text);
+
+// A number for a town's Georama as it stands (its record and its live layout): the same while nothing of it
+// changes, another when a part, a house, the river or a condition does. For telling that a town changed.
+std::uint64_t TownFingerprint(const CSaveData &save, int town);
 
 // A town's layout as bytes and back (the variable field of a town; exposed for the tests).
 std::string LayoutBytes(const TownLayout &layout);
@@ -68,5 +81,23 @@ const std::filesystem::path &AccountsDirectory();
 void                         AccountsEnsureLoaded();
 // Writes the accounts to AccountsDirectory (after save.account_set/remove).
 bool                         AccountsStore();
+
+// A player's own saves (save.slots_list, save.slot_player_export/import): a player who joins a room picks one of
+// their saves, its things come along, and they are written back into it. Only the things: the save's story, towns
+// and dungeon records are left as they are. Numbered saves only (not the autosave, which the game writes over).
+struct SlotInfo {
+    int           slot = 0;      // the save's file number
+    bool          ready = false; // readable, complete and of this version
+    int           progress = 0;  // how far its story is (CSaveData::game_progress); the chapter follows from it
+    int           chapter = 0;
+    std::uint64_t play_time = 0; // frames played
+};
+std::vector<SlotInfo> SlotsList();
+// The chapter a story progress stands for, as GetNowChapter gives it for a loaded save.
+int                   ChapterOfProgress(int progress);
+bool                  SlotPlayerExport(int slot, std::string &text, int &progress, std::string &error);
+// Before the first write to a save in a run of the game the file is copied to
+// <save root>/moonmod/coop-own-saves/<its name>: the save as it was before this session touched it.
+bool                  SlotPlayerImport(int slot, std::string_view text, std::string &error);
 
 } // namespace moonmod::coop

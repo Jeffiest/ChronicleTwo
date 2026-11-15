@@ -1,5 +1,7 @@
 // nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
 #include "moonmod/coop.hpp"
+#include "moonmod/coop_down.hpp"
+#include "moonmod/coop_story.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -2359,6 +2361,7 @@ int EventScriptSetup(SYSTEM_SCRIPT_INFO *script) {
 
     if (RunEvent(script->event_no, DngMainScene)) {
         script->running = true;
+        moonmod::coop::SystemScriptBegan(); // (what it gives is the player's own, not the story's to both)
         dc2::log::PrintGame("RUN SYS_SCRIPT %d\n", script->event_no);
         DngStatus.mode = DNG_STATUS_EVENT;
         DngMainScene->before_camera = 0;
@@ -2382,6 +2385,10 @@ int IsRunDeadEvent(CActionChara *chara) {
 
     if (DngStatus.mode != DNG_STATUS_FIELD) {
         return false;
+    }
+
+    if (moonmod::coop::HeroIsDown()) { // co-op: down already, and waiting to be revived
+        return true;
     }
 
     info = GetBattleCharaInfo();
@@ -2454,7 +2461,7 @@ void CheckStatusError() {
         }
     }
 
-    if (info->GetNowHp_i() <= 0) {
+    if (info->GetNowHp_i() <= 0 && !moonmod::coop::HeroIsDown()) {
         MainChara__2->damage_req = ACTION_DAMAGE_REQ_DEAD;
     }
 }
@@ -2911,6 +2918,10 @@ int dc2::dungeon::MainKeyCore() {
 
     if (GamePad__2.Down(PAD_R3)) {
         unit = DNG_CHANGE_UNIT_RIDE;
+    }
+
+    if (const int room = moonmod::coop::RoomHeroFloorChange(); room >= 0) { // MoonMod: the hero played is not the co-op room's
+        unit = room;
     }
 
     if (MainChara__2->CheckRunEvent() && unit >= 0 && !dead) {

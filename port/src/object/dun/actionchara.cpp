@@ -1,3 +1,4 @@
+#include "moonmod/coop_down.hpp"
 #include "common.h"
 
 #include <libvu0.h>
@@ -3287,7 +3288,10 @@ void CActionChara::RunScript(CScene *scene, RUN_SCRIPT_ENV *env) {
         AllDeleteDamage();
         prog_no = ACTION_PROG_DEAD;
         damage_req = ACTION_DAMAGE_REQ_NONE;
-        scene->battle_area.script.event_no = 1200;
+        // Co-op's "down, not out": the death plays, the game's death event (change hero, or game over) waits.
+        if (!moonmod::coop::HeroFalls(this)) {
+            scene->battle_area.script.event_no = 1200;
+        }
     }
 
     if (damage_req == ACTION_DAMAGE_REQ_HOLD) {
@@ -3316,7 +3320,8 @@ void CActionChara::RunScript(CScene *scene, RUN_SCRIPT_ENV *env) {
     } else {
         script.resume();
 
-        if (script.end != 0) {
+        // (a hero who is down in a co-op room stays as their death left them)
+        if (script.end != 0 && !moonmod::coop::HeroHeldDown(this)) {
             prog_no = ACTION_PROG_MAIN;
         }
     }

@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "moonmod/coop_pad.hpp"
+
 #include <eekernel.h>
 #include <libgraph.h>
 #include <libpad.h>
@@ -832,21 +834,21 @@ int CGamePad::Down2(int mask) {
 int CGamePad::Down(int mask) { return (GetPadDown() & mask) != 0; }
 
 int CGamePad::GetPadDown() {
-    if (key_lock) {
+    if (key_lock || moonmod::coop::PanelHoldsPad()) { // MoonMod: an open co-op panel has the buttons
         return 0;
     }
     return Pad1Buttons(*this, (pad[0].button & ~previous_pad[0].button) | (this == &GamePad__2 ? MenuMouseButtons() : 0), true);
 }
 
 int CGamePad::GetPadOn() {
-    if (key_lock) {
+    if (key_lock || moonmod::coop::PanelHoldsPad()) {
         return 0;
     }
     return Pad1Buttons(*this, pad[0].button);
 }
 
 int CGamePad::GetPadUp() {
-    if (key_lock) {
+    if (key_lock || moonmod::coop::PanelHoldsPad()) {
         return 0;
     }
     return Pad1Buttons(*this, ~pad[0].button & previous_pad[0].button, true);

@@ -1,6 +1,8 @@
 #include "common.h"
 #include "mw_runtime.h"
 
+#include "moonmod/coop_party.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -2736,7 +2738,7 @@ int CUserDataManager::GetNowPartyMember() {
         result = mask | (1 << USER_CHARA_MONSTER);
     }
 
-    return result;
+    return moonmod::coop::RoomHeroParty(result); // MoonMod: a co-op room gives this game one hero
 }
 
 void CUserDataManager::EnableCharaChange(int chara_no) {
@@ -2921,6 +2923,7 @@ void CUserDataManager::InitCharaChangeMask() {
 u32 CUserDataManager::GetEnableCharaChangeFlag() {
     int           party_chara = GetNowPartyMember();
     int           mask = chara_change & chara_change_mask;
+    if (const auto room = moonmod::coop::RoomHeroChangeFlags(mask, party_chara)) return *room; // MoonMod: a co-op room's hero
     CharaBitTable bits = {
         {1 << USER_CHARA_MAX, 1 << USER_CHARA_MONICA,
          1 << USER_CHARA_ROBO, 1 << USER_CHARA_MONICA}

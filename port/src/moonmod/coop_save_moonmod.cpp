@@ -12,6 +12,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
+#include <system_error>
 #include <vector>
 
 #include <nlohmann/json.hpp>
@@ -19,6 +21,7 @@
 #include "platform/files.hpp"
 #include "platform/paths.hpp"
 #include "save_json.hpp"
+#include "save_slots.hpp"
 #include "savedata.hpp"
 #include "userdata.hpp"
 
@@ -79,6 +82,11 @@ std::vector<Field> WorldFields(CSaveData &save) {
         Fixed(11, &save.time_stop, sizeof(save.time_stop)),
         Fixed(12, &save.prev_map_no, sizeof(save.prev_map_no)),
         Fixed(13, &save.prev_sub_map_no, sizeof(save.prev_sub_map_no)),
+        // Who the story has in the party and may be changed to: the story's, so the world's (numbers 9-11 of a
+        // player's things until 2026-11-14, now unused there).
+        Fixed(14, &save.user_data.party_member, sizeof(save.user_data.party_member)),
+        Fixed(15, &save.user_data.chara_change, sizeof(save.user_data.chara_change)),
+        Fixed(16, &save.user_data.chara_change_mask, sizeof(save.user_data.chara_change_mask)),
         Fixed(20, &save.save_dungeon, sizeof(save.save_dungeon)),
         Fixed(21, &save.quest_data, sizeof(save.quest_data)),
         Fixed(22, &save.monster_book, sizeof(save.monster_book)),
@@ -102,9 +110,6 @@ std::vector<Field> PlayerFields(CSaveData &save) {
         Fixed(6, &user.monster_box, sizeof(user.monster_box)),   // the badges
         Fixed(7, &user.party_chara, sizeof(user.party_chara)),   // the townsfolk who can join
         Fixed(8, &user.invent_data, sizeof(user.invent_data)),   // inventions and photos
-        Fixed(9, &user.party_member, sizeof(user.party_member)),
-        Fixed(10, &user.chara_change, sizeof(user.chara_change)),
-        Fixed(11, &user.chara_change_mask, sizeof(user.chara_change_mask)),
         Fixed(12, &user.active_chr_no, sizeof(user.active_chr_no)),
         Fixed(13, &user.monster_id, sizeof(user.monster_id)),
         Fixed(14, &user.money, sizeof(user.money)),              // Gilda
@@ -168,13 +173,85 @@ void PutField(std::string &bytes, std::uint16_t id, std::string_view data) {
     bytes.append(data);
 }
 
+// A save's records are mostly empty or filled with one value over and over, and a world or a player's things has to
+// fit a mod's messages and an operation's answer (64 KiB), so the bytes are packed before they become text: what
+// repeats is written once. kPackedMark after the tag says so (it is not a base64 letter); text without it is read
+// as it always was.
+constexpr char        kPackedMark = '!';
+constexpr std::size_t kUnpackedMax = 16u * 1024u * 1024u;
+constexpr std::size_t kCopyMin = 4, kCopyMax = 130, kCopyBack = 65535;
+
+// A token byte, then what it stands for. Under 0x80: that many bytes plus one follow as they are. From 0x80: copy
+// (token & 0x7F) + 3 bytes from as far back in the output as the next two bytes say (low byte first); a copy may
+// run into the bytes it is writing, which is how a long fill of one value or one record packs to a few bytes.
+std::string Pack(std::string_view bytes) {
+    std::vector<std::uint32_t> seen(1u << 15, 0); // where each four bytes were last met, plus one
+    std::string                out;
+    std::size_t                at = 0, written = 0;
+    const auto                 plain = [&bytes, &out, &written](std::size_t end) {
+        while (written < end) {
+            const std::size_t run = std::min<std::size_t>(end - written, 128);
+            out.push_back(static_cast<char>(run - 1));
+            out.append(bytes.substr(written, run));
+            written += run;
+        }
+    };
+    while (at + kCopyMin <= bytes.size()) {
+        std::uint32_t four = 0;
+        std::memcpy(&four, bytes.data() + at, sizeof(four));
+        std::uint32_t    &slot = seen[(four * 2654435761u) >> 17];
+        const std::size_t from = slot;
+        slot = static_cast<std::uint32_t>(at + 1);
+        std::size_t length = 0;
+        if (from != 0 && at - (from - 1) <= kCopyBack) {
+            while (at + length < bytes.size() && length < kCopyMax && bytes[from - 1 + length] == bytes[at + length]) ++length;
+        }
+        if (length < kCopyMin) {
+            ++at;
+            continue;
+        }
+        plain(at);
+        const std::size_t back = at - (from - 1);
+        out.push_back(static_cast<char>(0x80u | (length - 3)));
+        out.push_back(static_cast<char>(back & 0xFFu));
+        out.push_back(static_cast<char>(back >> 8));
+        at += length;
+        written = at;
+    }
+    plain(bytes.size());
+    return out;
+}
+
+bool Unpack(std::string_view packed, std::string &out) {
+    out.clear();
+    std::size_t at = 0;
+    while (at < packed.size()) {
+        const auto token = static_cast<unsigned char>(packed[at++]);
+        if (token < 0x80u) {
+            const std::size_t run = token + 1u;
+            if (packed.size() - at < run || out.size() + run > kUnpackedMax) return false;
+            out.append(packed.substr(at, run));
+            at += run;
+            continue;
+        }
+        const std::size_t length = (token & 0x7Fu) + 3u;
+        if (packed.size() - at < 2) return false;
+        const std::size_t back = static_cast<unsigned char>(packed[at]) |
+                                 (static_cast<std::size_t>(static_cast<unsigned char>(packed[at + 1])) << 8);
+        at += 2;
+        if (back == 0 || back > out.size() || out.size() + length > kUnpackedMax) return false;
+        for (std::size_t i = 0; i < length; ++i) out.push_back(out[out.size() - back]);
+    }
+    return true;
+}
+
 std::string Export(const std::string &tag, const std::vector<Field> &fields) {
     std::string bytes;
     for (const Field &field : fields) {
         if (field.variable()) PutField(bytes, field.id, field.write());
         else PutField(bytes, field.id, std::string_view(static_cast<const char *>(field.data), field.size));
     }
-    return tag + Base64(bytes);
+    return tag + kPackedMark + Base64(Pack(bytes));
 }
 
 const char *NotThis(const std::string &tag) {
@@ -189,8 +266,19 @@ bool Import(const std::string &tag, std::string_view text, const std::vector<Fie
         error = NotThis(tag);
         return false;
     }
-    std::string bytes;
-    if (!Unbase64(text.substr(tag.size()), bytes)) {
+    std::string            bytes;
+    const std::string_view body = text.substr(tag.size());
+    if (body.starts_with(kPackedMark)) {
+        std::string packed;
+        if (!Unbase64(body.substr(1), packed)) {
+            error = "the data is damaged (not base64)";
+            return false;
+        }
+        if (!Unpack(packed, bytes)) {
+            error = "the data is damaged (cut short)";
+            return false;
+        }
+    } else if (!Unbase64(body, bytes)) {
         error = "the data is damaged (not base64)";
         return false;
     }
@@ -396,6 +484,25 @@ bool LayoutFromBytes(std::string_view bytes, TownLayout &layout, std::string &er
     return true;
 }
 
+std::uint64_t TownFingerprint(const CSaveData &save, int town) {
+    std::uint64_t hash = 1469598103934665603ull;
+    const auto    mix = [&hash](std::string_view bytes) {
+        for (const char c : bytes) hash = (hash ^ static_cast<unsigned char>(c)) * 1099511628211ull;
+    };
+    for (const Field &field : TownFields(const_cast<CSaveData &>(save), town)) {
+        if (field.variable()) mix(field.write());
+        else mix(std::string_view(static_cast<const char *>(field.data), field.size));
+    }
+    return hash;
+}
+
+std::string PlainText(std::string_view text) {
+    const std::size_t mark = text.find(kPackedMark);
+    std::string       packed, bytes;
+    if (mark == std::string_view::npos || !Unbase64(text.substr(mark + 1), packed) || !Unpack(packed, bytes)) return std::string(text);
+    return std::string(text.substr(0, mark)) + Base64(bytes);
+}
+
 std::string ExportWorld(const CSaveData &save) { return Export(kWorldTag, WorldFields(const_cast<CSaveData &>(save))); }
 
 bool ImportWorld(std::string_view text, CSaveData &save, std::string &error) {
@@ -482,6 +589,14 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
     if (const TownLayout *live = PortFindTownLayout(save.edit_data[town]); live != nullptr) now->layout = *live;
     else now->layout = TownLayoutFromRecord(save.edit_data[town]);
 
+    // Nobody here changed the town since the one they changed it from (as when a town comes part by part from one
+    // builder): theirs is the town. Taken whole it keeps its parts in their order and the placement log that
+    // indexes them, which a merge by parts cannot (below).
+    const bool untouched = LayoutBytes(now->layout) == LayoutBytes(before->layout);
+    if (untouched && std::memcmp(static_cast<const void *>(now->record.get()), static_cast<const void *>(before->record.get()), sizeof(CEditData)) == 0) {
+        return ImportTown(edited, town, save, error);
+    }
+
     // The record: what they changed of its scalars and analysis takes their value.
     const CEditData &was = *before->record, &is = *after->record;
     CEditData       &rec = *now->record;
@@ -490,8 +605,13 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
     if (std::memcmp(&was.analyze, &is.analyze, sizeof(was.analyze)) != 0) rec.analyze = is.analyze;
     if (std::memcmp(was.grid, is.grid, sizeof(was.grid)) != 0) std::memcpy(rec.grid, is.grid, sizeof(rec.grid));
 
-    // The layout: houses and river grids they changed take their value, by index.
+    // The layout: untouched here, theirs whole; else houses and river grids they changed take their value, by index.
     TownLayout &layout = now->layout;
+    if (untouched) {
+        std::memcpy(static_cast<void *>(&save.edit_data[town]), now->record.get(), sizeof(CEditData));
+        PortTownLayout(save.edit_data[town]) = std::move(after->layout);
+        return true;
+    }
     for (std::size_t i = 0; i < after->layout.houses.size(); ++i) {
         const bool changed = i >= before->layout.houses.size() || before->layout.houses[i].npc_no != after->layout.houses[i].npc_no;
         if (!changed) continue;
@@ -649,5 +769,83 @@ void AccountsEnsureLoaded() {
 }
 
 bool AccountsStore() { return AccountsSave(AccountsDirectory()); }
+
+// ---- A player's own saves --------------------------------------------------------------------------------------------
+
+namespace {
+
+std::set<int> g_slots_copied; // saves copied aside in this run of the game, before their first write
+
+// Reads one numbered save whole. A save document is large: the caller holds it on the heap.
+bool ReadSlot(int slot, SaveDocument &document, std::filesystem::path &path, std::string &error) {
+    for (const SaveSlot &found : SaveSlotScan(false).saves) {
+        if (found.autosave || found.second_card || found.number != slot) continue;
+        const SaveSlotState state = SaveSlotRead(found.path, document);
+        if (state != SaveSlotState::Ready) {
+            error = std::string("that save can't be read: ") + SaveSlotStatus(state);
+            return false;
+        }
+        path = found.path;
+        return true;
+    }
+    error = "no save has the number " + std::to_string(slot);
+    return false;
+}
+
+} // namespace
+
+int ChapterOfProgress(int progress) { return progress < 2 ? 0 : progress < 4 ? 1 : progress - 2; }
+
+std::vector<SlotInfo> SlotsList() {
+    std::vector<SlotInfo> slots;
+    for (const SaveSlot &found : SaveSlotScan(false).saves) {
+        if (found.autosave || found.second_card) continue;
+        SlotInfo info;
+        info.slot = found.number;
+        info.ready = found.state == SaveSlotState::Ready;
+        if (info.ready) {
+            info.progress = found.info.progress;
+            info.chapter = ChapterOfProgress(found.info.progress);
+            info.play_time = found.info.play_time;
+        }
+        slots.push_back(info);
+    }
+    return slots;
+}
+
+bool SlotPlayerExport(int slot, std::string &text, int &progress, std::string &error) {
+    auto                  document = std::make_unique<SaveDocument>();
+    std::filesystem::path path;
+    if (!ReadSlot(slot, *document, path, error)) return false;
+    text = ExportPlayer(document->image.save_data);
+    progress = document->image.save_data.game_progress;
+    return true;
+}
+
+bool SlotPlayerImport(int slot, std::string_view text, std::string &error) {
+    auto                  document = std::make_unique<SaveDocument>();
+    std::filesystem::path path;
+    if (!ReadSlot(slot, *document, path, error)) return false;
+    // Who the save plays as is its own story's: a visit may have been played as the other hero, or in a second shape.
+    const s16 plays_as = document->image.save_data.user_data.active_chr_no;
+    if (!ImportPlayer(text, document->image.save_data, error)) return false;
+    document->image.save_data.user_data.active_chr_no = plays_as;
+    if (!g_slots_copied.contains(slot)) {
+        const std::filesystem::path aside = PathsSaveRoot() / "moonmod" / "coop-own-saves" / path.filename();
+        std::error_code             failed;
+        std::filesystem::create_directories(aside.parent_path(), failed);
+        if (!failed) std::filesystem::copy_file(path, aside, std::filesystem::copy_options::overwrite_existing, failed);
+        if (failed) {
+            error = "the save could not be copied aside before writing to it: " + failed.message();
+            return false;
+        }
+        g_slots_copied.insert(slot);
+    }
+    if (SaveSlotWriteOwnThings(path, *document) != FilesResult::kWritten) {
+        error = "the save could not be written";
+        return false;
+    }
+    return true;
+}
 
 } // namespace moonmod::coop

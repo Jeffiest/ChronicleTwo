@@ -2,6 +2,7 @@
 // and end.
 
 #include "moonmod/coop.hpp"
+#include "moonmod/coop_pad.hpp"
 #include "moonmod/coop_save.hpp"
 
 #include <algorithm>
@@ -77,6 +78,7 @@ bool ValidText(const Json &value, std::size_t max_bytes, bool allow_empty) {
 
 std::optional<Choice> g_choice;
 int                   g_choice_grace = 0; // frames before the panel takes a press (the one that opened it isn't its)
+bool                  g_choice_reads = false; // the panel is reading the pad now (PanelHoldsPad lets it through)
 
 void ChoiceClose(bool cancelled, std::size_t index) {
     if (!g_choice) return;
@@ -95,6 +97,7 @@ int                        g_ignored_backs = 0;
 std::optional<VisitRequest> g_visit_request;
 struct Visit {
     std::string owner, mode_id;
+    bool        left_title = false; // the game has gone from the title into the host's world
 };
 std::optional<Visit> g_visit;
 
@@ -204,6 +207,7 @@ bool ChoiceOpen(Choice choice) {
 }
 
 bool ChoiceIsOpen() { return g_choice.has_value(); }
+bool PanelHoldsPad() { return g_choice.has_value() && !g_choice_reads; }
 const Choice *OpenChoice() { return g_choice ? &*g_choice : nullptr; }
 
 void ChoiceStep() {
@@ -218,9 +222,13 @@ void ChoiceStep() {
         return;
     }
     Choice &choice = *g_choice;
-    if (GamePad__2.Down(PAD_UP) != 0) choice.cursor = (choice.cursor + choice.options.size() - 1) % choice.options.size();
-    if (GamePad__2.Down(PAD_DOWN) != 0) choice.cursor = (choice.cursor + 1) % choice.options.size();
-    const int push = ConvertCheckPushButton(MenuCheckPushButton());
+    // The buttons are the panel's while it is open (PanelHoldsPad): only its own reads see them.
+    g_choice_reads = true;
+    const bool up = GamePad__2.Down(PAD_UP) != 0, down = GamePad__2.Down(PAD_DOWN) != 0;
+    const int  push = ConvertCheckPushButton(MenuCheckPushButton());
+    g_choice_reads = false;
+    if (up) choice.cursor = (choice.cursor + choice.options.size() - 1) % choice.options.size();
+    if (down) choice.cursor = (choice.cursor + 1) % choice.options.size();
     if (push & MENU_PUSH_BUTTON_DECIDE) {
         ChoiceClose(false, choice.cursor);
     } else if ((push & MENU_PUSH_BUTTON_CANCEL) && choice.cancel) {
@@ -442,22 +450,30 @@ bool TitleBeginVisit(MENU_INIT_ARG &menu_arg) {
     };
     CSaveData *save = GetSaveData();
     if (save == nullptr) return fail("the game has no save data");
-    const int map = TownMainMap(request->map);
-    if (map < 0) return fail("no town map for area " + std::to_string(request->map) + " (the map catalog isn't loaded)");
+    // The place: a map by its own number (Palm Brinks, which has no Georama map, has no other name), else the
+    // Georama map of a town's area.
+    const bool by_number = request->map_no >= 0;
+    const int  map = by_number ? request->map_no : TownMainMap(request->map);
+    if (map < 0) return fail("no town map for area " + std::to_string(request->map));
+    if (GetMapType(map) < 0) return fail("no map has the number " + std::to_string(map));
     // A fresh game takes the host's world and the guest's own things (a new account keeps the new game's).
     InitSaveData();
     std::string error;
     if (!ImportWorld(request->world, *save, error)) return fail(error);
     if (!request->player.empty() && !ImportPlayer(request->player, *save, error)) return fail(error);
+    // The room's hero is the one the visit starts as (the body is built for the active character as the map loads).
+    if (const std::optional<int> hero = RoomHero()) save->user_data.active_chr_no = static_cast<s16>(*hero);
+    // Palm Brinks is map 10 with its districts as sub maps 10-14, and the title's load path walks into the one the
+    // world holds: the host's. Anywhere else a sub map is a house, and a visit starts outside.
+    if (!(by_number && map == 10)) save->sub_map_no = -1;
     save->map_no = static_cast<s16>(map);
-    save->sub_map_no = -1;
     save->prev_map_no = static_cast<s16>(map);
-    save->area_no = request->map;
+    save->area_no = by_number ? GetMapAreaNo(map) : request->map;
     menu_arg.result[0] = LOOP_EDIT;
     menu_arg.result[1] = map;
     g_visit = Visit{request->owner, request->mode_id};
     SharedRuntime().Publish("game.session.started", {{"kind", "visit"}, {"owner", request->owner}, {"mode", request->mode_id},
-                                                      {"map", request->map}, {"frame", SharedRuntime().Frame()}});
+                                                      {"map", save->area_no}, {"map_no", map}, {"frame", SharedRuntime().Frame()}});
     return true;
 }
 
@@ -481,7 +497,11 @@ Json SessionJson() {
 void UiStep() {
     ChoiceStep();
     // A visit ends when the game is back at the title (the host left, or the player went home).
-    if (g_visit && GetNowLoopNo() == LOOP_TITLE) EndVisit("left");
+    // It begins at the title too, and stays there until the world has loaded: only a return counts.
+    if (g_visit) {
+        if (GetNowLoopNo() != LOOP_TITLE) g_visit->left_title = true;
+        else if (g_visit->left_title) EndVisit("left");
+    }
 }
 
 void UiOwnerUnloaded(std::string_view owner) {

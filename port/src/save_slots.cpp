@@ -641,6 +641,12 @@ SaveSlotList SaveSlotScan(bool include_autosave) {
 
 FilesResult SaveSlotWrite(const fs::path &path, const SaveDocument &document, bool replace) {
     if (moonmod::coop::VisitActive()) return FilesResult::kWritten; // a co-op visit plays another's world: this game's saves stay as they are
+    return SaveSlotWriteOwnThings(path, document, replace);
+}
+
+// MoonMod: the write itself. Co-op calls it during a visit for the one thing a visitor's save takes from it, the
+// player's own things (save.slot_player_import), which the rule above would hold back.
+FilesResult SaveSlotWriteOwnThings(const fs::path &path, const SaveDocument &document, bool replace) {
     const std::string text = SaveJsonWrite(document);
     const auto        result = FilesWrite(path, text.data(), text.size(), replace);
     if (result == FilesResult::kWritten) {

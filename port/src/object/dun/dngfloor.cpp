@@ -5,6 +5,8 @@
 #include "common.h"
 #include "mw_runtime.h"
 
+#include "moonmod/coop_party.hpp"
+
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -518,7 +520,7 @@ int CDngFloorManager::IsPlaySubGame() {
 int CDngFloorManager::IsSealFloor(int floor_id) {
     CSaveDataDungeon *dungeon = menu_GetSaveDataDungeon();
 
-    if (dungeon == nullptr) {
+    if (dungeon == nullptr || moonmod::coop::RoomHeroActive()) { // MoonMod: in a co-op room each player has one hero; a seal would leave one with none
         return DNGMAP_SEAL_NONE;
     }
 

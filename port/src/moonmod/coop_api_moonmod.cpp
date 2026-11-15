@@ -3,6 +3,7 @@
 // the Chronicle Two adapter's own operations (chronicle_two_adapter.cpp calls Call first).
 
 #include "moonmod/coop.hpp"
+#include "moonmod/coop_down.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
 #include "moonmod/coop_save.hpp"
 #include "moonmod/net_session.hpp"
@@ -27,6 +28,9 @@
 #include "scenesnd.hpp"
 #include "userdata.hpp"
 #include "editloop.hpp"
+#include "mapjump.hpp"
+#include "menucommon.hpp"
+#include "platform/legacy_encoding.hpp"
 
 namespace moonmod::coop {
 
@@ -68,6 +72,7 @@ const char *CharacterName(int character) { return character == USER_CHARA_MONICA
 // Mods' own things that travel with a player's (save.player_extra_set), by mod id, after the player's text.
 constexpr std::string_view kPlayerExtrasTag = "|DCX2";
 constexpr std::size_t      kPlayerExtraMax = 32 * 1024;
+std::string g_room_hero_owner; // the mod that set the room's hero (party.room_hero_set)
 std::map<std::string, Json, std::less<>> g_player_extras;
 
 std::string ExportPlayerText(const CSaveData &save) {
@@ -208,7 +213,7 @@ ApiCallResult StartSession(std::string_view mod_id, const Json &args) {
     const Json &visit = request["visit"];
     if (!visit.is_object()) return Invalid("visit must be {world, player?, map}");
     std::string unknown;
-    if (!OnlyFields(visit, {"world", "player", "map"}, unknown)) return Invalid("visit accepts only world, player and map");
+    if (!OnlyFields(visit, {"world", "player", "map", "map_no"}, unknown)) return Invalid("visit accepts only world, player, map and map_no");
     if (GetNowLoopNo() != LOOP_TITLE) return Failed("a visit starts from the title screen");
     const TitleMode *open = OpenTitleMode();
     if (open == nullptr || open->owner != mod_id) return Failed("start the visit from this mod's open title mode page");
@@ -220,14 +225,21 @@ ApiCallResult StartSession(std::string_view mod_id, const Json &args) {
         (!visit["player"].is_string() || !visit["player"].get_ref<const std::string &>().starts_with("DCP2"))) {
         return Invalid("player must be save.player_export text, or left out for a new account");
     }
-    int map = 0;
-    if (!visit.contains("map") || !ReadBoundedInt(visit, "map", 0, SAVE_EDIT_DATA_MAX - 1, map)) {
-        return Invalid("map must be the town (area) to start in, 0-" + std::to_string(SAVE_EDIT_DATA_MAX - 1));
+    // Where it starts: map_no, a map's own number (the host's world.get().map_no), or map, a Georama town's area.
+    int map = 0, map_no = -1;
+    if (visit.contains("map_no")) {
+        if (!ReadBoundedInt(visit, "map_no", 0, 9999, map_no)) return Invalid("map_no must be a map's number (world.get().map_no)");
+        if (visit.contains("map") && !ReadBoundedInt(visit, "map", 0, SAVE_EDIT_DATA_MAX - 1, map)) {
+            return Invalid("map must be the town (area) to start in, 0-" + std::to_string(SAVE_EDIT_DATA_MAX - 1));
+        }
+    } else if (!visit.contains("map") || !ReadBoundedInt(visit, "map", 0, SAVE_EDIT_DATA_MAX - 1, map)) {
+        return Invalid("map must be the town (area) to start in, 0-" + std::to_string(SAVE_EDIT_DATA_MAX - 1) + ", or give map_no");
     }
     VisitRequest queued;
     queued.owner = std::string(mod_id);
     queued.mode_id = open->id;
     queued.map = map;
+    queued.map_no = map_no;
     queued.world = visit["world"].get<std::string>();
     if (visit.contains("player") && visit["player"].is_string()) queued.player = visit["player"].get<std::string>();
     const bool new_account = queued.player.empty();
@@ -286,7 +298,8 @@ ApiCallResult EnterFloor(const Json &args) {
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid("expected {dungeon_id = optional 0-6, floor_id = 0-127}");
     const Json &request = args[0];
     std::string unknown;
-    if (!OnlyFields(request, {"dungeon_id", "floor_id"}, unknown)) return Invalid("unknown field: " + unknown);
+    // x, y and teleport are Chronicle's way to arrive beside another player; here the way in is the floor's own.
+    if (!OnlyFields(request, {"dungeon_id", "floor_id", "x", "y", "teleport"}, unknown)) return Invalid("unknown field: " + unknown);
     const int loop = GetNowLoopNo();
     int       dungeon = loop == LOOP_DUNGEON ? DngStatus.dungeon_no : -1;
     int       floor = -1;
@@ -301,10 +314,12 @@ ApiCallResult EnterFloor(const Json &args) {
     INIT_LOOP_ARG destination{};
     destination.map_no = dungeon;
     destination.floor_no = floor;
-    destination.event_no = 0; // the floor start event
+    // The floor load event: onto the floor itself. Event 0, the dungeon's start, stops at its floor list, where the
+    // player would have to pick the floor by hand.
+    destination.event_no = 1010;
     NextLoop(LOOP_DUNGEON, destination);
     scene->exit_flag = true;
-    return Ok({{"dungeon_id", dungeon}, {"floor_id", floor}, {"queued", true}});
+    return Ok({{"dungeon_id", dungeon}, {"floor_id", floor}, {"queued", true}, {"teleport", false}});
 }
 
 ApiCallResult StrikePlayer(const Json &args) {
@@ -333,6 +348,11 @@ ApiCallResult StrikePlayer(const Json &args) {
     const float dx = player[0] - at[0], dz = player[2] - at[2];
     if (std::sqrt(dx * dx + dz * dz) > radius + 10.0f || std::fabs(player[1] - at[1]) > 40.0f) return Ok({{"hit", false}, {"damage", 0}, {"reason", "away"}});
     if (MainChara__2->muteki_time > 0 || info->GetNowHp_i() <= 0) return Ok({{"hit", false}, {"damage", 0}, {"reason", "guarded"}});
+    // damage is the blow's strength, as the monster dealt it in another game: this hero's own defence comes off
+    // it, as it does off a monster's blow here (CActionChara::CheckDamage), and a blow always costs a little.
+    float strength = static_cast<float>(damage) * (1.0f + fRand(0.15f)) - static_cast<float>(info->GetDefenceVol());
+    if (strength < 0.0f) strength = 0.0f;
+    damage = std::max(1, static_cast<int>(strength + 1.0f + fRand(2.0f)));
     const int dealt = std::min(damage, info->GetNowHp_i());
     info->AddHp_Point(-static_cast<float>(dealt), 0.0f);
     MainChara__2->damage_req = kind == "heavy" ? ACTION_DAMAGE_REQ_LARGE : ACTION_DAMAGE_REQ_SMALL;
@@ -373,9 +393,11 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     if (save == nullptr) return Failed("the game has no save data yet");
     if (!importing) return Ok({{"town_id", town}, {"data", ExportTown(*save, town)}});
     if (!args[0].contains("data") || !args[0]["data"].is_string()) return Invalid("data must be georama.town_export text");
-    const bool here = GetNowLoopNo() == LOOP_EDIT && save->area_no == town;
+    // A Georama town is its map: maps 0-4 are the five towns, each with the edit data of its own number
+    // (CSaveData::GetEditData). The town is on screen when the town loop runs that map.
+    const bool here = TownOnScreen(town);
+    // In its editor the live map is ahead of the record, and is written over it as the player builds.
     if (here && IsEditMode() != 0) return Failed("busy: the player is editing that town; try again in a moment");
-    if (here && ChoiceIsOpen()) return Failed("busy: a panel is open");
     const std::string &data = args[0]["data"].get_ref<const std::string &>();
     const bool         merging = args[0].contains("base") && !args[0]["base"].is_null();
     if (merging && !args[0]["base"].is_string()) return Invalid("base must be georama.town_export text");
@@ -383,31 +405,22 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     if (merging ? !MergeTown(args[0]["base"].get_ref<const std::string &>(), data, town, *save, error) : !ImportTown(data, town, *save, error)) {
         return Invalid(error);
     }
-    // The town on screen is the old one: walk into it again, so the player sees what came.
-    bool reloaded = false;
-    if (here) {
-        if (CScene *scene = GetMainScene(); scene != nullptr) {
-            INIT_LOOP_ARG again{};
-            again.map_no = save->map_no;
-            again.floor_no = -1;
-            again.event_no = 100;
-            NextLoop(LOOP_EDIT, again);
-            scene->exit_flag = true;
-            reloaded = true;
-        }
-    }
-    return Ok({{"town_id", town}, {"imported", true}, {"merged", merging}, {"reloaded", reloaded}});
+    RegisterTownAgreed(town); // what came from another game is not this game's change
+    // The town on screen is the old one: its live map is built from the record again where the player stands, as
+    // soon as they walk free (TownRebuildStep). Nobody is walked back to the entrance.
+    if (here) TownRebuildWanted(town);
+    return Ok({{"town_id", town}, {"imported", true}, {"merged", merging}, {"reloaded", false}, {"rebuilding", here}});
 }
 
 // ---- Avatars and monsters ---------------------------------------------------------------------------------------------------
 
 ApiCallResult AvatarSetCall(const Json &args) {
     static constexpr const char *kUsage =
-        "expected {slot = 1-3, character = \"max\" or \"monica\", weapon = item_no or nil, x, y, z, heading, motion, tint = {r, g, b} or nil, name = text or nil}";
+        "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, x, y, z, heading, motion, tint = {r, g, b} or nil, name = text or nil, down = true or nil}";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
     const Json &request = args[0];
     std::string unknown;
-    if (!OnlyFields(request, {"slot", "character", "weapon", "x", "y", "z", "heading", "motion", "tint", "name"}, unknown)) {
+    if (!OnlyFields(request, {"slot", "character", "weapon", "outfit", "x", "y", "z", "heading", "motion", "tint", "name", "down"}, unknown)) {
         return Invalid("unknown field: " + unknown);
     }
     int slot = 0;
@@ -417,9 +430,26 @@ ApiCallResult AvatarSetCall(const Json &args) {
     const std::string character = request["character"].get<std::string>();
     if (character == "max") state.character = USER_CHARA_MAX;
     else if (character == "monica") state.character = USER_CHARA_MONICA;
-    else return Invalid("character must be \"max\" or \"monica\" (the ridepod and monster forms aren't shown)");
+    else if (character == "ridepod" || character == "monster") {
+        // Max's ridepod and Monica's monster forms are not drawn yet: the hero stands in for them (AvatarState::stand_in),
+        // so the other player is still seen where they are, and still someone a monster goes for.
+        state.character = character == "ridepod" ? USER_CHARA_MAX : USER_CHARA_MONICA;
+        state.stand_in = true;
+    } else return Invalid("character must be \"max\", \"monica\", \"ridepod\" or \"monster\"");
     if (request.contains("weapon") && !request["weapon"].is_null() && !ReadBoundedInt(request, "weapon", 1, ITEM_NO_MAX - 1, state.weapon)) {
         return Invalid("weapon must be an item_no");
+    }
+    if (request.contains("outfit") && !request["outfit"].is_null()) {
+        // What the other player's hero wears, by item_no; a piece left out is as this game's own hero has it.
+        const Json &outfit = request["outfit"];
+        std::string strange;
+        if (!outfit.is_object() || !OnlyFields(outfit, {"head", "clothes", "feet", "sub"}, strange)) return Invalid("outfit must be {head, clothes, feet, sub}, each an item_no or left out");
+        const std::pair<const char *, int *> pieces[] = {{"head", &state.head}, {"clothes", &state.clothes}, {"feet", &state.feet}, {"sub", &state.sub}};
+        for (const auto &[key, into] : pieces) {
+            if (outfit.contains(key) && !outfit[key].is_null() && !ReadBoundedInt(outfit, key, 1, ITEM_NO_MAX - 1, *into)) {
+                return Invalid("outfit must be {head, clothes, feet, sub}, each an item_no or left out");
+            }
+        }
     }
     if (!ReadNumber(request, "x", state.x, false) || !ReadNumber(request, "y", state.y, false) || !ReadNumber(request, "z", state.z, false) ||
         !ReadNumber(request, "heading", state.heading, false)) {
@@ -440,6 +470,10 @@ ApiCallResult AvatarSetCall(const Json &args) {
     if (request.contains("name") && !request["name"].is_null()) {
         if (!request["name"].is_string() || request["name"].get_ref<const std::string &>().size() > 24) return Invalid("name must be text of 24 bytes at most");
         state.name = request["name"].get<std::string>();
+    }
+    if (request.contains("down") && !request["down"].is_null()) {
+        if (!request["down"].is_boolean()) return Invalid("down must be true or left out");
+        state.down = request["down"].get<bool>();
     }
     if (!AvatarSet(slot - 1, state)) return Failed("that character can't be shown");
     return Ok({{"slot", slot}, {"shown", AvatarShown(slot - 1)}});
@@ -661,6 +695,7 @@ void ExtendPlayer(Json &player) {
         player["position"] = {{"x", position[0]}, {"y", position[1]}, {"z", position[2]}};
     }
     if (std::isfinite(rotation[1])) player["heading"] = rotation[1]; // the way the hero faces, as the game turns it about Y
+    if (loop == LOOP_DUNGEON) player["down"] = HeroIsDown();          // lying under the room's rule, waiting to be revived
     player["motion"] = std::max(0, MotionNumberOf(*hero));            // the motion the hero plays (the avatars play it on other screens)
     if (CUserDataManager *user = GetUserDataMan(); user != nullptr) {
         const int character = user->GetActiveChrNo();
@@ -669,6 +704,9 @@ void ExtendPlayer(Json &player) {
             if (CHARA_DATA *data = user->GetCharaDataPtr(character); data != nullptr && !player.contains("weapon")) {
                 const int item_no = data->equip[CHARA_EQUIP_MELEE].item_no;
                 if (item_no > 0) player["weapon"] = {{"id", "chronicle-two:item:" + std::to_string(item_no)}, {"item_no", item_no}, {"slot", CHARA_EQUIP_MELEE}};
+                // What the hero wears and carries besides, for the other games to draw (world.avatar_set's outfit).
+                player["outfit"] = {{"head", data->equip[CHARA_EQUIP_HEAD].item_no}, {"clothes", data->equip[CHARA_EQUIP_CLOTHES].item_no},
+                                    {"feet", data->equip[CHARA_EQUIP_FEET].item_no}, {"sub", data->equip[CHARA_EQUIP_SUB].item_no}};
             }
         }
     }
@@ -679,13 +717,43 @@ void ExtendWorld(Json &world) {
     CSaveData *save = GetSaveData();
     if (save == nullptr) return;
     world["map_no"] = save->map_no;
+    if (const std::optional<int> hero = RoomHero()) world["room_hero"] = *hero == USER_CHARA_MAX ? "max" : "monica";
+    world["progress"] = save->game_progress; // how far the story is; the chapter follows from it
+    world["chapter"] = GetNowChapter(save);
     if (loop == LOOP_EDIT) {
         world["town_map"] = save->area_no;
         world["editing"] = IsEditMode() != 0;
         world["walking"] = IsEditMode() == 0 && !ChoiceIsOpen();
+        // The place itself: the map the town loop runs (a district of Palm Brinks is a map of its own, while the
+        // save's map stays the town's), and the house the hero is inside, if any. Its name is the game's own.
+        const INIT_LOOP_ARG *now = GetNowInitArg();
+        const int            scene_map = now != nullptr && now->map_no >= 0 ? now->map_no : save->map_no;
+        int                  named = scene_map;
+        world["scene_map"] = scene_map;
+        // The Georama town this map is, 0-4 (the number georama.town_export and its edit data go by), if it is one.
+        if (scene_map >= 0 && scene_map < SAVE_EDIT_DATA_MAX && GetMapType(scene_map) == MAP_TYPE_GEORAMA) world["georama_town"] = scene_map;
+        // The parts standing in it as it is on screen (the town's record may be ahead of the screen for a moment).
+        if (const int parts = TownLiveParts(); parts >= 0) world["georama_live_parts"] = parts;
+        if (InInterior() != 0 && save->sub_map_no >= 0) {
+            world["house"] = save->sub_map_no;
+            named = save->sub_map_no;
+        }
+        if (const char *title = GetMapTitle(named); title != nullptr && title[0] != '\0') {
+            if (const std::optional<std::string> text = legacy_encoding::ReadableText(title)) world["map_title"] = *text;
+        }
     }
     if (loop == LOOP_DUNGEON) {
         if (const std::optional<int> seed = LastFloorSeed()) world["floor_seed"] = *seed;
+        if (const std::optional<std::string> layout = FloorLayoutHash()) world["floor_layout"] = *layout;
+        // Playing on the floor: the hero is there and no scene, menu or floor change holds the game.
+        world["walking"] = MainChara__2 != nullptr && DngStatus.mode == DNG_STATUS_FIELD && !ChoiceIsOpen();
+        // The map this dungeon's own way out leads to (the game's table, as its menu's way out of a dungeon uses it).
+        static constexpr const char *kWayOut[7] = {"d01e01", "s02", "g02", "g03", "g04", "d06e01", "m05"};
+        if (DngStatus.dungeon_no >= 0 && DngStatus.dungeon_no < 7 && GetMapNameCount() > 0) {
+            char name[16] = {};
+            std::snprintf(name, sizeof(name), "%s", kWayOut[DngStatus.dungeon_no]);
+            if (const int map = SearchMapNo(name); map >= 0) world["exit_map"] = map;
+        }
     }
 }
 
@@ -716,7 +784,100 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
         const std::string &data = args[0]["data"].get_ref<const std::string &>();
         const bool ok = path == "save.world_import" ? ImportWorld(data, *save, error) : ImportPlayerText(data, *save, error);
         if (!ok) return Invalid(error);
+        if (path == "save.world_import") RegisterRebase(); // a whole world is where the games begin again, not a change
         return Ok({{"imported", true}});
+    }
+    if (path == "world.watch_set") {
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || args[0].size() != 1 || !args[0].contains("enabled") || !args[0]["enabled"].is_boolean()) {
+            return Invalid("expected {enabled = true or false}");
+        }
+        RegisterWatch(mod_id, args[0]["enabled"].get<bool>());
+        return Ok({{"enabled", args[0]["enabled"].get<bool>()}});
+    }
+    if (path == "world.change_apply") {
+        int id = 0;
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || args[0].size() != 3 || !args[0].contains("kind") || !args[0]["kind"].is_string() ||
+            !ReadBoundedInt(args[0], "id", 0, 100000, id) || !args[0].contains("value")) {
+            return Invalid("expected {kind, id, value}, as game.world.changed gives them");
+        }
+        std::string error;
+        if (!RegisterApply(args[0]["kind"].get_ref<const std::string &>(), id, args[0]["value"], error)) return Invalid(error);
+        return Ok({{"applied", true}});
+    }
+    if (path == "player.down_rule_set") {
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || args[0].size() != 1 || !args[0].contains("enabled") || !args[0]["enabled"].is_boolean()) {
+            return Invalid("expected {enabled = true or false}");
+        }
+        SetDownRule(mod_id, args[0]["enabled"].get<bool>());
+        return Ok({{"enabled", DownRule()}});
+    }
+    if (path == "player.revive") {
+        static constexpr const char *kUsage = "expected {hp = 1 or more, x, y, z = a place to stand up at, or left out}";
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
+        std::string unknown;
+        if (!OnlyFields(args[0], {"hp", "x", "y", "z"}, unknown)) return Invalid("unknown field: " + unknown);
+        int hp = 0;
+        if (!ReadBoundedInt(args[0], "hp", 1, 99999, hp)) return Invalid(kUsage);
+        float at[3] = {0.0f, 0.0f, 0.0f};
+        const bool placed = args[0].contains("x") || args[0].contains("y") || args[0].contains("z");
+        if (placed && (!ReadNumber(args[0], "x", at[0], true) || !ReadNumber(args[0], "y", at[1], true) || !ReadNumber(args[0], "z", at[2], true))) {
+            return Invalid(kUsage);
+        }
+        std::string error;
+        if (!HeroRevive(hp, placed ? at : nullptr, error)) return Failed(error);
+        return Ok({{"revived", true}});
+    }
+    if (path == "player.give_up") {
+        if (!args.is_array() || !args.empty()) return Invalid("player.give_up takes no arguments");
+        std::string error;
+        if (!HeroGiveUp(error)) return Failed(error);
+        return Ok({{"queued", true}});
+    }
+    if (path == "party.room_hero_set") {
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || args[0].size() != 1 || !args[0].contains("hero") || !args[0]["hero"].is_string()) {
+            return Invalid("expected {hero = 'max' or 'monica'}");
+        }
+        const std::string &name = args[0]["hero"].get_ref<const std::string &>();
+        if (name != "max" && name != "monica") return Invalid("hero must be 'max' or 'monica'");
+        const int hero = name == "max" ? USER_CHARA_MAX : USER_CHARA_MONICA;
+        SetRoomHero(hero);
+        g_room_hero_owner = std::string(mod_id);
+        return Ok({{"hero", name}});
+    }
+    if (path == "party.room_hero_clear") {
+        if (!args.is_array() || args.size() > 1 || (args.size() == 1 && (!args[0].is_object() || !args[0].empty()))) return Invalid("party.room_hero_clear takes no arguments");
+        const bool had = RoomHero().has_value();
+        SetRoomHero(std::nullopt);
+        g_room_hero_owner.clear();
+        return Ok({{"cleared", had}});
+    }
+    if (path == "save.slots_list") {
+        if (!args.is_array() || !args.empty()) return Invalid("save.slots_list takes no arguments");
+        Json slots = Json::array();
+        for (const SlotInfo &slot : SlotsList()) {
+            slots.push_back({{"slot", slot.slot}, {"ready", slot.ready}, {"progress", slot.progress}, {"chapter", slot.chapter}, {"play_time", slot.play_time}});
+        }
+        return Ok({{"slots", std::move(slots)}});
+    }
+    if (path == "save.slot_player_export" || path == "save.slot_player_import") {
+        const bool import = path == "save.slot_player_import";
+        int        slot = -1;
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || !ReadBoundedInt(args[0], "slot", 0, 9999, slot) ||
+            args[0].size() != (import ? 2u : 1u) || (import && (!args[0].contains("data") || !args[0]["data"].is_string()))) {
+            return Invalid(import ? "expected {slot = a save's number (save.slots_list), data = save.player_export text}" : "expected {slot = a save's number (save.slots_list)}");
+        }
+        std::string error;
+        if (!import) {
+            std::string text;
+            int         progress = 0;
+            if (!SlotPlayerExport(slot, text, progress, error)) return Failed(error);
+            return Ok({{"slot", slot}, {"data", std::move(text)}, {"progress", progress}, {"chapter", ChapterOfProgress(progress)}});
+        }
+        // Only a visitor's game writes its player's things back: any other time the game's own saving does it.
+        const std::string *owner = VisitOwner();
+        if (owner == nullptr || *owner != mod_id) return Failed("only this mod's co-op visit writes a player's things into a save");
+        if (!SlotPlayerImport(slot, args[0]["data"].get_ref<const std::string &>(), error)) return Failed(error);
+        return Ok({{"slot", slot}, {"written", true}});
     }
     if (path.starts_with("save.account")) return AccountCall(operation, args);
     if (path == "save.player_extra_get") {
@@ -789,7 +950,10 @@ void AddCapabilities(RuntimeConfig &config) {
     }
     for (const char *path : {"session.get", "session.start", "session.finish", "save.world_export", "save.world_import", "save.player_export",
                              "save.player_import", "save.player_extra_get", "save.player_extra_set", "save.account_get", "save.account_set",
-                             "save.account_list", "save.account_remove", "world.avatar_set", "world.avatar_clear", "world.enter_map",
+                             "save.account_list", "save.account_remove", "save.slots_list", "save.slot_player_export", "save.slot_player_import",
+                             "party.room_hero_set", "party.room_hero_clear", "world.watch_set", "world.change_apply",
+                             "player.down_rule_set", "player.revive", "player.give_up",
+                             "world.avatar_set", "world.avatar_clear", "world.enter_map",
                              "monsters.mirror_get", "monsters.puppet_set", "monsters.puppet_clear", "monsters.mirror_hit",
                              "dungeons.set_seed", "dungeons.enter_floor", "dungeons.shared_events_get", "dungeons.shared_event_run",
                              "combat.strike_player", "items.owned", "georama.town_export", "georama.town_import", "ui.choice_open",
@@ -800,17 +964,31 @@ void AddCapabilities(RuntimeConfig &config) {
 
 void OwnerUnloaded(std::string_view mod_id) {
     UiOwnerUnloaded(mod_id);
+    RegisterOwnerUnloaded(mod_id);
+    DownOwnerUnloaded(mod_id);
+    if (g_room_hero_owner == mod_id) { // the rule goes with the mod that set it
+        SetRoomHero(std::nullopt);
+        g_room_hero_owner.clear();
+    }
     if (net::Shared().owner() == mod_id) net::Shared().Leave("the mod unloaded");
     g_player_extras.erase(std::string(mod_id));
 }
 
 void FrameStep() {
     net::Shared().Pump();
+    TownRebuildStep();
+    DownStep();
+    RegisterStep();
     WorldStep();
     UiStep();
 }
 
 void ResetForTests() {
+    RegisterReset();
+    TownReset();
+    DownReset();
+    SetRoomHero(std::nullopt);
+    g_room_hero_owner.clear();
     WorldReset();
     UiReset();
     g_player_extras.clear();

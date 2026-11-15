@@ -43,6 +43,9 @@ constexpr int         kJsonDepthLimit = 16;
 constexpr std::size_t kApiValueNodeLimit = 4096;
 constexpr std::size_t kApiValueBytesLimit = 64 * 1024;
 constexpr std::size_t kApiResourceResultBytesLimit = 384 * 1024;
+// Co-op's save texts: a world, a player's things, a town. A played save's photos alone are 120 KiB that no packing
+// shrinks, and a visit's request holds a world and a player's things together.
+constexpr std::size_t kApiSaveTextBytesLimit = 2 * 1024 * 1024;
 constexpr std::size_t kResourceFileSizeLimit = 256 * 1024;
 constexpr std::size_t kResourceTotalSizeLimit = 1024 * 1024;
 constexpr std::size_t kResourceHandleLimit = 64;
@@ -163,8 +166,15 @@ void PushJson(lua_State *state, const Json &value, int depth = 0) {
     }
 }
 
+// The operations that carry a save's text, in or out: the only values allowed past kApiValueBytesLimit.
+bool CarriesSaveText(std::string_view path) {
+    return path == "save.world_export" || path == "save.world_import" || path == "save.player_export" || path == "save.player_import" ||
+           path == "save.account_get" || path == "save.account_set" || path == "session.start" || path == "georama.town_export" ||
+           path == "georama.town_import" || path == "save.slot_player_export" || path == "save.slot_player_import";
+}
+
 bool ReadApiJson(lua_State *state, int index, Json &result, std::string &error, int depth,
-                 std::size_t &nodes, std::set<const void *> &active) {
+                 std::size_t &nodes, std::set<const void *> &active, std::size_t string_limit = kApiValueBytesLimit) {
     if (++nodes > kApiValueNodeLimit) {
         error = "API value exceeds the node limit";
         return false;
@@ -194,7 +204,7 @@ bool ReadApiJson(lua_State *state, int index, Json &result, std::string &error, 
         case LUA_TSTRING: {
             std::size_t length = 0;
             const char *value = lua_tolstring(state, index, &length);
-            if (length > kApiValueBytesLimit) {
+            if (length > string_limit) {
                 error = "API string exceeds the byte limit";
                 return false;
             }
@@ -216,7 +226,7 @@ bool ReadApiJson(lua_State *state, int index, Json &result, std::string &error, 
             lua_pushnil(state);
             while (lua_next(state, table) != 0) {
                 Json value;
-                if (!ReadApiJson(state, -1, value, error, depth + 1, nodes, active)) {
+                if (!ReadApiJson(state, -1, value, error, depth + 1, nodes, active, string_limit)) {
                     lua_pop(state, 2);
                     active.erase(identity);
                     return false;
@@ -2441,7 +2451,8 @@ struct LuaMod::Impl {
         }
         try {
             ApiCallResult result = config.api_handler(manifest.id, *operation, arguments);
-            const std::size_t response_limit = path == "resources.resolve" ? kApiResourceResultBytesLimit
+            const std::size_t response_limit = CarriesSaveText(path) ? kApiSaveTextBytesLimit
+                                               : path == "resources.resolve" ? kApiResourceResultBytesLimit
                                                                              : kApiValueBytesLimit;
             if (result.status == ApiCallStatus::Ok && result.value.dump().size() > response_limit) {
                 return {ApiCallStatus::Failed, nullptr, "game API response exceeds its byte limit"};
@@ -2481,16 +2492,20 @@ struct LuaMod::Impl {
         std::set<const void *> active;
         std::size_t nodes = 0;
         std::string error;
+        // A save's text is the one value that may be large (kApiSaveTextBytesLimit), for the operations that carry it.
+        const bool        save_text = CarriesSaveText(path);
+        const std::size_t value_limit = save_text ? kApiSaveTextBytesLimit : kApiValueBytesLimit;
         for (int index = first_argument; index <= lua_gettop(lua); ++index) {
             Json value;
-            if (!ReadApiJson(lua, index, value, error, 0, nodes, active)) {
+            if (!ReadApiJson(lua, index, value, error, 0, nodes, active, value_limit)) {
                 return PushApiResult(lua, {ApiCallStatus::InvalidArgument, nullptr, std::move(error)});
             }
             arguments.push_back(std::move(value));
         }
         try {
-            if (arguments.dump().size() > kApiValueBytesLimit) {
-                return PushApiResult(lua, {ApiCallStatus::InvalidArgument, nullptr, "API arguments exceed 64 KiB"});
+            if (arguments.dump().size() > value_limit) {
+                return PushApiResult(lua, {ApiCallStatus::InvalidArgument, nullptr,
+                                           save_text ? "API arguments exceed 2 MiB" : "API arguments exceed 64 KiB"});
             }
         } catch (const std::exception &) {
             return PushApiResult(lua, {ApiCallStatus::InvalidArgument, nullptr, "API arguments are not valid JSON"});
@@ -2501,7 +2516,7 @@ struct LuaMod::Impl {
         if (path == "api.call" && arguments.size() >= 1 && arguments[0].is_string()) {
             resource_payload = arguments[0].get_ref<const std::string &>() == "resources.resolve";
         }
-        const std::size_t response_limit = resource_payload ? kApiResourceResultBytesLimit : kApiValueBytesLimit;
+        const std::size_t response_limit = save_text ? kApiSaveTextBytesLimit : resource_payload ? kApiResourceResultBytesLimit : kApiValueBytesLimit;
         try {
             if (result.status == ApiCallStatus::Ok && result.value.dump().size() > response_limit) {
                 result = {ApiCallStatus::Failed, nullptr, "API response exceeds its byte limit"};

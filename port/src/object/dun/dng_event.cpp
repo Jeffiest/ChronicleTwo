@@ -7,6 +7,8 @@
 #include "common.h"
 #include "mw_runtime.h"
 
+#include "moonmod/coop_floor.hpp"
+
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -2128,6 +2130,7 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
             return;
         }
         AutoMapGen.gen_flag |= gen_flag;
+        moonmod::coop::FloorBuildBegin(); // MoonMod: game.dungeon.generating, and a mod's seed for the whole floor
         AutoMapGen.Build();
     }
 

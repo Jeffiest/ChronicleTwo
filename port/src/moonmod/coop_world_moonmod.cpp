@@ -2,6 +2,7 @@
 // mirrored on a guest, the doors one player opens for everyone, and the seed a floor is built from.
 
 #include "moonmod/coop.hpp"
+#include "moonmod/coop_down.hpp"
 
 #include <algorithm>
 #include <array>
@@ -66,9 +67,13 @@ constexpr int kFileBytes = 6 * 1024 * 1024;
 class AvatarBody final : public CCharacter2 {
 public:
     AvatarState target;
+    // What hangs on the body's frames: the hat, the weapon in the hand, the second weapon. Each follows a frame of
+    // the body (as CActionChara::SetRef has the hero's own parts do), stepped and drawn after it.
+    std::vector<std::shared_ptr<CCharacter2>> parts;
     float       at[3] = {0.0f, 0.0f, 0.0f}, heading = 0.0f;
     bool        placed = false;
     int         motion = -1;
+    int         stand_in_gait = -1, stand_in_shown = -1; // a stand-in: 1 running, 0 standing
     int         town = 0;
 
     void Step() override {
@@ -85,11 +90,26 @@ public:
         }
         SetPosition(at[0], at[1], at[2]);
         SetRotation(0.0f, heading, 0.0f);
-        if (target.motion != motion) {
-            motion = target.motion;
-            SetMotion(std::max(0, motion), 2);
+        if (target.stand_in) {
+            // The hero standing in for a ridepod or a monster's form: their motion numbers are not the hero's, so
+            // the hero runs while the reports move and stands when they stop (the names every hero's body has).
+            if (far > 2.0f) stand_in_gait = 1;
+            else if (far < 0.5f || stand_in_gait < 0) stand_in_gait = 0;
+            if (stand_in_gait != stand_in_shown) {
+                stand_in_shown = stand_in_gait;
+                char run[] = "\x91\x96\x82\xE8", stand[] = "\x97\xA7\x82\xBF";
+                SetMotion(stand_in_gait != 0 ? run : stand, 0);
+                motion = -1;
+            }
+        } else {
+            stand_in_gait = stand_in_shown = -1;
+            if (target.motion != motion) {
+                motion = target.motion;
+                SetMotion(std::max(0, motion), 2);
+            }
         }
         CCharacter2::Step();
+        for (const std::shared_ptr<CCharacter2> &part : parts) part->Step();
     }
 
     int DrawDirect() override {
@@ -101,6 +121,7 @@ public:
             mgSetAmbient(ambient);
         }
         const int drawn = CCharacter2::DrawDirect();
+        for (const std::shared_ptr<CCharacter2> &part : parts) part->DrawDirect();
         if (tinted) mgSetAmbient(saved);
         return drawn;
     }
@@ -112,6 +133,7 @@ struct Avatar {
     std::shared_ptr<AvatarBody> body;
     int                         loaded_character = -1;
     int                         loaded_town = -1;
+    int                         loaded_outfit[5] = {-1, -1, -1, -1, -1}; // head, clothes, feet, weapon, second weapon as asked
     int                         slot = -1;
     CScene                     *scene = nullptr;
     int                         loop = -1;
@@ -180,19 +202,42 @@ bool Load(int index, CScene *scene, int slot, int town) {
     const int block = kTextureBlockBase + index;
     if (!load(dc2::character::ModelAssetPath(town != 0 ? "chara" : "mainchr", *model, false))) return false;
     body->LoadPack(reinterpret_cast<unsigned int *>(buffer.data()), "info", &a.stacks[0], &a.stacks[0], &a.stacks[0], block, nullptr);
-    // The hero's clothes and shoes, as this game's own hero wears them (a guest's own outfit isn't sent).
+    // What the hero wears and carries: the other player's own, as their game said it; what it did not say is as this
+    // game's own hero of that name has it.
+    constexpr int kEquipSlots = 5; // CHARA_DATA::equip, by CHARA_EQUIP_SLOT
+    int           own[kEquipSlots] = {};
     if (CUserDataManager *user = GetUserDataMan(); user != nullptr) {
         if (CHARA_DATA *data = user->GetCharaDataPtr(character); data != nullptr) {
-            const int clothes = data->equip[CHARA_EQUIP_CLOTHES].item_no;
-            const int feet = data->equip[CHARA_EQUIP_FEET].item_no;
-            if (const auto path = ItemFilePath(clothes, 0); clothes > 0 && path && load(*path)) {
-                body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[1], block);
-            }
-            if (const auto path = ItemFilePath(feet, 0); feet > 0 && path && load(*path)) {
-                body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[5], block);
-            }
+            for (int slot_no = 0; slot_no < kEquipSlots; ++slot_no) own[slot_no] = data->equip[slot_no].item_no;
         }
     }
+    const auto worn = [&own](int said, int equip_slot) { return said > 0 ? said : own[equip_slot]; };
+    const int  clothes = worn(a.target.clothes, CHARA_EQUIP_CLOTHES), feet = worn(a.target.feet, CHARA_EQUIP_FEET);
+    if (const auto path = ItemFilePath(clothes, 0); clothes > 0 && path && load(*path)) {
+        body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[1], block);
+    }
+    if (const auto path = ItemFilePath(feet, 0); feet > 0 && path && load(*path)) {
+        body->LoadSkin(reinterpret_cast<unsigned int *>(buffer.data()), const_cast<char *>("info"), const_cast<char *>(""), &a.stacks[5], block);
+    }
+    // The parts, each on the body's frame the game hangs it on (charasetup.cpp, SetupMainUnit): the weapons only on
+    // a floor, except Monica's armband, which she wears in town too.
+    const bool monica = character == USER_CHARA_MONICA;
+    const auto hang = [&](int item_no, int stack, const char *frame_name) {
+        if (item_no <= 0 || body->CObjectFrame::frame == nullptr) return;
+        const auto path = ItemFilePath(item_no, 0);
+        if (!path || !load(*path)) return;
+        auto part = std::make_shared<CCharacter2>();
+        part->Initialize();
+        part->LoadPack(reinterpret_cast<unsigned int *>(buffer.data()), "info", &a.stacks[stack], &a.stacks[stack], &a.stacks[stack], block, body.get());
+        mgCFrame *at = body->CObjectFrame::frame->SearchFrame(const_cast<char *>(frame_name));
+        if (part->CObjectFrame::frame == nullptr || at == nullptr) return;
+        part->CObjectFrame::frame->DeleteReference();
+        part->CObjectFrame::frame->SetReference(at);
+        body->parts.push_back(std::move(part));
+    };
+    if (town == 0) hang(worn(a.target.weapon, CHARA_EQUIP_MELEE), 2, monica ? "sword_hand" : "ef00");
+    if (town == 0 || monica) hang(worn(a.target.sub, CHARA_EQUIP_SUB), 3, monica ? "wr" : "gun_hand");
+    hang(worn(a.target.head, CHARA_EQUIP_HEAD), 4, monica ? "ac" : "hat");
     if (scene->AssignChara(slot, dc2::scene::CharacterResource::FromOwned(body), "coop_avatar") != slot) return false;
     scene->SetType(SCENE_DATA_CHARA, slot, SCENE_CHARA_TYPE_EVENT);
     scene->SetCharaTexb(slot, block);
@@ -202,6 +247,8 @@ bool Load(int index, CScene *scene, int slot, int town) {
     a.body = std::move(body);
     a.loaded_character = character;
     a.loaded_town = town;
+    const int asked[5] = {a.target.head, a.target.clothes, a.target.feet, a.target.weapon, a.target.sub};
+    std::copy(asked, asked + 5, a.loaded_outfit);
     a.slot = slot;
     a.scene = scene;
     a.loop = GetNowLoopNo();
@@ -231,7 +278,8 @@ CActiveMonster *Monster(int slot) {
 int AvatarsHere(std::array<std::array<float, 3>, kAvatars> &at, std::array<bool, kAvatars> &here) {
     int count = 0;
     for (int i = 0; i < kAvatars; ++i) {
-        here[static_cast<std::size_t>(i)] = AvatarAt(i, at[static_cast<std::size_t>(i)].data());
+        // (a player who is down is nobody a monster goes for)
+        here[static_cast<std::size_t>(i)] = !g_avatars[static_cast<std::size_t>(i)].target.down && AvatarAt(i, at[static_cast<std::size_t>(i)].data());
         count += here[static_cast<std::size_t>(i)] ? 1 : 0;
     }
     return count;
@@ -391,7 +439,9 @@ void AvatarsStep() {
         }
         if (!a.wanted || scene == nullptr) continue;
         const int town = InTown() ? 1 : 0;
-        if (a.loaded_character != a.target.character || a.loaded_town != town || !a.body) {
+        const int asked[5] = {a.target.head, a.target.clothes, a.target.feet, a.target.weapon, a.target.sub};
+        const bool changed = !std::equal(asked, asked + 5, a.loaded_outfit); // the other player changed what they wear
+        if (a.loaded_character != a.target.character || a.loaded_town != town || !a.body || changed) {
             const int slot = (town != 0 ? kTownSlotBase : kDungeonSlotBase) + i;
             const bool taken = scene->IsActive(SCENE_DATA_CHARA, slot) != 0 && scene->GetCharacter(slot) != nullptr;
             if (taken || !Load(i, scene, slot, town)) {
@@ -471,7 +521,8 @@ void MonsterThinkBegin(int slot) {
     monster->GetPosition(monster_at);
     MainChara__2->GetPosition(g_saved_player);
     const float *best = nullptr;
-    float        best_d = Dist3(g_saved_player, monster_at);
+    // (this game's own hero, down, is the last one a monster goes for)
+    float        best_d = HeroIsDown() ? 1.0e30f : Dist3(g_saved_player, monster_at);
     for (int i = 0; i < kAvatars; ++i) {
         if (!here[static_cast<std::size_t>(i)]) continue;
         const float d = Dist3(at[static_cast<std::size_t>(i)].data(), monster_at);
@@ -527,27 +578,170 @@ bool SharedEventWaiting() { return g_waiting.on; }
 
 void SetNextFloorSeed(std::optional<std::uint32_t> seed) { g_next_seed = seed; }
 
-int FloorSeed(int native_seed) {
+namespace {
+
+// The seed a mod gave the floor being built, kept until the next floor: the layout, then the chests, then the
+// monsters each start from a number made of it, so two games given one seed build one floor. Without a mod's seed
+// nothing is reseeded and the floor is the game's own.
+std::optional<int> g_floor_seed;
+bool               g_build_begun = false; // FloorBuildBegin has asked the mods for this floor's seed
+std::uint32_t      g_hash_layout = 0, g_hash_chests = 0, g_hash_monsters = 0;
+bool               g_hash_ready = false;
+
+// Asks the mods (game.dungeon.generating) and takes the seed one of them set, if any.
+void TakeFloorSeed() {
     if (SharedRuntime().Running()) {
         const int dungeon = DngSaveDataDungeon != nullptr ? DngSaveDataDungeon->stage_id : DngStatus.dungeon_no;
         const int floor = DngSaveDataDungeon != nullptr && dungeon >= 0 && dungeon < SAVE_DUNGEON_NUM ? DngSaveDataDungeon->floor_id[dungeon] : -1;
         SharedRuntime().Publish("game.dungeon.generating", {{"dungeon_id", dungeon}, {"floor_id", floor}, {"back_floor", false}});
     }
-    int seed = native_seed;
+    g_floor_seed.reset();
     if (g_next_seed) {
-        seed = static_cast<int>(*g_next_seed & 0x7FFFFFFFu);
+        g_floor_seed = static_cast<int>(*g_next_seed & 0x7FFFFFFFu);
         g_next_seed.reset();
     }
+}
+
+// The number a stage of the build starts from: the floor's seed, turned over once for each stage.
+unsigned StageSeed(int seed, int stage) {
+    std::uint32_t value = static_cast<std::uint32_t>(seed) ^ (0x9E3779B9u * static_cast<std::uint32_t>(stage + 1));
+    value ^= value >> 16;
+    value *= 0x7FEB352Du;
+    value ^= value >> 15;
+    value *= 0x846CA68Bu;
+    value ^= value >> 16;
+    return value & 0x7FFFFFFFu;
+}
+
+void HashBytes(std::uint32_t &hash, const void *data, std::size_t size) {
+    const auto *bytes = static_cast<const unsigned char *>(data);
+    for (std::size_t i = 0; i < size; ++i) hash = (hash ^ bytes[i]) * 16777619u;
+}
+
+template <typename T>
+void HashValue(std::uint32_t &hash, T value) {
+    HashBytes(hash, &value, sizeof(value));
+}
+
+// A place to the nearest unit: two games that put a thing in one spot must agree, whatever their rounding.
+void HashPlace(std::uint32_t &hash, const float *position) {
+    for (int axis = 0; axis < 3; ++axis) HashValue(hash, static_cast<std::int32_t>(std::lround(position[axis])));
+}
+
+} // namespace
+
+void FloorBuildBegin() {
+    TakeFloorSeed();
+    g_build_begun = true;
+    g_last_seed.reset();
+    g_hash_layout = g_hash_chests = g_hash_monsters = 0;
+    g_hash_ready = false;
+    if (g_floor_seed) {
+        // A preset floor picks its layout with the game's generator before any seed of its own (and a random floor
+        // seeds itself again in FloorSeed): the pick follows the floor's seed too.
+        srand(StageSeed(*g_floor_seed, 0));
+        g_last_seed = *g_floor_seed;
+    }
+}
+
+int FloorSeed(int native_seed) {
+    if (!g_build_begun) TakeFloorSeed(); // a floor built without FloorBuildBegin (the tests): ask here
+    g_build_begun = false;
+    const int seed = g_floor_seed ? *g_floor_seed : native_seed;
     g_last_seed = seed;
     return seed;
+}
+
+void FloorPlacing(int stage) {
+    if (g_floor_seed) srand(StageSeed(*g_floor_seed, stage));
+}
+
+void FloorPlaced(int stage) {
+    if (!OnFloor()) return;
+    if (stage == 1) {
+        // The layout as it was built, and the chests where they were put with what they hold.
+        std::uint32_t layout = 2166136261u;
+        HashValue(layout, static_cast<std::int32_t>(AutoMapGen.grid_w));
+        HashValue(layout, static_cast<std::int32_t>(AutoMapGen.grid_h));
+        for (const CAutoMapParts &cell : AutoMapGen.GridCells()) {
+            HashValue(layout, cell.kind);
+            HashValue(layout, cell.parts_no);
+            HashValue(layout, cell.room_no);
+            HashValue(layout, cell.link);
+        }
+        g_hash_layout = layout;
+        std::uint32_t chests = 2166136261u;
+        if (DngMainScene != nullptr && DngMainScene->battle_area.treasure_box != nullptr) {
+            for (CTreasureBox &box : DngMainScene->battle_area.treasure_box->box) {
+                if (box.state == TREASURE_BOX_STATE_NONE) continue;
+                float position[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+                box.GetPosition(position);
+                HashPlace(chests, position);
+                HashValue(chests, box.item[0]);
+                HashValue(chests, box.item[1]);
+            }
+        }
+        g_hash_chests = chests;
+    } else if (stage == 2) {
+        std::uint32_t monsters = 2166136261u;
+        for (int slot = 0; slot < MONSTER_ACTIVE_MAX; ++slot) {
+            CActiveMonster *monster = Monster(slot);
+            if (monster == nullptr || monster->state == ACTIVE_MONSTER_NONE) continue;
+            float position[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            monster->GetPosition(position);
+            HashValue(monsters, static_cast<std::int32_t>(slot));
+            HashValue(monsters, static_cast<std::int32_t>(monster->monster_id));
+            HashPlace(monsters, position);
+        }
+        g_hash_monsters = monsters;
+        g_hash_ready = true;
+    }
+}
+
+std::optional<std::string> FloorLayoutHash() {
+    if (!g_hash_ready || !OnFloor()) return std::nullopt;
+    char text[32];
+    std::snprintf(text, sizeof(text), "%08x-%08x-%08x", g_hash_layout, g_hash_chests, g_hash_monsters);
+    return std::string(text);
 }
 
 std::optional<int> LastFloorSeed() { return g_last_seed; }
 
 // ---- Each frame ------------------------------------------------------------------------------------------------------
 
+// A monster's blow on another player's hero. The game tests each attack's primitives against the bodies of the
+// scene's characters (CColPrim::IsHit); the hero's own body takes what lands on it in CActionChara::CheckDamage. An
+// avatar is a scene character too, so the same test says when a blow aimed at the player's side lands on it; what
+// lands is kept for monsters.mirror_get, whose mod sends it to that player's game. After a blow an avatar cannot be
+// struck again for as long as the hero's own grace lasts.
+std::array<int, kAvatars> g_avatar_grace{};
+constexpr int             kAvatarGrace = 45;
+
+void AvatarHitsStep() {
+    if (!InDungeon() || DngStatus.mode != DNG_STATUS_FIELD) return;
+    for (int i = 0; i < kAvatars; ++i) {
+        const Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        int          &grace = g_avatar_grace[static_cast<std::size_t>(i)];
+        if (grace > 0) --grace;
+        if (!a.body || a.scene != DngMainScene || a.slot < 0 || a.target.down) continue;
+        for (CColPrim &prim : ColPrimMan.prim) {
+            if (!prim.active || prim.param == nullptr || (prim.target & DAMAGE_TARGET_PLAYER) == 0) continue;
+            if (!prim.IsHit(DngMainScene, a.slot)) continue; // (a blow that lands marks the avatar as struck by it)
+            if (grace > 0) continue;
+            grace = kAvatarGrace;
+            // kind as the mod reads it: 2 a small hit (a flinch), 3 a blow that knocks down
+            const int kind = (prim.param->hit_flags & DAMAGE_HIT_KNOCKDOWN) != 0 ? 3 : 2;
+            if (g_avatar_hits.size() < 64) {
+                g_avatar_hits.push_back({i + 1, prim.attacker, std::max(1, static_cast<int>(prim.damage)), kind, static_cast<int>(prim.param->hit_flags)});
+            }
+            break;
+        }
+    }
+}
+
 void WorldStep() {
     AvatarsStep();
+    AvatarHitsStep();
     PuppetsStep();
     SharedEventsStep();
 }

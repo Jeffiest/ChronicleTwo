@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "moonmod/api.hpp"
+#include "moonmod/coop_party.hpp"
 #include "moonmod/runtime.hpp"
 
 struct CSceneEventData;
@@ -59,6 +60,7 @@ struct VisitRequest {
     std::string owner;   // the mod that asked
     std::string mode_id; // its title mode
     int         map = 0; // the town (area 0-4) the visit starts in
+    int         map_no = -1; // or the map itself (world.get().map_no): a town with no Georama map has no other name
     std::string world;   // save.world_export text
     std::string player;  // save.player_export text, or empty for a new account
 };
@@ -77,10 +79,18 @@ inline constexpr int kAvatars = 3;
 struct AvatarState {
     int         character = 0; // USER_CHARA_MAX or USER_CHARA_MONICA
     int         weapon = -1;   // a weapon's item_no, or none
+    // What that player's hero wears and carries, by item_no: the hat or hair piece, the clothes, the shoes and the
+    // second weapon (Max's gun, Monica's armband). Under 1: as this game's own hero of that name has it.
+    int         head = -1, clothes = -1, feet = -1, sub = -1;
     float       x = 0.0f, y = 0.0f, z = 0.0f, heading = 0.0f;
     int         motion = 0;
     float       tint[3] = {-1.0f, -1.0f, -1.0f}; // ambient 0-128 each, or negative for none
     std::string name;
+    bool        down = false; // that player is down: this game's monsters neither go for the hero nor strike it
+    // That player rides the ridepod or wears a monster's form, which this game cannot draw yet: their hero's own body
+    // stands in for it, where they are and facing as they face, in its first motion (their motion numbers are the
+    // ridepod's or the monster's, not the hero's).
+    bool        stand_in = false;
 };
 bool AvatarSet(int slot, const AvatarState &state);
 void AvatarClear(int slot); // -1: every slot
@@ -132,9 +142,74 @@ bool                     SharedEventWaiting();
 
 // dungeons.set_seed: the next new floor is built from this seed, once.
 void               SetNextFloorSeed(std::optional<std::uint32_t> seed);
-// automap.cpp: the seed the floor is built from, publishing game.dungeon.generating first.
+// dng_event.cpp, before a floor's layout is built: publishes game.dungeon.generating and, when a mod set a seed,
+// starts the game's generator from it, so a preset floor's pick follows the seed as a random floor's layout does.
+void               FloorBuildBegin();
+// automap.cpp: the seed a random floor's layout is built from (the mod's, else the game's own).
 int                FloorSeed(int native_seed);
+// event_func.cpp, around the floor's automatic placing of its chests (stage 1) and of its monsters (stage 2): with a
+// mod's seed each stage starts from a number made of it, whatever was drawn in between.
+void               FloorPlacing(int stage);
+void               FloorPlaced(int stage);
 std::optional<int> LastFloorSeed();
+// world.get().floor_layout: a number for the floor as built (cells, chests and what they hold, monsters and where),
+// the same in two games that built the same floor; none until the floor's monsters are placed.
+std::optional<std::string> FloorLayoutHash();
+
+// ---- The world as it changes (coop_register_moonmod.cpp) -------------------------------------------------------------
+
+// world.watch_set: the mod is told (game.world.changed {kind, id, value}) of each change this game makes to the parts
+// of the save two games share while they play: a story flag ("flag", value true or false), a story counter
+// ("counter"), the story's progress ("progress", id 0), who the story has in the party ("party", id 0 the members, 1
+// who can be changed to, 2 the mask), a townsperson who can join ("recruit", value {chara_no, status}), a dungeon
+// floor's record ("floor", id its place in the save's records, value its nine numbers), how many of a Georama part
+// are built and waiting to be placed ("stock", id the part's number), an item one of the story's scripts gave the
+// player ("gift", id the item's number, value how many; not a chest's or a floor's prize, which are the player's
+// own; world.change_apply adds it to this game's bag) and a town's Georama ("town", id 0-4: only that
+// it changed; the mod sends the town with georama.town_export). A town or a floor beginning (a save loaded, a visit
+// begun) is where the two games start from, not a change.
+void RegisterWatch(std::string_view owner, bool enabled);
+bool RegisterWatched();
+// The world was replaced whole (save.world_import): what stands now is what the games share.
+void RegisterRebase();
+// Each frame: tell the watching mod what changed (a bounded number a frame; the rest the next).
+void RegisterStep();
+// world.change_apply: another game's change, written to the save and not told back. A floor's record is merged
+// with this game's (flags together, higher counts, the better time), and what this game holds beyond it is told.
+bool RegisterApply(std::string_view kind, int id, const Json &value, std::string &error);
+// georama.town_import: the town as it stands after another game's is what the games share (no "town" change told).
+void RegisterTownAgreed(int town);
+
+// ---- Down, not out (coop_down_moonmod.cpp) --------------------------------------------------------------------------
+// player.down_rule_set {enabled}: while it holds, a hero whose life runs out on a floor plays their death and stays
+// lying (player.get().down), struck by nothing and moved by nobody, instead of the game's death event (change hero,
+// or game over). player.revive {hp, x, y, z} stands them up; player.give_up lets the game's death event run.
+void SetDownRule(std::string_view owner, bool enabled);
+bool DownRule();
+bool HeroRevive(int hp, const float *at, std::string &error);
+bool HeroGiveUp(std::string &error);
+void DownStep();
+void DownOwnerUnloaded(std::string_view owner);
+void DownReset();
+
+// ---- A town as it is built (coop_town_moonmod.cpp) ------------------------------------------------------------------
+// A town's Georama is its record in the save and, while the town is on screen, the live map built from it; the game
+// brings the two together only when its player leaves the editor or walks into the town. For two games:
+// the builder's live map is written into the record as it is built (TownLiveSync, from the register's look at the
+// towns, so each part placed is a "town" change), and a game that takes a town its player stands in builds its live
+// map from the record again in place (no walk back to the entrance): at once when the player walks free, else when
+// the scene or menu is over or the player comes out of a house, and at the latest before the game next writes that
+// live map into the record (TownBeforeSave, from EditDataSave).
+bool TownOnScreen(int town); // the town loop runs that town (its own map or a house's inside)
+void TownLiveSync();
+void TownRebuildWanted(int town);
+bool TownRebuildPending();
+void TownRebuildStep();
+void TownBeforeSave();
+int  TownLiveParts(); // the parts standing in the town on screen (its live map), or -1 when no town's own map is
+void TownReset();
+void RegisterOwnerUnloaded(std::string_view owner);
+void RegisterReset();
 
 // ---- The choice panel (coop_ui_moonmod.cpp) -----------------------------------------------------------------------
 

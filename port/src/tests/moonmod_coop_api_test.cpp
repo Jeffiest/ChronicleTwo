@@ -14,6 +14,9 @@
 #include "monster.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
 #include "moonmod/coop.hpp"
+#include "moonmod/coop_down.hpp"
+#include "moonmod/coop_story.hpp"
+#include "moonmod/coop_pad.hpp"
 #include "moonmod/coop_save.hpp"
 #include "moonmod/net_session.hpp"
 #include "moonmod_monster_slots.hpp"
@@ -105,6 +108,8 @@ struct FloorFixture {
 TEST(MoonModCoopApi, TheCatalogueNamesEveryCoopOperationAndNetSaysWhetherItHasASocket) {
     Api api;
     for (const char *path : {"session.get", "session.start", "session.finish", "save.world_export", "save.player_export", "save.account_list",
+                             "save.slots_list", "save.slot_player_export", "save.slot_player_import", "party.room_hero_set",
+                             "party.room_hero_clear", "world.watch_set", "world.change_apply",
                              "world.avatar_set", "world.avatar_clear", "world.enter_map", "monsters.mirror_get", "monsters.puppet_set",
                              "monsters.puppet_clear", "monsters.mirror_hit", "dungeons.set_seed", "dungeons.enter_floor",
                              "dungeons.shared_events_get", "dungeons.shared_event_run", "combat.strike_player", "items.owned",
@@ -134,9 +139,24 @@ TEST(MoonModCoopApi, AvatarsTakeASlotOnTheFloorAndAreCleared) {
     EXPECT_FALSE(shown.value.at("shown").get<bool>());
     EXPECT_FALSE(moonmod::coop::AvatarShown(0));
     EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 4}, {"character", "max"}}})).status, ApiCallStatus::InvalidArgument);
-    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 1}, {"character", "ridepod"}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 1}, {"character", "steve"}}})).status, ApiCallStatus::InvalidArgument);
+    // A player in the ridepod or a monster's form is shown as their hero (a stand-in), and one who is down is marked.
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 3}, {"character", "ridepod"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"motion", 77}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 3}, {"character", "monster"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"down", true}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 3}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"down", 1}}})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 1}, {"character", "max"}, {"tint", {300, 0, 0}}}})).status,
               ApiCallStatus::InvalidArgument);
+    // What the other player's hero wears: item numbers, each left out at will; anything else is refused.
+    const Json dressed = Json::array({{{"slot", 2}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0}, {"weapon", 300},
+                                       {"outfit", {{"head", 301}, {"clothes", 302}, {"sub", 304}}}}});
+    EXPECT_EQ(api.Call("world.avatar_set", dressed).status, ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 2}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"outfit", {{"nose", 1}}}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 2}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"outfit", {{"head", 0}}}}})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 1}}})).status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 9}}})).status, ApiCallStatus::InvalidArgument);
@@ -284,6 +304,247 @@ TEST(MoonModCoopApi, TheSaveSplitAndTheGuestsGoThroughTheApi) {
     std::filesystem::remove_all(std::filesystem::temp_directory_path() / "moonmod-coop-api-test", ignored);
 }
 
+TEST(MoonModCoopApi, AModsSeedStartsTheLayoutTheChestsAndTheMonstersEachFromItsOwnNumber) {
+    FloorFixture floor;
+    Api          api;
+    const auto seeded = [&api] { ASSERT_EQ(api.Call("dungeons.set_seed", Json::array({{{"seed", 99}}})).status, ApiCallStatus::Ok); };
+    seeded();
+    moonmod::coop::FloorBuildBegin();
+    const int pick = rand(); // what a preset floor picks its layout with
+    EXPECT_EQ(moonmod::coop::FloorSeed(5), 99); // and a random floor's own seed
+    moonmod::coop::FloorPlacing(1);
+    const int chests = rand();
+    moonmod::coop::FloorPlacing(2);
+    const int monsters = rand();
+    EXPECT_NE(chests, monsters);
+    // The same seed again, with other draws in between (another game's floor: its effects draw too).
+    seeded();
+    moonmod::coop::FloorBuildBegin();
+    EXPECT_EQ(rand(), pick);
+    for (int i = 0; i < 7; ++i) rand();
+    moonmod::coop::FloorPlacing(1);
+    EXPECT_EQ(rand(), chests);
+    rand();
+    moonmod::coop::FloorPlacing(2);
+    EXPECT_EQ(rand(), monsters);
+    EXPECT_EQ(api.Call("world.get").value.at("floor_seed"), 99);
+    // With no seed from a mod the game's own stream is left alone.
+    moonmod::coop::FloorBuildBegin();
+    srand(1234);
+    const int own = rand();
+    srand(1234);
+    moonmod::coop::FloorPlacing(1);
+    moonmod::coop::FloorPlacing(2);
+    EXPECT_EQ(rand(), own);
+    EXPECT_FALSE(api.Call("world.get").value.contains("floor_seed"));
+}
+
+TEST(MoonModCoopApi, ARoomGivesThisGameOneHeroAndLeavesTheStorysPartyAlone) {
+    FloorFixture      floor;
+    Api               api;
+    CUserDataManager &user = floor.save->user_data;
+    const int         max = 1 << USER_CHARA_MAX, monica = 1 << USER_CHARA_MONICA, ridepod = 1 << USER_CHARA_ROBO;
+    // Chapter 1: the story has Max alone.
+    user.party_member = static_cast<u16>(max);
+    user.chara_change = static_cast<u16>(max);
+    user.InitCharaChangeMask();
+    user.active_chr_no = USER_CHARA_MAX;
+    EXPECT_EQ(user.GetNowPartyMember(), max);
+
+    // The joiner's game plays Monica, before the story has her.
+    ASSERT_EQ(api.Call("party.room_hero_set", Json::array({{{"hero", "monica"}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(user.GetNowPartyMember(), monica);
+    EXPECT_EQ(user.GetEnableCharaChangeFlag(), static_cast<u32>(monica));
+    EXPECT_EQ(user.party_member, max) << "the story's own party is not written to";
+    EXPECT_EQ(user.chara_change, max);
+    EXPECT_EQ(api.Call("world.get").value.at("room_hero"), "monica");
+    {
+        const moonmod::coop::StoryPartyScope story; // a scene asking who is in the party hears the story's answer
+        EXPECT_EQ(user.GetNowPartyMember(), max);
+    }
+    EXPECT_EQ(user.GetNowPartyMember(), monica);
+    // The hero played is Max still: the rule asks the floor for the change across, once, then waits.
+    EXPECT_EQ(moonmod::coop::RoomHeroFloorChange(), DNG_CHANGE_UNIT_PARTNER);
+    EXPECT_EQ(moonmod::coop::RoomHeroFloorChange(), -1);
+    user.active_chr_no = USER_CHARA_MONICA;
+    EXPECT_EQ(moonmod::coop::RoomHeroFloorChange(), -1);
+    EXPECT_FALSE(moonmod::coop::RoomHeroTownChange());
+
+    // The host's game plays Max; the ridepod is his when the story has it, and Monica stays out when it has her.
+    ASSERT_EQ(api.Call("party.room_hero_set", Json::array({{{"hero", "max"}}})).status, ApiCallStatus::Ok);
+    user.active_chr_no = USER_CHARA_MAX;
+    EXPECT_EQ(user.GetNowPartyMember(), max);
+    user.party_member = static_cast<u16>(max | monica | ridepod);
+    user.chara_change = static_cast<u16>(max | monica | ridepod);
+    EXPECT_EQ(user.GetNowPartyMember(), max | ridepod);
+    EXPECT_EQ(user.GetEnableCharaChangeFlag(), static_cast<u32>(max | ridepod));
+    EXPECT_EQ(user.CheckQuickChange(USER_CHARA_MONICA, nullptr), 0) << "the other hero cannot be changed to";
+    EXPECT_EQ(moonmod::coop::RoomHeroFloorChange(), -1);
+
+    EXPECT_EQ(api.Call("party.room_hero_set", Json::array({{{"hero", "steve"}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("party.room_hero_set", Json::array({Json::object()})).status, ApiCallStatus::InvalidArgument);
+
+    // Without the rule the party is the story's again.
+    EXPECT_TRUE(api.Call("party.room_hero_clear").value.at("cleared").get<bool>());
+    EXPECT_EQ(user.GetNowPartyMember(), max | monica | ridepod);
+    EXPECT_FALSE(api.Call("world.get").value.contains("room_hero"));
+    EXPECT_FALSE(api.Call("party.room_hero_clear").value.at("cleared").get<bool>());
+}
+
+TEST(MoonModCoopApi, TheSharedWorldIsToldAsItChangesAndTakenWithoutAnEcho) {
+    FloorFixture floor;
+    Api          api;
+    CSaveData   &save = *floor.save;
+    ASSERT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", true}}})).status, ApiCallStatus::Ok);
+    EXPECT_TRUE(moonmod::coop::RegisterWatched());
+    // The floor as it stands when watching begins is where the games start from: the first step tells nothing.
+    save.SetBitFlag(7, 1);
+    moonmod::coop::RegisterStep();
+    // A change the game makes afterwards differs from what is shared until the step that tells it.
+    save.SetBitFlag(100, 1);
+    save.short_flag[5] = 12;
+    save.game_progress = 2;
+    moonmod::coop::RegisterStep(); // (told to the watching mod; no mod runs here, so only the bookkeeping is seen)
+    // Another game's changes are written and are not differences: a second step has nothing to tell.
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "flag"}, {"id", 207}, {"value", true}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "flag"}, {"id", 100}, {"value", false}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "counter"}, {"id", 9}, {"value", -4}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "progress"}, {"id", 0}, {"value", 4}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "party"}, {"id", 0}, {"value", 3}}})).status, ApiCallStatus::Ok);
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "recruit"}, {"id", 2}, {"value", {14, 1}}}})).status, ApiCallStatus::Ok);
+    EXPECT_NE(save.GetBitFlag(207), 0);
+    EXPECT_EQ(save.GetBitFlag(100), 0);
+    EXPECT_EQ(save.short_flag[9], -4);
+    EXPECT_EQ(save.game_progress, 4);
+    EXPECT_EQ(save.user_data.party_member, 3);
+    EXPECT_EQ(save.user_data.party_chara[2].chara_no, 14);
+    EXPECT_EQ(save.user_data.party_chara[2].status, 1);
+    // A floor's record is merged: what either game did on the floor stands.
+    DNG_FLOOR_SAVE &record = save.save_dungeon.floor_info[40];
+    record.flag = 0x1;
+    record.kill_count = 9;
+    record.fast_destroy_time = 5000;
+    moonmod::coop::RegisterStep();
+    const Json theirs = Json::array({0, 3000, 0, 0, 0, 1, 0x2, 4, 2});
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "floor"}, {"id", 40}, {"value", theirs}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(record.flag, 0x3);
+    EXPECT_EQ(record.kill_count, 9);
+    EXPECT_EQ(record.visit_count, 2);
+    EXPECT_EQ(record.fast_destroy_time, 3000);
+    EXPECT_EQ(record.spheda_clear, 1);
+    // What a scene gives one player it gives the other: told once, and added to the other's own bag.
+    const int bread = 100;
+    const int had = save.user_data.GetNumSameItem(bread);
+    moonmod::coop::StoryGave(bread, 2); // (kept for the next step, which tells the watching mod)
+    moonmod::coop::RegisterStep();
+    EXPECT_EQ(save.user_data.GetNumSameItem(bread), had) << "telling gives nothing here";
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "gift"}, {"id", bread}, {"value", 2}}})).status, ApiCallStatus::Ok);
+    EXPECT_GE(save.user_data.GetNumSameItem(bread), had) << "the other game's gift lands in this bag";
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "gift"}, {"id", 0}, {"value", 1}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "gift"}, {"id", bread}, {"value", 5000}}})).status, ApiCallStatus::InvalidArgument);
+    // A dungeon's system script (a chest opening) gives the player's own: nothing is kept to tell.
+    moonmod::coop::SystemScriptBegan();
+    DngStatus.mode = DNG_STATUS_EVENT;
+    moonmod::coop::StoryGave(bread, 1);
+    DngStatus.mode = DNG_STATUS_FIELD;
+    moonmod::coop::RegisterStep();
+    // Georama parts built and waiting to be placed are the world's: either player places them.
+    ASSERT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "stock"}, {"id", 12}, {"value", 3}}})).status, ApiCallStatus::Ok);
+    EXPECT_EQ(save.build_parts_num[12], 3);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "stock"}, {"id", 12}, {"value", -1}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "stock"}, {"id", SAVE_BUILD_PARTS_MAX}, {"value", 1}}})).status,
+              ApiCallStatus::InvalidArgument);
+    // What is not a change of the world is refused whole.
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "flag"}, {"id", 5000}, {"value", true}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "flag"}, {"id", 5}, {"value", 1}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "gilda"}, {"id", 0}, {"value", 1}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.change_apply", Json::array({{{"kind", "floor"}, {"id", 40}, {"value", {1, 2, 3}}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.watch_set", Json::array({{{"enabled", false}}})).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(moonmod::coop::RegisterWatched());
+}
+
+TEST(MoonModCoopApi, UnderTheRuleAHeroGoesDownInsteadOfDyingAndIsRevivedOrGivesUp) {
+    using namespace moonmod::coop;
+    FloorFixture floor;
+    Api          api;
+    struct Hero { // a hero on the floor, with life of their own
+        CActionChara *previous = MainChara__2;
+        CActionChara  body;
+        Hero() { MainChara__2 = &body; }
+        ~Hero() {
+            MainChara__2 = previous;
+            GetBattleCharaInfo()->Initialize();
+        }
+    } hero;
+    CUserDataManager &user = floor.save->user_data;
+    user.SetActiveChrNo(USER_CHARA_MAX);
+    CHARA_DATA *max = user.GetCharaDataPtr(USER_CHARA_MAX);
+    ASSERT_NE(max, nullptr);
+    max->hp.max = 100.0f;
+    max->hp.now = 40.0f;
+    CBattleCharaInfo *info = GetBattleCharaInfo();
+    info->Initialize();
+    info->SetChrNo(USER_CHARA_MAX);
+    ASSERT_EQ(info->GetNowHp_i(), 40);
+    // Without the rule a death is the game's own.
+    EXPECT_FALSE(HeroFalls(MainChara__2));
+    EXPECT_FALSE(HeroIsDown());
+    EXPECT_EQ(api.Call("player.revive", Json::array({{{"hp", 10}}})).status, ApiCallStatus::Failed);
+    EXPECT_EQ(api.Call("player.give_up", Json::array()).status, ApiCallStatus::Failed);
+    ASSERT_EQ(api.Call("player.down_rule_set", Json::array({{{"enabled", true}}})).status, ApiCallStatus::Ok);
+    EXPECT_TRUE(DownRule());
+    // The hero's life runs out: the death plays, and the hero stays down.
+    max->hp.now = 0.0f;
+    EXPECT_TRUE(HeroFalls(MainChara__2));
+    EXPECT_TRUE(HeroIsDown());
+    EXPECT_TRUE(HeroHeldDown(MainChara__2));
+    EXPECT_EQ(api.Call("player.get", Json::array()).value["down"], true);
+    MainChara__2->muteki_time = 0;
+    DownStep();
+    EXPECT_GT(MainChara__2->muteki_time, 0) << "nothing strikes a hero who is down";
+    // Another player revives them: life back, on their feet.
+    EXPECT_EQ(api.Call("player.revive", Json::array({{{"hp", 0}}})).status, ApiCallStatus::InvalidArgument);
+    ASSERT_EQ(api.Call("player.revive", Json::array({{{"hp", 7}}})).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(HeroIsDown());
+    EXPECT_EQ(info->GetNowHp_i(), 7);
+    EXPECT_EQ(MainChara__2->prog_no, ACTION_PROG_MAIN);
+    EXPECT_EQ(api.Call("player.get", Json::array()).value["down"], false);
+    // Down again, and giving up: the game's own death event is raised.
+    max->hp.now = 0.0f;
+    EXPECT_TRUE(HeroFalls(MainChara__2));
+    DngMainScene->battle_area.script.event_no = -1;
+    ASSERT_EQ(api.Call("player.give_up", Json::array()).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(HeroIsDown());
+    EXPECT_EQ(DngMainScene->battle_area.script.event_no, 1200);
+    // The rule goes with the mod that set it.
+    ASSERT_EQ(api.Call("player.down_rule_set", Json::array({{{"enabled", false}}})).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(DownRule());
+    EXPECT_FALSE(HeroFalls(MainChara__2));
+    DngMainScene->battle_area.script.event_no = -1;
+}
+
+TEST(MoonModCoopApi, ATownTakenOffScreenIsBuiltWhenNextWalkedInto) {
+    using namespace moonmod::coop;
+    FloorFixture floor; // a dungeon floor runs: no town is on screen
+    Api          api;
+    EXPECT_FALSE(TownOnScreen(0));
+    EXPECT_FALSE(TownRebuildPending());
+    // A town taken while its player is elsewhere changes the record alone.
+    const Json town = api.Call("georama.town_export", Json::array({{{"town_id", 2}}})).value;
+    const Json taken = api.Call("georama.town_import", Json::array({{{"town_id", 2}, {"data", town["data"]}}})).value;
+    EXPECT_EQ(taken["rebuilding"], false);
+    EXPECT_EQ(taken["reloaded"], false);
+    EXPECT_FALSE(TownRebuildPending());
+    // A rebuild wanted for a town that is no longer on screen is dropped: the town loads from its record.
+    TownRebuildWanted(2);
+    EXPECT_TRUE(TownRebuildPending());
+    TownBeforeSave(); // (no live map to bring up to the record)
+    EXPECT_TRUE(TownRebuildPending());
+    TownRebuildStep();
+    EXPECT_FALSE(TownRebuildPending());
+    TownLiveSync(); // and no editor runs, so nothing is written
+}
+
 TEST(MoonModCoopApi, TitleModesArePagesAModDrivesAndAVisitStartsFromAnOpenOne) {
     FloorFixture floor;
     Api          api;
@@ -305,6 +566,11 @@ TEST(MoonModCoopApi, TitleModesArePagesAModDrivesAndAVisitStartsFromAnOpenOne) {
     EXPECT_EQ(moonmod::coop::TitlePageStep(moonmod::coop::TitlePageInput::Down), moonmod::coop::TitlePageOutcome::Stay);
     EXPECT_EQ(moonmod::coop::OpenTitleMode()->cursor, 0u); // from 1, round to 0
     EXPECT_EQ(api.Call("session.start", Json::array({{{"visit", {{"world", "DCW1xx"}, {"map", 0}}}}})).status, ApiCallStatus::InvalidArgument);
+    // A place is a town's area (map) or a map's own number (map_no); one of them is needed.
+    const Json world_text = api.Call("save.world_export").value.at("data");
+    EXPECT_EQ(api.Call("session.start", Json::array({{{"visit", {{"world", world_text}}}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("session.start", Json::array({{{"visit", {{"world", world_text}, {"map_no", -3}}}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("session.start", Json::array({{{"visit", {{"world", world_text}, {"map_no", 10}, {"door", 1}}}}})).status, ApiCallStatus::InvalidArgument);
     const ApiCallResult queued = api.Call("session.start", visit);
     ASSERT_EQ(queued.status, ApiCallStatus::Ok) << queued.message;
     EXPECT_TRUE(queued.value.at("new_account").get<bool>());
@@ -335,11 +601,20 @@ TEST(MoonModCoopApi, AChoicePanelOpensOverTheFloorAndAnswersThroughTheOwner) {
     EXPECT_EQ(moonmod::coop::OpenChoice()->options.size(), 2u);
     EXPECT_EQ(api.Call("ui.choice_open", open).status, ApiCallStatus::Failed); // one at a time
     EXPECT_EQ(api.Call("ui.choice_open", Json::array({{{"id", "x"}, {"title", "t"}, {"options", Json::array()}}})).status, ApiCallStatus::InvalidArgument);
+    // While it is open the pad's buttons are the panel's: the game's own reads see none of them.
+    GamePad__2.pad[0].button = PAD_CROSS;
+    GamePad__2.previous_pad[0].button = 0;
+    EXPECT_EQ(GamePad__2.Down(PAD_CROSS), 0);
+    EXPECT_EQ(GamePad__2.On(PAD_CROSS), 0);
+    EXPECT_TRUE(moonmod::coop::PanelHoldsPad());
     // A choice open is a busy town or floor for walking in.
     const ApiCallResult enter = api.Call("world.enter_map", Json::array({{{"map_no", 0}}}));
     EXPECT_NE(enter.status, ApiCallStatus::Ok);
     moonmod::coop::ResetForTests();
     EXPECT_FALSE(moonmod::coop::ChoiceIsOpen());
+    EXPECT_FALSE(moonmod::coop::PanelHoldsPad());
+    EXPECT_NE(GamePad__2.On(PAD_CROSS), 0) << "with the panel gone the buttons are the game's again";
+    GamePad__2.pad[0].button = 0;
 }
 
 TEST(MoonModCoopApi, StrikesAndFloorsAndMapsAreRefusedOffTheFloorWithReasons) {

@@ -3,6 +3,10 @@
 
 #include <libcdvd.h>
 
+#include "moonmod/coop_floor.hpp"
+#include "moonmod/coop_party.hpp"
+#include "moonmod/coop_story.hpp"
+
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -4576,7 +4580,9 @@ static int _ADD_ITEM(dc2::script::RunArguments stack, int argc) {
         return false;
     }
 
-    return user_data->GetItem(item_no, count);
+    const int given = user_data->GetItem(item_no, count);
+    moonmod::coop::StoryGave(item_no, count); // co-op: what the story gives one player it gives the other
+    return given;
 }
 
 /**
@@ -5499,7 +5505,9 @@ static int _AUTO_SET_TREASURE_BOX(dc2::script::RunArguments stack, int argc) {
     float pos[4];
 
     if (argc < 2) {
+        moonmod::coop::FloorPlacing(1); // MoonMod: a mod's floor seed decides the chests too
         AutoSetTreasureBox();
+        moonmod::coop::FloorPlaced(1);
     } else {
         int item_no = dc2::script::RunInteger(stack++);
         pos[0] = dc2::script::RunFloat(stack++);
@@ -5528,7 +5536,9 @@ static int _AUTO_SET_MONSTER(dc2::script::RunArguments stack, int argc) {
     }
 
     if (argc < 2) {
+        moonmod::coop::FloorPlacing(2); // MoonMod: and the monsters
         AutoSetMonster();
+        moonmod::coop::FloorPlaced(2);
         return true;
     }
 
@@ -18222,6 +18232,7 @@ static int _JOIN_PARTY_MEMBER(dc2::script::RunArguments stack, int argc) {
 
             break;
         case RS_PTR: {
+            const moonmod::coop::StoryPartyScope story; // MoonMod: a scene asks about the story's party, not a co-op room's hero
             int members = user_data->GetNowPartyMember();
             SetStack(stack, (members & (1 << chara_no)) ? 1 : 0);
             break;
