@@ -103,9 +103,11 @@ names only the files MoonMod's patch and the web build changed.
 
 The merge of 2026-11-14 (`7a7d7f29` to `bcd19672`, Kazarov `fd72338a` to `584cd2ef`) was checked by the web
 build of both renderers in headless Chrome (title, a town, the first floor of the sewers, 60 frames a second)
-and by the native tests of capacity, monsters, the roster stress fixture and event scripts. Still to do for
-it: the whole gauntlet, and MoonMod's patch with its pins (GAUNTLET.md, "Regenerating MoonMod's patch":
-`export_moonmod_patch.py` and `apply-moonfactory.ps1` still name the old pins, which move together).
+and by the native tests of capacity, monsters, the roster stress fixture and event scripts. On 2026-11-15 the
+whole gauntlet ran on it with the co-op commit (`d6058ff0`), and MoonMod's two patches were regenerated at the
+new pins from `a05def9a` and checked on a clean upstream checkout: GAUNTLET.md, "Regenerating MoonMod's
+patch", has the record. Open from that run: the browser smoke (no Playwright on that machine), a web build
+with the co-op commit, and the `SaveSlotTest` timeouts when the suite runs many at a time.
 
 ## Building here
 

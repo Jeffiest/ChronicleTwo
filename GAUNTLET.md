@@ -376,15 +376,15 @@ What this machine (Ubuntu 24.04, x86-64, 4 CPUs, no GPU) needed beyond DC2_PLAN.
 ## Regenerating MoonMod's patch
 
 MoonMod's `ports/chronicle-two/apply-moonfactory.ps1` applies two patches to a clean upstream checkout:
-`moonfactory-chronicle-two.patch` to ChronicleTwo `7a7d7f29` (with Kazarov as the submodule that commit
-pins) and `moonfactory-kazarov.patch` inside `tools/kazarov` at `fd72338a`. Both come from this tree:
+`moonfactory-chronicle-two.patch` to ChronicleTwo `bcd19672` (with Kazarov as the submodule that commit
+pins) and `moonfactory-kazarov.patch` inside `tools/kazarov` at `584cd2ef`. Both come from this tree:
 
 ```
 python3 -I tools/gauntlet/export_moonmod_patch.py --committed --check ../MoonMod/ports/chronicle-two/moonfactory-chronicle-two.patch
 python3 -I tools/gauntlet/export_moonmod_patch.py --kazarov --check ../MoonMod/ports/chronicle-two/moonfactory-kazarov.patch
 ```
 
-The first is `git diff 7a7d7f29 HEAD -- port/ scripts/ CMakeLists.txt CMakePresets.json docs/` without
+The first is `git diff bcd19672 HEAD -- port/ scripts/ CMakeLists.txt CMakePresets.json docs/ ps2/` without
 `tools/kazarov` (vendored here, a submodule there) and `port/web`; `.gitmodules` and `DC2_PLAN.md` differ
 from the pin too and are left out, since MoonMod's checkout keeps the submodule. `--committed` diffs HEAD,
 so edits in flight never reach MoonMod; without it the working tree is diffed, and the script warns about
@@ -414,6 +414,36 @@ The Kazarov patch has 4 files (`include/platform/input.hpp`, `src/c/movie_mux.c`
 `src/cpp/gfx/displaylist.cpp`, `src/cpp/platform/input.cpp`; MoonMod's shipped one has 3 and lacks
 `movie_mux.c`, the FFmpeg 6 fix, which should be shipped) and applies cleanly at `fd72338a`. Untracked work
 (`GAUNTLET.md`, `tools/gauntlet/`) never enters the patch, and nothing under `tools/` is in scope.
+
+Checked on 2026-11-15 at ChronicleTwo `a05def9a` (the merge of 2026-11-14 and the co-op commit `d6058ff0`):
+`--committed` gives 290 files, `ps2/include/savedatadungeon.hpp` among them (with no `ps2/` in the paths a
+patched checkout failed `Records.Check`), and `--kazarov` gives 29 files, most of them the web build's; both
+apply cleanly to upstream `bcd19672` and Kazarov `584cd2ef`. A fresh checkout at those pins with both patches
+applied is file for file this tree's HEAD in `port/` (but `port/web`), `scripts/`, `docs/`, `ps2/`,
+`tools/kazarov` and the two CMake files. It configures and builds `darkchronicle` and `darkchronicle_tests`,
+and what MoonMod's `verify-headless.ps1` runs (`^MoonMod`, `Smoke.HeadlessFramesScreenshot`, `Records.Check`)
+is 126 cases with none failing and 2 skipped (First Steps, and the relay case with no `DC2_COOP_RELAY`).
+
+The whole run after that merge, on WSL with 24 CPUs and the retail disc (`report/jeffie-merge-20261115` at
+`d6058ff0`, then `jeffie-merge-rerun-20261115` and `jeffie-merge-toolkit-20261115` at `a05def9a`):
+
+- pass: env, build, capacity, toolkit-limits, content (121 of 122, 1 not run), web-node (the web build is the
+  one of before the co-op commit), coop (35 engine cases and two games through the relay), retail-title,
+  retail-smokes (3), retail-determinism and retail-golden (3 frames);
+- ctest: at 20 jobs 45 new failures, 44 of them timeouts (43 `SaveSlotTest` cases and one `RunScriptProgram`
+  case) and one real: `MoonModCharacterRegistration.LuaAdapterAddsADataOnlyEnemyToTheNativeMonsterTable`
+  expected the Sewer Rat's script as `e201a`, and upstream renamed the monsters' Luau scripts (it is
+  `sewer_rat`; the model keeps its name). `a05def9a` corrects that test and the headless probe's same line.
+  At `--jobs 6` with the fix: 2475 of 2521 pass, 32 do not run, the 10 known failures fail, and 4
+  `SaveSlotTest` cases time out; those 4 pass run alone, and the whole of `SaveSlotTest` passes at `-j2`;
+- toolkit: fmt, clippy, cargo-test and tool-tests pass; its own env check fails on `clang`, as on 2026-11-08,
+  and port-tests, port-golden and event-sweep do not run;
+- lua-harness: `tools/tests/roguelike/test_runs.lua` fails with `/usr/bin/lua` (200 locals in the roguelike's
+  `main.lua`), as on 2026-11-08; the other 9 harnesses pass;
+- web-browser: not run, Playwright is not installed for node here.
+
+Source `env-wsl.sh` before `run.py`, not only pass it as `--env-sh`: the first run of that day did not, so its
+env, toolkit and toolkit-limits stages saw the system's rustc 1.75 and failed on DC2-Toolkit's lock file.
 
 ## Testing the runner
 
