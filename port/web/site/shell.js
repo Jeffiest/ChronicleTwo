@@ -634,86 +634,764 @@ function showUnpack() {
     }
 }
 
+// Reads a .zip in the browser, a file at a time, without loading it whole: the mods a player adds as a .zip. Stored
+// and deflated entries; no ZIP64. (DC_Web's site/zip.js, which Dark Cloud's page loads.)
+// zipOpen(blob) gives a Map of path -> {size, read()}, read() resolving to the entry's bytes as a Blob.
+async function zipOpen(blob) {
+    const u16 = (view, at) => view.getUint16(at, true);
+    const u32 = (view, at) => view.getUint32(at, true);
+    const view = async (start, end) => new DataView(await blob.slice(start, end).arrayBuffer());
+    // The end of central directory record: within the last 64 KiB and 22 bytes, the comment's room.
+    const from = Math.max(0, blob.size - 65557);
+    const tail = await view(from, blob.size);
+    let end = null;
+    for (let at = tail.byteLength - 22; at >= 0 && end === null; at--) {
+        if (u32(tail, at) === 0x06054b50) {
+            end = {count: u16(tail, at + 10), size: u32(tail, at + 12), offset: u32(tail, at + 16)};
+        }
+    }
+    if (end === null) {
+        throw new Error('not a zip file');
+    }
+    const directory = await view(end.offset, end.offset + end.size);
+    const decoder = new TextDecoder();
+    const entries = new Map();
+    let at = 0;
+    for (let index = 0; index < end.count; index++) {
+        if (u32(directory, at) !== 0x02014b50) {
+            throw new Error('the zip directory is damaged');
+        }
+        const method = u16(directory, at + 10);
+        const packed = u32(directory, at + 20);
+        const size = u32(directory, at + 24);
+        const nameLength = u16(directory, at + 28);
+        const skip = u16(directory, at + 30) + u16(directory, at + 32);
+        const local = u32(directory, at + 42);
+        // Windows' own zips write backslashes.
+        const name = decoder.decode(new Uint8Array(directory.buffer, directory.byteOffset + at + 46, nameLength))
+            .replace(/\\/g, '/');
+        at += 46 + nameLength + skip;
+        if (name.endsWith('/')) {
+            continue;
+        }
+        if (method !== 0 && method !== 8) {
+            throw new Error(`${name} is packed a way this page cannot read (method ${method})`);
+        }
+        entries.set(name, {
+            size,
+            async read() {
+                const header = await view(local, local + 30);
+                const data = local + 30 + u16(header, 26) + u16(header, 28);
+                const raw = blob.slice(data, data + packed);
+                if (method === 0) {
+                    return raw;
+                }
+                return new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
+            },
+        });
+    }
+    return entries;
+}
+
+// MoonMod's mods: saves/mods/<id>/, where the game looks for them (the save root is saves/ here), each a folder
+// holding mod.json. Chosen files come in as [path parts, Blob] pairs from a folder or a zip.
+async function modsDirectory() {
+    const saves = await (await gameDirectory()).getDirectoryHandle('saves', {create: true});
+    return saves.getDirectoryHandle('mods', {create: true});
+}
+
+async function readText(directory, name) {
+    try {
+        return await (await (await directory.getFileHandle(name)).getFile()).text();
+    } catch {
+        return null;
+    }
+}
+
+// The stored mods, as [{id, manifest, problem}]: problem says why mod.json can't be read, and the game will list
+// the mod as broken then.
+async function storedMods() {
+    const mods = [];
+    for await (const [id, handle] of (await modsDirectory()).entries()) {
+        if (handle.kind !== 'directory') {
+            continue;
+        }
+        let manifest = {};
+        let problem = null;
+        try {
+            const text = await readText(handle, 'mod.json');
+            if (text === null) {
+                problem = 'it has no mod.json';
+            } else {
+                manifest = JSON.parse(text);
+            }
+        } catch (error) {
+            problem = `its mod.json can't be read (${error.message})`;
+        }
+        if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+            manifest = {};
+            problem ??= 'its mod.json is not an object';
+        }
+        mods.push({id, manifest, problem});
+    }
+    return mods.sort((a, b) => (a.manifest.name ?? a.id).localeCompare(b.manifest.name ?? b.id));
+}
+
+// Splits chosen files into mods: the files themselves when mod.json is at the top, else each top folder that holds
+// one. Each mod is stored under its manifest's id (its folder's name when it has none), and turned on.
+async function storeMods(files) {
+    const isManifest = (parts) => parts.at(-1).toLowerCase() === 'mod.json';
+    const roots = new Set();
+    for (const [parts] of files) {
+        if (isManifest(parts) && parts.length <= 2) {
+            roots.add(parts.length === 1 ? '' : parts[0]);
+        }
+    }
+    if (roots.size === 0) {
+        throw new Error('no mod.json in it, at the top or in a folder at the top');
+    }
+    const copies = [];
+    const ids = [];
+    for (const root of roots) {
+        const inside = files.filter(([parts]) => root === '' || (parts.length > 1 && parts[0] === root))
+            .map(([parts, blob]) => [root === '' ? parts : parts.slice(1), blob]);
+        const manifest = inside.find(([parts]) => parts.length === 1 && isManifest(parts));
+        let id = root;
+        try {
+            id = JSON.parse(await manifest[1].text()).id || root;
+        } catch {
+            id = root;
+        }
+        if (!id || /[\\/]|^\.\.?$/.test(id)) {
+            throw new Error(`a mod has no usable id (${id || 'none'})`);
+        }
+        await (await modsDirectory()).removeEntry(id, {recursive: true}).catch(() => {});
+        copies.push(...inside.map(([parts, blob]) => [['saves', 'mods', id, ...parts].join('/'), blob]));
+        ids.push(id);
+    }
+    await copyFiles(copies, $('mod-progress'));
+    await enableMods(ids, true);
+    // A built-in mod the player adds themselves is their own copy from now on.
+    await markBuiltin(ids, () => ({own: true}));
+}
+
+// MoonMod's profile, saves/moonmod/profile.json, which the game's Mod Manager also writes: which mods are on for the
+// next start, and each mod's settings as {mod id: {setting id: value}}. The game reads it as it starts and keeps a
+// setting's default for any value that doesn't fit the setting (moonmod/runtime.cpp).
+async function profileFolder() {
+    const saves = await (await gameDirectory()).getDirectoryHandle('saves', {create: true});
+    return saves.getDirectoryHandle('moonmod', {create: true});
+}
+
+async function readProfile() {
+    let profile = null;
+    try {
+        profile = JSON.parse(await readText(await profileFolder(), 'profile.json') ?? 'null');
+    } catch {
+        profile = null;
+    }
+    if (!profile || typeof profile !== 'object' || profile.format_version !== 1) {
+        profile = {format_version: 1};
+    }
+    for (const part of ['enabled', 'settings', 'native_trusted', 'parts']) {
+        if (!profile[part] || typeof profile[part] !== 'object' || Array.isArray(profile[part])) {
+            profile[part] = {};
+        }
+    }
+    return profile;
+}
+
+// Changes the profile with change(profile) and writes it, one change after another, so quick changes in a row each
+// see the one before. Gives the profile as written.
+let profileChanges = Promise.resolve();
+
+function updateProfile(change) {
+    const done = profileChanges.then(async () => {
+        const profile = await readProfile();
+        change(profile);
+        const writable = await (await (await profileFolder()).getFileHandle('profile.json', {create: true}))
+            .createWritable();
+        await writable.write(JSON.stringify(profile, null, 2));
+        await writable.close();
+        return profile;
+    });
+    profileChanges = done.catch(() => {});
+    return done;
+}
+
+// Turns mods on or off for the next start: a mod added here is on, and one removed is forgotten with its settings.
+async function enableMods(ids, on, forget = false) {
+    await updateProfile((profile) => {
+        for (const id of ids) {
+            if (on) {
+                profile.enabled[id] = true;
+            } else {
+                delete profile.enabled[id];
+                if (forget) {
+                    delete profile.settings[id];
+                }
+            }
+        }
+    });
+}
+
+// A merged pack's part (mod.json "parts", MoonMod's docs/modding/PACKS.md) keeps its switch under the pack,
+// profile.parts[pack][part], on unless that says false: the pack's own switch never changes it. A part turned on
+// brings its pack on.
+async function enablePart(pack, id, on) {
+    await updateProfile((profile) => {
+        const choices = profile.parts[pack] && typeof profile.parts[pack] === 'object' ? profile.parts[pack] : {};
+        choices[id] = on;
+        profile.parts[pack] = choices;
+        if (on) {
+            profile.enabled[pack] = true;
+        }
+    });
+}
+
+// The parts of the stored packs, each as a stored mod of its own ({id, manifest, problem, pack}).
+function packParts(mods) {
+    const parts = [];
+    for (const mod of mods) {
+        if (mod.problem || !Array.isArray(mod.manifest.parts)) {
+            continue;
+        }
+        for (const part of mod.manifest.parts) {
+            if (part && typeof part === 'object' && typeof part.id === 'string') {
+                parts.push({id: part.id, manifest: part, problem: null, pack: mod.id});
+            }
+        }
+    }
+    return parts;
+}
+
+function partOn(profile, pack, id) {
+    return profile.parts[pack]?.[id] !== false;
+}
+
 // The mods a site builds in beside this page (mods/builtin/index.json; DC_Web makes it with port/web/mods/builtin.py
 // --game chronicle-two): each one's files are put in the game's saves/mods/<id>/ when it is missing or older, so a
-// player has them (the co-op mod among them) without adding them. A mod folder that was there before the page put
-// one in is the player's own and is left alone. What the page put in, and at which version, is kept in
-// BUILTIN_STATE. A page with no index (the game's own server, a local build) installs nothing.
+// player has them (the co-op mod among them) without adding them, and a mod put in for the first time is turned on.
+// BUILTIN_STATE remembers, per mod, the version put in, whether the player removed it (it stays removed until
+// restored) and whether the folder is the player's own (added on this page, or there before the page put one in),
+// which is left alone. A page with no index (the game's own server, a local build) installs nothing.
 const BUILTIN_STATE = 'builtin-mods.json';
 const kModId = /^[a-z0-9][a-z0-9._-]*$/;
+let builtinIndex;
+let builtinInstalling = null;
 
-async function installBuiltinMods() {
-    let index;
+async function builtinMods() {
+    if (builtinIndex === undefined) {
+        try {
+            const response = await fetch('mods/builtin/index.json', {cache: 'no-cache'});
+            builtinIndex = response.ok ? await response.json() : null;
+        } catch {
+            builtinIndex = null;
+        }
+        if (!Array.isArray(builtinIndex?.mods)) {
+            builtinIndex = {mods: []};
+        }
+    }
+    return builtinIndex.mods.filter((mod) => kModId.test(String(mod.id)) && Array.isArray(mod.files));
+}
+
+async function readBuiltinState() {
     try {
-        const response = await fetch('mods/builtin/index.json', {cache: 'no-cache'});
-        if (!response.ok) {
+        const state = JSON.parse(await readText(await gameDirectory(), BUILTIN_STATE) ?? '{}');
+        return state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+    } catch {
+        return {};
+    }
+}
+
+async function writeBuiltinState(state) {
+    const writable = await (await (await gameDirectory()).getFileHandle(BUILTIN_STATE, {create: true}))
+        .createWritable();
+    await writable.write(JSON.stringify(state, null, 2));
+    await writable.close();
+}
+
+// Changes one mod's record in BUILTIN_STATE, for a mod the player adds or removes on the page.
+async function markBuiltin(ids, record) {
+    const listed = new Set((await builtinMods()).map((mod) => mod.id));
+    const state = await readBuiltinState();
+    let changed = false;
+    for (const id of ids) {
+        if (listed.has(id)) {
+            state[id] = record(state[id] ?? {});
+            changed = true;
+        }
+    }
+    if (changed) {
+        await writeBuiltinState(state);
+    }
+}
+
+// Installs the built-in mods that are missing or older, one install at a time. restore brings back the ones the
+// player removed. Resolves to false, with the status saying why, if one could not be installed.
+function installBuiltinMods(restore = false) {
+    const run = (builtinInstalling ?? Promise.resolve()).then(async () => {
+        const mods = await builtinMods();
+        if (mods.length === 0) {
             return true;
         }
-        index = await response.json();
-    } catch {
-        return true;
-    }
-    const home = await gameDirectory();
-    let state = {};
-    try {
-        state = JSON.parse(await (await (await home.getFileHandle(BUILTIN_STATE)).getFile()).text()) ?? {};
-    } catch {
-        state = {};
-    }
-    const writeState = async () => {
-        const writable = await (await home.getFileHandle(BUILTIN_STATE, {create: true})).createWritable();
-        await writable.write(JSON.stringify(state, null, 2));
-        await writable.close();
-    };
-    const saves = await home.getDirectoryHandle('saves', {create: true});
-    const mods = await saves.getDirectoryHandle('mods', {create: true});
-    const due = [];
-    for (const mod of index.mods ?? []) {
-        if (!kModId.test(String(mod.id)) || !Array.isArray(mod.files)) {
-            continue;
-        }
-        const record = state[mod.id] ?? {};
-        if (record.own || record.version === mod.version) {
-            continue;
-        }
-        if (record.version === undefined && (await entry(mods, mod.id)) !== null) {
-            state[mod.id] = {own: true};
-            continue;
-        }
-        due.push(mod);
-    }
-    if (due.length === 0) {
-        await writeState();
-        return true;
-    }
-    try {
-        setStatus(`Installing the built-in mods (${due.map((mod) => mod.name ?? mod.id).join(', ')})…`);
-        for (const mod of due) {
-            const files = [];
-            for (const path of mod.files) {
-                const parts = String(path).split('/').filter(Boolean);
-                if (parts.length === 0 || parts.some((part) => part === '..' || part === '.')) {
-                    throw new Error(`${mod.id}: ${path} is not a path inside the mod`);
-                }
-                const response = await fetch(`mods/builtin/${mod.id}/${parts.map(encodeURIComponent).join('/')}`,
-                                             {cache: 'no-cache'});
-                if (!response.ok) {
-                    throw new Error(`${mod.id}/${path}: ${response.status}`);
-                }
-                files.push([['saves', 'mods', mod.id, ...parts].join('/'), await response.blob()]);
+        const state = await readBuiltinState();
+        const folder = await modsDirectory();
+        const due = [];
+        for (const mod of mods) {
+            const record = state[mod.id] ?? {};
+            if (record.own || (record.removed && !restore)) {
+                continue;
             }
-            // An older version the page put in goes first, so a file the new one no longer has does not stay.
-            await mods.removeEntry(mod.id, {recursive: true}).catch(() => {});
-            await copyFiles(files);
-            state[mod.id] = {version: mod.version};
-            await writeState();
+            const present = await entry(folder, mod.id);
+            if (present !== null && record.version === undefined && !record.removed) {
+                // There before the page put one in: the player's own.
+                state[mod.id] = {own: true};
+                continue;
+            }
+            if (present !== null && record.version !== undefined && !record.on) {
+                // Put in by the page before it turned its mods on (it left them off then): turned on once.
+                await enableMods([mod.id], true);
+                state[mod.id] = {...record, on: true};
+            }
+            if (present === null || record.version !== mod.version || record.removed) {
+                due.push(mod);
+            }
         }
+        if (due.length === 0) {
+            await writeBuiltinState(state);
+            return true;
+        }
+        const start = $('start');
+        start.disabled = true;
+        try {
+            setStatus(`Installing the built-in mods (${due.map((mod) => mod.name ?? mod.id).join(', ')})…`);
+            for (const mod of due) {
+                const files = [];
+                for (const path of mod.files) {
+                    const parts = String(path).split('/').filter(Boolean);
+                    if (parts.length === 0 || parts.some((part) => part === '..' || part === '.')) {
+                        throw new Error(`${mod.id}: ${path} is not a path inside the mod`);
+                    }
+                    const response = await fetch(`mods/builtin/${mod.id}/${parts.map(encodeURIComponent).join('/')}`,
+                                                 {cache: 'no-cache'});
+                    if (!response.ok) {
+                        throw new Error(`${mod.id}/${path}: ${response.status}`);
+                    }
+                    files.push([['saves', 'mods', mod.id, ...parts].join('/'), await response.blob()]);
+                }
+                // An older version the page put in goes first, so a file the new one no longer has does not stay.
+                const first = !(state[mod.id] ?? {}).on;
+                await folder.removeEntry(mod.id, {recursive: true}).catch(() => {});
+                await copyFiles(files, $('mod-progress'));
+                if (first) {
+                    await enableMods([mod.id], true);
+                }
+                state[mod.id] = {version: mod.version, on: true};
+                await writeBuiltinState(state);
+            }
+            return true;
+        } catch (error) {
+            setStatus(`Could not install the built-in mods: ${error.message ?? error}`);
+            $('mod-progress').hidden = true;
+            return false;
+        } finally {
+            start.disabled = false;
+        }
+    });
+    builtinInstalling = run.catch(() => {});
+    return run;
+}
+
+// Whether the game starts with mods: off starts it with MOONMOD_NO_MODS=1, every mod off for that run while the
+// profile keeps its choices. Remembered in this browser only.
+function modsOn() {
+    try {
+        return localStorage.getItem('ct.mods') !== 'off';
+    } catch {
         return true;
-    } catch (error) {
-        setStatus(`Could not install the built-in mods: ${error.message ?? error}`);
-        $('progress').hidden = true;
-        return false;
     }
+}
+
+function setModsOn(on) {
+    try {
+        localStorage.setItem('ct.mods', on ? 'on' : 'off');
+    } catch {
+        // Not remembered; the switch still holds for this page.
+    }
+}
+
+async function modsFromFolder(list) {
+    return [...list].map((file) => [file.webkitRelativePath.split('/').slice(1), file]);
+}
+
+// A zip's own top folder is kept, so a zip of one mod's folder and a zip of its contents both work.
+async function modsFromZip(file) {
+    const files = [];
+    for (const [path, inside] of await zipOpen(file)) {
+        files.push([path.split('/').filter(Boolean), await inside.read()]);
+    }
+    return files;
+}
+
+function element(tag, properties = {}, ...children) {
+    const made = Object.assign(document.createElement(tag), properties);
+    made.append(...children);
+    return made;
+}
+
+// The mods a mod needs, with the ones they need in turn, among the stored mods.
+function needed(mod, byId, seen = new Set()) {
+    for (const id of mod.manifest.dependencies ?? []) {
+        if (!seen.has(id) && byId.has(id)) {
+            seen.add(id);
+            needed(byId.get(id), byId, seen);
+        }
+    }
+    return seen;
+}
+
+// One setting's control, as the game's Mod Manager offers it (moonmod/manifest.cpp): a switch, a slider for a whole
+// number in a short range, a number box, a list of choices, or text. Each change is saved at once.
+function settingControl(setting, value, save) {
+    const range = Number.isFinite(setting.min) && Number.isFinite(setting.max);
+    switch (setting.type) {
+        case 'boolean': {
+            const box = element('input', {type: 'checkbox', checked: value === true});
+            box.addEventListener('change', () => save(box.checked));
+            return [box];
+        }
+        case 'integer':
+        case 'number': {
+            const step = setting.step > 0 ? setting.step : 1;
+            const fit = (number) => {
+                let fitted = range ? Math.min(setting.max, Math.max(setting.min, number)) : number;
+                if (setting.type === 'integer') {
+                    fitted = Math.round(fitted);
+                }
+                return fitted;
+            };
+            if (setting.type === 'integer' && range && (setting.max - setting.min) / step <= 200) {
+                const slider = element('input', {type: 'range', min: setting.min, max: setting.max, step, value});
+                const shown = element('output', {textContent: value});
+                slider.addEventListener('input', () => shown.textContent = slider.value);
+                slider.addEventListener('change', () => save(fit(Number(slider.value))));
+                return [slider, shown];
+            }
+            const box = element('input', {type: 'number', step: setting.type === 'integer' ? step : 'any', value});
+            if (range) {
+                Object.assign(box, {min: setting.min, max: setting.max});
+            }
+            box.addEventListener('change', () => {
+                const number = Number(box.value);
+                if (box.value === '' || !Number.isFinite(number)) {
+                    box.value = value;
+                    return;
+                }
+                value = fit(number);
+                box.value = value;
+                save(value);
+            });
+            return [box];
+        }
+        case 'choice': {
+            const list = element('select');
+            for (const choice of setting.choices ?? []) {
+                list.append(element('option', {value: choice, textContent: choice, selected: choice === value}));
+            }
+            list.addEventListener('change', () => save(list.value));
+            return [list];
+        }
+        default: {
+            const box = element('input', {type: 'text', maxLength: 256, value: value ?? ''});
+            box.addEventListener('change', () => save(box.value));
+            return [box];
+        }
+    }
+}
+
+// A setting's value in the profile when it fits the setting, else its default, as the game reads it.
+function settingValue(setting, stored) {
+    const fits = {
+        boolean: () => typeof stored === 'boolean',
+        integer: () => Number.isInteger(stored),
+        number: () => Number.isFinite(stored),
+        string: () => typeof stored === 'string' && stored.length <= 256,
+        choice: () => (setting.choices ?? []).includes(stored),
+    }[setting.type]?.() ?? false;
+    const inRange = typeof stored !== 'number' ||
+        ((setting.min ?? -Infinity) <= stored && stored <= (setting.max ?? Infinity));
+    return fits && inRange ? stored : setting.default;
+}
+
+function settingsPanel(mod, profile) {
+    const settings = Array.isArray(mod.manifest.settings) ? mod.manifest.settings : [];
+    if (settings.length === 0) {
+        return null;
+    }
+    const grid = element('div', {className: 'settings'});
+    const draw = () => {
+        grid.replaceChildren();
+        const chosen = profile.settings[mod.id] ?? {};
+        for (const setting of settings) {
+            const save = async (value) => {
+                const latest = await updateProfile((profile) => {
+                    profile.settings[mod.id] = {...(profile.settings[mod.id] ?? {}), [setting.id]: value};
+                });
+                profile.settings = latest.settings;
+            };
+            const name = element('div', {className: 'name', textContent: setting.name ?? setting.id});
+            if (setting.description) {
+                name.append(element('small', {textContent: setting.description}));
+            }
+            grid.append(name, element('div', {className: 'value'},
+                ...settingControl(setting, settingValue(setting, chosen[setting.id]), save)));
+        }
+    };
+    draw();
+    const reset = element('button', {className: 'secondary', textContent: 'Reset to defaults'});
+    reset.addEventListener('click', async () => {
+        const latest = await updateProfile((profile) => delete profile.settings[mod.id]);
+        profile.settings = latest.settings;
+        draw();
+    });
+    return element('details', {},
+        element('summary', {textContent: `Settings (${settings.length})`}), grid,
+        element('div', {className: 'row'}, reset));
+}
+
+// This game's id in a mod.json's "games": a mod that names other games but not this one is listed with a note.
+const GAME_ID = 'chronicle-two';
+
+async function refreshMods() {
+    const list = $('mod-list');
+    list.classList.toggle('off', !modsOn());
+    const mods = await storedMods();
+    const profile = await readProfile();
+    const builtin = new Map((await builtinMods()).map((mod) => [mod.id, mod]));
+    const builtinState = await readBuiltinState();
+    const removedBuiltin = [...builtin.keys()].filter((id) => builtinState[id]?.removed);
+    $('mod-restore').hidden = removedBuiltin.length === 0;
+    $('mod-restore').textContent = `Restore the built-in mods (${removedBuiltin.length})`;
+    const parts = packParts(mods);
+    const packs = new Map(parts.map((part) => [part.id, part.pack]));
+    // A part stands in for a separate mod of the same id while its pack is on: the part is what other mods need then.
+    const byId = new Map(mods.map((mod) => [mod.id, mod]));
+    for (const part of parts) {
+        if (!byId.has(part.id) || profile.enabled[part.pack] === true) {
+            byId.set(part.id, part);
+        }
+    }
+    const isOn = (id) => {
+        const found = byId.get(id);
+        return found?.pack ? profile.enabled[found.pack] === true && partOn(profile, found.pack, id) :
+            profile.enabled[id] === true;
+    };
+    const open = new Set([...list.querySelectorAll('details[open]')].map((panel) => panel.dataset.mod));
+    list.replaceChildren();
+    if (mods.length === 0) {
+        list.append(element('li', {textContent: 'None yet.', style: 'color: var(--dim)'}));
+    }
+    for (const mod of mods) {
+        const on = profile.enabled[mod.id] === true;
+        const toggle = element('input', {type: 'checkbox', checked: on, disabled: mod.problem !== null});
+        toggle.addEventListener('change', async () => {
+            // A mod turned on brings the stored mods it needs with it.
+            const wanted = toggle.checked ? [...needed(mod, byId)] : [];
+            await enableMods([mod.id, ...wanted.filter((id) => !packs.has(id))], toggle.checked);
+            for (const id of wanted.filter((id) => packs.has(id))) {
+                await enablePart(packs.get(id), id, true);
+            }
+            await refreshMods();
+        });
+        const manifest = mod.manifest;
+        const isBuiltin = builtin.has(mod.id) && builtinState[mod.id]?.version !== undefined;
+        const title = element('span', {}, element('strong', {textContent: manifest.name ?? mod.id}),
+            ' ', element('small', {textContent: [manifest.version, manifest.author && `by ${manifest.author}`,
+                isBuiltin && 'built in'].filter(Boolean).join(' · ')}));
+        const remove = element('button', {className: 'secondary', textContent: 'Remove'});
+        remove.addEventListener('click', async () => {
+            const again = builtin.has(mod.id) ? ' It is built in: "Restore the built-in mods" brings it back.' : '';
+            if (!confirm(`Remove ${manifest.name ?? mod.id} and its settings from this browser?${again}`)) {
+                return;
+            }
+            await (await modsDirectory()).removeEntry(mod.id, {recursive: true}).catch(() => {});
+            await enableMods([mod.id], false, true);
+            await markBuiltin([mod.id], () => ({removed: true}));
+            await refreshMods();
+        });
+        const item = element('li', {},
+            element('div', {className: 'mod-head'}, element('label', {}, toggle, title), remove));
+        const note = (text, warn = false) =>
+            item.append(element('div', {className: warn ? 'mod-note warn' : 'mod-note', textContent: text}));
+        if (manifest.description) {
+            note(manifest.description);
+        }
+        if (mod.problem) {
+            note(`It can't load: ${mod.problem}.`, true);
+        }
+        if (Array.isArray(manifest.games) && manifest.games.length > 0 && !manifest.games.includes(GAME_ID)) {
+            note(`It is made for ${manifest.games.join(', ')}, not Dark Chronicle: the game won't load it.`, true);
+        }
+        const needs = (of, running, say) => {
+            for (const id of of.manifest.dependencies ?? []) {
+                if (!byId.has(id)) {
+                    say(`It needs ${id}, which isn't added.`, true);
+                } else if (running && !isOn(id)) {
+                    say(`It needs ${byId.get(id).manifest.name ?? id}, which is off.`, true);
+                }
+            }
+        };
+        needs(mod, on, note);
+        const standIn = byId.get(mod.id);
+        if (standIn?.pack) {
+            note(`${byId.get(standIn.pack)?.manifest.name ?? standIn.pack} is on, so its own ${
+                standIn.manifest.name ?? mod.id} runs in this one's place.`);
+        }
+        if (manifest.native_extension) {
+            note("Its native library doesn't run in the browser.", true);
+        }
+        const panel = settingsPanel(mod, profile);
+        if (panel) {
+            panel.dataset.mod = mod.id;
+            panel.open = open.has(mod.id);
+            item.append(panel);
+        }
+        // A pack's parts, under it: each with its own switch and settings, as in the game's Mod Manager.
+        const own = mod.problem ? [] : parts.filter((part) => part.pack === mod.id);
+        if (own.length > 0) {
+            const sub = element('ul', {className: on ? 'mod-parts' : 'mod-parts off'});
+            for (const part of own) {
+                const partToggle = element('input', {type: 'checkbox', checked: partOn(profile, mod.id, part.id)});
+                partToggle.addEventListener('change', async () => {
+                    await enablePart(mod.id, part.id, partToggle.checked);
+                    if (partToggle.checked) {
+                        const wanted = [...needed(part, byId)];
+                        await enableMods(wanted.filter((id) => !packs.has(id)), true);
+                        for (const id of wanted.filter((id) => packs.has(id))) {
+                            await enablePart(packs.get(id), id, true);
+                        }
+                    }
+                    await refreshMods();
+                });
+                const shown = part.manifest;
+                const row = element('li', {}, element('div', {className: 'mod-head'}, element('label', {}, partToggle,
+                    element('span', {}, element('strong', {textContent: shown.name ?? part.id}), ' ',
+                        element('small', {textContent: [shown.version, 'in this pack'].filter(Boolean).join(' · ')})))));
+                const partNote = (text, warn = false) =>
+                    row.append(element('div', {className: warn ? 'mod-note warn' : 'mod-note', textContent: text}));
+                if (shown.description) {
+                    partNote(shown.description);
+                }
+                needs(part, on && partOn(profile, mod.id, part.id), partNote);
+                const partPanel = settingsPanel(part, profile);
+                if (partPanel) {
+                    partPanel.dataset.mod = part.id;
+                    partPanel.open = open.has(part.id);
+                    row.append(partPanel);
+                }
+                sub.append(row);
+            }
+            const folded = element('details', {open: open.has(`${mod.id}#parts`)},
+                element('summary', {textContent: `Parts (${own.length})`}), sub);
+            folded.dataset.mod = `${mod.id}#parts`;
+            item.append(folded);
+        }
+        list.append(item);
+    }
+}
+
+// "Play on your PC": the newest of the site's build releases (build-<commit>, DC_Web's .github/workflows/builds.yml)
+// that has Dark Chronicle for the chosen system, and the built-in mods as zips (mods/builtin/, builtin.py). Shown
+// whether or not this browser can run the game. Until a release carries Dark Chronicle's PC builds, the page says so.
+const PAGE_REPOSITORY = 'Jeffiest/DC_Web';
+const PC_BUILDS = {
+    windows: 'darkchronicle-windows-x64.zip',
+    linux: 'darkchronicle-linux-x86_64.tar.gz',
+    macos: 'darkchronicle-macos-arm64.tar.gz',
+};
+const PC_SYSTEM_NAMES = {windows: 'Windows', linux: 'Linux', macos: 'macOS'};
+const PC_INSTALL = {
+    windows: 'Unzip the game anywhere and run darkchronicle.exe.',
+    linux: 'Unpack the archive and run darkchronicle.',
+    macos: 'Unpack the archive and start the game.',
+};
+
+function pcSystem() {
+    const platform = (navigator.userAgentData?.platform ?? navigator.platform ?? '').toLowerCase();
+    if (platform.includes('mac')) {
+        return 'macos';
+    }
+    return platform.includes('linux') && !/android/i.test(navigator.userAgent) ? 'linux' : 'windows';
+}
+
+// The repository's releases, newest first, or null when GitHub can't be asked. Asked once a page.
+let releaseList = null;
+
+function releases() {
+    releaseList ??= (async () => {
+        try {
+            const response = await fetch(`https://api.github.com/repos/${PAGE_REPOSITORY}/releases?per_page=100`);
+            if (!response.ok) {
+                return null;
+            }
+            const all = await response.json();
+            return all.sort((a, b) => (b.published_at ?? '').localeCompare(a.published_at ?? ''));
+        } catch {
+            return null;
+        }
+    })();
+    return releaseList;
+}
+
+async function showPcDownloads() {
+    const select = $('pc-system');
+    select.value = pcSystem();
+    const mods = (await builtinMods()).filter((mod) => typeof mod.file === 'string');
+    const bundle = builtinIndex?.bundle;
+    if (bundle?.file) {
+        $('pc-mods-all').href = `mods/builtin/${bundle.file}`;
+        const size = bundle.size < 1048576 ? `${Math.max(1, Math.round(bundle.size / 1024))} KiB` : mib(bundle.size);
+        $('pc-mods-all').textContent = `All the mods (.zip, ${size})`;
+        $('pc-mods-all').hidden = false;
+    }
+    if (mods.length > 0) {
+        $('pc-builtin').hidden = false;
+        $('pc-builtin-list').replaceChildren(...mods.map((mod) => element('li', {},
+            element('a', {href: `mods/builtin/${mod.file}`, textContent: `${mod.name ?? mod.id} ${mod.version}`}),
+            ' ', element('small', {style: 'color: var(--dim)', textContent: mod.id}))));
+    }
+    const builds = (await releases())?.filter((release) => /^build-/.test(release.tag_name)) ?? null;
+    const draw = () => {
+        const system = select.value;
+        const file = PC_BUILDS[system];
+        const button = $('pc-build');
+        const note = $('pc-build-note');
+        $('pc-install').textContent = `${PC_INSTALL[system]} For mods, unzip them into the mods folder inside the ` +
+            "game's saves folder, a folder per mod, and turn them on in Options > Mod Manager.";
+        note.replaceChildren();
+        if (builds === null) {
+            button.hidden = false;
+            button.href = `https://github.com/${PAGE_REPOSITORY}/releases`;
+            button.textContent = `The game for ${PC_SYSTEM_NAMES[system]} (GitHub releases)`;
+            note.textContent = "GitHub couldn't be asked for the newest build; its releases page lists them all.";
+            return;
+        }
+        const release = builds.find((candidate) => candidate.assets?.some((asset) => asset.name === file));
+        const asset = release?.assets.find((candidate) => candidate.name === file);
+        button.hidden = !asset;
+        if (!asset) {
+            note.textContent = `There is no Dark Chronicle build for ${PC_SYSTEM_NAMES[system]} yet. The mods above ` +
+                'work with a Dark Chronicle you build yourself (ChronicleTwo, docs/PC.md).';
+            return;
+        }
+        button.href = asset.browser_download_url;
+        button.textContent = `The game for ${PC_SYSTEM_NAMES[system]} (${mib(asset.size)})`;
+        note.textContent = `Build ${release.tag_name.slice('build-'.length)}, ${(release.published_at ?? '').slice(0, 10)}. `;
+        note.append(element('a', {href: release.html_url, textContent: 'Every file of this build'}));
+    };
+    select.addEventListener('change', draw);
+    draw();
 }
 
 async function refresh() {
@@ -724,7 +1402,10 @@ async function refresh() {
         $('start').hidden = false;
         $('forget').hidden = true;
         $('stored').textContent = `The game data comes from the computer serving this page (data.zip, ${mib(server.size)}).`;
-        if (!await installBuiltinMods()) {
+        $('mods').hidden = false;
+        const installed = await installBuiltinMods();
+        await refreshMods();
+        if (!installed) {
             return;
         }
         setStatus('Ready. The game reads the data over the network as it plays; saves stay in this browser.');
@@ -733,6 +1414,7 @@ async function refresh() {
     const what = await stored();
     $('pick').hidden = what !== null;
     $('ready').hidden = what === null;
+    $('mods').hidden = what === null;
     // A disc that is extracted is no longer read: the game plays from data.zip, and the disc only takes space.
     const spent = what !== null && what.marker && (what.kind === 'disc.iso' || what.kind === 'disc');
     $('forget-disc').hidden = !spent;
@@ -746,7 +1428,9 @@ async function refresh() {
     $('start').hidden = packed;
     if (what) {
         $('stored').textContent = describe(what);
-        if (!await installBuiltinMods()) {
+        const installed = await installBuiltinMods();
+        await refreshMods();
+        if (!installed) {
             return;
         }
         setStatus(packed ? 'Ready. Choose how to unpack the disc.' : 'Ready.');
@@ -1064,6 +1748,9 @@ function start(unpack = null) {
     if (unpack) {
         args.push('--env', `CT_WEB_UNPACK=${unpack}`);
     }
+    if (!modsOn()) {
+        args.push('--env', 'MOONMOD_NO_MODS=1');
+    }
     if (extra) {
         args.push(...extra.split(/\s+/).filter(Boolean));
     }
@@ -1156,6 +1843,7 @@ function showPreviousLog() {
 async function main() {
     showPreviousLog();
     showGames();
+    showPcDownloads().catch((error) => log(`[page error] downloads: ${error.message ?? error}`));
     $('fullscreen').addEventListener('click', () => {
         if (document.fullscreenElement) {
             document.exitFullscreen();
@@ -1220,6 +1908,35 @@ async function main() {
     };
     $('file').addEventListener('change', choose(storeFiles));
     $('folder').addEventListener('change', choose(storeFolder));
+    const addMods = (read) => async (event) => {
+        const chosen = event.target.files;
+        if (!chosen || chosen.length === 0) {
+            return;
+        }
+        setStatus('Adding the mod…');
+        try {
+            await storeMods(await read(chosen));
+            setStatus('The mod is added and on.');
+        } catch (error) {
+            setStatus(`Could not add it: ${error.message ?? error}`);
+            $('mod-progress').hidden = true;
+        }
+        event.target.value = '';
+        await refreshMods();
+    };
+    $('mod-folder').addEventListener('change', addMods(modsFromFolder));
+    $('mod-zip').addEventListener('change', addMods((chosen) => modsFromZip(chosen[0])));
+    $('mod-restore').addEventListener('click', async () => {
+        if (await installBuiltinMods(true)) {
+            setStatus('The built-in mods are back.');
+        }
+        await refreshMods();
+    });
+    $('mods-on').checked = modsOn();
+    $('mods-on').addEventListener('change', async () => {
+        setModsOn($('mods-on').checked);
+        await refreshMods();
+    });
     $('start').addEventListener('click', () => start());
     $('unpack-whole').addEventListener('click', () => start('whole'));
     $('unpack-play').addEventListener('click', () => start('play'));

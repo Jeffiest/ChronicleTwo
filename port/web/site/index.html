@@ -31,6 +31,37 @@
   #games a[aria-current] { background: var(--accent); color: #111; }
   code { color: var(--fg); }
 
+  /* The mods (shell.js, refreshMods): a switch for each, its settings folded under it. */
+  #mod-list { list-style: none; margin: 12px 0 0; padding: 0; }
+  #mod-list > li { border-top: 1px solid #262630; padding: 10px 0; }
+  #mod-list.off > li { opacity: 0.5; }
+  .mod-head { display: flex; align-items: center; gap: 10px; }
+  .mod-head label { flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: 0; }
+  .mod-head small, .mod-note { color: var(--dim); }
+  .mod-head button { padding: 2px 8px; }
+  .mod-note { margin: 4px 0 0 26px; font-size: 13px; }
+  .mod-note.warn { color: #e0a060; }
+  #mod-list details { margin: 6px 0 0 26px; }
+  .mod-parts { list-style: none; margin: 8px 0 0 26px; padding: 0; }
+  .mod-parts > li { border-top: 1px solid #1f1f28; padding: 6px 0; }
+  .mod-parts.off > li { opacity: 0.5; }
+  #mod-list summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  .settings { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center;
+    margin-top: 8px; font-size: 14px; }
+  .settings .name small { display: block; color: var(--dim); font-size: 12px; }
+  .settings .value { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .settings input[type=range] { width: min(160px, 30vw); accent-color: var(--accent); }
+  .settings output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .settings select, .settings input[type=text], .settings input[type=number] { background: #24242d; color: var(--fg);
+    border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px; font: inherit; max-width: 40vw; }
+  input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+  /* Play on your PC (shell.js, showPcDownloads). */
+  #pc a:not(.button) { color: var(--accent); }
+  #pc-builtin-list { padding-left: 20px; }
+  #pc summary { cursor: pointer; color: var(--accent); }
+  #pc-system { background: #24242d; color: var(--fg); border: 1px solid #33333d; border-radius: 4px; padding: 3px 6px;
+    font: inherit; }
+
   /* The game: the whole window, the canvas scaled to fit. */
   #game { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
   canvas { display: block; width: 100%; height: 100%; object-fit: contain; outline: none; }
@@ -122,6 +153,44 @@
     <p style="margin-top: 12px">Saves and settings stay in this browser's storage when the data is removed. An
       extracted disc is no longer read, so it can be removed to free its space; the game then plays from the
       extraction alone.</p>
+  </div>
+  <div id="mods" class="card" hidden>
+    <h2>Mods</h2>
+    <p>MoonMod mods load when the game starts. The site's own mods, Online Co-op among them, are built in: they are
+      installed here for you, turned on the first time. Add others as a mod's folder (the one holding
+      <code>mod.json</code>), a folder of mods, or a <code>.zip</code> of either. They are kept in this browser's
+      storage with your saves. Turn each on or off and change its settings here before you start; the game's own Mod
+      Manager (Options) changes them too.</p>
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+      <input id="mods-on" type="checkbox" checked> Start the game with mods
+    </label>
+    <ul id="mod-list"></ul>
+    <div class="row">
+      <label class="button secondary">Add a mod folder<input id="mod-folder" type="file" webkitdirectory></label>
+      <label class="button secondary">Add a .zip<input id="mod-zip" type="file" accept=".zip"></label>
+      <button id="mod-restore" class="secondary" hidden>Restore the built-in mods</button>
+    </div>
+    <progress id="mod-progress" hidden></progress>
+  </div>
+  <div id="pc" class="card">
+    <h2>Play on your PC</h2>
+    <p>The same game built for your own computer, with the site's mods. The game data still comes from your own
+      disc.</p>
+    <label>Your system <select id="pc-system">
+      <option value="windows">Windows (x64)</option>
+      <option value="linux">Linux (x86_64)</option>
+      <option value="macos">macOS (Apple silicon)</option>
+    </select></label>
+    <div class="row" style="margin-top: 12px">
+      <a id="pc-build" class="button" style="text-decoration: none">The game</a>
+      <a id="pc-mods-all" class="button secondary" style="text-decoration: none" hidden>All the mods (.zip)</a>
+    </div>
+    <p id="pc-build-note" class="mod-note" style="margin-left: 0"></p>
+    <p id="pc-install" class="mod-note" style="margin-left: 0"></p>
+    <details id="pc-builtin" hidden>
+      <summary>Each mod on its own</summary>
+      <ul id="pc-builtin-list"></ul>
+    </details>
   </div>
 </main>
 
