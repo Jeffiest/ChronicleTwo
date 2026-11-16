@@ -115,6 +115,39 @@ bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &nam
 // over them.
 void DrawAvatarNames();
 
+// ---- What a hero fires: shots and spells seen on the other screens (coop_world_moonmod.cpp) -------------------------
+// actscript.cpp tells each shot this game's own hero fires (HeroFired); player.effects_take gives them to the mod,
+// whose peers draw them from that player's avatar (world.avatar_effect): the same effect, flying the same way, with no
+// attack in it (the shot's damage is the firing game's own, and reaches the host's monsters as that game's hits do).
+
+enum class HeroShot : int {
+    Gun = 1,        // Max's pistol: the bullet and the muzzle flash
+    MachineGun = 2, // Max's machine gun or the ridepod's: a bullet of the burst
+    Grenade = 3,    // Max's launcher: a grenade
+    Laser = 4,      // Max's laser: a beam (value: its look, LASER_VISUAL_*)
+    Magic = 5,      // Monica's armband or her magic sword's charge (value: the effect base, amount: its tint)
+    Trail = 6,      // a blade's trail: from frame0 to frame1 of the hero's weapon (value: its length, amount: the steps
+                    // it fades over, target: the steps it holds first); pos and dir are not used
+};
+struct HeroEffect {
+    int   kind = 0; // HeroShot
+    float pos[3] = {0.0f, 0.0f, 0.0f};
+    float dir[3] = {0.0f, 0.0f, 0.0f};
+    int   value = 0;
+    float amount = 0.0f;
+    int   target = -1; // the monster's scene slot the shot was aimed at (the same slot in every game), or -1
+    std::string frame0, frame1; // a trail's ends: frames of the weapon, by name
+};
+// actscript.cpp: a character fired; kept when it is this game's hero.
+void                    HeroFired(const void *chara, HeroShot kind, const float *pos, const float *dir, int value = 0,
+                                  float amount = 0.0f, int target = -1);
+// actionchara.cpp: a character's blade began a trail (CActionChara::StepEffect); kept when it is this game's hero.
+void                    HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold);
+std::vector<HeroEffect> TakeHeroEffects();
+// Draws another player's shot from avatar slot (0-2). False when the avatar is not on this floor or the effect can't
+// be made here.
+bool                    AvatarEffect(int slot, const HeroEffect &effect);
+
 // ---- Monsters: the host's (coop_world_moonmod.cpp) -----------------------------------------------------------------
 
 struct Puppet {

@@ -415,6 +415,50 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
 
 // ---- Avatars and monsters ---------------------------------------------------------------------------------------------------
 
+// player.effects_take: the shots and spells this game's hero fired since the last call, oldest first.
+ApiCallResult EffectsTakeCall(const Json &args) {
+    if (!args.is_array() || !args.empty()) return Invalid("player.effects_take takes no arguments");
+    Json effects = Json::array();
+    for (const HeroEffect &e : TakeHeroEffects()) {
+        Json entry = {{"kind", e.kind}, {"x", e.pos[0]}, {"y", e.pos[1]}, {"z", e.pos[2]}, {"dx", e.dir[0]}, {"dy", e.dir[1]},
+                      {"dz", e.dir[2]}, {"value", e.value}, {"amount", e.amount}, {"target", e.target}};
+        if (!e.frame0.empty()) {
+            entry["frame0"] = e.frame0;
+            entry["frame1"] = e.frame1;
+        }
+        effects.push_back(std::move(entry));
+    }
+    return Ok({{"effects", std::move(effects)}});
+}
+
+// world.avatar_effect: another player's shot, drawn from their avatar.
+ApiCallResult AvatarEffectCall(const Json &args) {
+    static constexpr const char *kUsage =
+        "expected {slot = 1-3, kind = 1-6, x, y, z, dx, dy, dz, value = a whole number or nil, amount = a number or nil, target = a scene slot or nil, frame0, frame1 = a trail's frames or nil} (player.effects_take's entries)";
+    if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
+    const Json &request = args[0];
+    std::string unknown;
+    if (!OnlyFields(request, {"slot", "kind", "x", "y", "z", "dx", "dy", "dz", "value", "amount", "target", "frame0", "frame1"}, unknown)) {
+        return Invalid("unknown field: " + unknown);
+    }
+    int        slot = 0;
+    HeroEffect e;
+    if (!ReadBoundedInt(request, "slot", 1, kAvatars, slot) || !ReadBoundedInt(request, "kind", 1, 6, e.kind)) return Invalid(kUsage);
+    for (const char *key : {"frame0", "frame1"}) {
+        if (!request.contains(key) || request[key].is_null()) continue;
+        if (!request[key].is_string() || request[key].get<std::string>().size() > 31) return Invalid(kUsage);
+        (key[5] == '0' ? e.frame0 : e.frame1) = request[key].get<std::string>();
+    }
+    if (!ReadNumber(request, "x", e.pos[0], true) || !ReadNumber(request, "y", e.pos[1], true) || !ReadNumber(request, "z", e.pos[2], true) ||
+        !ReadNumber(request, "dx", e.dir[0], true) || !ReadNumber(request, "dy", e.dir[1], true) || !ReadNumber(request, "dz", e.dir[2], true) ||
+        !ReadNumber(request, "amount", e.amount, false)) {
+        return Invalid(kUsage);
+    }
+    if (request.contains("value") && !request["value"].is_null() && !ReadBoundedInt(request, "value", -1, 65535, e.value)) return Invalid(kUsage);
+    if (request.contains("target") && !request["target"].is_null() && !ReadBoundedInt(request, "target", -1, 255, e.target)) return Invalid(kUsage);
+    return Ok({{"shown", AvatarEffect(slot - 1, e)}});
+}
+
 ApiCallResult AvatarSetCall(const Json &args) {
     static constexpr const char *kUsage =
         "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, ridepod = {leg, arm, body, pack} item_nos or nil, form = monster_id or nil, x, y, z, heading, motion, tint = {r, g, b} or nil, name = text or nil, down = true or nil}";
@@ -508,7 +552,9 @@ ApiCallResult MirrorGet(const Json &args) {
             const auto round = [](float v) { return std::round(v * 10.0f) / 10.0f; };
             monsters.push_back({{"slot", slot}, {"kind", m->monster_id}, {"state", m->state}, {"hp", m->life}, {"max_hp", m->max_life},
                                 {"x", round(at[0])}, {"y", round(at[1])}, {"z", round(at[2])},
-                                {"heading", std::round(rotation[1] * 1000.0f) / 1000.0f}, {"motion", MotionNumberOf(*m)}});
+                                {"heading", std::round(rotation[1] * 1000.0f) / 1000.0f}, {"motion", MotionNumberOf(*m)},
+                                // (drawn in this game: in sight of its hero, or fading in or out)
+                                {"seen", m->view_state != MONSTER_VIEW_OUT && m->view_state != MONSTER_VIEW_INIT && m->view_alpha > 0.0f}});
         }
     }
     Json hits = Json::array();
@@ -945,6 +991,8 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
         return Ok({{"kept", true}});
     }
     if (path == "world.avatar_set") return AvatarSetCall(args);
+    if (path == "world.avatar_effect") return AvatarEffectCall(args);
+    if (path == "player.effects_take") return EffectsTakeCall(args);
     if (path == "world.avatar_clear") {
         int slot = 0;
         if (!args.is_array() || args.size() > 1 ||
@@ -1000,7 +1048,7 @@ void AddCapabilities(RuntimeConfig &config) {
                              "save.account_list", "save.account_remove", "save.slots_list", "save.slot_player_export", "save.slot_player_import",
                              "party.room_hero_set", "party.room_hero_clear", "world.watch_set", "world.change_apply",
                              "player.down_rule_set", "player.revive", "player.give_up",
-                             "world.avatar_set", "world.avatar_clear", "world.enter_map",
+                             "world.avatar_set", "world.avatar_clear", "world.enter_map", "world.avatar_effect", "player.effects_take",
                              "monsters.mirror_get", "monsters.puppet_set", "monsters.puppet_clear", "monsters.mirror_hit",
                              "dungeons.set_seed", "dungeons.enter_floor", "dungeons.shared_events_get", "dungeons.shared_event_run",
                              "combat.strike_player", "items.owned", "georama.town_export", "georama.town_import", "ui.choice_open", "ui.choice_close",

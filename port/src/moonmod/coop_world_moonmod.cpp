@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -21,11 +22,16 @@
 #include "dataread.hpp"
 #include "dng_event.hpp"
 #include "dng_main.hpp"
+#include "dng_object.hpp"
 #include "editctrl.hpp"
+#include "effscript.hpp"
 #include "gamedata.hpp"
 #include "mainloop.hpp"
+#include "maintex.hpp"
 #include "menuchr.hpp"
+#include "cameracontrol.hpp"
 #include "mglib.hpp"
+#include "mg_math.hpp"
 #include "mg_memory.hpp"
 #include "monster.hpp"
 #include "savedata.hpp"
@@ -384,6 +390,8 @@ std::shared_ptr<AvatarBody> Build(Avatar &a, int index, int town, Shape shape) {
     if (town == 0) hang(worn(a.target.weapon, CHARA_EQUIP_MELEE), 2, monica ? "sword_hand" : "ef00");
     if (town == 0 || monica) hang(worn(a.target.sub, CHARA_EQUIP_SUB), 3, monica ? "wr" : "gun_hand");
     hang(worn(a.target.head, CHARA_EQUIP_HEAD), 4, monica ? "ac" : "hat");
+    // The blade's trail, made as the game makes its hero's (charasetup.cpp, SetupMainUnit), for world.avatar_effect.
+    if (town == 0) SetSwordBlurEffect(body.get(), &a.stacks[2], character);
     return body;
 }
 
@@ -447,6 +455,49 @@ int AvatarsHere(std::array<std::array<float, 3>, kAvatars> &at, std::array<bool,
     return count;
 }
 
+// A copy's sight is this game's own: whether it is near this game's hero, and its fade in and out of sight and away
+// from the camera, as CMonsterMan::ThinkHost works them out for a monster that thinks here. A copy's thinking rests
+// (DNG_PAUSE_MONSTER_AI), and with it all of that: a copy placed out of sight stayed out of sight, never drawn, while
+// blows still reached it.
+void PuppetSight(CActiveMonster *monster) {
+    auto *hero = DngMainScene != nullptr ? DngMainScene->GetCharacter(DNG_CHARA_SLOT_PARTY) : nullptr;
+    if (hero == nullptr) {
+        monster->view_state = MONSTER_VIEW_IN;
+        monster->view_alpha = 1.0f;
+        return;
+    }
+    float hero_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    float own_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    hero->GetPosition(hero_at);
+    monster->GetPosition(own_at);
+    monster->target_dist = mgDistVector(hero_at, own_at);
+    if (auto *camera = static_cast<CCameraControl *>(DngMainScene->GetCamera(DngMainScene->active_camera)); camera != nullptr) {
+        float camera_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+        camera->GetPos(camera_at);
+        monster->camera_dist = mgDistVector(camera_at, own_at);
+    }
+    // (a copy is never put to rest for the number of monsters about: the leader already chose which ones act)
+    monster->CheckView(MONSTER_ACTIVE_MAX + 1);
+    if (monster->view_state == MONSTER_VIEW_FADE_OUT) {
+        monster->view_alpha -= 0.05f;
+        if (monster->view_alpha <= 0.0f) {
+            monster->view_alpha = 0.0f;
+            monster->view_state = MONSTER_VIEW_OUT;
+        }
+    } else if (monster->view_state == MONSTER_VIEW_FADE_IN) {
+        monster->view_alpha += 0.05f;
+        if (!(monster->view_alpha < 1.0f)) {
+            monster->view_alpha = 1.0f;
+            monster->view_state = MONSTER_VIEW_IN;
+        }
+    }
+    if (monster->camera_dist < 4.0f * monster->body_width) {
+        monster->camera_alpha = std::max(0.0f, monster->camera_alpha - 1.0f / 12.0f);
+    } else {
+        monster->camera_alpha = std::min(1.0f, monster->camera_alpha + 1.0f / 12.0f);
+    }
+}
+
 void PuppetsStep() {
     if (!InDungeon() || BattleAreaScene == nullptr) {
         if (std::ranges::any_of(g_puppets, &PuppetSlot::used)) PuppetsClear();
@@ -469,8 +520,9 @@ void PuppetsStep() {
             p.motion = p.host.motion;
             monster->SetMotion(p.host.motion, 2);
         }
-        // Its own thoughts are paused with every monster's: the copy still animates.
+        // Its own thoughts are paused with every monster's: the copy still animates, and comes into sight here.
         monster->Step();
+        PuppetSight(monster);
     }
     // A guest's floor is the host's: the monsters' own scripts rest while any copy stands.
     if (any && !g_puppets_pause) {
@@ -629,6 +681,189 @@ void AvatarsStep() {
         }
         a.body->target = a.target;
     }
+}
+
+// ---- What a hero fires -----------------------------------------------------------------------------------------------
+
+namespace {
+
+std::vector<HeroEffect> g_hero_effects;
+constexpr std::size_t   kHeroEffectsKept = 64; // a mod that stops taking them loses the oldest, not the game's memory
+
+// The muzzle flash every gun of Max's shows at the muzzle.
+char kMuzzleFlash[] = "\x83}\x83Y\x83\x8B\x83t\x83\x89\x83" "b\x83V\x83\x85";
+char kBullet[] = "\x8F" "e\x92" "e";
+
+// An effect base this game has not loaded (its own hero is the other one: Max's gun effects in Monica's game, her
+// magic in Max's), loaded as the floor's scripts load theirs (_LOAD_EFFECT_SCRIPT): into the scene's third stack, at
+// the floor's level, so it goes with the floor.
+bool EnsureBase(CEffectScriptMan &fx, int base_no) {
+    if (base_no < 0 || DngMainScene == nullptr) return false;
+    for (const EFF_SPT_BASE *loaded : fx.base) {
+        if (loaded != nullptr && loaded->base_no == base_no) return true;
+    }
+    const int level = std::exchange(fx.level, 3);
+    const int built = fx.LoadBaseEffSpt(base_no, DngMainScene->GetStack(3), -1);
+    fx.level = level;
+    if (built < 0) std::fprintf(stderr, "co-op: effect base %d can't be loaded for another player's shot\n", base_no);
+    else std::fprintf(stderr, "co-op: effect base %d loaded for another player's shots\n", base_no);
+    return built >= 0;
+}
+
+// The last effect made, marked as drawn only (its script makes no attack), from a point.
+bool Drawn(CEffectScriptMan &fx, float *pos) {
+    if (fx.now == nullptr) return false;
+    fx.now->shown_only = true;
+    fx.SetScriptVect1(pos, 0, -1);
+    return true;
+}
+
+bool MakeEffect(CEffectScriptMan &fx, char *name, float *pos) {
+    // (by number: the by-name call answers the effect's slot, which is -1 for one made without a slot, as these are)
+    const int base_no = fx.SearchBaseNo(name);
+    if (!EnsureBase(fx, base_no) || fx.CreateEffSpt(base_no, 0, 0) == nullptr) {
+        std::fprintf(stderr, "co-op: effect %d not made for another player's shot\n", base_no);
+        return false;
+    }
+    return Drawn(fx, pos);
+}
+
+int TargetHere(int target) {
+    // a monster slot of the floor that holds a monster here too; else the shot flies straight
+    if (target < DNG_CHARA_SLOT_MONSTER || target >= DNG_CHARA_SLOT_MONSTER_END || DngMainScene == nullptr) return -1;
+    return DngMainScene->GetCharacter(target) != nullptr ? target : -1;
+}
+
+} // namespace
+
+void HeroFired(const void *chara, HeroShot kind, const float *pos, const float *dir, int value, float amount, int target) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon()) return;
+    HeroEffect e;
+    e.kind = static_cast<int>(kind);
+    for (int axis = 0; axis < 3; ++axis) {
+        e.pos[axis] = pos[axis];
+        e.dir[axis] = dir[axis];
+    }
+    e.value = value;
+    e.amount = amount;
+    e.target = target;
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(e);
+}
+
+// A frame's name as a trail message carries it: letters, digits and _ only, and short.
+static bool FrameNameOk(const std::string &name) {
+    return !name.empty() && name.size() < 32 &&
+           std::ranges::all_of(name, [](unsigned char c) { return std::isalnum(c) != 0 || c == '_'; });
+}
+
+void HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon() || frame0 == nullptr || frame1 == nullptr) return;
+    HeroEffect e;
+    e.kind = static_cast<int>(HeroShot::Trail);
+    e.frame0 = frame0;
+    e.frame1 = frame1;
+    if (!FrameNameOk(e.frame0) || !FrameNameOk(e.frame1)) return;
+    e.value = length;
+    e.amount = static_cast<float>(fade);
+    e.target = hold;
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(std::move(e));
+}
+
+std::vector<HeroEffect> TakeHeroEffects() { return std::exchange(g_hero_effects, {}); }
+
+// As the firing game's own actscript.cpp draws each shot (ShotNormalGun and the others), less the attack: no collision
+// primitive, so it strikes nothing here (the firing game's hits are what count).
+bool AvatarEffect(int slot, const HeroEffect &e) {
+    if (!AvatarShown(slot) || !InDungeon() || FxScriptMan == nullptr || DngStatus.mode != DNG_STATUS_FIELD) return false;
+    for (int axis = 0; axis < 3; ++axis) {
+        if (!std::isfinite(e.pos[axis]) || !std::isfinite(e.dir[axis])) return false;
+    }
+    CEffectScriptMan &fx = *FxScriptMan;
+    float pos[4] = {e.pos[0], e.pos[1], e.pos[2], 1.0f};
+    float dir[4] = {e.dir[0], e.dir[1], e.dir[2], 0.0f};
+    switch (static_cast<HeroShot>(e.kind)) {
+        case HeroShot::Gun: {
+            if (!MakeEffect(fx, kBullet, pos)) return false;
+            float flight[4];
+            sceVu0ScaleVector(flight, dir, 20.0f);
+            fx.SetScriptVect2(flight, 0, -1);
+            MakeEffect(fx, kMuzzleFlash, pos);
+            return true;
+        }
+        case HeroShot::MachineGun: {
+            const float length = std::sqrt(dir[0] * dir[0] + dir[1] * dir[1] + dir[2] * dir[2]);
+            if (!(length > 0.0001f)) return false;
+            MachineGun.Set(pos, dir);
+            const int index = MachineGun.index;
+            // (Set takes the next free bullet; when every bullet flies it takes none, and the one at index is another's)
+            if (index >= 0 && index < MACHINE_GUN_BULLET_NUM && MachineGun.life[index] == 90 &&
+                MachineGun.start_pos[index][0] == pos[0] && MachineGun.start_pos[index][2] == pos[2]) {
+                MachineGun.col_prim_id[index] = -1;
+            }
+            MakeEffect(fx, kMuzzleFlash, pos);
+            return true;
+        }
+        case HeroShot::Grenade: {
+            float muzzle[4];
+            sceVu0ScaleVector(muzzle, dir, 500.0f);
+            sceVu0AddVector(muzzle, pos, muzzle);
+            dir[1] += 0.1f;
+            CRocketLauncher *launcher = RocketLauncher.Get();
+            if (launcher == nullptr) return false;
+            launcher->SetPos(pos, muzzle, dir);
+            launcher->target_chara = TargetHere(e.target);
+            launcher->speed = 20.0f;
+            launcher->homing_delay = 4;
+            launcher->homing_time = launcher->target_chara >= 0 ? 30 : 0;
+            launcher->col_prim_id = -1;
+            MakeEffect(fx, kMuzzleFlash, pos);
+            return true;
+        }
+        case HeroShot::Laser: {
+            const int type = std::clamp(e.value, 0, 2);
+            float muzzle[4], aim[4];
+            sceVu0ScaleVector(muzzle, dir, 20.0f);
+            sceVu0AddVector(muzzle, pos, muzzle);
+            sceVu0ScaleVector(aim, dir, 500.0f);
+            sceVu0AddVector(aim, muzzle, aim);
+            CLaserGun *laser = LaserGun.Get();
+            if (laser == nullptr) return false;
+            laser->SetPos(muzzle, aim, dir);
+            laser->target_chara = -1;
+            laser->speed = 30.0f;
+            laser->homing_delay = 99999;
+            laser->homing_time = 0;
+            laser->SetVisualCode(type);
+            laser->col_prim_id = -1;
+            if (MakeEffect(fx, kMuzzleFlash, pos)) {
+                // (the flash in the beam's colours, as ShotLaserGun has them)
+                static constexpr float kColours[3][4] = {{64, 128, 64, 128}, {64, 64, 128, 128}, {128, 32, 128, 180}};
+                fx.SetValue(0, 1, 0, -1);
+                for (int i = 0; i < 4; ++i) fx.SetValue(i + 1, kColours[type][i], 0, -1);
+            }
+            return true;
+        }
+        case HeroShot::Magic: {
+            if (!EnsureBase(fx, e.value) || fx.CreateEffSpt(e.value, 0, 0) == nullptr || !Drawn(fx, pos)) return false;
+            fx.SetScriptVect2(dir, 0, -1);
+            fx.SetValue(0, std::isfinite(e.amount) ? e.amount : 0.0f, -1, -1);
+            fx.SetScriptTargetId(TargetHere(e.target), -1, -1);
+            return true;
+        }
+        case HeroShot::Trail: {
+            // The avatar's own blade draws it (its trail made in Build), between the same two frames of its weapon.
+            AvatarBody &body = *g_avatars[static_cast<std::size_t>(slot)].body;
+            if (body.shaped || body.sword_effect[0] == nullptr || !FrameNameOk(e.frame0) || !FrameNameOk(e.frame1)) return false;
+            mgCFrame *start = FindFrame(body, e.frame0.c_str()), *end = FindFrame(body, e.frame1.c_str());
+            if (start == nullptr || end == nullptr) return false;
+            body.sword_effect[0]->StartEffect(start, end, std::clamp(e.value, 1, 64), std::clamp(static_cast<int>(e.amount), 0, 120),
+                                              std::clamp(e.target, 0, 120));
+            return true;
+        }
+    }
+    return false;
 }
 
 // ---- Monsters: the API ---------------------------------------------------------------------------------------------
@@ -988,6 +1223,7 @@ void WorldReset() {
     g_unmade.clear();
     g_puppet_hits.clear();
     g_avatar_hits.clear();
+    g_hero_effects.clear();
     g_player_swapped = false;
     g_events_out.clear();
     g_waiting = Waiting{};

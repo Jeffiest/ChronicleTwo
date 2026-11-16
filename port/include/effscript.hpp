@@ -325,6 +325,7 @@ struct _EFF_SCRIPT {
     _EFF_SCRIPT  *prev{};                     /**< Previous effect in the manager's list, which is ordered by texture block. */
     _EFF_SCRIPT  *next{};                     /**< Next effect in the manager's list. */
     u_char        unk_148[0x8]{};
+    bool          shown_only{}; /**< MoonMod co-op: another player's shot drawn here; its script makes no attack. */
 };
 
 STATIC_ASSERT(sizeof(_EFF_SCRIPT) == 0x150);

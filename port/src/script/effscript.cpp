@@ -4696,6 +4696,9 @@ int _COLPRIM_CREATE(dc2::script::RunArguments args) {
     if (now_script == nullptr || args.Remaining() < 1 || args.Remaining() > 2) {
         return 0;
     }
+    if (now_script->shown_only) { // MoonMod co-op: another player's shot is only drawn here; it strikes in its own game
+        return 0;
+    }
     char *damage_name = dc2::script::RunCString(args++);
     int   owner = args.Remaining() > 0 ? dc2::script::RunInteger(args) : now_script->user_id;
     if (now_script->colprim != nullptr) {

@@ -1,3 +1,4 @@
+#include "moonmod/coop.hpp"
 #include "moonmod/coop_down.hpp"
 #include "common.h"
 
@@ -1050,6 +1051,8 @@ void CActionChara::StepEffect() {
                             sword_effect[slot->sword_no]->StartEffect(
                                 start_frame, end_frame, slot->length, slot->fade_time,
                                 slot->hold_time);
+                            moonmod::coop::HeroSwung(this, slot->frame0.CString(), slot->frame1.CString(), slot->length,
+                                                     slot->fade_time, slot->hold_time); // co-op: seen on the others' screens
                             slot->wait = 5;
                         }
                     }

@@ -110,7 +110,8 @@ TEST(MoonModCoopApi, TheCatalogueNamesEveryCoopOperationAndNetSaysWhetherItHasAS
     for (const char *path : {"session.get", "session.start", "session.finish", "save.world_export", "save.player_export", "save.account_list",
                              "save.slots_list", "save.slot_player_export", "save.slot_player_import", "party.room_hero_set",
                              "party.room_hero_clear", "world.watch_set", "world.change_apply",
-                             "world.avatar_set", "world.avatar_clear", "world.enter_map", "monsters.mirror_get", "monsters.puppet_set",
+                             "world.avatar_set", "world.avatar_clear", "world.enter_map", "world.avatar_effect", "player.effects_take",
+                             "monsters.mirror_get", "monsters.puppet_set",
                              "monsters.puppet_clear", "monsters.mirror_hit", "dungeons.set_seed", "dungeons.enter_floor",
                              "dungeons.shared_events_get", "dungeons.shared_event_run", "combat.strike_player", "items.owned",
                              "georama.town_export", "georama.town_import", "ui.choice_open", "ui.choice_close", "title.mode_register", "title.mode_set"}) {
@@ -160,6 +161,44 @@ TEST(MoonModCoopApi, AvatarsTakeASlotOnTheFloorAndAreCleared) {
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 1}}})).status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
     EXPECT_EQ(api.Call("world.avatar_clear", Json::array({{{"slot", 9}}})).status, ApiCallStatus::InvalidArgument);
+}
+
+TEST(MoonModCoopApi, TheHerosShotsAreTakenOnceAndAnotherPlayersAreDrawnOnlyFromTheirAvatar) {
+    FloorFixture  floor;
+    Api           api;
+    CActionChara *previous_hero = MainChara__2;
+    // (only compared with, never touched: the hero is who fired)
+    alignas(16) static unsigned char hero_storage[16];
+    alignas(16) static unsigned char other_storage[16];
+    MainChara__2 = reinterpret_cast<CActionChara *>(hero_storage);
+    const float at[3] = {1.0f, 2.0f, 3.0f}, way[3] = {0.0f, 0.0f, 1.0f};
+    moonmod::coop::HeroFired(hero_storage, moonmod::coop::HeroShot::Laser, at, way, 2);
+    moonmod::coop::HeroFired(other_storage, moonmod::coop::HeroShot::Gun, at, way); // a monster's or a scene's: not the hero's
+    moonmod::coop::HeroFired(hero_storage, moonmod::coop::HeroShot::Magic, at, way, 41, 0.75f, 25);
+    const ApiCallResult taken = api.Call("player.effects_take");
+    ASSERT_EQ(taken.status, ApiCallStatus::Ok) << taken.message;
+    const Json &effects = taken.value.at("effects");
+    ASSERT_EQ(effects.size(), 2u);
+    EXPECT_EQ(effects[0].at("kind"), 4);
+    EXPECT_EQ(effects[0].at("value"), 2);
+    EXPECT_EQ(effects[0].at("z"), 3.0f);
+    EXPECT_EQ(effects[1].at("kind"), 5);
+    EXPECT_EQ(effects[1].at("value"), 41);
+    EXPECT_EQ(effects[1].at("amount"), 0.75f);
+    EXPECT_EQ(effects[1].at("target"), 25);
+    EXPECT_TRUE(api.Call("player.effects_take").value.at("effects").empty()); // taken once
+    MainChara__2 = previous_hero;
+
+    // Another player's shot needs their avatar on this floor (none here without a disc) and a whole request.
+    const Json shot = Json::array({{{"slot", 1}, {"kind", 1}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0}, {"dy", 0.0}, {"dz", 1.0}}});
+    const ApiCallResult drawn = api.Call("world.avatar_effect", shot);
+    ASSERT_EQ(drawn.status, ApiCallStatus::Ok) << drawn.message;
+    EXPECT_FALSE(drawn.value.at("shown").get<bool>());
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 9}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
+                                                            {"dy", 0.0}, {"dz", 1.0}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 1}, {"x", 0.0}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 1}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
+                                                            {"dy", 0.0}, {"dz", 1.0}, {"damage", 5}}})).status, ApiCallStatus::InvalidArgument);
 }
 
 TEST(MoonModCoopApi, ARidepodSaysItsFourPartsAndAFormItsMonster) {

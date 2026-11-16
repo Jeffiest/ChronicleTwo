@@ -35,6 +35,7 @@
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 #include "monster.hpp"
+#include "moonmod/coop.hpp"
 #include "object.hpp"
 #include "padcontrol.hpp"
 #include "runscript.hpp"
@@ -1760,6 +1761,8 @@ void ShotMonicaMagic(float *position, float *direction, float scale) {
     action_info.chara->effect_man->SetScriptVect2(direction, 0, -1);
     float tint = (float) effect_power / 255.0f;
     tint *= 1.5f;
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Magic, position, direction,
+                             action_info.chara->effect_man->SearchBaseNo(effect_name), tint, action_info.chara->target_no);
     action_info.chara->effect_man->SetValue(0, tint, -1, -1);
     action_info.chara->effect_man->SetScriptTargetId(action_info.chara->target_no, -1, -1);
     CColPrim *prim = ColPrimMan.GetPrim();
@@ -1782,6 +1785,7 @@ void ShotMonicaMagic(float *position, float *direction, float scale) {
  *
  */
 void ShotNormalGun(float *position, float *direction) {
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Gun, position, direction);
     action_info.chara->effect_man->CreateEffSpt("\x8F"
                                                 "e\x92"
                                                 "e",
@@ -1814,6 +1818,7 @@ void ShotNormalGun(float *position, float *direction) {
  *
  */
 void ShotMachineGun(float *position, float *direction, char *damage_name, float damage) {
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::MachineGun, position, direction);
     MachineGun.Set(position, direction);
     CColPrim *prim = ColPrimMan.GetPrim();
     int       col_prim_id = -1;
@@ -1845,6 +1850,8 @@ void ShotMachineGun(float *position, float *direction, char *damage_name, float 
  *
  */
 void ShotGrenadGun(float *position, float *direction) {
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Grenade, position, direction, 0, 0.0f,
+                             action_info.chara->target_no);
     float muzzle[4];
     sceVu0ScaleVector(muzzle, direction, 500.0f);
     sceVu0AddVector(muzzle, position, muzzle);
@@ -1885,6 +1892,7 @@ void ShotGrenadGun(float *position, float *direction) {
  *
  */
 void ShotLaserGun(float *position, float *direction, int type) {
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Laser, position, direction, type);
     float muzzle[4];
     float target[4];
     sceVu0ScaleVector(muzzle, direction, 20.0f);
@@ -2125,6 +2133,9 @@ int _SET_SPECIAL_SHOT(dc2::script::RunArguments stack, int argc) {
     action_info.chara->effect_man->SetScriptVect2(direction, 0, -1);
     action_info.chara->effect_man->SetValue(0, 0.0f, -1, -1);
     action_info.chara->effect_man->SetScriptTargetId(action_info.chara->target_no, -1, -1);
+    moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Magic, position, direction,
+                             action_info.chara->effect_man->SearchBaseNo(effects[info->GetMagicSwordElem()]), 0.0f,
+                             action_info.chara->target_no);
     CColPrim *prim = ColPrimMan.GetPrim();
 
     if (prim != nullptr) {
