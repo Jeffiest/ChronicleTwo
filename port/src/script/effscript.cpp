@@ -4970,6 +4970,17 @@ int _ES_CREATE(dc2::script::RunArguments args) {
     }
     int   handle = -1;
     char *name = dc2::script::RunCString(args++);
+    // MoonMod co-op: what another player's shot starts (its blast, its sparks) is only drawn here too.
+    _EFF_SCRIPT *const parent = now_script;
+    _EFF_SCRIPT *const before = EffScriptMan->now;
+    struct MarkChild {
+        _EFF_SCRIPT *parent, *before;
+        ~MarkChild() {
+            if (parent->shown_only && EffScriptMan->now != nullptr && EffScriptMan->now != before && EffScriptMan->now != parent) {
+                EffScriptMan->now->shown_only = true;
+            }
+        }
+    } mark{parent, before};
 
     switch (args.Remaining()) {
         case 0:

@@ -202,6 +202,7 @@ struct Avatar {
     int                         slot = -1;
     CScene                     *scene = nullptr;
     int                         loop = -1;
+    int                         held_effect = -1; // the effect of an item it holds up to throw (its slot under the avatar's), or -1
     // Its own memory: the file it reads and the stacks its model, motions and images live in.
     std::vector<unsigned char>  file;
     std::vector<unsigned char>  arena;
@@ -224,6 +225,11 @@ CScene *PlaceScene() {
 
 void Unload(int index) {
     Avatar &a = g_avatars[static_cast<std::size_t>(index)];
+    // (what it was drawing goes with it: an item held up, a shot in flight that follows it)
+    if (a.slot >= 0 && GetNowLoopNo() == LOOP_DUNGEON && FxScriptMan != nullptr && a.scene == DngMainScene) {
+        FxScriptMan->ClearEffectFromChrid(a.slot);
+    }
+    a.held_effect = -1;
     if (a.scene != nullptr && a.slot >= 0 && a.scene->GetCharacter(a.slot) == a.body.get()) {
         a.scene->ResetActive(SCENE_DATA_CHARA, a.slot);
     }
@@ -659,6 +665,10 @@ void AvatarsStep() {
         // Another place, or the scene gave the slot to someone else: the body goes; the mod's wish stays.
         if (a.body && (scene != a.scene || loop != a.loop || scene == nullptr || scene->GetCharacter(a.slot) != a.body.get())) {
             a.body.reset(); // the scene's slot was reset with the scene; nothing of ours to take back
+            if (scene != nullptr && scene == a.scene && scene == DngMainScene && FxScriptMan != nullptr && a.slot >= 0) {
+                FxScriptMan->ClearEffectFromChrid(a.slot); // (the same floor, its slot given to another: our effects go)
+            }
+            a.held_effect = -1; // (on another floor, the floor's effects went with it)
             a.loaded_character = -1;
             a.slot = -1;
             a.scene = nullptr;
@@ -822,27 +832,103 @@ bool AvatarEffect(int slot, const HeroEffect &e) {
             return true;
         }
         case HeroShot::Laser: {
-            const int type = std::clamp(e.value, 0, 2);
+            // 0-2 Max's laser (ShotLaserGun: from 20 ahead of the muzzle, straight); 3 the ridepod's laser and 4 its
+            // beam (actscript.cpp's _SHOT: from the muzzle, as their look flies and homes)
+            const int type = std::clamp(e.value, 0, 4);
+            const bool ridepod = type >= LASER_VISUAL_CYAN;
             float muzzle[4], aim[4];
-            sceVu0ScaleVector(muzzle, dir, 20.0f);
+            sceVu0ScaleVector(muzzle, dir, ridepod ? 0.0f : 20.0f);
             sceVu0AddVector(muzzle, pos, muzzle);
             sceVu0ScaleVector(aim, dir, 500.0f);
-            sceVu0AddVector(aim, muzzle, aim);
+            sceVu0AddVector(aim, ridepod ? pos : muzzle, aim);
             CLaserGun *laser = LaserGun.Get();
             if (laser == nullptr) return false;
             laser->SetPos(muzzle, aim, dir);
-            laser->target_chara = -1;
-            laser->speed = 30.0f;
-            laser->homing_delay = 99999;
-            laser->homing_time = 0;
+            laser->target_chara = ridepod ? TargetHere(e.target) : -1;
+            if (!ridepod) {
+                laser->speed = 30.0f;
+                laser->homing_delay = 99999;
+                laser->homing_time = 0;
+            }
             laser->SetVisualCode(type);
             laser->col_prim_id = -1;
-            if (MakeEffect(fx, kMuzzleFlash, pos)) {
-                // (the flash in the beam's colours, as ShotLaserGun has them)
-                static constexpr float kColours[3][4] = {{64, 128, 64, 128}, {64, 64, 128, 128}, {128, 32, 128, 180}};
+            if (MakeEffect(fx, kMuzzleFlash, ridepod ? muzzle : pos)) {
+                // (the flash in the shot's colours, as ShotLaserGun and _SHOT have them)
+                static constexpr float kColours[5][4] = {{64, 128, 64, 128}, {64, 64, 128, 128}, {128, 32, 128, 180},
+                                                         {0, 128, 128, 160}, {128, 64, 0, 160}};
                 fx.SetValue(0, 1, 0, -1);
                 for (int i = 0; i < 4; ++i) fx.SetValue(i + 1, kColours[type][i], 0, -1);
             }
+            return true;
+        }
+        case HeroShot::Throw: {
+            // As CActionChara::EntryThrowItem, ThrowItemObject and RemoveThrowItem do it, owned by the avatar (the
+            // effect keeps the item on its owner's "item" frame until it is thrown).
+            Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
+            const int owner = a.slot;
+            const int phase = static_cast<int>(e.amount);
+            if (phase == 2 || phase == 0) { // put away, or a new one held up: the one held goes
+                if (a.held_effect >= 0) fx.DeleteEffSpt(owner, a.held_effect);
+                a.held_effect = -1;
+                if (phase == 2) return true;
+            }
+            if (phase == 1) {
+                if (a.held_effect < 0) return false;
+                fx.SetScriptProgNo(EFFECT_SCRIPT_PROG_FINISH, owner, a.held_effect);
+                fx.SetScriptVect1(pos, owner, a.held_effect);
+                a.held_effect = -1;
+                return true;
+            }
+            if (phase != 0 || e.value <= 0 || e.value >= ITEM_NO_MAX) return false;
+            if (a.body->shaped || FindFrame(*a.body, "item") == nullptr) return false; // (nothing to hold it up with)
+            // The item's model, as EntryThrowItem picks it from the dungeon's throwables (the first for any other).
+            static constexpr int kThrown[] = {0x114, 0x118, 0x119, 0x11A, 0x11B, 0x11C, 0x11D, 0x11E, 0x11F,
+                                              0x120, 0x121, 0x122, 0x123, 0x124, ITEM_ID_GIFT_CAPSULE, 0x186, 0x187, 0x133};
+            int model = 0;
+            for (int i = 0; i < static_cast<int>(std::size(kThrown)); ++i) {
+                if (kThrown[i] == e.value) model = i;
+            }
+            char thrown[] = "\x8E\xE8\x93\x8A\x82\xB0\x94\x9A\x92" "e";
+            const int base_no = fx.SearchBaseNo(thrown);
+            if (!EnsureBase(fx, base_no)) return false;
+            _EFF_SCRIPT *held = fx.CreateEffSpt(base_no, owner, 1);
+            if (held == nullptr) return false;
+            held->shown_only = true;
+            a.held_effect = held->slot;
+            fx.SetValue(0, 1, owner, held->slot);
+            fx.SetValue(1, e.value, owner, held->slot);
+            if (ActionScriptEnv.item_chara != nullptr) {
+                fx.SetCharacter(&ActionScriptEnv.item_chara[model], owner, held->slot);
+                fx.SetTexb(ActionScriptEnv.texb, owner, held->slot);
+            }
+            return true;
+        }
+        case HeroShot::Rocket: {
+            float ahead[4];
+            sceVu0ScaleVector(ahead, dir, 500.0f);
+            sceVu0AddVector(ahead, pos, ahead);
+            const bool missile = e.value == 1;
+            if (missile) {
+                // Scattered as _SHOT scatters a missile, from numbers of our own: the game's draws are its own play's.
+                static std::uint32_t scatter = 12345u;
+                const auto next = [] {
+                    scatter = scatter * 1664525u + 1013904223u;
+                    return static_cast<float>(scatter >> 8) / 16777216.0f; // 0 to 1
+                };
+                dir[0] += dir[2] * (next() - 0.5f);
+                dir[2] += dir[0] * (next() - 0.5f);
+                dir[1] += next();
+            }
+            CRocketLauncher *launcher = RocketLauncher.Get();
+            if (launcher == nullptr) return false;
+            launcher->SetPos(pos, ahead, dir);
+            launcher->target_chara = TargetHere(e.target);
+            if (!missile) {
+                launcher->speed = 20.0f;
+                launcher->homing_delay = 2;
+                launcher->homing_time = 30;
+            }
+            launcher->col_prim_id = -1;
             return true;
         }
         case HeroShot::Magic: {

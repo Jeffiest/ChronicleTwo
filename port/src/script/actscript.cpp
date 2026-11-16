@@ -2235,6 +2235,8 @@ int _SHOT(dc2::script::RunArguments stack, int argc) {
 
     if (whp[0] > 0) {
         if (attack_type == WEAPON_ATTACK_LAUNCHER) {
+            moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Rocket, position, direction, 0, 0.0f,
+                                     action_info.chara->target_no);
             sceVu0ScaleVector(rocket_target, direction, 500.0f);
             sceVu0AddVector(rocket_target, position, rocket_target);
             CRocketLauncher *launcher = RocketLauncher.Get();
@@ -2277,6 +2279,9 @@ int _SHOT(dc2::script::RunArguments stack, int argc) {
         }
 
         if (attack_type == WEAPON_ATTACK_MISSILE) {
+            // (the way it is aimed, before the missile's own scatter: the other games scatter theirs)
+            moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Rocket, position, direction, 1, 0.0f,
+                                     action_info.chara->target_no);
             sceVu0ScaleVector(missile_target, direction, 500.0f);
             sceVu0AddVector(missile_target, position, missile_target);
             direction[0] += direction[2] * (fRand(1.0f) - 0.5f);
@@ -2308,6 +2313,8 @@ int _SHOT(dc2::script::RunArguments stack, int argc) {
             sceVu0AddVector(laser_target, position, laser_target);
             sceVu0SubVector(direction, target_pos, position);
             sceVu0Normalize(direction, direction);
+            moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Laser, position, direction, LASER_VISUAL_CYAN,
+                                     0.0f, action_info.chara->target_no);
             CLaserGun *laser = LaserGun.Get();
 
             if (laser != nullptr) {
@@ -2345,6 +2352,8 @@ int _SHOT(dc2::script::RunArguments stack, int argc) {
             sceVu0AddVector(beam_target, position, beam_target);
             sceVu0ScaleVector(beam_offset, direction, 20.0f);
             sceVu0AddVector(position, position, beam_offset);
+            moonmod::coop::HeroFired(action_info.chara, moonmod::coop::HeroShot::Laser, position, direction, LASER_VISUAL_ORANGE,
+                                     0.0f, action_info.chara->target_no);
             CLaserGun *laser = LaserGun.Get();
 
             if (laser != nullptr) {

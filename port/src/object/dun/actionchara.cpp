@@ -637,6 +637,10 @@ void CActionChara::ThrowItemObject() {
             sceVu0ScaleVector(target, target, 120.0f);
             sceVu0AddVector(target, target, position);
             effect_man->SetScriptVect1(target, 0, throw_effect);
+            {
+                const CGameDataUsed *held = &GetBattleCharaInfo()->GetActiveItemInfo(0)[DngStatus.active_item];
+                moonmod::coop::HeroFired(this, moonmod::coop::HeroShot::Throw, target, front_vec, held->item_no, 1.0f);
+            }
             hold_type = ACTION_HOLD_NONE;
 
             item = GetBattleCharaInfo()->GetActiveItemInfo(0);
@@ -733,6 +737,9 @@ void CActionChara::EntryThrowItem() {
     if (throw_effect < 0) {
         dc2::log::PrintGame("effect entry err\n");
     } else {
+        float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+        GetPosition(at);
+        moonmod::coop::HeroFired(this, moonmod::coop::HeroShot::Throw, at, front_vec, item_no, 0.0f); // held up
         effect_man->SetValue(0, 1, 0, throw_effect);
         effect_man->SetValue(1, item_no, 0, throw_effect);
 
@@ -766,6 +773,9 @@ void CActionChara::RemoveThrowItem() {
 
             if (effect_no >= 0) {
                 effect_man->DeleteEffSpt(0, effect_no);
+                float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+                GetPosition(at);
+                moonmod::coop::HeroFired(this, moonmod::coop::HeroShot::Throw, at, front_vec, 0, 2.0f); // put away
             }
 
             hold_type = ACTION_HOLD_NONE;

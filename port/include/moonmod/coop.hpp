@@ -124,10 +124,12 @@ enum class HeroShot : int {
     Gun = 1,        // Max's pistol: the bullet and the muzzle flash
     MachineGun = 2, // Max's machine gun or the ridepod's: a bullet of the burst
     Grenade = 3,    // Max's launcher: a grenade
-    Laser = 4,      // Max's laser: a beam (value: its look, LASER_VISUAL_*)
+    Laser = 4,      // Max's laser, or the ridepod's laser or beam: a shot (value: its look, LASER_VISUAL_* 0-4)
     Magic = 5,      // Monica's armband or her magic sword's charge (value: the effect base, amount: its tint)
     Trail = 6,      // a blade's trail: from frame0 to frame1 of the hero's weapon (value: its length, amount: the steps
                     // it fades over, target: the steps it holds first); pos and dir are not used
+    Rocket = 7,     // the ridepod's launcher (value 0) or a missile (value 1, scattered here as the game scatters it)
+    Throw = 8,      // an item held up to throw (amount 0), thrown to pos (1) or put away (2); value: its item_no
 };
 struct HeroEffect {
     int   kind = 0; // HeroShot
