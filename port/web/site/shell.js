@@ -1301,19 +1301,19 @@ async function refreshMods() {
     }
 }
 
-// "Play on your PC": the newest of the site's build releases (build-<commit>, DC_Web's .github/workflows/builds.yml)
-// that has Dark Chronicle for the chosen system, and the built-in mods as zips (mods/builtin/, builtin.py). Shown
+// "Play on your PC": the newest of the site's build releases (build-<commit>, DC_Web's .github/workflows/
+// dc2-builds.yml) that has Dark Chronicle for the chosen system, and the built-in mods as zips (mods/builtin/, builtin.py). Shown
 // whether or not this browser can run the game. Until a release carries Dark Chronicle's PC builds, the page says so.
 const PAGE_REPOSITORY = 'Jeffiest/DC_Web';
 const PC_BUILDS = {
     windows: 'darkchronicle-windows-x64.zip',
-    linux: 'darkchronicle-linux-x86_64.tar.gz',
+    linux: 'darkchronicle-linux-x86_64.flatpak',
     macos: 'darkchronicle-macos-arm64.tar.gz',
 };
 const PC_SYSTEM_NAMES = {windows: 'Windows', linux: 'Linux', macos: 'macOS'};
 const PC_INSTALL = {
     windows: 'Unzip the game anywhere and run darkchronicle.exe.',
-    linux: 'Unpack the archive and run darkchronicle.',
+    linux: 'Install it with: flatpak install --user darkchronicle-linux-x86_64.flatpak.',
     macos: 'Unpack the archive and start the game.',
 };
 
