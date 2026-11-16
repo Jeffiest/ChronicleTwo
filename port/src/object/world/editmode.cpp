@@ -788,6 +788,66 @@ void ClearEditFlag() {
     ClearEditStepCnt();
 }
 
+int EditModeBetweenActions() {
+    if (EditModeNo == EDIT_MODE_NONE || PutSideMode != EDIT_PUT_SIDE_OFF || NowSelectWallParts >= 0) {
+        return 0;
+    }
+
+    if (PlaceRiverCnt > 0 || RemoveMtnCnt > 0 || CtrlLockFlag > 0 || PreMenuCount > 0 || EditNowPlaceAnime() != 0) {
+        return 0;
+    }
+
+    return 1;
+}
+
+void EditModeAfterRebuild(CEditMap *map) {
+    if (map == nullptr) {
+        return;
+    }
+
+    map->focus_parts = -1;
+
+    // The slots are numbered afresh: the last placed part is found again by its definition and where it stands.
+    if (UndoData.info_id >= 0 && UndoData.parts_no >= 0) {
+        CEditPartsInfo *info = map->GetePartsInfoAtID(UndoData.info_id);
+        int             found = -1;
+
+        for (int i = 0; info != nullptr && i < map->edit_parts_max; i++) {
+            CEditParts &part = map->edit_parts[i];
+            float       pos[4];
+
+            if (part.info != info || part.state != EDIT_PARTS_STATE_PLACED) {
+                continue;
+            }
+
+            part.GetPosition(pos);
+
+            if (std::fabs(pos[0] - UndoData.pos[0]) < 1.0f && std::fabs(pos[2] - UndoData.pos[2]) < 1.0f) {
+                found = i;
+                break;
+            }
+        }
+
+        if (found < 0) {
+            ClearUndoFlag();
+        } else {
+            UndoData.parts_no = found;
+        }
+    }
+
+    // Another player may have placed some of the held part: what is left is counted as UndoPlaceParts counts it.
+    if (EditModeNo == EDIT_MODE_PLACE && PartsInfoID >= 0) {
+        CEditPartsInfo *info = map->GetePartsInfoAtID(PartsInfoID);
+
+        if (info != nullptr && (info->attr & EDIT_PARTS_ATR_RIVER) == 0) {
+            int remaining = info->max_num - map->GetePlacePartsAtInfoID(PartsInfoID, nullptr, 0);
+            int built = GetSaveData()->GetBuildPartsNum(PartsInfoID);
+
+            RemainPartsNum = std::max(0, built < remaining ? built : remaining);
+        }
+    }
+}
+
 void InitEditFlag() {
     eCameraDist = 600.0f;
     EditModeNo = 0;

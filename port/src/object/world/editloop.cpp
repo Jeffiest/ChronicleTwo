@@ -411,6 +411,10 @@ static void UnLockCharaCtrl() {
     }
 }
 
+int IsEditModeTool() {
+    return LoopMode == EDIT_LOOP_EDIT ? 1 : 0;
+}
+
 int IsEditMode() {
     if (LoopMode == EDIT_LOOP_EDIT || LoopMode == EDIT_LOOP_EDIT_PRE_MENU) {
         return 1;

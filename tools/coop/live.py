@@ -419,6 +419,33 @@ def build():
     return {'host': host, 'guest': guest, 'host_jump': 'town:0', 'host_frames': 7200, 'guest_frames': 6600}
 
 
+@scenario('build_edit')
+def build_edit():
+    """Georama seen by both while one of them is in the editor: the host opens Sindain's editor (Select) and stays in
+    it, the joiner puts up houses and blocks, and the host's editor shows each of them as it comes, without the host
+    leaving the editor (the town is built again between the editor's actions)."""
+    house, block = {'template': 47, 'town': 0}, {'template': 36, 'town': 0}
+    host = [
+        {'when': 'town', 'after': 30, 'op': 'progress', 'value': 4},
+        dict({'after': 570, 'op': 'georama_probe'}, **house),
+        dict({'after': 10, 'op': 'mark', 'text': 'knows the block'}, **block),
+        {'after': 1500, 'op': 'georama_probe', 'town': 0},
+        {'after': 3000, 'op': 'georama_probe', 'town': 0},
+        {'after': 300, 'op': 'mark', 'text': 'end'},
+    ]
+    guest = [
+        {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
+        dict({'when': 'town', 'after': 900, 'op': 'part_place', 'spots': [[-300, -320], [300, -320]]}, **house),
+        dict({'after': 120, 'op': 'part_place', 'spots': [[0, -440], [-200, -120], [200, -120]]}, **block),
+        {'after': 600, 'op': 'georama_probe', 'town': 0},
+    ]
+    # (the story save town:0 jumps into has Georama shut at that point of the story; the game's own Georama debug save,
+    # georama:0, has it open but is before the co-op gate, so the host's progress is raised first and the room opened
+    # after it. The host walks off the town's way in, then presses Select.)
+    return {'host': host, 'guest': guest, 'host_jump': 'georama:0', 'host_frames': 7200, 'guest_frames': 6600,
+            'host_autotest': {'at': 400}, 'host_input': WALK_RIGHT % SHOVE_WALK + press_lines([(1300, 'select')])}
+
+
 # The host's walk in Sindain from where it stands (0,0,0): the left stick held forward and to the right from frame
 # 900 for 64 frames, which (walk_probe, 2026-11-15; the camera turns as the hero goes) leaves the hero at 390,0,28.
 WALK_RIGHT = """%d 255 0 128 128
@@ -747,6 +774,35 @@ def check_build(host, guest, result):
     scenes = [s.get('scene') for s in host['coop'] if s.get('scene', '').startswith(('T', 'H'))]
     c.check(scenes and all(x == scenes[0] for x in scenes), 'the host is never walked out of the town or back into it', sorted(set(scenes)))
     c.check(not any('back to its entrance' in l for l in host['lines']), 'nor told it was sent back to the entrance')
+    c.no_errors()
+    return c.list
+
+
+@checks('build_edit')
+def check_build_edit(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    c.together('T', 'in Sindain')
+
+    def looks(side):
+        out = []
+        for e in side['events']:
+            m = re.match(r'DRIVE georama town=0 placed=(\d+) standing=(\S+).* editing=(\S+)', e)
+            if m:
+                out.append((int(m.group(1)), m.group(2), m.group(3)))
+        return out
+    put = [e for e in guest['events'] if e.startswith('DRIVE part placed')]
+    c.check(len(put) >= 2, 'the joiner puts up parts in Sindain', [e for e in guest['events'] if 'part' in e][:6])
+    h, g = looks(host), looks(guest)
+    c.check(len(h) == 3 and h[0][2] == 'false' and h[-1][2] == 'true', 'the host opened the editor and is still in it at the end', h)
+    c.check(len(h) == 3 and h[-1][0] > h[0][0], "the host's town holds the joiner's parts (its record)", '%s, %d put up' % (h, len(put)))
+    c.check(len(h) == 3 and h[0][1].isdigit() and h[-1][1] == str(int(h[0][1]) + len(put)),
+            "and they stand in the host's editor (its live map), the host never leaving it", '%s, %d put up' % (h, len(put)))
+    rebuilt = [l.strip() for l in host['lines'] if 'built again in its editor' in l]
+    c.check(rebuilt, 'the town was built again inside the editor', rebuilt[:3])
+    c.check(g and h and g[-1][:2] == h[-1][:2], 'both games show the same town', g + h)
+    c.check(not any('back to its entrance' in l for l in host['lines']), 'the host is not sent back to the entrance')
     c.no_errors()
     return c.list
 

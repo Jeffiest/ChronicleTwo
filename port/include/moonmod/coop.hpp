@@ -263,6 +263,10 @@ bool TownRecordWritable(int town);
 void TownRebuildWanted(int town);
 bool TownRebuildPending();
 void TownRebuildStep();
+
+// Whether the town's Georama editor is open and between actions, so its live map may be built again from its record
+// with the player still in the editor.
+bool TownEditorReady();
 void TownBeforeSave();
 int  TownLiveParts(); // the parts standing in the town on screen (its live map), or -1 when no town's own map is
 void TownReset();

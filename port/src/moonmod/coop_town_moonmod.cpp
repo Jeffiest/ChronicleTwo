@@ -9,6 +9,9 @@
 // - A game that takes a town its player stands in builds its live map from the record again where it stands
 //   (TownRebuildWanted, TownRebuildStep), with the steps of the game's own load of a town (EditDataLoad, as its
 //   debug menu uses it): no walk back to the entrance, the part is simply there.
+// - A player in that town's editor gets the other player's parts too, the moment the editor is between actions
+//   (TownEditorReady): nothing held against a wall, nothing animating, no menu opening. Their own parts are written
+//   into the record first, so the two are merged, and the editor's undo is pointed at the part's new slot.
 
 #include "moonmod/coop.hpp"
 
@@ -81,7 +84,8 @@ void RebuildNow() {
     if (record == nullptr) return;
     // Where the player stands, and whether they could walk there before the town changed.
     CScene      *shown = GetMainScene();
-    CCharacter2 *player = shown != nullptr ? shown->GetCharacter(shown->player_chara) : nullptr;
+    const bool   editing = IsEditMode() != 0; // the player stands where they left the field; the cursor is what moves
+    CCharacter2 *player = shown != nullptr && !editing ? shown->GetCharacter(shown->player_chara) : nullptr;
     float        stood[4] = {};
     bool         stood_free = false;
     if (player != nullptr) {
@@ -97,6 +101,7 @@ void RebuildNow() {
     map->UpdateHouse();
     if (CScene *scene = GetMainScene(); scene != nullptr) GeoUpdateNpcPos(scene);
     if (player != nullptr && stood_free) MovePlayerAside(shown, player, stood);
+    if (editing) EditModeAfterRebuild(map);
 }
 
 } // namespace
@@ -133,9 +138,11 @@ void TownRebuildStep() {
     }
     int town = -1;
     if (TownMap(town) == nullptr || town != g_rebuild_town) return; // in a house: when the player comes out
-    if (IsEditMode() != 0 || !PortTownFieldControl()) return;         // in a scene or a menu: when it is over
+    if (IsEditMode() != 0 ? !TownEditorReady() : !PortTownFieldControl()) return; // mid-action, a scene, a menu: after
     RebuildNow();
 }
+
+bool TownEditorReady() { return IsEditModeTool() != 0 && EditModeBetweenActions() != 0; }
 
 void TownBeforeSave() {
     if (g_rebuild_town < 0) return;

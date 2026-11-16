@@ -71,6 +71,14 @@ int IsEditMode();
 
 /**
  *
+ * MoonMod: reports whether the town loop is in Georama mode itself, not waiting
+ * for its menu to open.
+ *
+ */
+int IsEditModeTool();
+
+/**
+ *
  * Prepares the town loop when the main loop enters it: memory, scene, camera, characters, map and starting event.
  *
  * @mangled EditInit__F13INIT_LOOP_ARG

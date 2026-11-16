@@ -160,6 +160,26 @@ void ClearEditFlag();
 
 /**
  *
+ * MoonMod: reports whether Georama mode is between actions: no wall being
+ * chosen, no part, river or removal animating, no control lock and no menu
+ * about to open. A town in this state can be built again from its record
+ * while its player stays in the editor (co-op's shared towns).
+ *
+ */
+int EditModeBetweenActions();
+
+/**
+ *
+ * MoonMod: after the town's live map was built again from its record, points
+ * the undo record at the slot its part now has (or forgets it when the part
+ * is gone), forgets the part in focus, and counts again how many of the held
+ * part may still be placed.
+ *
+ */
+void EditModeAfterRebuild(CEditMap *map);
+
+/**
+ *
  * Puts Georama mode in its first state: no tool, the default camera
  * distance, the magnet on and the player's control given.
  *

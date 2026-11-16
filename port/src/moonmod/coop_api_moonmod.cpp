@@ -397,8 +397,15 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     // A Georama town is its map: maps 0-4 are the five towns, each with the edit data of its own number
     // (CSaveData::GetEditData). The town is on screen when the town loop runs that map.
     const bool here = TownOnScreen(town);
-    // In its editor the live map is ahead of the record, and is written over it as the player builds.
-    if (here && IsEditMode() != 0) return Failed("busy: the player is editing that town; try again in a moment");
+    // In its editor the live map is ahead of the record, and is written over it as the player builds. Between the
+    // player's actions it is written into the record now, the other game's town is merged into that, and the live map
+    // is built again at once: the player sees the other's parts without leaving the editor.
+    const bool editing = here && IsEditMode() != 0;
+    if (editing && !TownEditorReady()) return Failed("busy: the player is in the middle of building in that town; try again in a moment");
+    if (editing) {
+        TownRebuildStep(); // a change taken earlier, in a menu, is built first, so the live map is not behind
+        TownLiveSync();
+    }
     const std::string &data = args[0]["data"].get_ref<const std::string &>();
     const bool         merging = args[0].contains("base") && !args[0]["base"].is_null();
     if (merging && !args[0]["base"].is_string()) return Invalid("base must be georama.town_export text");
@@ -410,7 +417,12 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     // The town on screen is the old one: its live map is built from the record again where the player stands, as
     // soon as they walk free (TownRebuildStep). Nobody is walked back to the entrance.
     if (here) TownRebuildWanted(town);
-    return Ok({{"town_id", town}, {"imported", true}, {"merged", merging}, {"reloaded", false}, {"rebuilding", here}});
+    if (editing) {
+        TownRebuildStep();
+        std::fprintf(stderr, "co-op: town %d %s\n", town, TownRebuildPending() ? "waits for its editor" : "built again in its editor");
+    }
+    return Ok({{"town_id", town}, {"imported", true}, {"merged", merging}, {"reloaded", false}, {"rebuilding", here && !editing},
+               {"rebuilt", editing && !TownRebuildPending()}});
 }
 
 // ---- Avatars and monsters ---------------------------------------------------------------------------------------------------
