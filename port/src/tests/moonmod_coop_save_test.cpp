@@ -285,6 +285,47 @@ TEST(MoonModCoopSave, TwoBuildingInOneTownBothKeepTheirWork) {
     EXPECT_FALSE(moonmod::coop::MergeTown(base, ExportTown(scratch.save(), 1), 2, host.save(), error)); // another town's
 }
 
+// A part both games put up since the town they agreed on (the same part in the same spot: the town's own parts first
+// written into both records as they stood there, or two players' identical work) stands once, and the rest of each
+// game's work is kept.
+TEST(MoonModCoopSave, APartBothGamesPutUpInOneSpotStandsOnce) {
+    Save host(15), scratch(16);
+    std::string error;
+    const TownLayout start = SampleLayout(0); // parts 10, 11, 12
+    PortTownLayout(host.save().edit_data[2]) = start;
+    const std::string base = ExportTown(host.save(), 2);
+    TownPart gate;
+    gate.id = 21;
+    gate.state = 1;
+    gate.pos = {40, 0, 8};
+    TownPart shop = gate, well = gate;
+    shop.id = 20;
+    well.id = 30;
+    TownLayout hosts = start; // the host: the gate and a shop
+    hosts.parts.push_back(gate);
+    hosts.parts.push_back(shop);
+    PortTownLayout(host.save().edit_data[2]) = hosts;
+    TownLayout guests = start; // the guest: the same gate in the same spot, and a well
+    guests.parts.push_back(gate);
+    guests.parts.push_back(well);
+    PortTownLayout(scratch.save().edit_data[2]) = guests;
+    ASSERT_TRUE(moonmod::coop::MergeTown(base, ExportTown(scratch.save(), 2), 2, host.save(), error)) << error;
+    const TownLayout *merged = PortFindTownLayout(host.save().edit_data[2]);
+    ASSERT_NE(merged, nullptr);
+    std::vector<int> ids;
+    for (const TownPart &part : merged->parts) ids.push_back(part.id);
+    EXPECT_EQ(ids, (std::vector<int>{10, 11, 12, 21, 20, 30}));
+    // Two gates in one spot from each side stay two (a part may stand twice): only what both put up pairs off.
+    TownLayout twice = guests;
+    twice.parts.push_back(gate);
+    PortTownLayout(host.save().edit_data[2]) = hosts;
+    PortTownLayout(scratch.save().edit_data[2]) = twice;
+    ASSERT_TRUE(moonmod::coop::MergeTown(base, ExportTown(scratch.save(), 2), 2, host.save(), error)) << error;
+    ids.clear();
+    for (const TownPart &part : PortFindTownLayout(host.save().edit_data[2])->parts) ids.push_back(part.id);
+    EXPECT_EQ(ids, (std::vector<int>{10, 11, 12, 21, 20, 30, 21}));
+}
+
 TEST(MoonModCoopSave, ATownBuiltPartByPartByOneIsTakenWholeEachTime) {
     Save host(13), builder(14);
     std::string error;

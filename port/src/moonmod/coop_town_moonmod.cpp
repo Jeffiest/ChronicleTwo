@@ -5,7 +5,10 @@
 // map from the record when the town is walked into. Two games sharing a town need both sooner:
 //
 // - The builder's game writes its live map into the record as it is built (TownLiveSync), so the record follows each
-//   part placed, moved or taken away, and the register tells the mod the town changed.
+//   part placed, moved or taken away, and the register tells the mod the town changed. Outside the editor too, while
+//   the player walks free: a town loaded and changed without its record written (by the story, or a town loaded
+//   before the game first saved it) stands ahead of its record, and the record is what the other game starts from
+//   and what its change is merged into (TownRecordFromLiveMap, as a town is sent or taken).
 // - A game that takes a town its player stands in builds its live map from the record again where it stands
 //   (TownRebuildWanted, TownRebuildStep), with the steps of the game's own load of a town (EditDataLoad, as its
 //   debug menu uses it): no walk back to the entrance, the part is simply there.
@@ -27,6 +30,7 @@
 #include "mapjump.hpp"
 #include "mapselect.hpp"
 #include "platform/game_loop_state.hpp"
+#include "save_json.hpp"
 #include "savedata.hpp"
 #include "scenesnd.hpp"
 
@@ -94,6 +98,8 @@ void RebuildNow() {
         stood[3] = 1.0f;
         stood_free = CheckEditWalkSpot(shown, stood, ground) != 0;
     }
+    std::fprintf(stderr, "co-op: town %d built again from its record (%d parts)%s\n", town, TownRecordParts(town),
+                 IsEditMode() != 0 ? " in its editor" : "");
     map->ClearAllParts();
     map->LoadData(record);
     map->InitialPlaceParts(record);
@@ -113,12 +119,18 @@ bool TownOnScreen(int town) {
 }
 
 void TownLiveSync() {
-    if (GetNowLoopNo() != LOOP_EDIT || IsEditMode() == 0) return;
-    int       town = -1;
-    CEditMap *map = TownMap(town);
+    if (GetNowLoopNo() != LOOP_EDIT) return;
+    if (IsEditMode() == 0 && !PortTownFieldControl()) return; // a scene, a menu, a house: when the player walks free
+    TownRecordFromLiveMap();
+}
+
+// What the game itself does as its player leaves the editor or the town (EditDataSave), without the analysis: the
+// town that worked out what it fulfils sends that with the record.
+void TownRecordFromLiveMap() {
+    int        town = -1;
+    CEditMap  *map = TownMap(town);
     CSaveData *save = GetSaveData();
-    if (map == nullptr || save == nullptr) return;
-    if (!TownRecordWritable(town)) return;
+    if (map == nullptr || save == nullptr || !TownRecordWritable(town)) return;
     if (CEditData *record = save->GetEditData(town); record != nullptr) map->SaveData(record);
 }
 
@@ -145,10 +157,26 @@ void TownRebuildStep() {
 bool TownEditorReady() { return IsEditModeTool() != 0 && EditModeBetweenActions() != 0; }
 
 void TownBeforeSave() {
+    if (int shown = -1; TownMap(shown) != nullptr) {
+        std::fprintf(stderr, "co-op: town %d is written from its live map (%d parts; its record %d)%s\n", shown, TownLiveParts(),
+                     TownRecordParts(shown), g_rebuild_town == shown ? ", built again from the record first" : "");
+    }
     if (g_rebuild_town < 0) return;
     int town = -1;
     if (TownMap(town) == nullptr || town != g_rebuild_town) return;
     RebuildNow(); // the game is about to write its live map over the record: bring the map up to the record first
+}
+
+int TownRecordParts(int town) {
+    CSaveData *save = GetSaveData();
+    if (save == nullptr || town < 0 || town >= SAVE_EDIT_DATA_MAX) return -1;
+    const TownLayout *layout = PortFindTownLayout(save->edit_data[town]);
+    if (layout == nullptr) return -1;
+    int count = 0;
+    for (const TownPart &part : layout->parts) {
+        if (part.id != 0) ++count;
+    }
+    return count;
 }
 
 int TownLiveParts() {

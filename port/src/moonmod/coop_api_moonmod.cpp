@@ -574,7 +574,10 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     if (!ReadBoundedInt(args[0], "town_id", 0, SAVE_EDIT_DATA_MAX - 1, town)) return Invalid("town_id must be 0-" + std::to_string(SAVE_EDIT_DATA_MAX - 1));
     CSaveData *save = GetSaveData();
     if (save == nullptr) return Failed("the game has no save data yet");
-    if (!importing) return Ok({{"town_id", town}, {"data", ExportTown(*save, town)}});
+    if (!importing) {
+        TownRecordFromLiveMap(); // the town on screen goes as it stands
+        return Ok({{"town_id", town}, {"data", ExportTown(*save, town)}});
+    }
     if (!args[0].contains("data") || !args[0]["data"].is_string()) return Invalid("data must be georama.town_export text");
     // A Georama town is its map: maps 0-4 are the five towns, each with the edit data of its own number
     // (CSaveData::GetEditData). The town is on screen when the town loop runs that map.
@@ -587,6 +590,8 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     if (editing) {
         TownRebuildStep(); // a change taken earlier, in a menu, is built first, so the live map is not behind
         TownLiveSync();
+    } else if (here) {
+        TownRecordFromLiveMap(); // what stands is what the other game's change is merged into (not if behind it)
     }
     const std::string &data = args[0]["data"].get_ref<const std::string &>();
     const bool         merging = args[0].contains("base") && !args[0]["base"].is_null();
@@ -595,6 +600,9 @@ ApiCallResult TownExportImport(const ApiOperationSpec &operation, const Json &ar
     if (merging ? !MergeTown(args[0]["base"].get_ref<const std::string &>(), data, town, *save, error) : !ImportTown(data, town, *save, error)) {
         return Invalid(error);
     }
+    std::fprintf(stderr, "co-op: town %d taken (%s%s): its record %d parts, %d standing\n", town, merging ? "merged" : "whole",
+                 editing ? ", in its editor" : here ? ", on screen" : ", elsewhere",
+                 TownRecordParts(town), TownLiveParts());
     RegisterTownAgreed(town); // what came from another game is not this game's change
     // The town on screen is the old one: its live map is built from the record again where the player stands, as
     // soon as they walk free (TownRebuildStep). Nobody is walked back to the entrance.
@@ -1228,6 +1236,7 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
         if (!args.is_array() || !args.empty()) return Invalid(std::string(path) + " takes no arguments");
         CSaveData *save = GetSaveData();
         if (save == nullptr) return Failed("the game has no save data yet");
+        if (path == "save.world_export") TownRecordFromLiveMap(); // the town on screen goes as it stands
         return Ok({{"data", path == "save.world_export" ? ExportWorld(*save) : ExportPlayerText(*save)}});
     }
     if (path == "save.world_import" || path == "save.player_import") {
@@ -1242,7 +1251,12 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
         const std::string &data = args[0]["data"].get_ref<const std::string &>();
         const bool ok = path == "save.world_import" ? ImportWorld(data, *save, error) : ImportPlayerText(data, *save, error);
         if (!ok) return Invalid(error);
-        if (path == "save.world_import") RegisterRebase(); // a whole world is where the games begin again, not a change
+        if (path == "save.world_import") {
+            RegisterRebase(); // a whole world is where the games begin again, not a change
+            for (int town = 0; town < SAVE_EDIT_DATA_MAX; ++town) {
+                if (TownOnScreen(town)) TownRebuildWanted(town); // the town on screen is the old one: built again
+            }
+        }
         return Ok({{"imported", true}});
     }
     if (path == "world.watch_set") {

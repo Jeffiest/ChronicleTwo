@@ -453,6 +453,29 @@ def build_edit():
             'host_autotest': {'at': 400}, 'host_input': WALK_RIGHT % SHOVE_WALK + press_lines([(1300, 'select')])}
 
 
+@scenario('build_edit_opening')
+def build_edit_opening():
+    """build_edit with the joiner building while the host's editor is still opening (Select pressed, the editor not
+    yet taking towns): every part the joiner put up stands in both games at the end."""
+    sc = build_edit()
+    sc['guest'][1]['after'] = 900
+    return sc
+
+
+# (the moment the editor opens in the host's game falls differently against the joiner's clock from run to run: these
+# start the joiner's building earlier and later, so that one of them lands in it)
+def _opening_at(after):
+    def make():
+        sc = build_edit()
+        sc['guest'][1]['after'] = after
+        return sc
+    return make
+
+
+for _after in (450, 600, 750, 1050):
+    SCENARIOS['build_edit_opening_%d' % _after] = _opening_at(_after)
+
+
 # The host's walk in Sindain from where it stands (0,0,0): the left stick held forward and to the right from frame
 # 900 for 64 frames, which (walk_probe, 2026-11-15; the camera turns as the hero goes) leaves the hero at 390,0,28.
 WALK_RIGHT = """%d 255 0 128 128
@@ -748,10 +771,12 @@ def check_towns(host, guest, result):
     c.check(len(h1) == 2 and h1[0] != h1[1], "the joiner's change to Balance Valley reaches the host's world", h1)
     c.check(len(g1) == 1 and h1[-1:] == g1, 'and the town is the same in both games', h1 + g1)
     c.check(len(h2) == 2 and h2[0] != h2[1] and len(g2) == 1 and h2[-1:] == g2, "the host's change to Veniccio reaches the joiner's game", h2 + g2)
+    # (a joiner's town goes numbered: "COOPTEST town 1 sent #1")
+    def sends(side, town):
+        return [e for e in side['events'] if re.fullmatch(r'COOPTEST town %d sent( #\d+)?' % town, e)]
     sent = [e for e in host['events'] + guest['events'] if e.startswith('COOPTEST town ')]
-    c.check('COOPTEST town 1 sent' in guest['events'] and 'COOPTEST town 2 sent' in host['events'],
-            'each game sends the town it changed, when the game says it changed', sent)
-    c.check(sent.count('COOPTEST town 1 sent') == 1 and sent.count('COOPTEST town 2 sent') == 1,
+    c.check(sends(guest, 1) and sends(host, 2), 'each game sends the town it changed, when the game says it changed', sent)
+    c.check(len(sends(guest, 1) + sends(host, 1)) == 1 and len(sends(guest, 2) + sends(host, 2)) == 1,
             'and a town that came from the other game is not sent back', sent)
     c.no_errors()
     return c.list
@@ -785,20 +810,47 @@ def check_build(host, guest, result):
     return c.list
 
 
+def georama_looks(side):
+    """Each georama_probe of town 0 a side made: (parts in its record, parts standing, in the editor)."""
+    out = []
+    for e in side['events']:
+        m = re.match(r'DRIVE georama town=0 placed=(\d+) standing=(\S+).* editing=(\S+)', e)
+        if m:
+            out.append((int(m.group(1)), m.group(2), m.group(3)))
+    return out
+
+
+@checks('build_edit_opening')
+def check_build_edit_opening(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    c.together('T', 'in Sindain')
+    put = [e for e in guest['events'] if e.startswith('DRIVE part placed')]
+    c.check(len(put) >= 2, 'the joiner puts up parts in Sindain', [e for e in guest['events'] if 'part' in e][:6])
+    h, g = georama_looks(host), georama_looks(guest)
+    start = int(h[0][1]) if h and h[0][1].isdigit() else -1
+    want = str(start + len(put))
+    c.check(len(h) == 3 and h[-1][2] == 'true', 'the host opened the editor and is still in it at the end', h)
+    c.check(g and g[0][1] == want, "right after building, the joiner's town holds every part it put up", '%s, want %s' % (g, want))
+    c.check(h and h[-1][1] == want and h[-1][0] == int(want), "and so does the host's at the end (its record and its editor)",
+            '%s, want %s' % (h, want))
+    c.check(g and g[-1][1] == want, "and the joiner's still does at the end", '%s, want %s' % (g, want))
+    c.no_errors()
+    return c.list
+
+
+for _after in (450, 600, 750, 1050):
+    CHECKS['build_edit_opening_%d' % _after] = check_build_edit_opening
+
+
 @checks('build_edit')
 def check_build_edit(host, guest, result):
     c = Checks(host, guest, result)
     c.ran()
     c.visit()
     c.together('T', 'in Sindain')
-
-    def looks(side):
-        out = []
-        for e in side['events']:
-            m = re.match(r'DRIVE georama town=0 placed=(\d+) standing=(\S+).* editing=(\S+)', e)
-            if m:
-                out.append((int(m.group(1)), m.group(2), m.group(3)))
-        return out
+    looks = georama_looks
     put = [e for e in guest['events'] if e.startswith('DRIVE part placed')]
     c.check(len(put) >= 2, 'the joiner puts up parts in Sindain', [e for e in guest['events'] if 'part' in e][:6])
     h, g = looks(host), looks(guest)

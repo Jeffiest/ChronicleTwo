@@ -310,7 +310,12 @@ void DownReset();
 // the scene or menu is over or the player comes out of a house, and at the latest before the game next writes that
 // live map into the record (TownBeforeSave, from EditDataSave).
 bool TownOnScreen(int town); // the town loop runs that town (its own map or a house's inside)
+// The town on screen is written into its record as it stands: in its editor, and while its player walks free (a town
+// often stands ahead of its record outside the editor too: the record is written only when the player leaves).
 void TownLiveSync();
+// The same at once, whatever the player is doing (a town about to be sent or merged into): the record is what the
+// other game starts from and what its change is merged into, so a part only standing here would be lost in both.
+void TownRecordFromLiveMap();
 // Whether this town's live map may be written over its record: not while a rebuild from the record is pending for it
 // (the map lacks the other player's change, and writing it would take that change away).
 bool TownRecordWritable(int town);
@@ -322,6 +327,7 @@ void TownRebuildStep();
 // with the player still in the editor.
 bool TownEditorReady();
 void TownBeforeSave();
+int  TownRecordParts(int town); // the parts a town's record holds (its layout), or -1 when there is no record
 int  TownLiveParts(); // the parts standing in the town on screen (its live map), or -1 when no town's own map is
 void TownReset();
 void RegisterOwnerUnloaded(std::string_view owner);

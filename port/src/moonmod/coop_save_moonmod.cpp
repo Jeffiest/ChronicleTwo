@@ -672,6 +672,22 @@ bool MergeTown(std::string_view base, std::string_view edited, int town, CSaveDa
             ++it;
         }
     }
+    // A part both games put up since, the same part in the same spot (a town's own parts first written into both
+    // games' records as they stood, or two players' identical work): one stands, not two in one place.
+    std::vector<TownPart> mine_new = Placed(layout);
+    for (const TownPart &had : Placed(before->layout)) {
+        const auto same = std::ranges::find_if(mine_new, [&](const TownPart &part) { return SamePart(part, had); });
+        if (same != mine_new.end()) mine_new.erase(same);
+    }
+    for (auto it = added.begin(); it != added.end();) {
+        const auto same = std::ranges::find_if(mine_new, [&](const TownPart &part) { return SamePart(part, it->first); });
+        if (same == mine_new.end()) {
+            ++it;
+            continue;
+        }
+        mine_new.erase(same);
+        it = added.erase(it);
+    }
     // The merged parts: this game's, less what they took away, then what they added. Each keeps where it came from,
     // so the placement log can follow it.
     std::vector<TownPart> merged;

@@ -189,6 +189,19 @@ them together only when its player leaves the editor (`EditDataSave`) or walks i
   `TownFingerprint` and of the "nobody here changed it" comparison.
 - **Built parts are the world's.** `build_parts_num` is shared as `stock`, so a part one player builds can be
   placed by the other.
+- **The town on screen goes as it stands** (2026-11-17). A town often stands ahead of its record outside the editor
+  too: one loaded before the game first saved it, or one the story changed, is written only when its player leaves
+  it. The record is what the other game gets (in the world a visit starts from, and as the town a joiner's change was
+  made from), so a host whose Sindain stood with 15 parts over an older record took a joiner's first part as a town
+  "nobody here changed", took it whole and built its own map again from it, losing the 2 parts that only stood
+  (`build_edit_opening_450` and `_600`: 17 parts where 19 should stand, in both games). `TownLiveSync` now writes the
+  town on screen into its record while its player walks free as well as in the editor, and
+  `TownRecordFromLiveMap` does it at once before `georama.town_export`, `save.world_export` and a merging
+  `georama.town_import` into the town on screen; neither writes while a rebuild from the record is pending. A part
+  both games put up in one spot since the agreed town stands once after `MergeTown`
+  (`MoonModCoopSave.APartBothGamesPutUpInOneSpotStandsOnce`), and `save.world_import` while a town is on screen
+  asks for its rebuild. The engine logs `co-op: town N taken (...)`, `built again from its record (N parts)` and
+  `is written from its live map (N parts; its record N)` as it goes.
 
 Since 2026-11-15:
 
