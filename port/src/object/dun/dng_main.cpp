@@ -2029,7 +2029,9 @@ void DngStep() {
         ActiveMonster->StepEffectScript();
     }
 
-    if (BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) {
+    // (MoonMod co-op: copies of another game's monsters rest their thinking, not the floor's effects, which would
+    // stand frozen: torches, a door's sparkle, the other player's shots)
+    if ((BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) && !moonmod::coop::MonstersMirrored()) {
         FxScriptMan->PauseFromLevel(3, 3);
     }
 

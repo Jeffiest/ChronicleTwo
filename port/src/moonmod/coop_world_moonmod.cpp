@@ -67,6 +67,61 @@ float TurnToward(float from, float to, float rate) {
 
 // Past this from where it stands, an avatar jumps instead of easing (a warp, the stairs, a new floor).
 constexpr float kJump = 160.0f;
+
+// The others are shown this many frames behind their own game's clock (as the reports' ages give it): a report every
+// four frames and room for the network's unevenness, so there is nearly always a next report to ease toward.
+constexpr int kDelay = 8;
+constexpr int kMaxAge = 600;
+// This game's frames, counted by WorldStep: the clock the reports' ages are taken on.
+int g_clock = 0;
+
+// One report from another game: where its hero (or monster) stood and what it played, on this game's clock.
+struct Sample {
+    int   t = 0;
+    float x = 0.0f, y = 0.0f, z = 0.0f, heading = 0.0f;
+    int   motion = -1, flags = 0;
+    float step = -1.0f;
+};
+
+// Keeps a report, in its time's order. One older than a report kept, or the same as the last, is let go; one far
+// from the last (a warp, the stairs) starts the trail over; one after a long quiet (standing still) starts from the
+// last as of one report before it, so a walk starts when it did and is not drawn out over the quiet.
+void TrailHeard(std::vector<Sample> &trail, const Sample &n) {
+    if (!trail.empty()) {
+        const Sample &last = trail.back();
+        if (n.t <= last.t) return;
+        if (n.x == last.x && n.y == last.y && n.z == last.z && n.heading == last.heading && n.motion == last.motion &&
+            n.flags == last.flags && n.step == last.step) {
+            return;
+        }
+        if (std::hypot(n.x - last.x, n.z - last.z) > kJump) {
+            trail.clear();
+        } else if (n.t - last.t > 2 * kDelay) {
+            Sample held = last;
+            held.t = n.t - kDelay / 2;
+            trail.push_back(held);
+        }
+    }
+    trail.push_back(n);
+    if (trail.size() > 32) trail.erase(trail.begin());
+}
+
+// The trail as it stood kDelay frames ago: eased between the two reports around that moment, playing the motion
+// reported last before it. (A trail that has run out stands at its last report.)
+Sample TrailAt(std::vector<Sample> &trail) {
+    const int render = g_clock - kDelay;
+    while (trail.size() >= 2 && trail[1].t <= render) trail.erase(trail.begin());
+    const Sample &a = trail.front();
+    if (trail.size() == 1 || render <= a.t) return a;
+    const Sample &b = trail[1];
+    const float   u = static_cast<float>(render - a.t) / static_cast<float>(b.t - a.t);
+    Sample        s = a;
+    s.x = Ease(a.x, b.x, u);
+    s.y = Ease(a.y, b.y, u);
+    s.z = Ease(a.z, b.z, u);
+    s.heading = TurnToward(a.heading, b.heading, u);
+    return s;
+}
 // The scene slots an avatar takes: the dungeon's last event slots, a town's last talk slots (the game fills them
 // from the first), and texture blocks past the ones the town's and dungeon's setup use.
 constexpr int kDungeonSlotBase = DNG_CHARA_SLOT_EVENT + DNG_CHARA_EVENT_NUM - kAvatars;
@@ -74,8 +129,8 @@ constexpr int kTownSlotBase = EDIT_CHARA_SLOT_OTHER_END - kAvatars;
 constexpr int kTextureBlockBase = 0x70;
 constexpr int kFileBytes = 6 * 1024 * 1024;
 
-// One hero's body in a scene slot: the scene steps and draws it; the step eases to the last report and the draw
-// tints the ambient light (a guest in blue).
+// One hero's body in a scene slot: the scene steps and draws it; the step follows the reports kDelay frames behind
+// (At), playing each motion as that player's game plays it, and the draw may tint the ambient light.
 class AvatarBody final : public CCharacter2 {
 public:
     AvatarState target;
@@ -88,45 +143,73 @@ public:
     // ridepod's parts play them too, as the game's own CActionChara::SetMotion has every part of the chain do.
     bool        shaped = false;
     bool        parts_move = false;
-    int         motion = -1;
+    int         motion = -1, flags = -1;
+    std::vector<Sample> trail; // the reports kept, oldest first (TrailHeard, TrailAt); empty: the target, eased toward
     int         stand_in_gait = -1, stand_in_shown = -1; // a stand-in: 1 running, 0 standing
     int         town = 0;
+    // In and out of sight as the game's own monsters come and go (view_alpha, a twentieth a frame): from nothing where
+    // it first stands or lands after a jump, and to nothing where it stands when the player goes (world.avatar_clear
+    // with both in one place), then gone.
+    float       fade = 0.0f;
+    bool        leaving = false;
 
     void Step() override {
-        const float to[3] = {target.x, target.y, target.z};
-        const float far = std::hypot(to[0] - at[0], to[2] - at[2]);
+        const Sample now = trail.empty() ? Sample{g_clock, target.x, target.y, target.z, target.heading, target.motion,
+                                                  target.motion_flags, target.motion_step}
+                                         : TrailAt(trail);
+        const float  to[3] = {now.x, now.y, now.z};
+        const float  far = std::hypot(to[0] - at[0], to[2] - at[2]);
+        float        pace = far; // how far it goes this frame
         if (!placed || far > kJump) {
             std::copy(to, to + 3, at);
-            heading = target.heading;
+            heading = now.heading;
             placed = true;
-        } else {
-            // About a fifth of the way each frame: a report every six frames lands just as the next one comes.
+            pace = 0.0f;
+            if (!leaving) fade = 0.0f;
+        } else if (trail.empty()) {
+            // (reports with no time: about a fifth of the way each frame)
             for (int axis = 0; axis < 3; ++axis) at[axis] = Ease(at[axis], to[axis], 0.2f);
-            heading = TurnToward(heading, target.heading, 0.3f);
+            heading = TurnToward(heading, now.heading, 0.3f);
+            pace = far * 0.2f;
+        } else {
+            std::copy(to, to + 3, at);
+            heading = now.heading;
         }
         SetPosition(at[0], at[1], at[2]);
         SetRotation(0.0f, heading, 0.0f);
         if (target.stand_in && !shaped) {
             // The hero standing in for a ridepod or a monster's form: their motion numbers are not the hero's, so
             // the hero runs while the reports move and stands when they stop (the names every hero's body has).
-            if (far > 2.0f) stand_in_gait = 1;
-            else if (far < 0.5f || stand_in_gait < 0) stand_in_gait = 0;
+            if (pace > 0.4f) stand_in_gait = 1;
+            else if (pace < 0.1f || stand_in_gait < 0) stand_in_gait = 0;
             if (stand_in_gait != stand_in_shown) {
                 stand_in_shown = stand_in_gait;
                 char run[] = "\x91\x96\x82\xE8", stand[] = "\x97\xA7\x82\xBF";
                 SetMotion(stand_in_gait != 0 ? run : stand, 0);
-                motion = -1;
+                motion = flags = -1;
             }
         } else {
             stand_in_gait = stand_in_shown = -1;
-            if (target.motion != motion) {
-                motion = target.motion;
-                SetMotion(std::max(0, motion), 2);
+            // As that player's game plays it: a run, a walk or a stand loops, a swing or a fall stops on its last
+            // frame, and a walk goes at the stick's pace (actionchara.cpp sets each so).
+            if (now.motion != motion || now.flags != flags) {
+                motion = now.motion;
+                flags = now.flags;
+                SetMotion(std::max(0, motion), flags);
                 if (parts_move) {
-                    for (const std::shared_ptr<CCharacter2> &part : parts) part->SetMotion(std::max(0, motion), 2);
+                    for (const std::shared_ptr<CCharacter2> &part : parts) part->SetMotion(std::max(0, motion), flags);
+                }
+            }
+            if (now.step >= 0.0f) {
+                SetStep(now.step);
+                if (parts_move) {
+                    for (const std::shared_ptr<CCharacter2> &part : parts) part->SetStep(now.step);
                 }
             }
         }
+        fade = std::clamp(fade + (leaving ? -0.05f : 0.05f), 0.0f, 1.0f);
+        alpha = fade;
+        for (const std::shared_ptr<CCharacter2> &part : parts) part->alpha = fade;
         CCharacter2::Step();
         for (const std::shared_ptr<CCharacter2> &part : parts) part->Step();
     }
@@ -206,6 +289,8 @@ struct Avatar {
     CScene                     *scene = nullptr;
     int                         loop = -1;
     int                         held_effect = -1; // the effect of an item it holds up to throw (its slot under the avatar's), or -1
+    // Shots, spells and sounds told with an age, kept for the moment the avatar comes to them: (that frame, the effect).
+    std::vector<std::pair<int, HeroEffect>> pending;
     // Its own memory: the file it reads and the stacks its model, motions and images live in.
     std::vector<unsigned char>  file;
     std::vector<unsigned char>  arena;
@@ -216,9 +301,26 @@ struct Avatar {
     std::string                 sound_name;
     unsigned int                se_bank = 0xFFFFFFFFu;
     mgCMemory                   sound_memory;
+    // Its looped sounds, kept up as the game's own CLoopSeMngr keeps a hero's: each goes on until `keep` frames pass
+    // with no word that it still goes (count, the frames since the last), then stops.
+    struct LoopSound {
+        int sound = -1;
+        int keep = 0;
+        int count = 0;
+    };
+    std::array<LoopSound, 4> loops{};
 };
 
 std::array<Avatar, kAvatars> g_avatars;
+constexpr int                kLoopVoice = 13; // the voice the game's hero plays its loops on (_SE_LOOP_PLAY); ours are on a port of their own
+
+// Stops an avatar's looped sounds (it goes, or its bank does).
+void AvatarLoopsStop(Avatar &a) {
+    for (Avatar::LoopSound &l : a.loops) {
+        if (l.sound >= 0 && a.se_bank != 0xFFFFFFFFu) sndSeStop(a.se_bank, l.sound, kLoopVoice);
+        l = Avatar::LoopSound{};
+    }
+}
 
 bool InDungeon() { return GetNowLoopNo() == LOOP_DUNGEON && DngMainScene != nullptr && MainChara__2 != nullptr; }
 // A floor's monsters and map events need its scene, not the player's body.
@@ -238,6 +340,8 @@ void Unload(int index) {
         FxScriptMan->ClearEffectFromChrid(a.slot);
     }
     a.held_effect = -1;
+    a.pending.clear();
+    AvatarLoopsStop(a);
     if (a.se_bank != 0xFFFFFFFFu) sndDeletePort(SND_PORT_COOP + index);
     a.se_bank = 0xFFFFFFFFu;
     a.sound_name.clear();
@@ -278,6 +382,7 @@ bool LoadAvatarSound(Avatar &a, int index, const std::string &name) {
     if (a.sound_name == name) return a.se_bank != 0xFFFFFFFFu;
     if (!SoundNameOk(name)) return false;
     const int port = SND_PORT_COOP + index;
+    AvatarLoopsStop(a);
     sndDeletePort(port);
     a.se_bank = 0xFFFFFFFFu;
     a.sound_name = name;
@@ -506,7 +611,8 @@ bool Load(int index, CScene *scene, int slot, int town) {
 struct PuppetSlot {
     bool   used = false;
     Puppet host;
-    int    motion = -1;
+    int    motion = -1, flags = -1;
+    std::vector<Sample> trail; // the leader's reports kept (TrailHeard, TrailAt)
 };
 std::vector<PuppetSlot>  g_puppets(static_cast<std::size_t>(MONSTER_ACTIVE_MAX));
 std::vector<PuppetHit>   g_puppet_hits;
@@ -579,6 +685,12 @@ void PuppetsStep() {
         if (std::ranges::any_of(g_puppets, &PuppetSlot::used)) PuppetsClear();
         return;
     }
+    // What the copies' own motions start (a motion's entry effects) is drawn only: the leader's monsters strike, not
+    // these copies (and their effects are no longer held frozen with the copies' thinking, dng_main.cpp).
+    std::vector<const _EFF_SCRIPT *> before;
+    if (FxScriptMan != nullptr && std::ranges::any_of(g_puppets, &PuppetSlot::used)) {
+        for (const _EFF_SCRIPT *s = FxScriptMan->head; s != nullptr; s = s->next) before.push_back(s);
+    }
     bool any = false;
     for (int slot = 0; slot < MONSTER_ACTIVE_MAX; ++slot) {
         PuppetSlot &p = g_puppets[static_cast<std::size_t>(slot)];
@@ -590,15 +702,27 @@ void PuppetsStep() {
         }
         any = true;
         if (p.host.state <= 0 || p.host.hp == 0) continue;
-        monster->SetPosition(p.host.x, p.host.y, p.host.z);
-        monster->SetRotation(0.0f, p.host.heading, 0.0f);
-        if (p.host.motion >= 0 && p.host.motion != p.motion) {
-            p.motion = p.host.motion;
-            monster->SetMotion(p.host.motion, 2);
+        // (on the leader's clock a little behind, eased between its reports, as the other players' heroes are; each
+        // motion played as the leader's monster plays it, looping or held on its last frame)
+        const Sample now = p.trail.empty() ? Sample{g_clock, p.host.x, p.host.y, p.host.z, p.host.heading, p.host.motion,
+                                                    p.host.motion_flags, p.host.motion_step}
+                                           : TrailAt(p.trail);
+        monster->SetPosition(now.x, now.y, now.z);
+        monster->SetRotation(0.0f, now.heading, 0.0f);
+        if (now.motion >= 0 && (now.motion != p.motion || now.flags != p.flags)) {
+            p.motion = now.motion;
+            p.flags = now.flags;
+            monster->SetMotion(now.motion, now.flags);
         }
+        if (now.step >= 0.0f) monster->SetStep(now.step);
         // Its own thoughts are paused with every monster's: the copy still animates, and comes into sight here.
         monster->Step();
         PuppetSight(monster);
+    }
+    if (FxScriptMan != nullptr && any) {
+        for (_EFF_SCRIPT *s = FxScriptMan->head; s != nullptr; s = s->next) {
+            if (std::ranges::find(before, s) == before.end()) s->shown_only = true;
+        }
     }
     // A guest's floor is the host's: the monsters' own scripts rest while any copy stands.
     if (any && !g_puppets_pause) {
@@ -689,14 +813,31 @@ bool AvatarSet(int slot, const AvatarState &state) {
     Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
     a.target = state;
     a.wanted = true;
-    if (a.body) a.body->target = state;
+    if (a.body) {
+        a.body->leaving = false; // (back before it was gone: it comes back into sight where it is)
+        a.body->target = state;
+        if (state.age >= 0) {
+            TrailHeard(a.body->trail, {g_clock - std::min(state.age, kMaxAge), state.x, state.y, state.z, state.heading, state.motion,
+                                  state.motion_flags, state.motion_step});
+        } else {
+            a.body->trail.clear();
+        }
+    }
     return true;
 }
 
 void AvatarClear(int slot) {
     for (int i = 0; i < kAvatars; ++i) {
         if (slot >= 0 && slot != i) continue;
-        g_avatars[static_cast<std::size_t>(i)].wanted = false;
+        Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        a.wanted = false;
+        // Seen here, in this place: the hero goes from sight where it stands (AvatarsStep lets it go at nothing). It is
+        // nobody a monster goes for or strikes, and carries no name, from now.
+        if (a.body && a.scene != nullptr && a.scene == PlaceScene() && a.slot >= 0 && a.scene->GetCharacter(a.slot) == a.body.get() &&
+            a.body->fade > 0.0f) {
+            a.body->leaving = true;
+            continue;
+        }
         Unload(i);
     }
 }
@@ -739,10 +880,13 @@ void AvatarsStep() {
                 FxScriptMan->ClearEffectFromChrid(a.slot); // (the same floor, its slot given to another: our effects go)
             }
             a.held_effect = -1; // (on another floor, the floor's effects went with it)
+            a.pending.clear();
+            AvatarLoopsStop(a);
             a.loaded_character = -1;
             a.slot = -1;
             a.scene = nullptr;
         }
+        if (!a.wanted && a.body && a.body->leaving && a.body->fade <= 0.0f) Unload(i); // (gone from sight: gone)
         if (!a.wanted || scene == nullptr) continue;
         const int town = InTown() ? 1 : 0;
         // (the other player changed hero, what they wear, or climbed into the ridepod or took a form)
@@ -852,6 +996,43 @@ void HeroSounded(const void *chara, int sound) {
     g_hero_effects.push_back(e);
 }
 
+// A looped sound is kept up every frame the hero's script says so; it is told at most every kLoopTellEvery frames for
+// one sound (the avatar's side keeps it that much longer), and again at once when it starts afresh.
+constexpr int kLoopTellEvery = 8;
+static std::array<std::pair<int, int>, 8> g_loops_told{}; // (sound + 1, the frame it was last told), 0 for none
+
+void HeroLoopSounded(const void *chara, int sound, int keep) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon() || DngUserData == nullptr || sound < 0 || sound > 255) return;
+    keep = std::clamp(keep, 0, 600);
+    std::pair<int, int> *told = &g_loops_told[0];
+    for (std::pair<int, int> &t : g_loops_told) {
+        if (t.first == sound + 1) {
+            told = &t;
+            break;
+        }
+        if (t.second < told->second) told = &t; // (else the one told longest ago makes room)
+    }
+    const bool known = told->first == sound + 1;
+    if (keep == 0) {
+        if (!known) return; // (a stop, as the game takes no time to keep it: for a loop never told, nothing)
+    } else if (known && g_clock - told->second >= 0 && g_clock - told->second < kLoopTellEvery) {
+        return;
+    }
+    HeroEffect e;
+    e.kind = static_cast<int>(HeroShot::SoundLoop);
+    e.frame0 = HeroSoundName(DngUserData, DngUserData->active_chr_no);
+    if (!SoundNameOk(e.frame0)) return;
+    *told = keep == 0 ? std::pair{0, 0} : std::pair{sound + 1, g_clock};
+    e.frame1 = e.frame0;
+    e.value = sound;
+    e.amount = static_cast<float>(keep);
+    float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    MainChara__2->GetPosition(at);
+    for (int axis = 0; axis < 3; ++axis) e.pos[axis] = at[axis];
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(e);
+}
+
 void HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold) {
     if (chara == nullptr || chara != MainChara__2 || !InDungeon() || frame0 == nullptr || frame1 == nullptr) return;
     HeroEffect e;
@@ -870,7 +1051,7 @@ std::vector<HeroEffect> TakeHeroEffects() { return std::exchange(g_hero_effects,
 
 // As the firing game's own actscript.cpp draws each shot (ShotNormalGun and the others), less the attack: no collision
 // primitive, so it strikes nothing here (the firing game's hits are what count).
-bool AvatarEffect(int slot, const HeroEffect &e) {
+static bool AvatarEffectNow(int slot, const HeroEffect &e) {
     if (!AvatarShown(slot) || !InDungeon() || FxScriptMan == nullptr || DngStatus.mode != DNG_STATUS_FIELD) return false;
     for (int axis = 0; axis < 3; ++axis) {
         if (!std::isfinite(e.pos[axis]) || !std::isfinite(e.dir[axis])) return false;
@@ -889,6 +1070,31 @@ bool AvatarEffect(int slot, const HeroEffect &e) {
             float volume = 0.0f, pan = 0.0f;
             sndGetVolPan(&volume, &pan, at, 160.0f, 1200.0f);
             sndSePlayVPf(a.se_bank, e.value, volume, pan, 0);
+            return true;
+        }
+        case HeroShot::SoundLoop: {
+            // begun, or kept going, as CLoopSeMngr::SeLoopPlayStop does; AvatarLoopsStep plays it from the avatar
+            Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
+            if (!a.body || e.value < 0 || e.value > 255 || !LoadAvatarSound(a, slot, e.frame0)) return false;
+            Avatar::LoopSound *loop = nullptr;
+            for (Avatar::LoopSound &l : a.loops) {
+                if (l.sound == e.value) {
+                    loop = &l;
+                    break;
+                }
+                if (loop == nullptr && l.sound < 0) loop = &l;
+            }
+            if (loop == nullptr) return false; // (four going at once: a fifth is not heard)
+            const bool going = loop->sound == e.value;
+            if (!(e.amount > 0.0f)) { // (kept no frames: stopped now)
+                if (going) sndSeStop(a.se_bank, loop->sound, kLoopVoice);
+                if (going) *loop = Avatar::LoopSound{};
+                return true;
+            }
+            loop->sound = e.value;
+            // (told every few frames, not every one: it goes on that much longer between words)
+            loop->keep = std::clamp(static_cast<int>(e.amount), 1, 600) + kLoopTellEvery;
+            loop->count = going ? 1 : 0;
             return true;
         }
         case HeroShot::Gun: {
@@ -1120,6 +1326,12 @@ bool PuppetSet(int slot, const Puppet &puppet) {
     }
     p.used = true;
     p.host = puppet;
+    if (puppet.age >= 0) {
+        TrailHeard(p.trail, {g_clock - std::min(puppet.age, kMaxAge), puppet.x, puppet.y, puppet.z, puppet.heading, puppet.motion,
+                        puppet.motion_flags, puppet.motion_step});
+    } else {
+        p.trail.clear();
+    }
     monster->life = std::clamp(puppet.hp, 0, 1000000);
     if (puppet.max_hp > 0) monster->max_life = puppet.max_hp;
     if (puppet.state == ACTIVE_MONSTER_DEAD && monster->state == ACTIVE_MONSTER_LIVE) {
@@ -1130,6 +1342,8 @@ bool PuppetSet(int slot, const Puppet &puppet) {
 }
 
 bool IsPuppet(int slot) { return slot >= 0 && slot < MONSTER_ACTIVE_MAX && g_puppets[static_cast<std::size_t>(slot)].used; }
+
+bool MonstersMirrored() { return g_puppets_pause; }
 
 void PuppetsClear() {
     for (PuppetSlot &p : g_puppets) p = PuppetSlot{};
@@ -1149,11 +1363,26 @@ std::vector<AvatarHit> TakeAvatarHits() {
     return out;
 }
 
-void MonsterDamaged(int slot, int damage) {
-    if (!IsPuppet(slot) || damage <= 0) return;
-    // The copy keeps the host's life: the blow goes to the host's monster.
-    if (CActiveMonster *monster = Monster(slot); monster != nullptr) monster->life = std::max(0, g_puppets[static_cast<std::size_t>(slot)].host.hp);
-    if (g_puppet_hits.size() < 64) g_puppet_hits.push_back({slot, damage});
+void MonsterDamaged(int slot, int damage, const CColPrim *prim, int element, bool guard) {
+    if (!IsPuppet(slot)) return;
+    // The copy keeps the host's life: the blow goes to the host's monster. One that took nothing (a guard, a monster
+    // it can't hurt) goes too, for the host's game to show it so.
+    CActiveMonster *monster = Monster(slot);
+    if (monster != nullptr) monster->life = std::max(0, g_puppets[static_cast<std::size_t>(slot)].host.hp);
+    if (damage < 0 || (damage == 0 && prim == nullptr) || g_puppet_hits.size() >= 64) return;
+    PuppetHit hit{slot, damage};
+    if (prim != nullptr && prim->param != nullptr) {
+        hit.kind = prim->param->kind;
+        hit.flags = prim->param->hit_flags;
+        hit.stagger = prim->param->stagger;
+        hit.stun = prim->param->stun_time;
+        hit.element = element;
+        hit.guard = guard;
+        float feet[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+        if (monster != nullptr) monster->GetPosition(feet);
+        for (int k = 0; k < 3; ++k) hit.at[k] = prim->hit_pos[k] - feet[k];
+    }
+    g_puppet_hits.push_back(hit);
 }
 
 void MonsterThinkBegin(int slot) {
@@ -1370,7 +1599,7 @@ void AvatarHitsStep() {
         const Avatar &a = g_avatars[static_cast<std::size_t>(i)];
         int          &grace = g_avatar_grace[static_cast<std::size_t>(i)];
         if (grace > 0) --grace;
-        if (!a.body || a.scene != DngMainScene || a.slot < 0 || a.target.down) continue;
+        if (!a.wanted || !a.body || a.scene != DngMainScene || a.slot < 0 || a.target.down) continue;
         for (CColPrim &prim : ColPrimMan.prim) {
             if (!prim.active || prim.param == nullptr || (prim.target & DAMAGE_TARGET_PLAYER) == 0) continue;
             if (!prim.IsHit(DngMainScene, a.slot)) continue; // (a blow that lands marks the avatar as struck by it)
@@ -1379,15 +1608,206 @@ void AvatarHitsStep() {
             // kind as the mod reads it: 2 a small hit (a flinch), 3 a blow that knocks down
             const int kind = (prim.param->hit_flags & DAMAGE_HIT_KNOCKDOWN) != 0 ? 3 : 2;
             if (g_avatar_hits.size() < 64) {
-                g_avatar_hits.push_back({i + 1, prim.attacker, std::max(1, static_cast<int>(prim.damage)), kind, static_cast<int>(prim.param->hit_flags)});
+                AvatarHit hit{i + 1, prim.attacker, std::max(1, static_cast<int>(prim.damage)), kind, static_cast<int>(prim.param->hit_flags)};
+                hit.stun = prim.param->stun_time;
+                hit.stagger = prim.param->stagger;
+                hit.guard_rate = prim.param->critical_rate;
+                hit.status = static_cast<long long>(prim.status);
+                float feet[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+                a.body->GetPosition(feet);
+                for (int k = 0; k < 3; ++k) {
+                    hit.at[k] = prim.hit_pos[k] - feet[k];
+                    hit.toward[k] = prim.hit_vec[k];
+                }
+                g_avatar_hits.push_back(hit);
             }
+            // Here, it lands as a blow on this game's own hero does: a spark where it struck and the floor's hit
+            // sound (the hero's cry is that player's game's, and comes with its sounds).
+            HitEffectSet(DngMainScene, prim.hit_pos, prim.param->hit_flags);
+            sndSePlay(DngMainScene->se_battle_id, 0x16, 0);
             break;
         }
     }
 }
 
+bool AvatarEffect(int slot, const HeroEffect &e, int age) {
+    if (age < 0) return AvatarEffectNow(slot, e);
+    if (!AvatarShown(slot) || !InDungeon() || FxScriptMan == nullptr || DngStatus.mode != DNG_STATUS_FIELD) return false;
+    Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
+    if (a.pending.size() >= 64) a.pending.erase(a.pending.begin()); // (a flood loses its oldest, not the game's memory)
+    a.pending.emplace_back(g_clock - std::min(age, kMaxAge) + kDelay, e);
+    return true;
+}
+
+// The others' shots, spells and sounds whose moment has come on their avatars' clocks (AvatarEffect with an age).
+static void AvatarEffectsDue() {
+    for (int i = 0; i < kAvatars; ++i) {
+        Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        if (a.pending.empty()) continue;
+        std::vector<HeroEffect> due;
+        for (auto it = a.pending.begin(); it != a.pending.end();) {
+            if (it->first <= g_clock) {
+                due.push_back(std::move(it->second));
+                it = a.pending.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        for (const HeroEffect &e : due) AvatarEffectNow(i, e);
+    }
+}
+
+// ---- Notices on the play screen --------------------------------------------------------------------------------------
+
+namespace {
+struct Notice {
+    std::string text;
+    int         until = 0, frames = 0;
+};
+std::vector<Notice> g_notices;
+constexpr std::size_t kNoticeBytes = 127; // MESSAGE_TASK::text, less its end
+constexpr std::size_t kNoticeLines = 3;   // lines to a window
+} // namespace
+
+std::vector<std::string> GameNoticeText(const std::string &utf8, std::size_t line_letters) {
+    // Words in the game's text: ASCII as it is; any other letter as the game writes one ([UNIxxxx], dung_progtxt_*);
+    // a bracket would open one of the game's codes, so it is a parenthesis.
+    std::vector<std::pair<std::string, std::size_t>> words; // (the word's text, its letters)
+    std::string word;
+    std::size_t letters = 0;
+    const auto  end_word = [&] {
+        if (!word.empty()) words.emplace_back(std::exchange(word, {}), std::exchange(letters, 0));
+    };
+    for (std::size_t i = 0; i < utf8.size();) {
+        const unsigned char c = static_cast<unsigned char>(utf8[i]);
+        if (c < 0x80) {
+            ++i;
+            if (c == ' ' || c < 0x20) {
+                end_word();
+                continue;
+            }
+            word += c == '[' ? '(' : c == ']' ? ')' : static_cast<char>(c);
+            ++letters;
+            continue;
+        }
+        const int    extra = c >= 0xF0 ? 3 : c >= 0xE0 ? 2 : c >= 0xC0 ? 1 : 0;
+        unsigned int code = extra == 3 ? c & 0x07u : extra == 2 ? c & 0x0Fu : c & 0x1Fu;
+        std::size_t  j = i + 1;
+        for (int k = 0; k < extra && j < utf8.size(); ++k, ++j) code = (code << 6) | (static_cast<unsigned char>(utf8[j]) & 0x3Fu);
+        i = extra == 0 ? i + 1 : j;
+        char named[16];
+        if (extra == 0 || code > 0xFFFF) {
+            word += '?';
+        } else {
+            std::snprintf(named, sizeof(named), "[UNI%04x]", code);
+            word += named;
+        }
+        ++letters;
+    }
+    end_word();
+    // Lines of about forty letters, broken at spaces (a word longer than a line has one to itself), and windows of
+    // three lines that fit the window's text.
+    std::vector<std::string> lines;
+    std::string              line;
+    std::size_t              line_count = 0;
+    for (auto &[text, count] : words) {
+        if (!line.empty() && line_count + 1 + count > std::max<std::size_t>(line_letters, 8)) {
+            lines.push_back(std::exchange(line, {}));
+            line_count = 0;
+        }
+        if (!line.empty()) {
+            line += ' ';
+            ++line_count;
+        }
+        line += text;
+        line_count += count;
+    }
+    if (!line.empty()) lines.push_back(line);
+    std::vector<std::string> windows;
+    std::string              window;
+    std::size_t              in_window = 0;
+    for (std::string &l : lines) {
+        if (l.size() > kNoticeBytes) l.resize(kNoticeBytes); // (one line past the window's text: cut, as a last resort)
+        if (!window.empty() && (in_window == kNoticeLines || window.size() + 1 + l.size() > kNoticeBytes)) {
+            windows.push_back(std::exchange(window, {}));
+            in_window = 0;
+        }
+        if (!window.empty()) window += '\n';
+        window += l;
+        ++in_window;
+    }
+    if (!window.empty()) windows.push_back(window);
+    return windows;
+}
+
+void FieldNotice(const std::string &utf8, int frames) {
+    for (std::string &text : GameNoticeText(utf8)) {
+        if (g_notices.size() >= 8) g_notices.erase(g_notices.begin());
+        g_notices.push_back({std::move(text), g_clock + 600, std::clamp(frames, 90, 240)});
+    }
+}
+
+// The notices waiting, into the floor's message window when the player is on one, playing (as the game's own are).
+static void NoticesStep() {
+    if (g_notices.empty()) return;
+    std::erase_if(g_notices, [](const Notice &n) { return n.until < g_clock; });
+    if (TownNoticesOpen()) { // (in a town, the window co-op keeps there)
+        for (Notice &n : g_notices) TownNoticePrint(n.text, n.frames);
+        g_notices.clear();
+        return;
+    }
+    if (!InDungeon() || DngStatus.mode != DNG_STATUS_FIELD || MsgTaskMan.mes == nullptr) return;
+    for (Notice &n : g_notices) MsgTaskMan.Print(n.text.data(), n.frames, 8, 0);
+    g_notices.clear();
+}
+
+// The avatars' looped sounds, a frame on, as CLoopSeMngr::Step plays a hero's: begun, then followed where the avatar
+// stands, and stopped once no word came for their time. Off the field (a menu, an event) they stop, and begin again
+// on the next word.
+static void AvatarLoopsStep() {
+    const bool field = InDungeon() && DngStatus.mode == DNG_STATUS_FIELD;
+    for (int i = 0; i < kAvatars; ++i) {
+        Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        if (std::ranges::none_of(a.loops, [](const Avatar::LoopSound &l) { return l.sound >= 0; })) continue;
+        if (!field || !AvatarShown(i) || a.se_bank == 0xFFFFFFFFu) {
+            AvatarLoopsStop(a);
+            continue;
+        }
+        float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+        a.body->GetPosition(at);
+        at[3] = 1.0f;
+        float volume = 0.0f, pan = 0.0f;
+        sndGetVolPan(&volume, &pan, at, 160.0f, 1200.0f);
+        for (Avatar::LoopSound &l : a.loops) {
+            if (l.sound < 0) continue;
+            if (l.count == 0) {
+                sndSePlayVPf(a.se_bank, l.sound, volume, pan, kLoopVoice);
+            } else {
+                sndSetSeVolf(a.se_bank, l.sound, volume, kLoopVoice);
+                sndSetSePanf(a.se_bank, l.sound, pan, kLoopVoice);
+            }
+            if (l.count >= l.keep) {
+                sndSeStop(a.se_bank, l.sound, kLoopVoice);
+                l = Avatar::LoopSound{};
+                continue;
+            }
+            ++l.count;
+        }
+    }
+}
+
+int AvatarLoopsGoing(int slot) {
+    if (slot < 0 || slot >= kAvatars) return 0;
+    return static_cast<int>(std::ranges::count_if(g_avatars[static_cast<std::size_t>(slot)].loops,
+                                                  [](const Avatar::LoopSound &l) { return l.sound >= 0; }));
+}
+
 void WorldStep() {
+    ++g_clock;
+    NoticesStep();
     AvatarsStep();
+    AvatarEffectsDue();
+    AvatarLoopsStep();
     AvatarHitsStep();
     PuppetsStep();
     SharedEventsStep();
@@ -1396,6 +1816,8 @@ void WorldStep() {
 void WorldReset() {
     for (int i = 0; i < kAvatars; ++i) {
         g_avatars[static_cast<std::size_t>(i)].wanted = false;
+        g_avatars[static_cast<std::size_t>(i)].pending.clear();
+        AvatarLoopsStop(g_avatars[static_cast<std::size_t>(i)]);
         g_avatars[static_cast<std::size_t>(i)].body.reset();
         g_avatars[static_cast<std::size_t>(i)].loaded_character = -1;
         g_avatars[static_cast<std::size_t>(i)].scene = nullptr;

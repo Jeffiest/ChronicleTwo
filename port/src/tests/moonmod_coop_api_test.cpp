@@ -9,7 +9,9 @@
 #include <string>
 #include <system_error>
 
+#include "colprim.hpp"
 #include "dng_main.hpp"
+#include "gamedata.hpp"
 #include "mainloop.hpp"
 #include "monster.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
@@ -194,8 +196,15 @@ TEST(MoonModCoopApi, TheHerosShotsAreTakenOnceAndAnotherPlayersAreDrawnOnlyFromT
     const ApiCallResult drawn = api.Call("world.avatar_effect", shot);
     ASSERT_EQ(drawn.status, ApiCallStatus::Ok) << drawn.message;
     EXPECT_FALSE(drawn.value.at("shown").get<bool>());
-    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 10}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 11}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
                                                             {"dy", 0.0}, {"dz", 1.0}}})).status, ApiCallStatus::InvalidArgument);
+    // a looped sound (kind 10) too: off a floor it is not heard, and nothing is left going
+    const ApiCallResult looped = api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 10}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0},
+                                                                               {"dx", 0.0}, {"dy", 0.0}, {"dz", 0.0}, {"value", 21}, {"amount", 4.0},
+                                                                               {"frame0", "CH_020"}, {"frame1", "CH_020"}}}));
+    ASSERT_EQ(looped.status, ApiCallStatus::Ok) << looped.message;
+    EXPECT_FALSE(looped.value.at("shown").get<bool>());
+    EXPECT_EQ(moonmod::coop::AvatarLoopsGoing(0), 0);
     // a sound of the other hero's (kind 9) names its bank; off a floor it is not heard
     const ApiCallResult heard = api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 9}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0},
                                                                               {"dx", 0.0}, {"dy", 0.0}, {"dz", 0.0}, {"value", 17},
@@ -229,6 +238,38 @@ TEST(MoonModCoopApi, ARidepodSaysItsFourPartsAndAFormItsMonster) {
     EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "ridepod"}, {"ridepod", {155, 145, 135, 165}}})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "monster"}, {"form", -1}})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "monster"}, {"form", "frog"}})).status, ApiCallStatus::InvalidArgument);
+    // A mod's notice in the game's own words: lines of about forty letters, three to a window, other letters coded.
+    const std::vector<std::string> one = moonmod::coop::GameNoticeText("Monica is down! Stand by her and hold Revive to help her up.");
+    ASSERT_EQ(one.size(), 1u);
+    EXPECT_EQ(one[0], "Monica is down! Stand by her and hold\nRevive to help her up.");
+    const std::vector<std::string> coded = moonmod::coop::GameNoticeText("Jos\xC3\xA9 [left]");
+    ASSERT_EQ(coded.size(), 1u);
+    EXPECT_EQ(coded[0], "Jos[UNI00e9] (left)");
+    const std::vector<std::string> long_one = moonmod::coop::GameNoticeText(std::string(200, 'a') + " b c");
+    ASSERT_FALSE(long_one.empty());
+    for (const std::string &w : long_one) EXPECT_LE(w.size(), 127u);
+    EXPECT_TRUE(moonmod::coop::GameNoticeText("").empty());
+    // a question's window takes a longer line: a place's name is not broken from its floor's number
+    const std::string asked = "Host went to Underground Channel, floor 2";
+    EXPECT_NE(moonmod::coop::GameNoticeText(asked).at(0).find('\n'), std::string::npos);
+    EXPECT_EQ(moonmod::coop::GameNoticeText(asked, 52).at(0), asked);
+    // A motion as that player's game plays it (looping or held, at its pace), and the report's age on its clock.
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"motion", 3}, {"motion_flags", 2}, {"motion_step", 0.5}, {"age", 6}})).status,
+              ApiCallStatus::Ok);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"motion_flags", 8}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"motion_step", 17.0}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"motion_step", -1.0}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"age", -2}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_set", at({{"character", "max"}, {"age", 4000}})).status, ApiCallStatus::InvalidArgument);
+    // A shot told with an age is kept for its moment, but only for an avatar on this floor; a bad age is refused.
+    const Json shot = {{"slot", 1}, {"kind", 1}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0}, {"dy", 0.0}, {"dz", 1.0}};
+    Json       aged = shot;
+    aged["age"] = 3;
+    const ApiCallResult kept = api.Call("world.avatar_effect", Json::array({aged}));
+    ASSERT_EQ(kept.status, ApiCallStatus::Ok) << kept.message;
+    EXPECT_FALSE(kept.value.at("shown").get<bool>());
+    aged["age"] = -1;
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({aged})).status, ApiCallStatus::InvalidArgument);
     // Without a disc nothing loads: no body, so no name over a head, and the names' draw has nothing to draw.
     float       head[2] = {}, feet[2] = {};
     std::string name;
@@ -270,14 +311,34 @@ TEST(MoonModCoopApi, TheHostMirrorsItsMonstersAndAGuestFollowsThemAsPuppets) {
     // A guest's blow on the copy goes to the host, and the copy keeps the host's life.
     moonmod::coop::MonsterDamaged(0, 20);
     EXPECT_EQ((*floor.slots)[0].life, 55);
+    // One the copy guarded goes too, with how it landed, for the host's game to show it so.
+    DAMAGE_PARAM row{};
+    row.kind = DAMAGE_KIND_MONICA_MELEE;
+    row.hit_flags = DAMAGE_HIT_STUN;
+    row.stagger = 1;
+    row.stun_time = 12;
+    CColPrim prim;
+    prim.param = &row;
+    moonmod::coop::MonsterDamaged(0, 0, &prim, 1, true);
+    moonmod::coop::MonsterDamaged(0, 0); // (a blow that took nothing and says nothing of how: not sent)
     // The host no longer lists slot 2: it is gone here too.
     const ApiCallResult again = api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({slot0, slot1})}}}));
     ASSERT_EQ(again.status, ApiCallStatus::Ok);
     EXPECT_EQ((*floor.slots)[2].state, ACTIVE_MONSTER_NONE);
     EXPECT_FALSE(moonmod::coop::IsPuppet(2));
-    ASSERT_EQ(again.value.at("hits").size(), 1u);
+    ASSERT_EQ(again.value.at("hits").size(), 2u);
     EXPECT_EQ(again.value.at("hits")[0].at("slot"), 0);
     EXPECT_EQ(again.value.at("hits")[0].at("damage"), 20);
+    EXPECT_FALSE(again.value.at("hits")[0].contains("kind"));
+    const Json &told = again.value.at("hits")[1];
+    EXPECT_EQ(told.at("damage"), 0);
+    EXPECT_EQ(told.at("kind"), DAMAGE_KIND_MONICA_MELEE);
+    EXPECT_EQ(told.at("element"), 1);
+    EXPECT_EQ(told.at("flags"), DAMAGE_HIT_STUN);
+    EXPECT_EQ(told.at("stagger"), 1);
+    EXPECT_EQ(told.at("stun"), 12);
+    EXPECT_TRUE(told.at("guard").get<bool>());
+    EXPECT_TRUE(told.at("at").contains("y"));
     EXPECT_EQ(api.Call("monsters.puppet_clear").status, ApiCallStatus::Ok);
     EXPECT_FALSE(moonmod::coop::IsPuppet(0));
 
@@ -288,6 +349,24 @@ TEST(MoonModCoopApi, TheHostMirrorsItsMonstersAndAGuestFollowsThemAsPuppets) {
     EXPECT_FALSE(hit.value.at("killed").get<bool>());
     EXPECT_EQ((*floor.slots)[0].life, 35);
     EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 0}}})).status, ApiCallStatus::InvalidArgument);
+    // A blow told with how it landed is taken as this game's own: the life goes, the stun holds it, and a knock-down
+    // knocks it over. One that took nothing and was guarded leaves the life and has it guard.
+    const Json landed = {{"slot", 0}, {"damage", 5}, {"kind", DAMAGE_KIND_MAX_MELEE}, {"element", 0}, {"flags", DAMAGE_HIT_KNOCKDOWN},
+                         {"stagger", 1}, {"stun", 10}, {"at", {{"x", 1.0}, {"y", 8.0}, {"z", 0.0}}}};
+    const ApiCallResult knocked = api.Call("monsters.mirror_hit", Json::array({landed}));
+    ASSERT_EQ(knocked.status, ApiCallStatus::Ok) << knocked.message;
+    EXPECT_EQ(knocked.value.at("damage"), 5);
+    EXPECT_EQ((*floor.slots)[0].life, 30);
+    EXPECT_EQ((*floor.slots)[0].damage_time, 10);
+    EXPECT_EQ((*floor.slots)[0].req_prog, MONSTER_PROG_KNOCK);
+    const ApiCallResult guarded = api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 0}, {"kind", DAMAGE_KIND_MAX_MELEE}, {"guard", true}}}));
+    ASSERT_EQ(guarded.status, ApiCallStatus::Ok) << guarded.message;
+    EXPECT_EQ(guarded.value.at("damage"), 0);
+    EXPECT_EQ((*floor.slots)[0].life, 30);
+    EXPECT_EQ((*floor.slots)[0].req_prog, MONSTER_PROG_GUARD);
+    EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 5}, {"element", 4}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 5}, {"at", 3}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 5}, {"why", 1}}})).status, ApiCallStatus::InvalidArgument);
 }
 
 TEST(MoonModCoopApi, AFollowersMonstersTheLeaderNoLongerHasLeaveTheFloorsCountForItsClear) {
@@ -844,6 +923,43 @@ TEST(MoonModCoopApi, AChoicePanelOpensOverTheFloorAndAnswersThroughTheOwner) {
     GamePad__2.pad[0].button = 0;
 }
 
+TEST(MoonModCoopApi, AYesOrNoIsAskedInTheGamesOwnWindowOnAFloorAndChosenLeftAndRight) {
+    FloorFixture floor;
+    Api          api;
+    const Json ask = Json::array({{{"id", "follow"}, {"title", "Monica went to Underground Channel, floor 3"}, {"subtitle", "Join them there?"},
+                                   {"style", "yes_no"}, {"options", Json::array({{{"title", "Join Monica"}}, {{"title", "Stay here"}}})}}});
+    const ApiCallResult opened = api.Call("ui.choice_open", ask);
+    ASSERT_EQ(opened.status, ApiCallStatus::Ok) << opened.message;
+    ASSERT_TRUE(moonmod::coop::ChoiceIsOpen());
+    EXPECT_TRUE(moonmod::coop::OpenChoice()->yes_no);
+    EXPECT_EQ(moonmod::coop::OpenChoice()->cursor, 0u) << "Yes first";
+    // (past the grace that keeps the press that opened it from answering it) right is No, left Yes again
+    GamePad__2.pad[0].button = 0;
+    GamePad__2.previous_pad[0].button = 0;
+    for (int i = 0; i < 9; ++i) moonmod::coop::ChoiceStep();
+    GamePad__2.pad[0].button = PAD_RIGHT;
+    moonmod::coop::ChoiceStep();
+    EXPECT_EQ(moonmod::coop::OpenChoice()->cursor, 1u);
+    GamePad__2.previous_pad[0].button = PAD_RIGHT;
+    GamePad__2.pad[0].button = PAD_LEFT;
+    moonmod::coop::ChoiceStep();
+    EXPECT_EQ(moonmod::coop::OpenChoice()->cursor, 0u);
+    GamePad__2.pad[0].button = 0;
+    GamePad__2.previous_pad[0].button = 0;
+    moonmod::coop::ResetForTests();
+    // Three options, or no style that is known: refused; at the title it is the panel.
+    Json three = ask;
+    three[0]["options"].push_back({{"title", "Later"}});
+    EXPECT_EQ(api.Call("ui.choice_open", three).status, ApiCallStatus::InvalidArgument);
+    Json odd = ask;
+    odd[0]["style"] = "bubble";
+    EXPECT_EQ(api.Call("ui.choice_open", odd).status, ApiCallStatus::InvalidArgument);
+    PortLoopNo = LOOP_TITLE;
+    ASSERT_EQ(api.Call("ui.choice_open", ask).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(moonmod::coop::OpenChoice()->yes_no) << "the title has no message window of the game's: the panel";
+    moonmod::coop::ResetForTests();
+}
+
 TEST(MoonModCoopApi, StrikesAndFloorsAndMapsAreRefusedOffTheFloorWithReasons) {
     FloorFixture floor;
     Api          api;
@@ -851,6 +967,18 @@ TEST(MoonModCoopApi, StrikesAndFloorsAndMapsAreRefusedOffTheFloorWithReasons) {
     const ApiCallResult strike = api.Call("combat.strike_player", Json::array({{{"x", 0.0}, {"y", 8.0}, {"z", 0.0}, {"radius", 12}, {"damage", 30}, {"kind", "heavy"}}}));
     EXPECT_EQ(strike.status, ApiCallStatus::Failed);
     EXPECT_EQ(api.Call("combat.strike_player", Json::array({{{"x", 0.0}, {"damage", 30}}})).status, ApiCallStatus::InvalidArgument);
+    // How the blow was dealt (the monster's damage row) is read and checked before the hero is looked for.
+    const Json dealt = {{"x", 0.0}, {"y", 8.0}, {"z", 0.0}, {"damage", 30}, {"flags", DAMAGE_HIT_KNOCKDOWN}, {"stagger", 1}, {"stun", 8},
+                        {"guard_rate", 30}, {"status", WEAPON_SPECIAL_POISON}, {"toward", {{"x", 1.0}, {"z", 0.0}}}};
+    EXPECT_EQ(api.Call("combat.strike_player", Json::array({dealt})).status, ApiCallStatus::Failed);
+    for (const char *bad : {"flags", "stagger", "stun", "guard_rate", "status"}) {
+        Json wrong = dealt;
+        wrong[bad] = 5000000;
+        EXPECT_EQ(api.Call("combat.strike_player", Json::array({wrong})).status, ApiCallStatus::InvalidArgument) << bad;
+    }
+    Json no_way = dealt;
+    no_way["toward"] = 1;
+    EXPECT_EQ(api.Call("combat.strike_player", Json::array({no_way})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("dungeons.enter_floor", Json::array({{{"floor_id", 200}}})).status, ApiCallStatus::InvalidArgument);
     PortLoopNo = LOOP_TITLE;
     EXPECT_EQ(api.Call("dungeons.enter_floor", Json::array({{{"dungeon_id", 1}, {"floor_id", 2}}})).status, ApiCallStatus::Failed);

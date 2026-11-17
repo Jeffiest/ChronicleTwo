@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "dng_event.hpp"
+#include "editloop.hpp"
 #include "font.hpp"
 #include "gamepad.hpp"
 #include "mainloop.hpp"
@@ -18,7 +20,11 @@
 #include "menudraw.hpp"
 #include "menumain.hpp"
 #include "menusys.hpp"
+#include "menucommon.hpp"
 #include "mglib.hpp"
+#include "nd_meswin.hpp"
+#include "snd_mngr.hpp"
+#include "sysmes.hpp"
 #include "moonmod/mapselect_moonmod.hpp"
 #include "savedata.hpp"
 #include "userdata.hpp"
@@ -79,6 +85,69 @@ bool ValidText(const Json &value, std::size_t max_bytes, bool allow_empty) {
 std::optional<Choice> g_choice;
 int                   g_choice_grace = 0; // frames before the panel takes a press (the one that opened it isn't its)
 bool                  g_choice_reads = false; // the panel is reading the pad now (PanelHoldsPad lets it through)
+// The game's own message window a yes-or-no choice is asked in (Choice::yes_no), built when it is first drawn: its
+// frame and letters are the system message's, which every floor and town loads (dng_main.cpp, editloop.cpp).
+ClsMes g_ask;
+bool   g_ask_built = false;
+
+// A town's notices: a message window and its queue of co-op's own, made as dng_main.cpp makes the floor's (DngMess,
+// MsgTaskMan) with the system message's frame and letters, the first time a notice comes in a town.
+ClsMes             g_town_mes;
+MessageTaskManager g_town_tasks;
+bool               g_town_ready = false;
+
+bool WalkingInTown() { return GetNowLoopNo() == LOOP_EDIT && GetMainScene() != nullptr && IsEditMode() == 0; }
+
+void TownNoticesDraw() {
+    if (!g_town_ready || g_town_tasks.top == nullptr) return;
+    if (GetNowLoopNo() != LOOP_EDIT || GetMainScene() == nullptr) {
+        // (out of the town: what was left goes, and the window closes)
+        g_town_tasks.Initialize();
+        g_town_tasks.mes = &g_town_mes;
+        g_town_mes.open = 0;
+        g_town_mes.fade = 0.0f;
+        return;
+    }
+    if (g_choice || IsEditMode() != 0) return; // (it waits while the window is a question's, or the editor is open)
+    g_town_tasks.Step();
+    g_town_tasks.Draw();
+}
+
+// The window's text: the title, then the subtitle, each broken into lines as the game's messages are (at most four).
+std::string AskText(const Choice &choice) {
+    std::string text;
+    int         lines = 0;
+    for (const std::string *part : {&choice.title, &choice.subtitle}) {
+        for (const std::string &window : GameNoticeText(*part, 52)) { // (a question's window takes a longer line)
+            std::size_t start = 0;
+            while (start <= window.size() && lines < 4) {
+                const std::size_t end = window.find('\n', start);
+                const std::string line = window.substr(start, end == std::string::npos ? std::string::npos : end - start);
+                if (!line.empty()) {
+                    if (!text.empty()) text += '\n';
+                    text += line;
+                    ++lines;
+                }
+                if (end == std::string::npos) break;
+                start = end + 1;
+            }
+        }
+    }
+    return text;
+}
+
+void AskBuild(const Choice &choice) {
+    const ClsMes *system = GetSystemMessage();
+    g_ask.Init();
+    g_ask.Preset(MES_PRESET_WINDOW);
+    g_ask.texture_block = system != nullptr ? system->texture_block : 0;
+    g_ask.SetWindowMode(MES_WIN_YESNO);
+    g_ask.fuchi = FUCHI_SHADOW_BLACK_WIDE;
+    const std::string text = AskText(choice);
+    g_ask.MakeMesWin(text.c_str(), 1, 1);
+    g_ask.cursor_time = 0;
+    g_ask_built = true;
+}
 
 void ChoiceClose(bool cancelled, std::size_t index) {
     if (!g_choice) return;
@@ -201,8 +270,11 @@ int TownMainMap(int town) {
 bool ChoiceOpen(Choice choice) {
     if (g_choice || choice.options.empty() || choice.options.size() > 6) return false;
     choice.cursor = std::min(choice.cursor, choice.options.size() - 1);
+    const int loop = GetNowLoopNo();
+    if (choice.options.size() != 2 || (loop != LOOP_DUNGEON && loop != LOOP_EDIT)) choice.yes_no = false;
     g_choice = std::move(choice);
     g_choice_grace = 8;
+    g_ask_built = false;
     return true;
 }
 
@@ -232,21 +304,64 @@ void ChoiceStep() {
     // The buttons are the panel's while it is open (PanelHoldsPad): only its own reads see them.
     g_choice_reads = true;
     const bool up = GamePad__2.Down(PAD_UP) != 0, down = GamePad__2.Down(PAD_DOWN) != 0;
+    const bool left = GamePad__2.Down(PAD_LEFT) != 0, right = GamePad__2.Down(PAD_RIGHT) != 0;
     const int  push = ConvertCheckPushButton(MenuCheckPushButton());
     g_choice_reads = false;
-    if (up) choice.cursor = (choice.cursor + choice.options.size() - 1) % choice.options.size();
-    if (down) choice.cursor = (choice.cursor + 1) % choice.options.size();
+    const std::size_t before = choice.cursor;
+    if (choice.yes_no) {
+        // Yes on the left, No on the right, as the game's own (CDC2Mes::YesNoCursor): left and right choose.
+        if (left) choice.cursor = 0;
+        if (right) choice.cursor = 1;
+    } else {
+        if (up) choice.cursor = (choice.cursor + choice.options.size() - 1) % choice.options.size();
+        if (down) choice.cursor = (choice.cursor + 1) % choice.options.size();
+    }
+    // And it sounds as the game's menus do: the cursor's tick, the pick's chime, the back-out's.
+    if (choice.cursor != before) MenuSePlay(SYSTEM_SE_CURSOR);
     if (push & MENU_PUSH_BUTTON_DECIDE) {
+        MenuSePlay(SYSTEM_SE_DECIDE);
         ChoiceClose(false, choice.cursor);
     } else if ((push & MENU_PUSH_BUTTON_CANCEL) && choice.cancel) {
+        MenuSePlay(SYSTEM_SE_CANCEL);
         ChoiceClose(true, 0);
     }
 }
 
+bool TownNoticesOpen() { return WalkingInTown() && !g_choice; }
+
+void TownNoticePrint(const std::string &window, int frames) {
+    if (!g_town_ready) {
+        const ClsMes *system = GetSystemMessage();
+        g_town_mes.Init();
+        g_town_mes.Preset(MES_PRESET_WINDOW);
+        g_town_mes.SetWindowMode(7);
+        g_town_mes.push_button = 0;
+        g_town_mes.draw_speed_def = 0;
+        g_town_mes.draw_speed = 0;
+        g_town_mes.texture_block = system != nullptr ? system->texture_block : 0;
+        if (LanguageCode > LANG_JAPANESE && LanguageCode < LANG_CHINESE) g_town_mes.value_half = 1;
+        g_town_tasks.Initialize();
+        g_town_tasks.mes = &g_town_mes;
+        g_town_ready = true;
+    }
+    std::string text = window;
+    g_town_tasks.Print(text.data(), frames, 8, 0);
+}
+
 void Draw2D() {
     DrawAvatarNames(); // the other players' names, under the panel
+    TownNoticesDraw();
     if (!g_choice) return;
     const Choice &choice = *g_choice;
+    if (choice.yes_no) {
+        if (!g_ask_built) AskBuild(choice);
+        if (g_ask.select < 0) g_ask.cursor_time = 0;
+        g_ask.select = static_cast<int>(choice.cursor);
+        g_ask.fukidashi_pos = 5; // (the middle of the screen, as the port's own yes-or-no asks)
+        g_ask.Step();
+        g_ask.DrawMesWin();
+        return;
+    }
     const int rows = static_cast<int>(choice.options.size());
     const int height = 64 + rows * 40 + (choice.subtitle.empty() ? 0 : 20);
     const int top = std::max(20, (448 - height) / 2);

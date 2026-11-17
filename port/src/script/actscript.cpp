@@ -608,6 +608,7 @@ int _SE_LOOP_PLAY(dc2::script::RunArguments stack, int argc) {
 
     if (sounds != nullptr) {
         sounds->SeLoopPlayStop(bank, sound, loop, 13);
+        moonmod::coop::HeroLoopSounded(action_info.chara, sound, loop); // co-op: kept up on this hero's avatar too
     }
 
     return true;

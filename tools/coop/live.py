@@ -109,7 +109,7 @@ def meet():
     return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 7200, 'guest_frames': 6600}
 
 
-def floor_together(dungeon, floor_id):
+def floor_together(dungeon, floor_id, guest_autotest=None):
     host = [
         {'when': 'town', 'after': 1800, 'op': 'enter_floor', 'dungeon_id': dungeon, 'floor_id': floor_id},
         {'when': 'playing', 'after': 1500, 'op': 'mark', 'text': 'both on the floor'},
@@ -121,15 +121,19 @@ def floor_together(dungeon, floor_id):
         {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
         {'when': 'dungeon', 'after': 1200, 'op': 'mark', 'text': 'on the floor'},
     ]
-    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 8400, 'guest_frames': 7800}
+    sc = {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 8400, 'guest_frames': 7800}
+    if guest_autotest:
+        sc['guest_autotest'] = guest_autotest
+    return sc
 
 
 @scenario('floor')
 def floor():
     """The guest joins in Palm Brinks, the host walks into the Underground Channel (floor 2, a random layout) and the
     guest follows by its offer; both stand on the same floor, the guest's monsters are copies of the host's, and one
-    the host strikes down is gone from the guest's floor too."""
-    return floor_together(0, 2)
+    the host strikes down is gone from the guest's floor too. The offer is held open 300 frames first (asked in the
+    game's own Yes/No window), so a screenshot shows it."""
+    return floor_together(0, 2, {'offer_hold': 300})
 
 
 @scenario('floor_first')
@@ -433,10 +437,13 @@ def build_edit():
         {'after': 3000, 'op': 'georama_probe', 'town': 0},
         {'after': 300, 'op': 'mark', 'text': 'end'},
     ]
+    # (the joiner builds well after the host pressed Select at its frame 1300: the two games' clocks start apart, and a
+    # joiner building at 900 could reach the host while its editor was still opening; probed right after building too)
     guest = [
         {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
-        dict({'when': 'town', 'after': 900, 'op': 'part_place', 'spots': [[-300, -320], [300, -320]]}, **house),
+        dict({'when': 'town', 'after': 1500, 'op': 'part_place', 'spots': [[-300, -320], [300, -320]]}, **house),
         dict({'after': 120, 'op': 'part_place', 'spots': [[0, -440], [-200, -120], [200, -120]]}, **block),
+        {'after': 30, 'op': 'georama_probe', 'town': 0},
         {'after': 600, 'op': 'georama_probe', 'town': 0},
     ]
     # (the story save town:0 jumps into has Georama shut at that point of the story; the game's own Georama debug save,
@@ -1163,6 +1170,10 @@ def main():
     ap.add_argument('--out', default=None, help='folder for the saves and logs (default: a temp folder)')
     ap.add_argument('--keep', action='store_true', help='keep the folder afterwards')
     ap.add_argument('--shots', action='store_true', help="write each game's last frame as a PNG beside its log")
+    ap.add_argument('--shots-every', type=int, default=0, metavar='N',
+                    help="with --shots: also write every Nth frame (host-frame-F.png, guest-frame-F.png)")
+    ap.add_argument('--slow', type=float, default=1.0, metavar='X',
+                    help='give the games X times the usual wall time (a slower machine, or several runs at once)')
     args = ap.parse_args()
 
     exe = Path(args.build) / 'darkchronicle'
@@ -1221,7 +1232,10 @@ def main():
             return 2
 
         def shot(side):
-            return ('--screenshot', str(out / (side + '.png'))) if args.shots else ()
+            if not args.shots:
+                return ()
+            every = ('--screenshot-every', str(args.shots_every)) if args.shots_every > 0 else ()
+            return ('--screenshot', str(out / (side + '.png'))) + every
 
         host_save = make_save(out / 'host', moonmod, 'Host', relay_url,
                               dict({'role': 'host', 'where': sc.get('host_where', 'town'), 'follow': False}, **sc.get('host_autotest', {})), sc['host'])
@@ -1254,7 +1268,7 @@ def main():
                                input_script=out / 'guest_title.input',
                                extra=tuple(sc.get('guest_extra', ())) + shot('guest'))
             logs.append(gl)
-        limit = time.time() + max(sc['host_frames'], sc['guest_frames']) / 60 * 8 + 120
+        limit = time.time() + (max(sc['host_frames'], sc['guest_frames']) / 60 * 8 + 120) * args.slow
         while time.time() < limit and (host.poll() is None or (guest is not None and guest.poll() is None)):
             time.sleep(1)
         for name, p in (('host', host), ('guest', guest)):

@@ -1,6 +1,7 @@
 #include "lua_runtime.hpp"
 #include "moonmod/symlinks.hpp"
 #include "moonmod/manager_ui.hpp"
+#include "moonmod/coop.hpp"
 #include "moonmod/native_resource_overrides.hpp"
 
 #include <algorithm>
@@ -1045,6 +1046,7 @@ struct LuaMod::Impl {
             duration = static_cast<int>(requested_duration);
         }
         ShowManagerNotice(message, duration);
+        moonmod::coop::FieldNotice(message, duration); // (and in the game's own message window, on a dungeon floor)
         return {ApiCallStatus::Ok,
                 {{"queued", true}, {"manager_open", ManagerOpen()}, {"duration_frames", duration}},
                 {}};

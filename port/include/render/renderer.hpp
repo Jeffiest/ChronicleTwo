@@ -34,6 +34,7 @@ void mgPortExitAfterFrames(int frames, const std::filesystem::path &screenshot);
 struct mgPortScreenshotOptions {
     int  display_frames = 0;
     bool fps = false;
+    int  every = 0; // also write every Nth frame before the last, as PATH-frame-F.png beside PATH
 };
 
 // Applies to the screenshot of mgPortExitAfterFrames; set it before that call.

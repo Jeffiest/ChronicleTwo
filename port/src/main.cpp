@@ -92,6 +92,7 @@ struct Options {
     bool                  log_fps = false;
     int                   screenshot_display = 0;
     bool                  screenshot_fps = false;
+    int                   screenshot_every = 0;
     std::filesystem::path screenshot;
     std::filesystem::path input;
     const char           *crash_test = nullptr; // hidden: --crash-test MODE[:early] (DC2_CRASH_TEST)
@@ -101,7 +102,7 @@ Options g_options;
 
 [[noreturn]] void Usage(const char *program) {
     CT_LOG_ERROR(Main,
-                 "usage: {} [--data DIR] [--run-dir DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps]\n          [--log-level SPEC]\n  --jump MODE[:ARG]  start in town:<map>, georama:<0-4>, dungeon:<n>[:<floor>], event:<id>, title, opening, menu (DC2_JUMP)\n  --fast-load        shorten loading-screen holds (DC2_FAST_LOAD=1)\n  --give ITEM,...    give missing items and weapons on arrival (DC2_GIVE)\n  --pickup ITEM      test-only: spawn one native dungeon item pickup on arrival\n  --georama-stock TOWN:MOD:PIECE:COUNT  test-only stock for a registered Georama piece\n  --skip-events      enter a jumped dungeon floor directly; skip skippable dungeon scenes (DC2_SKIP_EVENTS=1)\n  --invincible       the dungeon character takes no hits (DC2_INVINCIBLE=1)\n  --seed N           reseed the random generator with N as each dungeon floor is built (DC2_SEED)\n  --perf-seconds N   once the scene has control and a second has passed, log N one-second windows of presented\n                     frames and tick times, then exit (DC2_PERF_ZONES=1 adds per-zone times)\n  --perf-ack-halloween-preamble  test-only: acknowledge the first fully shown Halloween tutorial before measurement\n  --run-dir DIR      game root containing data.zip and saves/\n                     (default: the per-user chronicletwo app data directory)\n  --data DIR         override the extracted data/ subdirectory (DC2_DATA)\n  --save DIR         override the saves/ subdirectory (DC2_SAVE)\n  --headless         render offscreen (SDL offscreen driver, VK_EXT_headless_surface)\n  --offscreen        --headless without a Vulkan surface: render to an image only\n  --frames N         exit after frame N of the game's main loop (N a positive integer)\n  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n                     beside PATH, as PATH-display-K.png for K = 0..N-1\n  --screenshot-fps   with --screenshot: draw the FPS counter and menu pointer into the written image\n  --input SCRIPT     drive the pads from an input script; live input is ignored\n  --window WxH       window size in pixels (default: config.json, then the monitor's)\n  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n  --show-fps         draw the FPS counter on presented frames, headless too\n  --log-fps          print the FPS counter's text on stderr every second\n  --log-level SPEC   trace, debug, info, warning, error, critical or off, and/or CATEGORY=LEVEL,\n                     comma-separated (DC2_LOG; default: config.json's log.level)",
+                 "usage: {} [--data DIR] [--run-dir DIR] [--save DIR] [--window WxH] [--headless] [--offscreen]\n          [--frames N] [--screenshot PATH] [--input SCRIPT] [--display-per-tick N]\n          [--show-fps] [--log-fps] [--screenshot-display N] [--screenshot-fps] [--screenshot-every N]\n          [--log-level SPEC]\n  --jump MODE[:ARG]  start in town:<map>, georama:<0-4>, dungeon:<n>[:<floor>], event:<id>, title, opening, menu (DC2_JUMP)\n  --fast-load        shorten loading-screen holds (DC2_FAST_LOAD=1)\n  --give ITEM,...    give missing items and weapons on arrival (DC2_GIVE)\n  --pickup ITEM      test-only: spawn one native dungeon item pickup on arrival\n  --georama-stock TOWN:MOD:PIECE:COUNT  test-only stock for a registered Georama piece\n  --skip-events      enter a jumped dungeon floor directly; skip skippable dungeon scenes (DC2_SKIP_EVENTS=1)\n  --invincible       the dungeon character takes no hits (DC2_INVINCIBLE=1)\n  --seed N           reseed the random generator with N as each dungeon floor is built (DC2_SEED)\n  --perf-seconds N   once the scene has control and a second has passed, log N one-second windows of presented\n                     frames and tick times, then exit (DC2_PERF_ZONES=1 adds per-zone times)\n  --perf-ack-halloween-preamble  test-only: acknowledge the first fully shown Halloween tutorial before measurement\n  --run-dir DIR      game root containing data.zip and saves/\n                     (default: the per-user chronicletwo app data directory)\n  --data DIR         override the extracted data/ subdirectory (DC2_DATA)\n  --save DIR         override the saves/ subdirectory (DC2_SAVE)\n  --headless         render offscreen (SDL offscreen driver, VK_EXT_headless_surface)\n  --offscreen        --headless without a Vulkan surface: render to an image only\n  --frames N         exit after frame N of the game's main loop (N a positive integer)\n  --screenshot PATH  with --frames: write the last frame to PATH as a PNG on exit\n  --screenshot-display N  with --screenshot: also write N interpolated display frames of that frame\n                     beside PATH, as PATH-display-K.png for K = 0..N-1\n  --screenshot-fps   with --screenshot: draw the FPS counter and menu pointer into the written image\n  --screenshot-every N  with --screenshot: also write every Nth frame before the last beside PATH, as\n                     PATH-frame-F.png (F the frame's number)\n  --input SCRIPT     drive the pads from an input script; live input is ignored\n  --window WxH       window size in pixels (default: config.json, then the monitor's)\n  --display-per-tick N  headless: also render N interpolated display frames per tick (discarded)\n  --show-fps         draw the FPS counter on presented frames, headless too\n  --log-fps          print the FPS counter's text on stderr every second\n  --log-level SPEC   trace, debug, info, warning, error, critical or off, and/or CATEGORY=LEVEL,\n                     comma-separated (DC2_LOG; default: config.json's log.level)",
                  program);
     LogFlush();
     std::exit(kExitUsage);
@@ -199,6 +200,8 @@ Options ParseOptions(int argc, const char **argv) {
             options.screenshot_display = ParsePositive(OptionValue(argc, argv, i), argv[0]);
         } else if (arg == "--screenshot-fps") {
             options.screenshot_fps = true;
+        } else if (arg == "--screenshot-every") {
+            options.screenshot_every = ParsePositive(OptionValue(argc, argv, i), argv[0]);
         } else if (arg == "--crash-test") {
             options.crash_test = OptionValue(argc, argv, i);
         } else if (arg == "--input") {
@@ -213,7 +216,7 @@ Options ParseOptions(int argc, const char **argv) {
     if (!options.screenshot.empty() && options.frames == 0) {
         Usage(argv[0]);
     }
-    if ((options.screenshot_display > 0 || options.screenshot_fps) && options.screenshot.empty()) {
+    if ((options.screenshot_display > 0 || options.screenshot_fps || options.screenshot_every > 0) && options.screenshot.empty()) {
         Usage(argv[0]);
     }
     return options;
@@ -612,7 +615,8 @@ int Run(int argc, const char **argv) {
     MainThreadPriority = 10;
     KzThreadsSetMainPriority(MainThreadPriority);
     if (options.frames > 0) {
-        mgPortSetScreenshotOptions({.display_frames = options.screenshot_display, .fps = options.screenshot_fps});
+        mgPortSetScreenshotOptions({.display_frames = options.screenshot_display, .fps = options.screenshot_fps,
+                                    .every = options.screenshot_every});
         mgPortExitAfterFrames(options.frames, options.screenshot);
     }
     if (crash_test) {

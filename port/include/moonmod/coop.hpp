@@ -27,6 +27,8 @@ struct CSceneEventData;
 struct MENU_INIT_ARG;
 class CCharacter2;
 
+class CColPrim;
+
 namespace moonmod::coop {
 
 // ---- The adapter operations (coop_api_moonmod.cpp) -----------------------------------------------------------------
@@ -86,6 +88,15 @@ struct AvatarState {
     int         head = -1, clothes = -1, feet = -1, sub = -1;
     float       x = 0.0f, y = 0.0f, z = 0.0f, heading = 0.0f;
     int         motion = 0;
+    // How the motion plays, as that player's game plays it (CharaMotionFlag: 0 loops, CHARA_MOTION_HOLD stops on its
+    // last frame), and how fast (frames a step; negative: the motion's own pace).
+    int         motion_flags = 0;
+    float       motion_step = -1.0f;
+    // How many frames ago the report was made, on that player's game's clock as this game reckons it. The avatar is
+    // then shown on that clock a little behind, eased between the reports kept, and the shots and sounds told with an
+    // age come at their own moments on it: moves, swings, trails and sounds keep their order and spacing. Negative:
+    // shown as it comes, eased toward.
+    int         age = -1;
     float       tint[3] = {-1.0f, -1.0f, -1.0f}; // ambient 0-128 each, or negative for none
     std::string name;
     bool        down = false; // that player is down: this game's monsters neither go for the hero nor strike it
@@ -110,6 +121,18 @@ void AvatarsStep();
 // (UTF-8). Each drawing is given once. False for an avatar the scene has not drawn since (none, hidden, elsewhere,
 // behind the camera) or one with no name.
 bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &name);
+// A mod's notice (ui.notify) in the game's own field message window, as an item found or a key taken is told, on a
+// dungeon floor (MsgTaskMan); one that comes off a floor waits for one, a while. The text is the game's own from the
+// mod's UTF-8: broken into lines and into windows the way the game's messages are. GameNoticeText is that text.
+void                     FieldNotice(const std::string &utf8, int frames);
+// coop_ui: a town has no message window of the floor's (MsgTaskMan), so co-op keeps one of its own, made as the floor
+// makes its own: TownNoticesOpen says whether the player walks a town now (not in the editor, no question open), and
+// TownNoticePrint queues one window of text (GameNoticeText's) in it for so many frames.
+bool                     TownNoticesOpen();
+void                     TownNoticePrint(const std::string &window, int frames);
+// (line_letters: about how many letters to a line; a question's window is wider than a notice's)
+std::vector<std::string> GameNoticeText(const std::string &utf8, std::size_t line_letters = 40);
+
 // The other players' names over their heroes' heads (coop_avatar_names_moonmod.cpp), drawn with the game's own
 // font in the 2D pass after the scene, with its camera: the choice panel's Draw2D calls it first, so a panel lies
 // over them.
@@ -132,6 +155,8 @@ enum class HeroShot : int {
     Throw = 8,      // an item held up to throw (amount 0), thrown to pos (1) or put away (2); value: its item_no
     Sound = 9,      // a sound of the hero's (its action script's _SE_PLAY): value, its number in the hero's sound bank,
                     // frame0, that bank by name (CH_000: snd2/chara/CH_000.sound.json); played from the avatar
+    SoundLoop = 10, // a looped sound of the hero's (_SE_LOOP_PLAY: a charge, an engine): value and frame0 as Sound's,
+                    // amount the frames it goes on after its last word; told again while the hero keeps it going
 };
 struct HeroEffect {
     int   kind = 0; // HeroShot
@@ -149,33 +174,58 @@ void                    HeroFired(const void *chara, HeroShot kind, const float 
 void                    HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold);
 // actscript.cpp: a character's action script played one of its sounds (_SE_PLAY); kept when it is this game's hero.
 void                    HeroSounded(const void *chara, int sound);
+// actscript.cpp: a character's action script started or kept up a looped sound (_SE_LOOP_PLAY), to go on `keep` frames
+// after; kept when it is this game's hero, at most every few frames for one sound.
+void                    HeroLoopSounded(const void *chara, int sound, int keep);
+// How many looped sounds an avatar has going (0-4), for tests.
+int                     AvatarLoopsGoing(int slot);
 std::vector<HeroEffect> TakeHeroEffects();
 // Draws another player's shot from avatar slot (0-2). False when the avatar is not on this floor or the effect can't
-// be made here.
-bool                    AvatarEffect(int slot, const HeroEffect &effect);
+// be made here. With an age (frames since it was fired, on that player's clock as AvatarState::age reckons it) it is
+// drawn when the avatar, shown a little behind, comes to that moment: true then means it is kept for it.
+bool                    AvatarEffect(int slot, const HeroEffect &effect, int age = -1);
 
 // ---- Monsters: the host's (coop_world_moonmod.cpp) -----------------------------------------------------------------
 
 struct Puppet {
     int   kind = -1, state = -1, hp = -1, max_hp = 0, motion = -1;
     float x = 0.0f, y = 0.0f, z = 0.0f, heading = 0.0f;
+    int   motion_flags = 0;    // as AvatarState's: how the leader's monster plays its motion
+    float motion_step = -1.0f; // and how fast
+    int   age = -1;            // frames since the leader's report, on its clock: shown behind and eased, as avatars are
 };
+// A blow on a copy, as this game's CMonsterMan::CheckDamage took it, for the leader's game to show and take as its
+// own: the damage row's kind and flags, the strongest element (-1 none), stagger and stun, whether the monster guarded,
+// and where it landed from the monster's feet.
 struct PuppetHit {
-    int slot = -1, damage = 0;
+    int   slot = -1, damage = 0;
+    int   kind = -1, element = -1, flags = 0, stagger = 0, stun = 0;
+    bool  guard = false;
+    float at[3] = {0.0f, 0.0f, 0.0f};
 };
+// A monster's blow on another player's hero, as the leader's game saw it land: the damage row's flags, stun, stagger
+// and the share of it a guard lets through (critical_rate), its special status bits (poison and the rest), where it
+// landed from the hero's feet and which way it drove.
 struct AvatarHit {
-    int avatar = 0, monster = -1, damage = 0, kind = 0, flags = 0;
+    int   avatar = 0, monster = -1, damage = 0, kind = 0, flags = 0;
+    int   stun = 0, stagger = 0, guard_rate = 0;
+    long long status = 0;
+    float at[3] = {0.0f, 0.0f, 0.0f}, toward[3] = {0.0f, 0.0f, 0.0f};
 };
 bool                   PuppetSet(int slot, const Puppet &puppet);
 bool                   IsPuppet(int slot);
+// This floor's monsters are copies of another game's: their own thinking rests (DNG_PAUSE_MONSTER_AI), while the
+// floor's effects go on (dng_main.cpp asks).
+bool                   MonstersMirrored();
 void                   PuppetsClear();
 std::vector<PuppetHit> TakePuppetHits();
 std::vector<AvatarHit> TakeAvatarHits();
 // Host: during a monster's turn the player stands at the nearest player (its own or an avatar).
 void MonsterThinkBegin(int slot);
 void MonsterThinkEnd();
-// monster.cpp: a blow took this much of a monster's life; on a guest's copy it goes to the host instead.
-void MonsterDamaged(int slot, int damage);
+// monster.cpp: a blow took this much of a monster's life; on a guest's copy it goes to the host instead, with how it
+// landed (prim, the strongest element, whether the monster guarded) so the host's game shows it as its own.
+void MonsterDamaged(int slot, int damage, const CColPrim *prim = nullptr, int element = -1, bool guard = false);
 
 // ---- Shared events: doors and gates (coop_world_moonmod.cpp) -------------------------------------------------------
 
@@ -287,6 +337,10 @@ struct Choice {
     bool                      cancel = true;
     std::vector<ChoiceOption> options;
     std::size_t               cursor = 0;
+    // Asked as the game asks "Go to the next floor?": the title and subtitle in its own message window, with its Yes
+    // (the first option) and No (the second) under them, chosen left and right (ui.choice_open's style "yes_no", two
+    // options, on a floor or in a town; at the title it is the panel).
+    bool                      yes_no = false;
 };
 bool          ChoiceOpen(Choice choice);
 // Closes the panel if this mod opened it, with no ui.choice_made (the mod closed it, so it knows); another mod's panel

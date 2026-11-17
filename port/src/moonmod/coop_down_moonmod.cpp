@@ -15,8 +15,10 @@
 
 #include "actionchara.hpp"
 #include "dng_main.hpp"
+#include "effscript.hpp"
 #include "mainloop.hpp"
 #include "scenesnd.hpp"
+#include "snd_mngr.hpp"
 #include "userdata.hpp"
 
 namespace moonmod::coop {
@@ -72,6 +74,15 @@ bool HeroRevive(int hp, const float *at, std::string &error) {
     MainChara__2->damage_req = ACTION_DAMAGE_REQ_NONE;
     MainChara__2->prog_no = ACTION_PROG_MAIN; // the hero's normal script takes them from the ground
     MainChara__2->muteki_time = 120;          // two seconds to find their feet
+    // Brought back as a Resurrection Powder brings a hero back (CActionChara::CheckDamage): the blue flash, the
+    // recovery's light about them and its sound.
+    MainChara__2->pallet[0].SetAnim(96, 180, 255, 1, 45, 0);
+    if (MainChara__2->effect_man != nullptr) {
+        MainChara__2->effect_man->CreateEffSpt(const_cast<char *>("\x92\xCA\x8F\xED\x89\xF1\x95\x9C"), 0, 0);
+        MainChara__2->effect_man->SetScriptTargetId(0, -1, -1);
+        MainChara__2->effect_man->SetValue(0, 0, 0, -1);
+    }
+    sndSePlay(SystemSND_ID, SYSTEM_SE_RECOVER, 0);
     return true;
 }
 

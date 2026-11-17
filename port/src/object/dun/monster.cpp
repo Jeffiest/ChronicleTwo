@@ -2261,7 +2261,7 @@ void CMonsterMan::CheckDamage() {
             calcWeaponParamWhp(monster, prim);
 
             monster->life -= static_cast<int>(damage);
-            moonmod::coop::MonsterDamaged(monster->chara_type - DNG_CHARA_SLOT_MONSTER, static_cast<int>(damage)); // co-op: a guest's blow goes to the host
+            moonmod::coop::MonsterDamaged(monster->chara_type - DNG_CHARA_SLOT_MONSTER, static_cast<int>(damage), prim, element, guard); // co-op: a guest's blow goes to the host
 
             if (monster->life <= 0) {
                 monster->life = 0;

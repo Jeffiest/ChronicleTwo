@@ -1112,6 +1112,21 @@ bool ReadNow(gfx::TextureHandle target, std::vector<uint8_t> &rgba, uint32_t &wi
     return gfx::ReadbackTexture(target, rgba, width, height);
 }
 
+// --screenshot-every: frame `frame` (one before the exit frame) beside the exit screenshot, as PATH-frame-F.png.
+void WriteScreenshotEvery(int frame) {
+    std::vector<uint8_t>  rgba;
+    uint32_t              width = 0;
+    uint32_t              height = 0;
+    std::filesystem::path name = screenshot_path.stem();
+    name += "-frame-" + std::to_string(frame) + ".png";
+    const std::filesystem::path path = screenshot_path.parent_path() / name;
+    if (ReadNow(gfx::kMainTarget, rgba, width, height) && gfx::WritePng(path, rgba.data(), width, height)) {
+        CT_LOG_INFO(Gfx, "mglib: frame {} written to {}", frame, PathsDisplay(path));
+    } else {
+        CT_LOG_ERROR(Gfx, "mglib: frame {} could not be written to {}", frame, PathsDisplay(path));
+    }
+}
+
 bool WriteScreenshotDisplayFrames() {
     if (PresentGetSettings().interpolation && mgPortPreviousList() == nullptr) {
         CT_LOG_WARN(Gfx, "mglib: frame {} has no previous list, display frames skipped", frame_count);
@@ -2398,6 +2413,11 @@ void mgEndFrame(mgCDrawManager *manager) {
     CT_PROFILE_FRAME("Game");
     CT_PROFILE_MAIN_FRAME();
     CrashFrameEnd(frame_count);
+
+    if (screenshot_options.every > 0 && !screenshot_path.empty() && frame_count % screenshot_options.every == 0 &&
+        frame_count != exit_frames) {
+        WriteScreenshotEvery(frame_count);
+    }
 
     if (exit_frames > 0 && frame_count == exit_frames) {
         int status = kExitOk;
