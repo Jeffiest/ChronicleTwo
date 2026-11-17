@@ -15,9 +15,12 @@
 #include "dng_main.hpp"
 #include "editctrl.hpp"
 #include "editloop.hpp"
+#include "event.hpp"
+#include "event_func.hpp"
 #include "font.hpp"
 #include "gfx/gfx.hpp"
 #include "mainloop.hpp"
+#include "moonmod/coop_story.hpp"
 #include "photo.hpp"
 #include "platform/game_loop_state.hpp"
 #include "object/world/town_control.hpp"
@@ -47,6 +50,10 @@ struct NameTrack {
 };
 std::array<NameTrack, kAvatars> g_tracks;
 std::uint64_t                   g_next_generation = 0;
+
+// One of the story's scenes has begun and the player has not been free since. (The game can leave a scene's skip
+// offered after it, until the next one's start or the next map: a talk or a door then is no scene.)
+bool g_drama = false;
 
 // Whether the game shows the field now: no event scene, no photo, no menu over a floor, and (in a town) the player
 // walking, not building.
@@ -78,6 +85,29 @@ bool PlayerFree() {
     return false;
 }
 
+void DramaSceneStarted() { g_drama = true; }
+
+void StoryScenesStep() {
+    if (EdEventInfo.skip_state == EVENT_SKIP_NONE || PlayerFree()) g_drama = false;
+}
+
+void StoryScenesReset() { g_drama = false; }
+
+bool StoryScenePlaying() {
+    if (!g_drama || EdEventInfo.skip_state == EVENT_SKIP_NONE) return false;
+    // (and while the place's event has the game: the frames between the scene's end and the next step)
+    const int loop = GetNowLoopNo();
+    if (loop == LOOP_DUNGEON) {
+        return DngMainScene != nullptr && (DngStatus.mode == DNG_STATUS_EVENT || DngMainScene->event_run != 0 ||
+                                           (BattleAreaScene != nullptr && BattleAreaScene->script.running != 0));
+    }
+    if (loop == LOOP_EDIT) {
+        CScene *scene = GetMainScene();
+        return IsEditMode() == 0 && (PortTownControlMode == EDIT_CONTROL_EVENT || (scene != nullptr && scene->event_run != 0));
+    }
+    return false;
+}
+
 void DrawAvatarNames() {
     const bool shown = FieldShown();
     for (int slot = 0; slot < kAvatars; ++slot) {
@@ -87,7 +117,9 @@ void DrawAvatarNames() {
         if (!AvatarNameOnScreen(slot, head, feet, name) || !shown) continue;
         const float tall = std::fabs(feet[1] - head[1]);
         if (tall < kHiddenBelow) continue;
-        const float opacity = std::clamp((tall - kHiddenBelow) / (kFullFrom - kHiddenBelow), 0.0f, 1.0f);
+        // (and as the hero fades in and out of sight, so the name never stands over nothing)
+        const float opacity = std::clamp((tall - kHiddenBelow) / (kFullFrom - kHiddenBelow), 0.0f, 1.0f) * AvatarSeen(slot);
+        if (opacity <= 0.0f) continue;
 
         std::string text = legacy_encoding::GameText(name);
         if (text.empty()) continue;

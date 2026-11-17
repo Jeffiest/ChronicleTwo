@@ -11,5 +11,8 @@ namespace moonmod::coop {
 void StoryGave(int item_no, int count);
 // A dungeon's system script began (a chest opens, the floor is cleared, the hero died, a guide speaks).
 void SystemScriptBegan();
+// One of the story's scenes began (the script's _INIT_DRAMA_SCENE: the game offers its skip). StoryScenePlaying
+// counts it until the player is free again.
+void DramaSceneStarted();
 
 } // namespace moonmod::coop

@@ -100,6 +100,9 @@ struct AvatarState {
     float       tint[3] = {-1.0f, -1.0f, -1.0f}; // ambient 0-128 each, or negative for none
     std::string name;
     bool        down = false; // that player is down: this game's monsters neither go for the hero nor strike it
+    // That player watches one of the story's scenes in their game: their hero fades from sight where it stands, and is
+    // nobody this game's monsters go for, until it is over (then it fades in where it is).
+    bool        away = false;
     // That player rides the ridepod (character is then USER_CHARA_MAX) or wears a monster's form (USER_CHARA_MONICA).
     // The avatar is drawn as the ridepod or the monster when the parts or the form below are known and load; else
     // their hero's own body stands in for it, where they are and facing as they face, running while they move (their
@@ -121,6 +124,8 @@ void AvatarsStep();
 // (UTF-8). Each drawing is given once. False for an avatar the scene has not drawn since (none, hidden, elsewhere,
 // behind the camera) or one with no name.
 bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &name);
+// How far an avatar is in sight, 0 to 1, as it fades in and out (its name fades with it); 0 for none.
+float AvatarSeen(int slot);
 // A mod's notice (ui.notify) in the game's own field message window, as an item found or a key taken is told, on a
 // dungeon floor (MsgTaskMan); one that comes off a floor waits for one, a while. The text is the game's own from the
 // mod's UTF-8: broken into lines and into windows the way the game's messages are. GameNoticeText is that text.
@@ -141,6 +146,14 @@ void DrawAvatarNames();
 // in a town's Georama editor. Not in a scene or a talk, a menu, a photo, a door, a minigame, or a map loading: co-op's
 // questions and notices wait those out, as the game's own never break into them.
 bool PlayerFree();
+// Whether this game plays one of the story's scenes now, in the town or on the floor it plays in: a drama scene, the
+// kind the game lets the player skip with Start, from its start (event_func.cpp's InitDramaScene) while its skip is
+// offered and the place's event has the game. Not a talk, a menu or a door. The other players' heroes fade from sight while one plays here, as the game's
+// scenes keep their cast to themselves, and world.get says so (story_scene) so the others hide this player's hero.
+bool StoryScenePlaying();
+// Every frame (WorldStep): a scene the player has been free since is over for good, its skip left offered or not.
+void StoryScenesStep();
+void StoryScenesReset();
 
 // ---- What a hero fires: shots and spells seen on the other screens (coop_world_moonmod.cpp) -------------------------
 // actscript.cpp tells each shot this game's own hero fires (HeroFired); player.effects_take gives them to the mod,

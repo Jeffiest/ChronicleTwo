@@ -665,12 +665,12 @@ ApiCallResult AvatarEffectCall(const Json &args) {
 
 ApiCallResult AvatarSetCall(const Json &args) {
     static constexpr const char *kUsage =
-        "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, ridepod = {leg, arm, body, pack} item_nos or nil, form = monster_id or nil, x, y, z, heading, motion, motion_flags = 0-7 or nil, motion_step = 0-16 or nil, age = 0-3600 frames or nil, tint = {r, g, b} or nil, name = text or nil, down = true or nil}";
+        "expected {slot = 1-3, character = \"max\", \"monica\", \"ridepod\" or \"monster\", weapon = item_no or nil, outfit = {head, clothes, feet, sub} item_nos or nil, ridepod = {leg, arm, body, pack} item_nos or nil, form = monster_id or nil, x, y, z, heading, motion, motion_flags = 0-7 or nil, motion_step = 0-16 or nil, age = 0-3600 frames or nil, tint = {r, g, b} or nil, name = text or nil, down = true or nil, away = true or nil}";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
     const Json &request = args[0];
     std::string unknown;
     if (!OnlyFields(request, {"slot", "character", "weapon", "outfit", "ridepod", "form", "x", "y", "z", "heading", "motion", "motion_flags",
-                              "motion_step", "age", "tint", "name", "down"}, unknown)) {
+                              "motion_step", "age", "tint", "name", "down", "away"}, unknown)) {
         return Invalid("unknown field: " + unknown);
     }
     int slot = 0;
@@ -747,6 +747,10 @@ ApiCallResult AvatarSetCall(const Json &args) {
     if (request.contains("down") && !request["down"].is_null()) {
         if (!request["down"].is_boolean()) return Invalid("down must be true or left out");
         state.down = request["down"].get<bool>();
+    }
+    if (request.contains("away") && !request["away"].is_null()) {
+        if (!request["away"].is_boolean()) return Invalid("away must be true or left out");
+        state.away = request["away"].get<bool>();
     }
     if (!AvatarSet(slot - 1, state)) return Failed("that character can't be shown");
     return Ok({{"slot", slot}, {"shown", AvatarShown(slot - 1)}});
@@ -1174,6 +1178,7 @@ void ExtendPlayer(Json &player) {
 
 void ExtendWorld(Json &world) {
     const int loop = GetNowLoopNo();
+    world["story_scene"] = StoryScenePlaying(); // (one of the story's scenes plays here: the others hide this hero)
     CSaveData *save = GetSaveData();
     if (save == nullptr) return;
     world["map_no"] = save->map_no;

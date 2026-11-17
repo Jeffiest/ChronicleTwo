@@ -11,6 +11,8 @@
 
 #include "colprim.hpp"
 #include "dng_main.hpp"
+#include "event.hpp"
+#include "event_func.hpp"
 #include "gamedata.hpp"
 #include "mainloop.hpp"
 #include "monster.hpp"
@@ -997,6 +999,42 @@ TEST(MoonModCoopApi, AQuestionWaitsOutASceneAndTheMenuAndIsAskedAfter) {
     GamePad__2.previous_pad[0].button = 0;
     moonmod::coop::ResetForTests();
     EXPECT_FALSE(moonmod::coop::PanelHoldsPad());
+}
+
+TEST(MoonModCoopApi, AStoryScenePlayingIsToldAndAPlayerWatchingOneIsAwayOnTheOtherScreens) {
+    FloorFixture floor;
+    Api          api;
+    const int    saved_skip = EdEventInfo.skip_state, saved_button = EdEventInfo.skip_button;
+    auto story = [&] { return api.Call("world.get").value.at("story_scene").get<bool>(); };
+    EXPECT_FALSE(moonmod::coop::StoryScenePlaying());
+    EXPECT_FALSE(story());
+    DngStatus.mode = DNG_STATUS_EVENT; // a talk or a door has the floor: no scene offers its skip
+    EXPECT_FALSE(moonmod::coop::StoryScenePlaying()) << "a talk is not one of the story's scenes";
+    InitDramaScene(); // one of the story's scenes begins: the game offers its skip
+    EXPECT_TRUE(moonmod::coop::StoryScenePlaying());
+    EXPECT_TRUE(story());
+    moonmod::coop::StoryScenesStep();
+    EXPECT_TRUE(moonmod::coop::StoryScenePlaying()) << "the scene goes on";
+    DngStatus.mode = DNG_STATUS_FIELD;
+    BattleAreaScene->script.running = 1; // (a floor's own scene script)
+    EXPECT_TRUE(moonmod::coop::StoryScenePlaying());
+    BattleAreaScene->script.running = 0; // over, its skip left offered: the field is no scene
+    EXPECT_FALSE(moonmod::coop::StoryScenePlaying());
+    EXPECT_FALSE(story());
+    moonmod::coop::StoryScenesStep(); // (the player walks free: that scene is over for good)
+    DngStatus.mode = DNG_STATUS_EVENT; // a talk after it, the skip still offered
+    EXPECT_FALSE(moonmod::coop::StoryScenePlaying()) << "a skip a scene left offered does not make a talk one";
+    DngStatus.mode = DNG_STATUS_FIELD;
+    EdEventInfo.skip_state = saved_skip;
+    EdEventInfo.skip_button = saved_button;
+    // Another player watching one in their game: their avatar is away (a flag; nothing is drawn without a disc).
+    const Json away = Json::array({{{"slot", 1}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0}, {"away", true}}});
+    EXPECT_EQ(api.Call("world.avatar_set", away).status, ApiCallStatus::Ok);
+    EXPECT_EQ(moonmod::coop::AvatarSeen(0), 0.0f);
+    EXPECT_EQ(moonmod::coop::AvatarSeen(9), 0.0f);
+    EXPECT_EQ(api.Call("world.avatar_set", Json::array({{{"slot", 1}, {"character", "max"}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"heading", 0.0},
+                                                         {"away", "yes"}}})).status, ApiCallStatus::InvalidArgument);
+    EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
 }
 
 TEST(MoonModCoopApi, StrikesAndFloorsAndMapsAreRefusedOffTheFloorWithReasons) {

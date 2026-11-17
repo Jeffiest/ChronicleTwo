@@ -3438,6 +3438,7 @@ void InitDramaScene() {
     EdEventInfo.skip_button = PAD_BTN_START;
     EdEventInfo.skip_fade_color[2] = 0;
     EdEventInfo.skip_fade_color[3] = 0;
+    moonmod::coop::DramaSceneStarted(); // co-op: the other players' heroes leave the scene's shots
 }
 
 void CancelDramaScene() {

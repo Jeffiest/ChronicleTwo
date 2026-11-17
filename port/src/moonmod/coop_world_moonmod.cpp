@@ -207,7 +207,10 @@ public:
                 }
             }
         }
-        fade = std::clamp(fade + (leaving ? -0.05f : 0.05f), 0.0f, 1.0f);
+        // (out of sight where it stands while its player watches a scene in their game, or this game plays one of
+        // its own: the story's scenes keep their cast to themselves; back in where it is after)
+        const bool out = leaving || target.away || StoryScenePlaying();
+        fade = std::clamp(fade + (out ? -0.05f : 0.05f), 0.0f, 1.0f);
         alpha = fade;
         for (const std::shared_ptr<CCharacter2> &part : parts) part->alpha = fade;
         CCharacter2::Step();
@@ -630,8 +633,9 @@ CActiveMonster *Monster(int slot) {
 int AvatarsHere(std::array<std::array<float, 3>, kAvatars> &at, std::array<bool, kAvatars> &here) {
     int count = 0;
     for (int i = 0; i < kAvatars; ++i) {
-        // (a player who is down is nobody a monster goes for)
-        here[static_cast<std::size_t>(i)] = !g_avatars[static_cast<std::size_t>(i)].target.down && AvatarAt(i, at[static_cast<std::size_t>(i)].data());
+        // (a player who is down, or watching a scene in their game, is nobody a monster goes for)
+        const AvatarState &target = g_avatars[static_cast<std::size_t>(i)].target;
+        here[static_cast<std::size_t>(i)] = !target.down && !target.away && AvatarAt(i, at[static_cast<std::size_t>(i)].data());
         count += here[static_cast<std::size_t>(i)] ? 1 : 0;
     }
     return count;
@@ -866,6 +870,11 @@ bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &nam
     std::copy(a.body->label_feet, a.body->label_feet + 2, feet);
     name = a.target.name;
     return true;
+}
+
+float AvatarSeen(int slot) {
+    if (!AvatarShown(slot)) return 0.0f;
+    return g_avatars[static_cast<std::size_t>(slot)].body->fade;
 }
 
 void AvatarsStep() {
@@ -1808,6 +1817,7 @@ int AvatarLoopsGoing(int slot) {
 
 void WorldStep() {
     ++g_clock;
+    StoryScenesStep();
     NoticesStep();
     AvatarsStep();
     AvatarEffectsDue();
@@ -1818,6 +1828,7 @@ void WorldStep() {
 }
 
 void WorldReset() {
+    StoryScenesReset();
     for (int i = 0; i < kAvatars; ++i) {
         g_avatars[static_cast<std::size_t>(i)].wanted = false;
         g_avatars[static_cast<std::size_t>(i)].pending.clear();
