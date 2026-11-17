@@ -85,6 +85,9 @@ bool ValidText(const Json &value, std::size_t max_bytes, bool allow_empty) {
 std::optional<Choice> g_choice;
 int                   g_choice_grace = 0; // frames before the panel takes a press (the one that opened it isn't its)
 bool                  g_choice_reads = false; // the panel is reading the pad now (PanelHoldsPad lets it through)
+// The player is in a scene or a talk, a menu, a photo, a door or a map loading (PlayerFree): the question waits, unseen,
+// and the buttons are the game's, so the scene goes on; it is asked once the player walks free again.
+bool                  g_choice_waiting = false;
 // The game's own message window a yes-or-no choice is asked in (Choice::yes_no), built when it is first drawn: its
 // frame and letters are the system message's, which every floor and town loads (dng_main.cpp, editloop.cpp).
 ClsMes g_ask;
@@ -153,6 +156,7 @@ void ChoiceClose(bool cancelled, std::size_t index) {
     if (!g_choice) return;
     const Choice choice = *g_choice;
     g_choice.reset();
+    g_choice_waiting = false;
     SharedRuntime().PublishToMod(choice.owner, "ui.choice_made",
                                  {{"id", choice.id}, {"index", cancelled ? Json(nullptr) : Json(index + 1)},
                                   {"cancelled", cancelled}, {"frame", SharedRuntime().Frame()}});
@@ -270,10 +274,13 @@ int TownMainMap(int town) {
 bool ChoiceOpen(Choice choice) {
     if (g_choice || choice.options.empty() || choice.options.size() > 6) return false;
     choice.cursor = std::min(choice.cursor, choice.options.size() - 1);
+    // (at the title, which has no message window of the game's, it is the panel; asked in a menu or while a map
+    // loads, it waits, and is asked on the floor or in the town the player comes to, where the window is)
     const int loop = GetNowLoopNo();
-    if (choice.options.size() != 2 || (loop != LOOP_DUNGEON && loop != LOOP_EDIT)) choice.yes_no = false;
+    if (choice.options.size() != 2 || loop == LOOP_TITLE) choice.yes_no = false;
     g_choice = std::move(choice);
     g_choice_grace = 8;
+    g_choice_waiting = loop != LOOP_TITLE && !PlayerFree();
     g_ask_built = false;
     return true;
 }
@@ -282,19 +289,28 @@ bool ChoiceCloseQuietly(std::string_view owner) {
     if (!g_choice || g_choice->owner != owner) return false;
     g_choice.reset();
     g_choice_grace = 0;
+    g_choice_waiting = false;
     return true;
 }
 
 bool ChoiceIsOpen() { return g_choice.has_value(); }
-bool PanelHoldsPad() { return g_choice.has_value() && !g_choice_reads; }
+bool PanelHoldsPad() { return g_choice.has_value() && !g_choice_reads && !g_choice_waiting; }
 const Choice *OpenChoice() { return g_choice ? &*g_choice : nullptr; }
 
 void ChoiceStep() {
     if (!g_choice) return;
+    // A question waits out whatever holds the player (a scene or a talk, a menu, a photo, a door, a map loading), as
+    // the game's own questions never break into a scene, and opening the game's menu no longer answers it "no". Once
+    // the player is free it is asked, after the grace, so the press that ended the scene's last line does not answer it.
     const int loop = GetNowLoopNo();
-    if (loop != LOOP_DUNGEON && loop != LOOP_EDIT && loop != LOOP_TITLE) {
-        ChoiceClose(true, 0);
+    if (loop != LOOP_TITLE && !PlayerFree()) {
+        g_choice_waiting = true;
         return;
+    }
+    if (g_choice_waiting) {
+        g_choice_waiting = false;
+        g_choice_grace = 8;
+        g_ask_built = false; // (a floor or a town since: the window is built again with its frame and letters)
     }
     if (g_choice_grace > 0) {
         --g_choice_grace;
@@ -327,7 +343,7 @@ void ChoiceStep() {
     }
 }
 
-bool TownNoticesOpen() { return WalkingInTown() && !g_choice; }
+bool TownNoticesOpen() { return WalkingInTown() && PlayerFree() && !g_choice; }
 
 void TownNoticePrint(const std::string &window, int frames) {
     if (!g_town_ready) {
@@ -351,7 +367,7 @@ void TownNoticePrint(const std::string &window, int frames) {
 void Draw2D() {
     DrawAvatarNames(); // the other players' names, under the panel
     TownNoticesDraw();
-    if (!g_choice) return;
+    if (!g_choice || g_choice_waiting) return;
     const Choice &choice = *g_choice;
     if (choice.yes_no) {
         if (!g_ask_built) AskBuild(choice);
@@ -635,13 +651,17 @@ void UiOwnerUnloaded(std::string_view owner) {
         if (open != nullptr && open->owner == owner) CloseTitlePage();
     }
     std::erase_if(g_title_modes, [owner](const TitleMode &mode) { return mode.owner == owner; });
-    if (g_choice && g_choice->owner == owner) g_choice.reset();
+    if (g_choice && g_choice->owner == owner) {
+        g_choice.reset();
+        g_choice_waiting = false;
+    }
     if (g_visit_request && g_visit_request->owner == owner) g_visit_request.reset();
 }
 
 void UiReset() {
     g_choice.reset();
     g_choice_grace = 0;
+    g_choice_waiting = false;
     g_title_modes.clear();
     g_open_mode.reset();
     g_ignored_backs = 0;

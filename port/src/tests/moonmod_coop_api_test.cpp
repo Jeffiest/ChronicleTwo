@@ -960,6 +960,45 @@ TEST(MoonModCoopApi, AYesOrNoIsAskedInTheGamesOwnWindowOnAFloorAndChosenLeftAndR
     moonmod::coop::ResetForTests();
 }
 
+// A question waits out a scene, as the game's own never break into one: unseen, the buttons the game's (the scene's
+// lines go on), and opening the game's menu no longer answers it. Once the player walks free it is asked, after a
+// grace, so the press that ended the scene does not answer it.
+TEST(MoonModCoopApi, AQuestionWaitsOutASceneAndTheMenuAndIsAskedAfter) {
+    FloorFixture floor;
+    Api          api;
+    const Json ask = Json::array({{{"id", "follow"}, {"title", "Max went to Palm Brinks"}, {"subtitle", "Join them there?"},
+                                   {"style", "yes_no"}, {"options", Json::array({{{"title", "Join Max"}}, {{"title", "Stay here"}}})}}});
+    BattleAreaScene->script.running = 1; // a floor's scene runs
+    ASSERT_EQ(api.Call("ui.choice_open", ask).status, ApiCallStatus::Ok);
+    EXPECT_TRUE(moonmod::coop::OpenChoice()->yes_no);
+    EXPECT_FALSE(moonmod::coop::PanelHoldsPad()) << "in a scene the buttons are the game's";
+    GamePad__2.pad[0].button = PAD_CIRCLE;
+    GamePad__2.previous_pad[0].button = 0;
+    EXPECT_NE(GamePad__2.On(PAD_CIRCLE), 0);
+    for (int i = 0; i < 30; ++i) moonmod::coop::ChoiceStep();
+    ASSERT_TRUE(moonmod::coop::ChoiceIsOpen()) << "a press in the scene answers nothing";
+    DngStatus.mode = DNG_STATUS_MENU; // the floor's menu opened: still waiting, not answered
+    for (int i = 0; i < 30; ++i) moonmod::coop::ChoiceStep();
+    ASSERT_TRUE(moonmod::coop::ChoiceIsOpen()) << "opening the menu does not answer it";
+    EXPECT_FALSE(moonmod::coop::PanelHoldsPad());
+    DngStatus.mode = DNG_STATUS_FIELD;
+    BattleAreaScene->script.running = 0; // the scene is over; the press that ended it is still down
+    moonmod::coop::ChoiceStep();
+    EXPECT_TRUE(moonmod::coop::PanelHoldsPad()) << "free again: the question is asked and has the buttons";
+    for (int i = 0; i < 7; ++i) moonmod::coop::ChoiceStep();
+    EXPECT_TRUE(moonmod::coop::ChoiceIsOpen()) << "within the grace no press answers it";
+    GamePad__2.pad[0].button = 0;
+    GamePad__2.previous_pad[0].button = 0;
+    moonmod::coop::ChoiceStep();
+    GamePad__2.pad[0].button = PAD_RIGHT;
+    moonmod::coop::ChoiceStep();
+    EXPECT_EQ(moonmod::coop::OpenChoice()->cursor, 1u) << "then left and right choose";
+    GamePad__2.pad[0].button = 0;
+    GamePad__2.previous_pad[0].button = 0;
+    moonmod::coop::ResetForTests();
+    EXPECT_FALSE(moonmod::coop::PanelHoldsPad());
+}
+
 TEST(MoonModCoopApi, StrikesAndFloorsAndMapsAreRefusedOffTheFloorWithReasons) {
     FloorFixture floor;
     Api          api;

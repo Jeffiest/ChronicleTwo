@@ -1750,6 +1750,10 @@ void FieldNotice(const std::string &utf8, int frames) {
 // The notices waiting, into the floor's message window when the player is on one, playing (as the game's own are).
 static void NoticesStep() {
     if (g_notices.empty()) return;
+    if (!PlayerFree()) { // a scene, a talk, a menu, a map loading: the notices wait it out, and do not grow old
+        for (Notice &n : g_notices) ++n.until;
+        return;
+    }
     std::erase_if(g_notices, [](const Notice &n) { return n.until < g_clock; });
     if (TownNoticesOpen()) { // (in a town, the window co-op keeps there)
         for (Notice &n : g_notices) TownNoticePrint(n.text, n.frames);

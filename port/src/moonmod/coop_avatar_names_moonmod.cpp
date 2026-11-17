@@ -19,6 +19,8 @@
 #include "gfx/gfx.hpp"
 #include "mainloop.hpp"
 #include "photo.hpp"
+#include "platform/game_loop_state.hpp"
+#include "object/world/town_control.hpp"
 #include "platform/legacy_encoding.hpp"
 #include "scenesnd.hpp"
 #include "screen_overlay_anchor.hpp"
@@ -55,14 +57,26 @@ bool FieldShown() {
         if (DngMainScene == nullptr || BattleAreaScene == nullptr || DngStatus.mode != DNG_STATUS_FIELD) return false;
         return DngMainScene->event_run == 0 && BattleAreaScene->script.running == 0;
     }
-    if (loop == LOOP_EDIT) {
+    if (loop == LOOP_EDIT) { // (a scene or a talk takes the town's control: ControlMode is the event's then)
         CScene *scene = GetMainScene();
-        return scene != nullptr && scene->event_run == 0 && IsWalkMode() != 0 && IsEditMode() == 0;
+        return scene != nullptr && scene->event_run == 0 && IsWalkMode() != 0 && IsEditMode() == 0 &&
+               PortTownControlMode == EDIT_CONTROL_PLAYER;
     }
     return false;
 }
 
 } // namespace
+
+bool PlayerFree() {
+    if (NowTakePhoto() != 0) return false;
+    const int loop = GetNowLoopNo();
+    if (loop == LOOP_DUNGEON) {
+        return DngMainScene != nullptr && BattleAreaScene != nullptr && DngStatus.mode == DNG_STATUS_FIELD &&
+               DngMainScene->event_run == 0 && BattleAreaScene->script.running == 0;
+    }
+    if (loop == LOOP_EDIT) return IsEditMode() != 0 ? TownEditorReady() : PortTownFieldControl();
+    return false;
+}
 
 void DrawAvatarNames() {
     const bool shown = FieldShown();

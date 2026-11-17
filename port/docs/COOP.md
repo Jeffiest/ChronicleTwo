@@ -51,12 +51,18 @@ environment and the mod's `server` setting override it. A build without a socket
   `chronicle_two_adapter.cpp`'s `Call`), `player.get`/`world.get`'s extra fields.
 - `coop_world_moonmod.cpp`: avatars, puppets, nearest-player targeting, shared events, the floor seed.
 - `coop_ui_moonmod.cpp`: the choice panel (`ui.choice_open` / `ui.choice_close` / `ui.choice_made`), title modes (`title.mode_*`,
-  `game.title.opened/selected`), visits (`session.*`, `game.session.started/ended/failed`).
+  `game.title.opened/selected`), visits (`session.*`, `game.session.started/ended/failed`). A question and a notice
+  wait while the player is not free (`PlayerFree`, in `coop_avatar_names_moonmod.cpp`: a floor's field with no
+  event script, or a town walked with the town's own control, or the Georama editor between actions; never a scene,
+  a talk, a menu, a photo, a door, a minigame or a load). Meanwhile the panel is not drawn and does not hold the pad,
+  and it is asked 8 frames after the player is free again.
 - `coop_save_moonmod.cpp`: `DCW2`/`DCP2`/`DCT2` records and the accounts.
 - Hooks in game units, one line each: `main.cpp` (`FrameStep`), `automap.cpp` (`FloorSeed`), `dng_event.cpp`
   (`FloorBuildBegin`), `event_func.cpp` (`FloorPlacing`, `FloorPlaced` around the floor's chests and monsters),
   `dng_main.cpp` (`MapEventStarted`, `Draw2D`), `editloop.cpp` (`Draw2D`), `monster.cpp` (`MonsterThinkBegin/End`,
-  `MonsterDamaged`), `save_slots.cpp` (no writes during a visit), `title.cpp` (the mod rows, the page, the visit).
+  `MonsterDamaged`), `save_slots.cpp` (no writes during a visit), `title.cpp` (the mod rows, the page, the visit),
+  `effscript.cpp` (another player's shot or spell is drawn only, `shown_only`: it makes no collision primitive, and
+  its script's questions after one are answered as a primitive that hits nothing, never logged as illegal calls).
 
 ## What the real game changed (2026-11-14)
 

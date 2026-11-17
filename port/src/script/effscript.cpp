@@ -4687,6 +4687,14 @@ int _DMG_SET_DAMAGE(dc2::script::RunArguments, int) {
     return 0;
 }
 
+// MoonMod co-op: another player's shot or spell is only drawn here (it strikes in its own game), so it has no
+// collision primitive. Its script still asks after one every frame; it is answered as a primitive that never hits:
+// the calls succeed, a count or a place is 0, and nothing is logged as an illegal call (which, two thousand times a
+// run, cost the follower's frame time).
+static bool ShownOnlyWithoutPrim() {
+    return now_script != nullptr && now_script->shown_only && now_script->colprim == nullptr;
+}
+
 /**
  *
  * Creates a collision primitive for the current effect script.
@@ -4697,7 +4705,7 @@ int _COLPRIM_CREATE(dc2::script::RunArguments args) {
         return 0;
     }
     if (now_script->shown_only) { // MoonMod co-op: another player's shot is only drawn here; it strikes in its own game
-        return 0;
+        return 1;
     }
     char *damage_name = dc2::script::RunCString(args++);
     int   owner = args.Remaining() > 0 ? dc2::script::RunInteger(args) : now_script->user_id;
@@ -4727,6 +4735,9 @@ int _COLPRIM_SET_COORD(dc2::script::RunArguments args) {
     mgCFrame *root = {};
     mgCFrame *frame = {};
 
+    if (ShownOnlyWithoutPrim()) {
+        return 1;
+    }
     if (now_script == nullptr || now_script->colprim == nullptr) {
         return 0;
     }
@@ -4817,7 +4828,7 @@ int _COLPRIM_DELETE(dc2::script::RunArguments stack, int argc) {
     colprim = now_script->colprim;
 
     if (colprim == nullptr) {
-        return 0;
+        return ShownOnlyWithoutPrim() ? 1 : 0;
     }
 
     colprim->Delete(-1);
@@ -4844,7 +4855,9 @@ int _COLPRIM_GET_HITCNT(dc2::script::RunArguments stack, int argc) {
     colprim = now_script->colprim;
 
     if (colprim == nullptr) {
-        return 0;
+        if (!ShownOnlyWithoutPrim()) return 0;
+        SetStack(stack, 0); // (it hits nothing here)
+        return 1;
     }
 
     SetStack(stack, colprim->hit_num);
@@ -4873,7 +4886,7 @@ int _COLPRIM_GET_GIFT(dc2::script::RunArguments stack, int argc) {
     auto next_slot = stack + 1;
 
     if (now_script->colprim == nullptr) {
-        return 0;
+        return ShownOnlyWithoutPrim() ? 1 : 0;
     }
 
     item_id = GetStackInt(stack);
@@ -4903,7 +4916,10 @@ int _COLPRIM_GET_REVCNT(dc2::script::RunArguments stack, int argc) {
     }
 
     if (now_script->colprim == nullptr) {
-        return 0;
+        if (!ShownOnlyWithoutPrim()) return 0;
+        SetStack(stack++, 0);
+        for (int i = 1; i < argc; ++i) SetStack(stack++, 0.0f);
+        return 1;
     }
 
     SetStack(stack++, now_script->colprim->reversed);
@@ -4928,7 +4944,7 @@ int _COLPRIM_SET_DAMAGE(dc2::script::RunArguments stack, int argc) {
     }
     ValidateEffectOutputs(stack);
     if (now_script->colprim == nullptr) {
-        return 0;
+        return ShownOnlyWithoutPrim() ? 1 : 0;
     }
 
     now_script->colprim->damage = GetStackInt(stack);
@@ -4950,7 +4966,9 @@ int _COLPRIM_GET_HIT_POS(dc2::script::RunArguments stack, int argc) {
     }
 
     if (now_script->colprim == nullptr) {
-        return 0;
+        if (!ShownOnlyWithoutPrim()) return 0;
+        for (int i = 0; i < 3; ++i) SetStack(stack++, 0.0f);
+        return 1;
     }
 
     SetStack(stack++, now_script->colprim->hit_pos[0]);

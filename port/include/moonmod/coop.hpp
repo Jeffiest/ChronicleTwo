@@ -137,6 +137,10 @@ std::vector<std::string> GameNoticeText(const std::string &utf8, std::size_t lin
 // font in the 2D pass after the scene, with its camera: the choice panel's Draw2D calls it first, so a panel lies
 // over them.
 void DrawAvatarNames();
+// Whether this game's player is free to be asked or told something: walking a floor or a town, or between actions
+// in a town's Georama editor. Not in a scene or a talk, a menu, a photo, a door, a minigame, or a map loading: co-op's
+// questions and notices wait those out, as the game's own never break into them.
+bool PlayerFree();
 
 // ---- What a hero fires: shots and spells seen on the other screens (coop_world_moonmod.cpp) -------------------------
 // actscript.cpp tells each shot this game's own hero fires (HeroFired); player.effects_take gives them to the mod,
