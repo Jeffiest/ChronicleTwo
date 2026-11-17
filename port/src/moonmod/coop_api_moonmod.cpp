@@ -446,7 +446,7 @@ ApiCallResult EffectsTakeCall(const Json &args) {
 // world.avatar_effect: another player's shot, drawn from their avatar.
 ApiCallResult AvatarEffectCall(const Json &args) {
     static constexpr const char *kUsage =
-        "expected {slot = 1-3, kind = 1-8, x, y, z, dx, dy, dz, value = a whole number or nil, amount = a number or nil, target = a scene slot or nil, frame0, frame1 = a trail's frames or nil} (player.effects_take's entries)";
+        "expected {slot = 1-3, kind = 1-9, x, y, z, dx, dy, dz, value = a whole number or nil, amount = a number or nil, target = a scene slot or nil, frame0, frame1 = a trail's frames or nil} (player.effects_take's entries)";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
     const Json &request = args[0];
     std::string unknown;
@@ -455,7 +455,7 @@ ApiCallResult AvatarEffectCall(const Json &args) {
     }
     int        slot = 0;
     HeroEffect e;
-    if (!ReadBoundedInt(request, "slot", 1, kAvatars, slot) || !ReadBoundedInt(request, "kind", 1, 8, e.kind)) return Invalid(kUsage);
+    if (!ReadBoundedInt(request, "slot", 1, kAvatars, slot) || !ReadBoundedInt(request, "kind", 1, 9, e.kind)) return Invalid(kUsage);
     for (const char *key : {"frame0", "frame1"}) {
         if (!request.contains(key) || request[key].is_null()) continue;
         if (!request[key].is_string() || request[key].get<std::string>().size() > 31) return Invalid(kUsage);

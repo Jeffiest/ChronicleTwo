@@ -130,6 +130,8 @@ enum class HeroShot : int {
                     // it fades over, target: the steps it holds first); pos and dir are not used
     Rocket = 7,     // the ridepod's launcher (value 0) or a missile (value 1, scattered here as the game scatters it)
     Throw = 8,      // an item held up to throw (amount 0), thrown to pos (1) or put away (2); value: its item_no
+    Sound = 9,      // a sound of the hero's (its action script's _SE_PLAY): value, its number in the hero's sound bank,
+                    // frame0, that bank by name (CH_000: snd2/chara/CH_000.sound.json); played from the avatar
 };
 struct HeroEffect {
     int   kind = 0; // HeroShot
@@ -145,6 +147,8 @@ void                    HeroFired(const void *chara, HeroShot kind, const float 
                                   float amount = 0.0f, int target = -1);
 // actionchara.cpp: a character's blade began a trail (CActionChara::StepEffect); kept when it is this game's hero.
 void                    HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold);
+// actscript.cpp: a character's action script played one of its sounds (_SE_PLAY); kept when it is this game's hero.
+void                    HeroSounded(const void *chara, int sound);
 std::vector<HeroEffect> TakeHeroEffects();
 // Draws another player's shot from avatar slot (0-2). False when the avatar is not on this floor or the effect can't
 // be made here.

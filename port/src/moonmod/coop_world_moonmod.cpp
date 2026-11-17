@@ -40,6 +40,9 @@
 #include "scenesnd.hpp"
 #include "scenevillager.hpp"
 #include "userdata.hpp"
+#include "audio/sound_runtime.hpp"
+#include "snd_mngr.hpp"
+#include "platform/arena.hpp"
 
 namespace moonmod::coop {
 
@@ -208,6 +211,11 @@ struct Avatar {
     std::vector<unsigned char>  arena;
     mgCMemory                   memory;
     mgCMemory                   stacks[CHARA_MEM_STACK_NUM];
+    // Its hero's sounds: a bank of the game's (snd2/chara/<sound_name>.sound.json) on a sound port of its own
+    // (SND_PORT_COOP + its index), so its shots, swings and voice are heard, and the effects it owns play theirs.
+    std::string                 sound_name;
+    unsigned int                se_bank = 0xFFFFFFFFu;
+    mgCMemory                   sound_memory;
 };
 
 std::array<Avatar, kAvatars> g_avatars;
@@ -230,6 +238,9 @@ void Unload(int index) {
         FxScriptMan->ClearEffectFromChrid(a.slot);
     }
     a.held_effect = -1;
+    if (a.se_bank != 0xFFFFFFFFu) sndDeletePort(SND_PORT_COOP + index);
+    a.se_bank = 0xFFFFFFFFu;
+    a.sound_name.clear();
     if (a.scene != nullptr && a.slot >= 0 && a.scene->GetCharacter(a.slot) == a.body.get()) {
         a.scene->ResetActive(SCENE_DATA_CHARA, a.slot);
     }
@@ -247,6 +258,54 @@ void Unload(int index) {
 
 unsigned char *Aligned(unsigned char *raw) {
     return reinterpret_cast<unsigned char *>((reinterpret_cast<std::uintptr_t>(raw) + 63) & ~std::uintptr_t{63});
+}
+
+// A hero's sound bank by name, as snd2/chara names them (CH_000) and a message carries it: letters, digits, _ only.
+bool SoundNameOk(const std::string &name) {
+    return !name.empty() && name.size() < 32 &&
+           std::ranges::all_of(name, [](unsigned char c) { return std::isalnum(c) != 0 || c == '_'; });
+}
+
+// The memory a hero's sound bank's tables take (the sounds themselves go to the sound driver): one block per avatar,
+// made the first time and used again for every bank after (as item_icon3d keeps one block for its models).
+constexpr int kSoundQuadwords = 16 * 1024; // 256 KiB
+char          g_sound_arena_keys[kAvatars];
+
+// Loads the bank an avatar's sounds come from onto its own port, unless it is the one there. The avatar's body (and so
+// every effect it owns) plays from it. False when the bank can't be loaded: the avatar is then silent, as before.
+bool LoadAvatarSound(Avatar &a, int index, const std::string &name) {
+    // (a bank that would not load is not tried again at every sound: only when another is asked for)
+    if (a.sound_name == name) return a.se_bank != 0xFFFFFFFFu;
+    if (!SoundNameOk(name)) return false;
+    const int port = SND_PORT_COOP + index;
+    sndDeletePort(port);
+    a.se_bank = 0xFFFFFFFFu;
+    a.sound_name = name;
+    a.sound_memory.stSetBuffer(reinterpret_cast<u_long128 *>(ArenaBlock(&g_sound_arena_keys[index],
+                                                                         std::size_t{kSoundQuadwords} * sizeof(u_long128))),
+                               kSoundQuadwords);
+    const std::string path = "snd2/chara/" + name + ".sound.json";
+    const unsigned    bank = SoundLoadBundlePath(port, path, &a.sound_memory);
+    if (bank == static_cast<unsigned>(-1)) {
+        std::fprintf(stderr, "co-op: avatar %d's sounds (%s) did not load\n", index + 1, path.c_str());
+        sndDeletePort(port);
+        if (a.body) a.body->sound_info.se_bank = 0xFFFFFFFFu;
+        return false;
+    }
+    a.se_bank = bank;
+    if (a.body) a.body->sound_info.se_bank = bank;
+    std::fprintf(stderr, "co-op: avatar %d's sounds are %s (%d bytes of tables)\n", index + 1, name.c_str(),
+                 a.sound_memory.stack_used * static_cast<int>(sizeof(u_long128)));
+    return true;
+}
+
+// The bank a hero's sounds come from, by name, as the game picks it (dc2::character::SoundAssetPath): Max's by his
+// gun, Monica's own, the ridepod's by its arm. Empty for a monster form, which has none.
+std::string HeroSoundName(CUserDataManager *user, int unit) {
+    const std::string path = dc2::character::SoundAssetPath(user, unit);
+    static constexpr std::string_view kDir = "snd2/chara/", kExt = ".sound.json";
+    if (path.size() <= kDir.size() + kExt.size() || !path.starts_with(kDir) || !path.ends_with(kExt)) return {};
+    return path.substr(kDir.size(), path.size() - kDir.size() - kExt.size());
 }
 
 // What an avatar is drawn as, all in one row: when any of it changes the body is loaded again in its place.
@@ -421,7 +480,18 @@ bool Load(int index, CScene *scene, int slot, int town) {
     scene->ResetStatus(SCENE_DATA_CHARA, slot, SCENE_CHARA_HIDE | SCENE_CHARA_NO_MODEL);
     scene->SetActive(SCENE_DATA_CHARA, slot);
     body->SetPosition(a.target.x, a.target.y, a.target.z);
+    body->sound_info.se_bank = 0xFFFFFFFFu; // (none until its bank is loaded: an effect it owns plays nothing)
     a.body = std::move(body);
+    if (town == 0 && wanted == Shape::Hero) {
+        const int   gun = a.target.sub;
+        std::string name = "CH_020";
+        if (a.target.character == USER_CHARA_MAX) {
+            char text[16];
+            std::snprintf(text, sizeof(text), "CH_%03d", gun >= 0x16 && gun <= 0x28 ? gun - 0x16 : 0);
+            name = text;
+        }
+        LoadAvatarSound(a, index, name);
+    }
     a.loaded_character = a.target.character;
     a.loaded_town = town;
     a.loaded_look = LookOf(a.target);
@@ -767,6 +837,21 @@ static bool FrameNameOk(const std::string &name) {
            std::ranges::all_of(name, [](unsigned char c) { return std::isalnum(c) != 0 || c == '_'; });
 }
 
+void HeroSounded(const void *chara, int sound) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon() || DngUserData == nullptr || sound < 0 || sound > 255) return;
+    HeroEffect e;
+    e.kind = static_cast<int>(HeroShot::Sound);
+    e.frame0 = HeroSoundName(DngUserData, DngUserData->active_chr_no);
+    if (!SoundNameOk(e.frame0)) return;
+    e.frame1 = e.frame0;
+    e.value = sound;
+    float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    MainChara__2->GetPosition(at);
+    for (int axis = 0; axis < 3; ++axis) e.pos[axis] = at[axis];
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(e);
+}
+
 void HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold) {
     if (chara == nullptr || chara != MainChara__2 || !InDungeon() || frame0 == nullptr || frame1 == nullptr) return;
     HeroEffect e;
@@ -794,6 +879,18 @@ bool AvatarEffect(int slot, const HeroEffect &e) {
     float pos[4] = {e.pos[0], e.pos[1], e.pos[2], 1.0f};
     float dir[4] = {e.dir[0], e.dir[1], e.dir[2], 0.0f};
     switch (static_cast<HeroShot>(e.kind)) {
+        case HeroShot::Sound: {
+            // played from where the avatar stands, as an effect plays a sound at a place (_SE_PLAY of effscript.cpp)
+            Avatar &a = g_avatars[static_cast<std::size_t>(slot)];
+            if (!a.body || e.value < 0 || e.value > 255 || !LoadAvatarSound(a, slot, e.frame0)) return false;
+            float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            a.body->GetPosition(at);
+            at[3] = 1.0f;
+            float volume = 0.0f, pan = 0.0f;
+            sndGetVolPan(&volume, &pan, at, 160.0f, 1200.0f);
+            sndSePlayVPf(a.se_bank, e.value, volume, pan, 0);
+            return true;
+        }
         case HeroShot::Gun: {
             if (!MakeEffect(fx, kBullet, pos)) return false;
             float flight[4];

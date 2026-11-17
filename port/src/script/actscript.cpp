@@ -573,6 +573,7 @@ int _SE_PLAY(dc2::script::RunArguments stack, int argc) {
     }
 
     sndSePlay(bank, sound, 0);
+    moonmod::coop::HeroSounded(action_info.chara, sound); // co-op: heard from this hero's avatar in the other games
     return true;
 }
 

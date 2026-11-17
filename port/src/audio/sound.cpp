@@ -73,6 +73,10 @@ constexpr PortLayout kLayout[] = {
     {.port = 1,  .linked_port = -1, .ezmidi_param = 0x3032, .dependents = kDependentsOf1 },
     {.port = 2,  .linked_port = 14, .ezmidi_param = 0x3039, .dependents = {}             },
     {.port = 3,  .linked_port = -1, .ezmidi_param = 0x3040, .dependents = {}             },
+    // MoonMod co-op: the other players' heroes (game ports 12-14), mixed as the hero's own port 9 is
+    {.port = 4,  .linked_port = -1, .ezmidi_param = 0x3038, .dependents = {}             },
+    {.port = 5,  .linked_port = -1, .ezmidi_param = 0x3038, .dependents = {}             },
+    {.port = 6,  .linked_port = -1, .ezmidi_param = 0x3038, .dependents = {}             },
     {.port = 7,  .linked_port = -1, .ezmidi_param = 0x3010, .dependents = {}             },
     {.port = 8,  .linked_port = -1, .ezmidi_param = 0x3035, .dependents = kDependentsOf8 },
     {.port = 9,  .linked_port = -1, .ezmidi_param = 0x3038, .dependents = {}             },

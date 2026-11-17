@@ -68,6 +68,7 @@ enum sndPORT {
     SND_PORT_MENU = 8, /**< Sound effects of menus. */
     SND_PORT_BATTLE = 9,
     SND_PORT_BGM2 = 11, /**< Second background music port, sharing the first's sequence handling. */
+    SND_PORT_COOP = 12, /**< MoonMod co-op: the other players' heroes' sounds, one port each (12 to 14). */
     SND_PORT_NUM = 16,  /**< Number of game sound ports. */
 };
 

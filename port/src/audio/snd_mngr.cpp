@@ -899,6 +899,14 @@ static int GetCSndPortNo(int port_no, int *port, int *sq_port, int *vol) {
             *sq_port = -1;
             *vol = 0x100;
             break;
+        case SND_PORT_COOP:
+        case SND_PORT_COOP + 1:
+        case SND_PORT_COOP + 2:
+            // MoonMod co-op: another player's hero, on a driver port of its own (4-6, unused by the game)
+            *port = 4 + (port_no - SND_PORT_COOP);
+            *sq_port = -1;
+            *vol = 0x100;
+            break;
         default:
             return 0;
     }
@@ -1933,6 +1941,14 @@ int HostGetDriverPort(int port_no, int *port, int *sq_port, int *vol) {
             break;
         case 10:
             *port = 7;
+            *sq_port = -1;
+            *vol = 0x100;
+            break;
+        case SND_PORT_COOP:
+        case SND_PORT_COOP + 1:
+        case SND_PORT_COOP + 2:
+            // MoonMod co-op: another player's hero, on a driver port of its own (4-6, unused by the game)
+            *port = 4 + (port_no - SND_PORT_COOP);
             *sq_port = -1;
             *vol = 0x100;
             break;

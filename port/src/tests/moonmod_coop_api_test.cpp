@@ -194,8 +194,14 @@ TEST(MoonModCoopApi, TheHerosShotsAreTakenOnceAndAnotherPlayersAreDrawnOnlyFromT
     const ApiCallResult drawn = api.Call("world.avatar_effect", shot);
     ASSERT_EQ(drawn.status, ApiCallStatus::Ok) << drawn.message;
     EXPECT_FALSE(drawn.value.at("shown").get<bool>());
-    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 9}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 10}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
                                                             {"dy", 0.0}, {"dz", 1.0}}})).status, ApiCallStatus::InvalidArgument);
+    // a sound of the other hero's (kind 9) names its bank; off a floor it is not heard
+    const ApiCallResult heard = api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 9}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0},
+                                                                              {"dx", 0.0}, {"dy", 0.0}, {"dz", 0.0}, {"value", 17},
+                                                                              {"frame0", "CH_005"}, {"frame1", "CH_005"}}}));
+    ASSERT_EQ(heard.status, ApiCallStatus::Ok);
+    EXPECT_FALSE(heard.value.at("shown").get<bool>());
     EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 1}, {"x", 0.0}}})).status, ApiCallStatus::InvalidArgument);
     EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 1}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
                                                             {"dy", 0.0}, {"dz", 1.0}, {"damage", 5}}})).status, ApiCallStatus::InvalidArgument);
