@@ -617,6 +617,122 @@ def boss():
             'guest_autotest': {'offer_hold': 240}}
 
 
+@scenario('boss_fight')
+def boss_fight():
+    """The boss's fight together. As boss, but the host walks into the Underground Channel's boss's room for the
+    first time: the room's own intro plays (skipped, as --skip-events skips it) and places the boss, Halloween, whose
+    first hint waits for a button (Cross, pressed through it). The joiner is asked to join the fight and joins; then
+    the host strikes the boss, a little at a time, and at last strikes it down. Both games log the floor's monsters
+    as they go (monsters_log), and what the world says."""
+    host = [
+        {'when': 'town', 'after': 600, 'op': 'mark', 'text': 'in town'},
+        {'after': 1200, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 7},
+        {'when': 'dungeon', 'after': 300, 'op': 'world_log'},
+        {'after': 1, 'op': 'monsters_log'},
+    ]
+    for _ in range(4):
+        host += [{'after': 600, 'op': 'world_log'}, {'after': 1, 'op': 'monsters_log'}]
+    for _ in range(3):
+        host += [{'after': 300, 'op': 'strike', 'amount': 40}, {'after': 120, 'op': 'monsters_log'}]
+    host += [{'after': 300, 'op': 'strike_all'}, {'after': 60, 'op': 'monsters_log'}, {'after': 1, 'op': 'world_log'}]
+    for _ in range(4):
+        host += [{'after': 600, 'op': 'world_log'}, {'after': 1, 'op': 'monsters_log'}]
+    host += [{'after': 60, 'op': 'mark', 'text': 'end'}]
+    guest = [{'when': 'visit', 'op': 'mark', 'text': 'arrived'}, {'when': 'dungeon', 'after': 300, 'op': 'world_log'},
+             {'after': 1, 'op': 'monsters_log'}]
+    for _ in range(12):
+        guest += [{'after': 300, 'op': 'world_log'}, {'after': 1, 'op': 'monsters_log'}]
+    sc = {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 10800, 'guest_frames': 10200,
+          'guest_autotest': {'offer_hold': 240}, 'host_extra': ['--invincible'], 'guest_extra': ['--invincible']}
+    # (the host's Cross through the hints: in a fight it swings the sword, and a held hero does nothing with it; the
+    # joiner presses nothing, as Cross in a town talks to whoever is near: its way into the room is the short one, the
+    # intro's flag set by the host's game by then)
+    sc['host_presses'] = [(f, 'cross') for f in range(2100, 6000, 150)]
+    return sc
+
+
+def monster_lines(side):
+    """The monsters_log steps' lines: per line, {slot: (kind, hp, max)} of the living monsters."""
+    out = []
+    for e in side['events']:
+        if e.startswith('DRIVE monsters n='):
+            seen = {}
+            for slot, kind, hp, top in re.findall(r'(\d+):(\d+):(\d+)/(\d+)', e):
+                seen[int(slot)] = (int(kind), int(hp), int(top))
+            out.append(seen)
+    return out
+
+
+@checks('boss_fight')
+def check_boss_fight(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    HALLOWEEN = 500
+    hm, gm = monster_lines(host), monster_lines(guest)
+    h_boss = [m[0] for m in hm if m.get(0, (None,))[0] == HALLOWEEN]
+    g_boss = [m[0] for m in gm if m.get(0, (None,))[0] == HALLOWEEN]
+    c.check(h_boss and h_boss[0][2] == 256, "the room's intro brings the boss out in the host's game (Halloween, 256 life)", h_boss[:1])
+    offers = [e for e in guest['events'] if 'offer' in e]
+    c.check(any('faces the boss of the Underground Channel' in e and 'join' in e for e in offers),
+            'the joiner is asked to join the fight, and joins', offers)
+    c.check(toast(host, 'the fight waits for') and toast(host, 'joins the fight'),
+            "the host's fight waits for the joiner, who joins it", toasts(host))
+    c.together('D', "in the boss's room")
+    c.check(any(b[2] == 448 for b in h_boss), "with two in the fight the boss has 75% more life (scale_bosses): 448",
+            sorted({b[2] for b in h_boss}))
+    made = [l.strip() for l in guest['lines'] if "made the leader's monster in slot 0 (kind 500)" in l]
+    c.check(made and g_boss, "the boss is in the joiner's game too, its copy of the host's", (made[:1], g_boss[:1]))
+    c.check(g_boss and any(b[2] == 448 for b in g_boss), "with the same life", sorted({b[2] for b in g_boss}))
+    c.check(h_boss and min(b[1] for b in h_boss) < 448 and g_boss and min(b[1] for b in g_boss) < 448,
+            "the host's blows take its life in both games", (min([b[1] for b in h_boss] or [0]), min([b[1] for b in g_boss] or [0])))
+    for name, side, seen in (('host', host, hm), ('joiner', guest, gm)):
+        c.check(seen and not seen[-1], "at last the boss falls in the %s's game" % name, seen[-1:])
+    ran = {name: [l.strip() for l in side['lines'] if l.startswith('RUN SYS_SCRIPT ')] for name, side in (('host', host), ('joiner', guest))}
+    c.check('RUN SYS_SCRIPT 520' in ran['host'] and 'RUN SYS_SCRIPT 1500' in ran['host'],
+            "the host's game plays the boss's end, the story's scene (event 520), and the floor's clear (1500)", ran['host'])
+    # (a boss's room has no floor's clear of its own: its scene loads the dungeon's script, which has it, and that
+    # scene is the host's; the joiner's room counts no monster, and the game says cleared)
+    gw = world_lines(guest)
+    c.check('RUN SYS_SCRIPT 520' not in ran['joiner'] and gw and gw[-1].get('floor_cleared') == 'true',
+            "the joiner's game plays no scene (its copy asks for none: the story is the host's), and its room is cleared",
+            (ran['joiner'], gw[-1:]))
+    died = [e for e in guest['events'] if e.startswith('DRIVE defeated') and 'kind=500' in e]
+    c.check(died, "in the joiner's game the boss's copy dies as the game's own boss dies", died[:2])
+    c.no_errors()
+    return c.list
+
+
+@scenario('town_talk')
+def town_talk():
+    """A player busy in a town is still in the room. Both in Palm Brinks; the joiner presses Cross every few seconds for
+    a minute and a half (in the first boss_fight run that started the town's event 400 where it stood, and the host
+    was told the joiner's connection had dropped). The room holds both to the end."""
+    host = [{'when': 'town', 'after': 600, 'op': 'mark', 'text': 'in town'}]
+    for _ in range(8):
+        host += [{'after': 600, 'op': 'world_log'}]
+    host += [{'after': 600, 'op': 'mark', 'text': 'end'}]
+    guest = [{'when': 'visit', 'op': 'mark', 'text': 'arrived'}]
+    for _ in range(8):
+        guest += [{'after': 600, 'op': 'world_log'}]
+    sc = {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 7800, 'guest_frames': 7200}
+    sc['guest_presses'] = [(f, 'cross') for f in range(2100, 7000, 150)]
+    return sc
+
+
+@checks('town_talk')
+def check_town_talk(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    dropped = [t for t in toasts(host) if 'dropped' in t or ' left' in t]
+    c.check(not dropped, "the host is never told the joiner dropped or left", dropped[:3])
+    gone = [t for t in toasts(guest) if 'dropped' in t or 'getting back' in t]
+    c.check(not gone, "the joiner's link never drops", gone[:3])
+    c.no_errors()
+    return c.list
+
+
 @scenario('scale')
 def scale_():
     """Harder with two. As floor, but the host first plays the floor's monsters alone: it goes into the Underground

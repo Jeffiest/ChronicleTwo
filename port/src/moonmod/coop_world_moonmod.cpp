@@ -620,6 +620,7 @@ struct PuppetSlot {
     std::vector<Sample> trail; // the leader's reports kept (TrailHeard, TrailAt)
     int    dies_at = -1;       // the frame (this clock) the copy comes to the moment the leader's monster died
     bool   dying = false;      // its death is this game's own now (CopyDies)
+    int    died_at = -1;       // and since when (this clock)
     // This game's hero's last blow on it: when, by whom, from what (CColPrim's attacker, its row's source and kind,
     // the hit's status bits), for a death it dealt (CopyDies).
     int    blow_at = -1, blow_by = -1, blow_source = DAMAGE_SOURCE_NONE, blow_kind = -1;
@@ -656,7 +657,11 @@ void CopyDies(CActiveMonster &monster, PuppetSlot &p) {
     if (ours && p.blow_kind >= 0) monster.last_hit_kind = p.blow_kind;
     p.dying = true;
     p.dies_at = -1;
+    p.died_at = g_clock;
 }
+
+// A death has had its time (a boss's slot rests from here until its room's scene empties it).
+constexpr int kDeathRests = 300;
 
 // The avatars on this floor: where each stands.
 int AvatarsHere(std::array<std::array<float, 3>, kAvatars> &at, std::array<bool, kAvatars> &here) {
@@ -1362,6 +1367,14 @@ std::vector<int> g_unmade;
 // made: that slot alone is refused.
 CActiveMonster *MakePuppet(int slot, const Puppet &puppet) {
     if (ActiveMonster == nullptr || DngMainScene == nullptr) return nullptr;
+    // A boss's room is one of the game's made maps, whose monsters its own scene loads (event.load_dungeon_monster, the
+    // first call setting the room's monster table up). A game that walked in the short way (the room's intro seen, its
+    // flag set by the leader's game) played none of that and has no table: it is set up here as that first call does,
+    // with this kind, while the room holds no monster to lose.
+    const bool boss_room = BossRoomMap(FloorMapName());
+    if (boss_room && !IsMonsterManagerReadyForModSpawn(DngMainScene) && ActiveMonster->GetMonsterNum(-1.0f) == 0) {
+        LoadMonsterFile(puppet.kind, 1);
+    }
     std::string why;
     const int   refer = moonmod::ChronicleTwoMonsterReferFor(puppet.kind, why);
     if (refer < 0) {
@@ -1378,6 +1391,9 @@ CActiveMonster *MakePuppet(int slot, const Puppet &puppet) {
     CActiveMonster *made = ActiveMonster->SetActiveMonster(refer, at, turn, -1, slot);
     if (made == nullptr || made->chara_type != DNG_CHARA_SLOT_MONSTER + slot) return nullptr;
     DngMainScene->SetActive(SCENE_DATA_CHARA, DNG_CHARA_SLOT_MONSTER + slot);
+    // (and, as the game's own placement does, AutoSetMonster, the room is not cleared while a monster is in it: a built
+    // floor's own monsters did so as it was built, but a boss's room has only the leader's)
+    if (boss_room) DngMainScene->battle_area.battle_clear = false;
     std::fprintf(stderr, "co-op: made the leader's monster in slot %d (kind %d) here\n", slot, puppet.kind);
     return made;
 }
@@ -1392,6 +1408,16 @@ bool PuppetSet(int slot, const Puppet &puppet) {
     // there changes nothing. A living one in that slot there is another monster (the leader's game used the slot
     // again first): this one goes, and that one is made.
     if (p.dying) {
+        // A boss's death rests in its slot until its room's scene empties it (clear_event_battle_monsters). That scene
+        // is the leader's story and plays in the leader's game alone: once the leader's slot is empty and the copy's
+        // death has had its time, the slot is emptied here too, or this game would count the boss for ever and never
+        // give the floor's clear.
+        if ((puppet.state <= 0 || puppet.kind < 0) && monster != nullptr && monster->state != ACTIVE_MONSTER_NONE &&
+            g_clock - p.died_at >= kDeathRests) {
+            FreeMonsterSlot(slot);
+            p = PuppetSlot{};
+            return true;
+        }
         const bool another = puppet.state == ACTIVE_MONSTER_LIVE && puppet.hp > 0 && puppet.kind >= 0;
         if (monster != nullptr && monster->state != ACTIVE_MONSTER_NONE && !another) return true;
         if (monster != nullptr && monster->state != ACTIVE_MONSTER_NONE) FreeMonsterSlot(slot);

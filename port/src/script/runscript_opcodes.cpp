@@ -32,6 +32,7 @@
 #include "mg_texture.hpp"
 #include "mglib.hpp"
 #include "monster.hpp"
+#include "moonmod/coop.hpp"
 #include "nd_meswin.hpp"
 #include "object.hpp"
 #include "runscript.hpp"
@@ -4030,6 +4031,10 @@ int _RUN_EVENT_SCRIPT(dc2::script::RunArguments stack, int argc) {
     }
 
     s16 v = static_cast<s16>(GetStackInt(stack));
+    // (co-op: a copy of the leader's monster asks for nothing here. The scene it asks for, a boss's end among them, is
+    // the leader's story and plays in the leader's game; this game, its hero another, has not the scene's setting
+    // either, the characters its room's own scenes loaded. This game gets the floor's own clear.)
+    if (moonmod::coop::IsPuppet(nowMonster->chara_type - DNG_CHARA_SLOT_MONSTER)) return 1;
     nowMonster->event_no = v;
     return 1;
 }

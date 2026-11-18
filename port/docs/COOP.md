@@ -348,19 +348,45 @@ the fight?" in the game's window.
 
 `monsters.hold {frames}` (0-36000; 0 ends it) has the fight wait while the other player answers and walks in: the
 floor's monsters do not think (`ThinkHost` is gated, not `DNG_PAUSE_MONSTER_AI`, so a copy dying still dies), the
-floor's effect scripts rest, and this hero's script does not run, so the hero does not walk up to the boss and start
-its scene. The frames count only while the dungeon is in play (not in a menu or a scene); the hold ends by itself
+floor's effect scripts rest, and this hero's script does not run. The frames count only while the dungeon is in play (not in a menu or a scene); the hold ends by itself
 when they run out, when the player leaves the floor, or when another scene begins. `world.get().fight_held` is true
 meanwhile. The mod holds for at most a minute of play, tells the player who it waits for and asks, in the game's
 window, whether to start without them; the other player arriving, saying "Stay here", or the room closing ends the
 wait.
 
 Live scenario `boss`: the host walks into the Underground Channel's boss's room (story flag 10 set first, so the
-room's way in is its short one: the first visit's hint ends in a message that waits for a button), the joiner is
-asked and joins, the host's fight waits and then goes on, both are in `d01b01`, and both games scale the room's
-monsters for two. Not covered: the boss's own scene and the fight (the scene starts where the hero walks up to the
-boss, and a headless game does not walk there), so how the scene plays in the other game and the boss copied there
-are unverified.
+room's way in is its short one, with no boss), the joiner is asked and joins, the host's fight waits and then goes on,
+both are in `d01b01`, and both games scale the room's monsters for two.
+
+The fight itself (live scenario `boss_fight`, 2026-11-18). The boss comes out in the room's first visit: its event
+500 plays the intro (flag 10 unset), which sets the room's monster table up (`event.load_dungeon_monster`, the first
+call initializing), places Halloween (`place_dungeon_monster`, `AutoSetMonster`) and ends in a hint that waits for a
+button. The joiner, asked once the host is free, walks in the short way (flag 10, set by the host's intro, is the
+story's and reached it first), so three things were missing in its game, each found live:
+
+- No boss: the copy could not be made, its kind not loadable with no monster table ("still loading", for ever). Now
+  `MakePuppet` in a boss's room sets the table up as the room's first `load_dungeon_monster` does (`LoadMonsterFile
+  (kind, 1)`) while it holds no monster, and marks the room uncleared as the game's own placement does
+  (`battle_clear`), so the copy counts.
+- A crash at the boss's end: the copy's death program asked for event 520, the boss's end, and the joiner's game
+  played it: a scene of the host's story, written for Max and using the characters the intro loaded, which left the
+  joiner's game with no hero (`BattleAreaBGMCtrl`, SIGSEGV). Now a copy asks for no event (`_RUN_EVENT_SCRIPT`
+  returns without setting `event_no` for an `IsPuppet` slot): the scene a monster asks for is the leader's.
+- A room never cleared: a boss's death rests in its slot until its room's scene empties it
+  (`clear_event_battle_monsters`), so the joiner's game, which plays no scene, counted the boss for ever. Now a dying
+  copy whose slot the leader's game has emptied is emptied here once its death has had five seconds (`kDeathRests`).
+  The room has no floor's clear of its own (its scene loads the dungeon's script, which has one, and the map's
+  script says "no handler floor_clear (1500)"), so the joiner's room counts no monster and is cleared, quietly.
+
+`boss_fight` (18 checks): the intro brings Halloween out in the host's game (256 life), the joiner is asked and
+joins, the fight waits for it, with two the boss has 448 (`scale_bosses` +75%), the copy is in the joiner's game with
+the same life, the host's blows take it in both, it falls in both, the host's game plays 520 and 1500, the joiner's
+plays no scene and its room is cleared, and its copy dies as the game's own boss dies. The host presses Cross through
+the hint; the joiner presses nothing (Cross in a town talks to whoever is near).
+
+Not yet: lifting and throwing a monster (Halloween's own way to be hurt is a RoBomb thrown at it). In the joiner's
+game a copy can be lifted (`CheckThrowTarget` takes any monster) but the leader's game never hears of it and the copy
+goes on following the leader's; a monster the leader holds is reported at its own position, not its hand's.
 
 ## Harder with two (2026-11-18)
 
