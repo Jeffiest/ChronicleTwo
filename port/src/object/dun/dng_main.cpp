@@ -1680,6 +1680,7 @@ void DngMainDraw() {
             }
 
             AutoMapGen.mini_map.DrawSymbolClose();
+            moonmod::coop::DrawAvatarsOnMiniMap(AutoMapGen.mini_map); // co-op: the other players' heroes, under this one's arrow
             AutoMapGen.mini_map.DrawSymbol_Chara(MainChara__2);
         }
     }

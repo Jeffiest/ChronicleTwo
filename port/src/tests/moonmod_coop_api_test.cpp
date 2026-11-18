@@ -278,6 +278,7 @@ TEST(MoonModCoopApi, ARidepodSaysItsFourPartsAndAFormItsMonster) {
     EXPECT_FALSE(moonmod::coop::AvatarNameOnScreen(0, head, feet, name));
     EXPECT_FALSE(moonmod::coop::AvatarNameOnScreen(7, head, feet, name));
     moonmod::coop::DrawAvatarNames();
+    EXPECT_TRUE(moonmod::coop::AvatarsOnMap().empty()); // (nor on the floor's map)
     EXPECT_EQ(api.Call("world.avatar_clear").status, ApiCallStatus::Ok);
 }
 

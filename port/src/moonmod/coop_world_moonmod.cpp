@@ -17,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "automap.hpp"
 #include "character.hpp"
 #include "charasetup.hpp"
 #include "dataread.hpp"
@@ -915,6 +916,35 @@ bool AvatarNameOnScreen(int slot, float head[2], float feet[2], std::string &nam
 float AvatarSeen(int slot) {
     if (!AvatarShown(slot)) return 0.0f;
     return g_avatars[static_cast<std::size_t>(slot)].body->fade;
+}
+
+std::vector<MapAvatar> AvatarsOnMap() {
+    std::vector<MapAvatar> out;
+    if (!InDungeon()) return out;
+    for (int i = 0; i < kAvatars; ++i) {
+        const Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        if (!AvatarShown(i) || !a.body->placed || a.body->fade <= 0.0f) continue;
+        MapAvatar m;
+        m.body = a.body.get();
+        m.texb = kTextureBlockBase + i;
+        std::copy(a.body->at, a.body->at + 3, m.at);
+        m.seen = a.body->fade;
+        m.index = i;
+        out.push_back(m);
+    }
+    return out;
+}
+
+void DrawAvatarsOnMiniMap(CMiniMapSymbol &map) {
+    // Each player's colour, none of the map's own (the hero's green, a monster's red, a chest's brown, a circle's
+    // yellow, the geostone's pink, the sphida game's blue): light blue, orange, white. The arrow is as see-through as
+    // the hero's (0x60) and fades with the hero.
+    static constexpr u8 kColours[kAvatars][3] = {{80, 210, 255}, {255, 140, 0}, {255, 255, 255}};
+    for (const MapAvatar &m : AvatarsOnMap()) {
+        const u8 *c = kColours[m.index];
+        const u8 colour[4] = {c[0], c[1], c[2], static_cast<u8>(std::lround(96.0f * std::clamp(m.seen, 0.0f, 1.0f)))};
+        map.DrawSymbol_Chara(m.body, colour);
+    }
 }
 
 void AvatarsStep() {

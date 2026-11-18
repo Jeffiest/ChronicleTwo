@@ -26,6 +26,7 @@
 struct CSceneEventData;
 struct MENU_INIT_ARG;
 class CCharacter2;
+class CMiniMapSymbol;
 
 class CColPrim;
 
@@ -238,6 +239,19 @@ bool                   MonstersMirrored();
 // death). dng_main.cpp: some copy is dying, so the monsters think this frame; monster.cpp: every other one rests.
 bool                   CopiesDying();
 bool                   CopyRests(int slot);
+
+// The other players' heroes on the floor's map: each one shown on this floor, its body (drawn on the aerial map as
+// this game's hero is, automap.cpp), its texture block, where it stands and how far it has faded in.
+struct MapAvatar {
+    CCharacter2 *body = nullptr;
+    int          texb = 0;
+    float        at[3] = {0.0f, 0.0f, 0.0f};
+    float        seen = 0.0f;
+    int          index = 0;
+};
+std::vector<MapAvatar> AvatarsOnMap();
+// dng_main.cpp: on the plain map, each one's arrow as the hero's own, in that player's colour.
+void DrawAvatarsOnMiniMap(CMiniMapSymbol &map);
 void                   PuppetsClear();
 std::vector<PuppetHit> TakePuppetHits();
 std::vector<AvatarHit> TakeAvatarHits();

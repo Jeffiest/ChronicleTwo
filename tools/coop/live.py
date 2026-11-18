@@ -136,6 +136,22 @@ def floor():
     return floor_together(0, 2, {'offer_hold': 300})
 
 
+@scenario('map')
+def map_():
+    """The other player on the floor's map: as floor, and once on the floor the guest walks off ahead, so the two
+    stand apart. The host plays with the plain map (the aerial map off in its settings), so the guest is the hero's
+    arrow in its player's colour there; the guest keeps the aerial map, so the host is its hero's model there. Each
+    game starts with the small map; at frame 3300 each presses Select, the game's own way to the large one. With
+    --shots-every 300 the frames from 3600 on show the large maps with the two apart (each game counts its own frames,
+    and the guest's walk comes later on the host's clock)."""
+    sc = floor_together(0, 2)
+    sc['guest_moves'] = [(2600, 128, 0, 150)]
+    sc['host_presses'] = [(3300, 'select')]
+    sc['guest_presses'] = [(3300, 'select')]
+    sc['host_config'] = {'game': {'aerial_map': False}}
+    return sc
+
+
 @scenario('floor_first')
 def floor_first():
     """The other way round: the joiner goes into the Underground Channel alone and strikes a monster down, the host
@@ -1119,6 +1135,11 @@ def check_preset(host, guest, result):
     return check_floor(host, guest, result)
 
 
+@checks('map')
+def check_map(host, guest, result):
+    return check_floor(host, guest, result)
+
+
 @checks('floor')
 def check_floor(host, guest, result):
     c = Checks(host, guest, result)
@@ -1306,7 +1327,10 @@ def main():
     guest_walk = WALK_AT % (sc['guest_walk'], sc['guest_walk'] + 14) if sc.get('guest_walk') else ''
     # (or a longer walk: from a frame, the left stick held at x y, for so many frames)
     guest_walk += ''.join('%d %d %d 128 128\n%d\n' % (frame, x, y, frame + frames) for frame, x, y, frames in sc.get('guest_moves', []))
-    (out / 'guest_title.input').write_text(GUEST_TITLE_INPUT + guest_walk, encoding='utf-8')
+    # (the presses and the walk in frame order: a press must not fall inside a walk)
+    guest_after = sorted((guest_walk + press_lines(sc.get('guest_presses', []))).splitlines(keepends=True),
+                         key=lambda line: int(line.split()[0]))
+    (out / 'guest_title.input').write_text(GUEST_TITLE_INPUT + ''.join(guest_after), encoding='utf-8')
     host_input = None
     if sc.get('host_walk') or sc.get('host_presses'):
         # (the presses, then the walk: an input script's lines go in frame order)
@@ -1344,6 +1368,8 @@ def main():
 
         host_save = make_save(out / 'host', moonmod, 'Host', relay_url,
                               dict({'role': 'host', 'where': sc.get('host_where', 'town'), 'follow': False}, **sc.get('host_autotest', {})), sc['host'])
+        if sc.get('host_config'):  # (the game's settings file: beside its saves folder)
+            (host_save.parent / 'config.json').write_text(json.dumps(sc['host_config']), encoding='utf-8')
         host, hl = launch(exe, data, host_save, sc.get('host_jump', 'town:10'), sc['host_frames'], out / 'host.log', relay_url,
                           input_script=host_input, extra=tuple(sc.get('host_extra', ())) + shot('host'))
         logs.append(hl)

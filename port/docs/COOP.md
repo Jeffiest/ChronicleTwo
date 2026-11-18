@@ -62,7 +62,12 @@ environment and the mod's `server` setting override it. A build without a socket
   the orbs' absorption), else another player's (`last_hit_chara` -1: the game shares it between the hero's
   weapons, as the leader's game does for a kill by a guest's blow, `monsters.mirror_hit`). A dying copy deals no
   blow (`MonsterThinkEnd` drops its damage primitives); the game's events and menus hold it as they hold every
-  monster.
+  monster. The other players' heroes are on the floor's map (`AvatarsOnMap`): on the aerial map each one's model is
+  drawn as this game's hero is (`DrawFloorModels` in `automap.cpp`, anywhere the map reaches, revealed or not), and on
+  the plain map each has the hero's arrow in that player's colour, light blue, orange or white, none of the map's own
+  (`CMiniMapSymbol::DrawSymbol_Chara` given a colour: the arrow's texture is green, which a colour laid over it
+  cannot change, so theirs is its shape drawn flat, on a dark edge, at its size and turned as it); both fade with the
+  hero and are not drawn on a boss's floor, as the hero's own arrow is not.
 - `coop_ui_moonmod.cpp`: the choice panel (`ui.choice_open` / `ui.choice_close` / `ui.choice_made`), title modes (`title.mode_*`,
   `game.title.opened/selected`), visits (`session.*`, `game.session.started/ended/failed`). A question and a notice
   wait while the player is not free (`PlayerFree`, in `coop_avatar_names_moonmod.cpp`: a floor's field with no
@@ -70,9 +75,9 @@ environment and the mod's `server` setting override it. A build without a socket
   a talk, a menu, a photo, a door, a minigame or a load). Meanwhile the panel is not drawn and does not hold the pad,
   and it is asked 8 frames after the player is free again.
 - `coop_save_moonmod.cpp`: `DCW2`/`DCP2`/`DCT2` records and the accounts.
-- Hooks in game units, one line each: `main.cpp` (`FrameStep`), `automap.cpp` (`FloorSeed`), `dng_event.cpp`
+- Hooks in game units, one line each: `main.cpp` (`FrameStep`), `automap.cpp` (`FloorSeed`; the aerial map's `AvatarsOnMap`, a few lines, since its helpers are the file's own), `dng_event.cpp`
   (`FloorBuildBegin`), `event_func.cpp` (`FloorPlacing`, `FloorPlaced` around the floor's chests and monsters; `DramaSceneStarted`),
-  `dng_main.cpp` (`MapEventStarted`, `Draw2D`, `CopiesDying`), `editloop.cpp` (`Draw2D`), `monster.cpp`
+  `dng_main.cpp` (`MapEventStarted`, `Draw2D`, `CopiesDying`, `DrawAvatarsOnMiniMap`), `editloop.cpp` (`Draw2D`), `monster.cpp`
   (`MonsterThinkBegin/End`, `MonsterDamaged`, `CopyRests`), `save_slots.cpp` (no writes during a visit), `title.cpp` (the mod rows, the page, the visit),
   `effscript.cpp` (another player's shot or spell is drawn only, `shown_only`: it makes no collision primitive, and
   its script's questions after one are answered as a primitive that hits nothing, never logged as illegal calls).

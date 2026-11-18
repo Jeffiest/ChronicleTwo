@@ -736,6 +736,14 @@ void DrawFloorModels(const CMiniMapSymbol &mm, float scale) {
         }
     }
 
+    for (const moonmod::coop::MapAvatar &other : moonmod::coop::AvatarsOnMap()) { // co-op: the other players' heroes, as this one
+        if (!ModelOnMap(mm, other.at)) continue;
+        tex_man->ReloadTexture(other.texb, (sceVif1Packet *) NULL);
+        ModelPivot(other.body, pivot);
+        SetAerialView(pivot, scale);
+        other.body->DrawDirect();
+    }
+
     if (MainChara__2 != NULL && DngMainScene->CheckDrawChara(0)) {
         tex_man->ReloadTexture(16, (sceVif1Packet *) NULL);
         ModelPivot(MainChara__2, pivot);
@@ -3255,7 +3263,7 @@ void CMiniMapSymbol::DrawSymbolClose() {
     gfx::SetUiAnchor({});
 }
 
-void CMiniMapSymbol::DrawSymbol_Chara(CCharacter2 *chara) {
+void CMiniMapSymbol::DrawSymbol_Chara(CCharacter2 *chara, const u8 *colour) {
     gfx::UiAnchorScope anchor(kMiniMapAnchor);
 
     float pos[4];
@@ -3281,6 +3289,32 @@ void CMiniMapSymbol::DrawSymbol_Chara(CCharacter2 *chara) {
     int        screen_x = x + static_cast<int>(16.0f * (pos[0] / cell_w)) + 8;
     int        screen_y = y + static_cast<int>(16.0f * (pos[2] / cell_d)) + 8;
     float      angle = rot[1];
+
+    if (colour != nullptr) {
+        // co-op: another player's hero. The arrow is green in its texture, which a colour laid over it cannot change,
+        // so theirs is the arrow's shape drawn flat in their colour on a dark edge, at the arrow's size, turned as it.
+        static constexpr float kShape[4][2] = {{0.0f, 6.5f}, {-5.5f, -5.5f}, {0.0f, -2.0f}, {5.5f, -5.5f}}; // tip, back left, notch, back right
+        CPreSprite flat;
+        flat.Initialize(nullptr, nullptr);
+        flat.Preset2D();
+        flat.TextureMapEnable(0);
+        flat.Begin(MG_PRIM_TRIANGLE);
+        flat.SetScirror(x - w / 2, y - h / 2, w, h);
+        for (const float grow : {1.35f, 1.0f}) {
+            if (grow > 1.0f) flat.Color(0, 0, 0, colour[3] / 2); else flat.Color(colour[0], colour[1], colour[2], colour[3]);
+            for (const int side : {1, 3}) { // (tip, a back corner, notch: two triangles)
+                for (const int corner : {0, side, 2}) {
+                    const float px = kShape[corner][0] * grow, py = kShape[corner][1] * grow;
+                    flat.Vertex(screen_x + static_cast<int>(px * cosf(angle) + py * sinf(angle)),
+                                screen_y + static_cast<int>(-px * sinf(angle) + py * cosf(angle)), 0);
+                }
+            }
+        }
+        flat.SetScirror(0, 0, mgScreenWidth - 1, mgScreenHeight - 1);
+        flat.End();
+        return;
+    }
+
     CPreSprite sprite;
     sprite.Initialize(nullptr, nullptr);
     sprite.Preset2D();

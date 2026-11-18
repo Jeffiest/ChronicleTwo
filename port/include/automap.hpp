@@ -354,7 +354,8 @@ public:
      * @address 0x1D62C0
      * @size 0x410
      */
-    void DrawSymbol_Chara(CCharacter2 *chara);
+    // (colour: red, green, blue, alpha; given for another player's hero in co-op, whose arrow is drawn in it)
+    void DrawSymbol_Chara(CCharacter2 *chara, const u8 *colour = nullptr);
 
     /**
      *
