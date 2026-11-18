@@ -292,6 +292,18 @@ int                FloorSeed(int native_seed);
 void               FloorPlacing(int stage);
 void               FloorPlaced(int stage);
 std::optional<int> LastFloorSeed();
+// dng_event.cpp: the floor's map is loading (moonmod/coop_floor.hpp). A made map has no seed: world.get reports its
+// name instead (floor_map), and a seed of the floor before it is not reported as this floor's.
+void               FloorMapLoading(const char *map_name, bool generated);
+// The name of the map the floor is (d01f01 for a built floor of the first dungeon, d01b01 its boss's room); empty
+// off a floor.
+std::string        FloorMapName();
+// A boss's room by its map's name (d01b01: the game's made maps d<dungeon>b<room>).
+bool               BossRoomMap(std::string_view map);
+// monsters.hold: the fight waits for another player. For up to `frames` of play on this floor its monsters do not
+// think and this game's hero does not act (dng_main.cpp asks FightHeld); 0 lets them go, as does leaving the floor.
+void               FightHold(int frames);
+bool               FightHeld();
 // world.get().floor_layout: a number for the floor as built (cells, chests and what they hold, monsters and where),
 // the same in two games that built the same floor; none until the floor's monsters are placed.
 std::optional<std::string> FloorLayoutHash();

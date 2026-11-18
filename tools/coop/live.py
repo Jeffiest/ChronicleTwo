@@ -592,6 +592,52 @@ def georama_probe():
     return {'host': host, 'guest': [], 'host_jump': 'town:0', 'host_frames': 1500, 'guest_frames': 0, 'solo': True}
 
 
+@scenario('boss')
+def boss():
+    """A boss's room entered together. The two are in Palm Brinks; the host walks into the Underground Channel's
+    boss's room (floor 7, the map d01b01, its intro already seen: story flag 10, so the room's way in is its short
+    one). The joiner is asked "The host faces the boss of the Underground Channel: join the fight?" and joins; the
+    host's fight waits for it meanwhile (monsters.hold: the host's hero and the room stand still), and goes on once the
+    joiner has walked in. With two in the room the room's monsters are scaled for two, in both games. (The boss itself
+    comes out in the room's own scene, which starts where the hero walks up to it: a headless game does not walk there.)"""
+    host = [
+        {'when': 'town', 'after': 600, 'op': 'flag_set', 'id': 10},
+        {'after': 1200, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 7},
+        {'when': 'playing', 'after': 60, 'op': 'world_log'},
+        {'after': 600, 'op': 'world_log'},
+        {'after': 2400, 'op': 'world_log'},
+        {'after': 600, 'op': 'mark', 'text': 'end'},
+    ]
+    guest = [
+        {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
+        {'when': 'dungeon', 'after': 600, 'op': 'world_log'},
+        {'after': 1800, 'op': 'world_log'},
+    ]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 8400, 'guest_frames': 7800,
+            'guest_autotest': {'offer_hold': 240}}
+
+
+@scenario('scale')
+def scale_():
+    """Harder with two. As floor, but the host first plays the floor's monsters alone: it goes into the Underground
+    Channel's floor 2 while the joiner stays in Palm Brinks a minute before following. Both games build the floor
+    larger (larger_floors +50%: more rooms on more ground) and fuller (more_monsters +50%), alike; while the host is
+    alone there its monsters have their own life, and once the joiner stands there too they have 60% more, in both
+    games (scale_life)."""
+    host = [
+        {'when': 'town', 'after': 1800, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 2},
+        {'when': 'playing', 'after': 300, 'op': 'world_log'},
+        {'after': 3600, 'op': 'world_log'},
+        {'after': 600, 'op': 'mark', 'text': 'end'},
+    ]
+    guest = [
+        {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
+        {'when': 'dungeon', 'after': 1200, 'op': 'world_log'},
+    ]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 9000, 'guest_frames': 8400,
+            'guest_autotest': {'offer_hold': 1800}}
+
+
 @scenario('gate_host')
 def gate_host():
     """A host whose story has not reached Donny (the game's opening, as Monica): no room opens."""
@@ -728,6 +774,69 @@ def toasts(side):
 
 def toast(side, text):
     return any(text in l for l in side['lines'] if 'toast ' in l)
+
+
+def world_lines(side):
+    """The world_log steps' lines, as dicts of their fields."""
+    return [dict(STATE_RE.findall(e[len('DRIVE world '):])) for e in side['events'] if e.startswith('DRIVE world ')]
+
+
+def floor_hp(side):
+    """The living monsters' life on the floor, each second this game was on it."""
+    return [int(s['hp']) for s in side['drive'] if s.get('context') == 'dungeon' and s.get('hp', '').isdigit()]
+
+
+@checks('boss')
+def check_boss(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    hw, gw = world_lines(host), world_lines(guest)
+    room = [w for w in hw if w.get('floor_map') == 'd01b01']
+    c.check(room and all(w.get('boss_floor') == 'true' and 'floor_seed' not in w for w in room),
+            "the host's game is in the boss's room, its own map, with no seed", room[:1])
+    offers = [e for e in guest['events'] if 'offer' in e]
+    c.check(any('faces the boss of the Underground Channel' in e and 'join' in e for e in offers),
+            'the joiner is asked to join the fight, and joins', offers)
+    c.check(toast(host, 'the fight waits for'), "the host's fight waits for the joiner", toasts(host))
+    c.check(any(w.get('fight_held') == 'true' for w in hw), 'the boss and the host stand still meanwhile (monsters.hold)',
+            [w.get('fight_held') for w in hw])
+    c.check(toast(host, 'joins the fight'), 'the host hears the joiner join the fight', toasts(host))
+    c.check(hw and hw[-1].get('fight_held') is None, 'and the fight goes on', hw[-1:])
+    c.check(any(w.get('floor_map') == 'd01b01' for w in gw), "the joiner's game is in the same room", gw[:1])
+    c.together('D', "in the boss's room")
+    for name, side in (('host', host), ('joiner', guest)):
+        said = [l.strip() for l in side['lines'] if 'co-op: monsters for 2' in l]
+        c.check(said and '160 125 175 125' in said[0], "the %s's game scales the room's monsters for two" % name, said[:1])
+    c.no_errors()
+    return c.list
+
+
+@checks('scale')
+def check_scale(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    c.together('D', 'on the floor')
+    h_hash = {s.get('layout') for s in host['drive'] if s.get('context') == 'dungeon' and s.get('layout') not in (None, 'nil')}
+    g_hash = {s.get('layout') for s in guest['drive'] if s.get('context') == 'dungeon' and s.get('layout') not in (None, 'nil')}
+    c.check(h_hash and h_hash == g_hash, 'both games build the one floor (layout, chests, monsters)', '%s / %s' % (sorted(h_hash), sorted(g_hash)))
+    hw, gw = world_lines(host), world_lines(guest)
+    sizes = [(w.get('floor_rooms'), w.get('floor_grid'), w.get('monsters_added')) for w in hw + gw if w.get('floor_grid')]
+    c.check(sizes and all(int(r) >= 6 and g == '21' for r, g, _ in sizes),
+            'the floor is larger: 6 rooms or more (the game makes 4 to 6) on a 21-square grid (the game: 14)', sizes)
+    c.check(sizes and all(int(a) > 0 for _, _, a in sizes) and len({a for _, _, a in sizes}) == 1,
+            'and holds more monsters, as many more in each game', sizes)
+    h, g = floor_hp(host), floor_hp(guest)
+    alone = h[0] if h else 0
+    c.check(h and alone > 0 and max(h) >= alone * 1.5, "once the joiner is there too, the host's monsters have 60% more life",
+            'host %s alone, then up to %s' % (alone, max(h or [0])))
+    c.check(g and max(g) == max(h or [0]), "and the joiner's copies have the same", 'joiner up to %s' % max(g or [0]))
+    for name, side in (('host', host), ('joiner', guest)):
+        said = [l.strip() for l in side['lines'] if 'co-op: monsters for 2' in l]
+        c.check(said and '160 125 175 125' in said[0], "the %s's game scales its monsters for two" % name, said[:1])
+    c.no_errors()
+    return c.list
 
 
 @checks('own')
@@ -1367,7 +1476,8 @@ def main():
             return ('--screenshot', str(out / (side + '.png'))) + every
 
         host_save = make_save(out / 'host', moonmod, 'Host', relay_url,
-                              dict({'role': 'host', 'where': sc.get('host_where', 'town'), 'follow': False}, **sc.get('host_autotest', {})), sc['host'])
+                              dict({'role': 'host', 'where': sc.get('host_where', 'town'), 'follow': False}, **sc.get('host_autotest', {})), sc['host'],
+                              settings=sc.get('host_settings'))
         if sc.get('host_config'):  # (the game's settings file: beside its saves folder)
             (host_save.parent / 'config.json').write_text(json.dumps(sc['host_config']), encoding='utf-8')
         host, hl = launch(exe, data, host_save, sc.get('host_jump', 'town:10'), sc['host_frames'], out / 'host.log', relay_url,

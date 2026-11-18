@@ -6,6 +6,7 @@
 
 // nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
 #include "moonmod/coop.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -1191,7 +1192,7 @@ CActiveMonster *CMonsterMan::SetActiveMonster(int refer_no, float pos[], sceVu0F
     monster->next_pos[2] = 0.0f;
     monster->next_pos[3] = 1.0f;
     monster->move_speed = 0.0f;
-    monster->max_life = monster->life = tbl->life;
+    monster->max_life = monster->life = moonmod::scale::SpawnLife(*tbl); // MoonMod: dungeons.set_enemy_scale
     monster->reward_exp = tbl->reward_exp;
     monster->reward_money = tbl->reward_money;
     monster->unk_1322 = tbl->unk_5a;
@@ -3237,8 +3238,11 @@ int active_monsters = kRetailActiveMonsters;
 
 int PortMonsterLatchLimits() {
     const bool more = ConfigGet().more_monsters;
-    active_monsters = dc2::debug::RosterStressEnabled() ? MONSTER_ACTIVE_MAX : more ? MONSTER_MORE_MAX
-                                                                                    : kRetailActiveMonsters;
+    // MoonMod: a floor with more monsters (dungeons.set_modifiers monsters) has the slots for them; how many act at
+    // once stays the game's
+    const bool fuller = moonmod::scale::MonsterBonus() > 0;
+    active_monsters = dc2::debug::RosterStressEnabled() ? MONSTER_ACTIVE_MAX : (more || fuller) ? MONSTER_MORE_MAX
+                                                                                                : kRetailActiveMonsters;
     return dc2::debug::DungeonStressPriorityLimit(more ? MONSTER_MORE_MAX : kRetailPriorityLimit);
 }
 

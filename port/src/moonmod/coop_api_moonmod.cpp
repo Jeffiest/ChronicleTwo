@@ -3,6 +3,7 @@
 // the Chronicle Two adapter's own operations (chronicle_two_adapter.cpp calls Call first).
 
 #include "moonmod/coop.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "moonmod/coop_down.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
 #include "moonmod/coop_save.hpp"
@@ -17,6 +18,7 @@
 #include <set>
 #include <string>
 
+#include "automap.hpp"
 #include "dng_event.hpp"
 #include "dng_main.hpp"
 #include "gamedata.hpp"
@@ -1215,6 +1217,19 @@ void ExtendWorld(Json &world) {
     if (loop == LOOP_DUNGEON) {
         if (const std::optional<int> seed = LastFloorSeed()) world["floor_seed"] = *seed;
         if (const std::optional<std::string> layout = FloorLayoutHash()) world["floor_layout"] = *layout;
+        // The map the floor is (a boss's room is one of the game's made maps, with no seed) and whether it is a boss's:
+        // the game marks the floor (boss_map) only once its boss is out, after the room's own scene, so a boss's room is
+        // known by its map's name from the moment it loads (d<dungeon>b<room>: d01b01 is the Underground Channel's).
+        const std::string map = FloorMapName();
+        if (!map.empty()) world["floor_map"] = map;
+        world["boss_floor"] = (BattleAreaScene != nullptr && BattleAreaScene->boss_map != 0) || BossRoomMap(map);
+        if (FightHeld()) world["fight_held"] = true;
+        // A built floor's size: its rooms and the side of its grid (a room grows both: dungeons.set_modifiers).
+        if (LastFloorSeed()) {
+            world["floor_rooms"] = AutoMapGen.room_num;
+            world["floor_grid"] = AutoMapGen.grid_w;
+            world["monsters_added"] = moonmod::scale::ExtraMonstersPlacedLast();
+        }
         // Playing on the floor: the hero is there and no scene, menu or floor change holds the game.
         world["walking"] = MainChara__2 != nullptr && DngStatus.mode == DNG_STATUS_FIELD && !ChoiceIsOpen();
         // The floor's clear as the game itself decides it (IsEventRun): the monsters it still counts (a monster
@@ -1401,6 +1416,15 @@ std::optional<ApiCallResult> Call(std::string_view mod_id, const ApiOperationSpe
         return Ok({{"cleared", true}});
     }
     if (path == "monsters.mirror_hit") return MirrorHit(args);
+    if (path == "monsters.hold") {
+        int frames = 0;
+        if (!args.is_array() || args.size() != 1 || !args[0].is_object() || args[0].size() != 1 || !ReadBoundedInt(args[0], "frames", 0, 36000, frames)) {
+            return Invalid("expected {frames = 0-36000}: how long the fight waits (0 lets it go)");
+        }
+        if (frames > 0 && GetNowLoopNo() != LOOP_DUNGEON) return Failed("the player isn't on a dungeon floor");
+        FightHold(frames);
+        return Ok({{"held", FightHeld()}, {"frames", frames}});
+    }
     if (path == "dungeons.set_seed") {
         if (!args.is_array() || args.size() > 1 || (args.size() == 1 && !args[0].is_object())) return Invalid("expected {seed = 0-2147483647}, or {} for the game's own");
         if (args.empty() || args[0].empty()) {
@@ -1439,7 +1463,7 @@ void AddCapabilities(RuntimeConfig &config) {
                              "party.room_hero_set", "party.room_hero_clear", "world.watch_set", "world.change_apply",
                              "player.down_rule_set", "player.revive", "player.give_up",
                              "world.avatar_set", "world.avatar_clear", "world.enter_map", "world.avatar_effect", "player.effects_take",
-                             "monsters.mirror_get", "monsters.puppet_set", "monsters.puppet_clear", "monsters.mirror_hit",
+                             "monsters.mirror_get", "monsters.puppet_set", "monsters.puppet_clear", "monsters.mirror_hit", "monsters.hold",
                              "dungeons.set_seed", "dungeons.enter_floor", "dungeons.shared_events_get", "dungeons.shared_event_run",
                              "combat.strike_player", "items.owned", "georama.town_export", "georama.town_import", "ui.choice_open", "ui.choice_close",
                              "title.mode_register", "title.mode_set", "title.mode_remove"}) {
@@ -1478,6 +1502,11 @@ void ResetForTests() {
     UiReset();
     g_player_extras.clear();
     if (net::Shared().state() != net::State::Idle) net::Shared().Leave();
+}
+
+bool BossRoomMap(std::string_view map) {
+    const auto digit = [](char c) { return c >= '0' && c <= '9'; };
+    return map.size() == 6 && map[0] == 'd' && digit(map[1]) && digit(map[2]) && map[3] == 'b' && digit(map[4]) && digit(map[5]);
 }
 
 } // namespace moonmod::coop

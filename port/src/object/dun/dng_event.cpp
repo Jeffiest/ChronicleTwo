@@ -8,6 +8,7 @@
 #include "mw_runtime.h"
 
 #include "moonmod/coop_floor.hpp"
+#include "moonmod/dungeon_scale.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -1869,6 +1870,43 @@ void AutoSetMonster() {
                 }
             } while (!placed);
         }
+
+        // MoonMod: a fuller floor (dungeons.set_modifiers monsters): the floor's list gone round again from the top,
+        // each placed as the game places its own, but never a mimic (a chest), and the gate key stays with the first;
+        // a spot not found in a good while is given up rather than waited on.
+        const int extra = moonmod::scale::ExtraMonsters(spawn_count);
+        int       added = 0;
+
+        for (int k = 0; k < extra && spawn_count > 0; k++) {
+            const int entry = k % spawn_count;
+            base_id = ActiveMonster->locate.monster_id[entry];
+
+            if (base_id < 0 || (base_id >= MONSTER_ID_MIMIC_FIRST && base_id <= MONSTER_ID_MIMIC_LAST)) {
+                continue;
+            }
+
+            for (int tries = 0; tries < 256; tries++) {
+                if (SearchMapFlatPosition(position, &AutoMapGen) == 0) {
+                    continue;
+                }
+
+                rand();
+                direction[0] = direction[1] = direction[2] = direction[3] = 0.0f;
+
+                if (!(mgDistVector(event_point, position) <= 520.0f) && CheckObjectPutArea(position) != 0) {
+                    monster = ActiveMonster->SetActiveMonster(ActiveMonster->SearchBaseIndex(base_id), position, direction, -1);
+
+                    if (monster != nullptr) {
+                        monster->locate_param = ActiveMonster->locate.param[entry];
+                        added++;
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        moonmod::scale::ExtraMonstersPlaced(added);
     }
 }
 
@@ -2123,6 +2161,8 @@ void LoadDungeonMapFile(char *map_name, char *cfg_name, int gen_flag) {
     AutoMapGen.navi_enable = 0;
     AutoMapGen.random_map = 0;
     AutoMapGen.minimap_enable = 0;
+
+    moonmod::coop::FloorMapLoading(map_name, cfg_name != nullptr); // MoonMod: world.get().floor_map
 
     if (cfg_name != nullptr) {
         const auto room_path = std::format("dungeon/cfg_file/{}.cfg.json", cfg_name);

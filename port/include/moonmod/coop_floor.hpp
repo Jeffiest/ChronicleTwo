@@ -9,5 +9,10 @@ namespace moonmod::coop {
 void FloorBuildBegin();
 void FloorPlacing(int stage);
 void FloorPlaced(int stage);
+// dng_event.cpp, LoadDungeonMapFile: the floor's map is loading, built by the generator (`generated`) or one of the
+// game's own made maps (a boss's room).
+void FloorMapLoading(const char *map_name, bool generated);
+// The fight waits (monsters.hold): the floor's monsters and this game's hero stand still (dng_main.cpp asks).
+bool FightHeld();
 
 } // namespace moonmod::coop

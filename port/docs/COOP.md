@@ -335,6 +335,57 @@ the follower's count matches the leader's and that it is never out of step.
 so it knows) and answers `{closed = true}`; with no panel of its own open it answers `{closed = false}`, and a
 panel another mod opened stays open.
 
+## A boss's room together (2026-11-18)
+
+A boss's room is a map of its own (the Underground Channel's is `d01b01`), loaded by the floor's own event in place
+of a built floor: it has no seed, so the mod had nothing to know it by. `world.get()` on a floor now gives
+`floor_map` (the map loaded, a built floor's too) and `boss_floor`: true on a map named `d<dungeon>b<room>` from the
+moment it loads (`BossRoomMap`), or once the game itself marks the floor (`BattleAreaScene->boss_map`, set only as
+the boss comes out at the end of the room's own scene). A made map clears the last floor's seed
+(`FloorMapLoading`, from `LoadDungeonMapFile`), so a boss's room never reports the floor before it. The mod names
+the place `D<dungeon>:<floor>:<map>` and asks the other player "Max faces the boss of the Underground Channel: join
+the fight?" in the game's window.
+
+`monsters.hold {frames}` (0-36000; 0 ends it) has the fight wait while the other player answers and walks in: the
+floor's monsters do not think (`ThinkHost` is gated, not `DNG_PAUSE_MONSTER_AI`, so a copy dying still dies), the
+floor's effect scripts rest, and this hero's script does not run, so the hero does not walk up to the boss and start
+its scene. The frames count only while the dungeon is in play (not in a menu or a scene); the hold ends by itself
+when they run out, when the player leaves the floor, or when another scene begins. `world.get().fight_held` is true
+meanwhile. The mod holds for at most a minute of play, tells the player who it waits for and asks, in the game's
+window, whether to start without them; the other player arriving, saying "Stay here", or the room closing ends the
+wait.
+
+Live scenario `boss`: the host walks into the Underground Channel's boss's room (story flag 10 set first, so the
+room's way in is its short one: the first visit's hint ends in a message that waits for a button), the joiner is
+asked and joins, the host's fight waits and then goes on, both are in `d01b01`, and both games scale the room's
+monsters for two. Not covered: the boss's own scene and the fight (the scene starts where the hero walks up to the
+boss, and a headless game does not walk there), so how the scene plays in the other game and the boss copied there
+are unverified.
+
+## Harder with two (2026-11-18)
+
+A floor played by two is played harder, and each part is the co-op mod's setting (the host's choice is the room's,
+sent as `SCALE life blows bosses monsters floors`):
+
+- `dungeons.set_modifiers {rooms, monsters}` (0-300 percent, owners added, `{}` clears the caller's) on Chronicle Two:
+  a floor built afterwards has that many more rooms (`RoomGoal`, after the floor's own `DngLayoutRooms`) on a grid
+  as much wider (`BuildArea`: 14 squares become 21 at +50%, up to `DNG_GRID`; grown only by the square root, the
+  random placement gave up on rooms it could not fit), and that many
+  more of the floor's own monsters, placed as the game places them (`AutoSetMonster`'s last step; mimics left out;
+  the active-monster limit raised to `MONSTER_MORE_MAX` meanwhile). Both games apply the same numbers before the
+  same seed, so they still build one floor: `floor_rooms`, `floor_grid` and `monsters_added` in `world.get()` say
+  what was built. `chests` and `chest_value` are refused here (not built yet).
+- `dungeons.set_enemy_scale {life, blows, boss_life, boss_blows}` (percent, 10-1000, owners multiplied, `{}` or all
+  100 clears): a monster made afterwards has `life` percent of its life (`boss_life` for a boss, by its table's
+  `boss`), a monster's blow on the hero lands `blows` percent as hard (`boss_blows` for a boss's, or for a blow no
+  monster dealt on a boss's floor; `Blow`, in `actionchara.cpp` and in an avatar's hit), and the monsters already out
+  are rescaled at once, keeping their share of life. A follower's copies take the leader's life as they stand.
+
+The mod sets the floors' numbers while anyone else is in the room, and the monsters' while another player is on
+this floor (100 + each setting for each other player there); alone, or once the room closes, it sets `{}` and the
+game is its own. Live scenario `scale`: both games build floor 2 larger and fuller and alike, the host's monsters
+have their own life while the host is alone there and 60% more once the joiner stands there too, in both games.
+
 ## What is not finished (reported, never silently passed)
 
 - **Blows on avatars** are measured since 2026-11-14: each frame the attack primitives aimed at the player's side
@@ -366,7 +417,7 @@ panel another mod opened stays open.
   `MoonModNet.AHostAndAGuestMeetThroughTheRelay` dials the relay; without it the case is skipped.
 - Two games: `python3 tools/coop/two_games.py --build port/build/pc` starts the relay, runs two headless games on
   synthetic data with a fixture mod that hosts and joins, and checks the `COOP_E2E` markers on both sides.
-- Two games on the disc: `python3 -I tools/coop/live.py --scenario meet|floor|clear|hurt|down|build|shove --keep --out DIR` runs a host and a
+- Two games on the disc: `python3 -I tools/coop/live.py --scenario meet|floor|clear|hurt|down|build|shove|boss|scale --keep --out DIR` runs a host and a
   guest on extracted retail data (`--data`, `DC2_DATA` or the gauntlet's cache) with MoonMod's co-op mod and its
   test driver (`--moonmod`), and checks what both logged: the visit, each game showing the other in town and on a
   floor, the same seed and `floor_layout`, the guest's monsters copying the host's, a kill ending on both. With no

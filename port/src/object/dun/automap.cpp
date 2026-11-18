@@ -5,6 +5,7 @@
 
 // nlohmann/json (through moonmod/coop.hpp) must precede the game headers, whose macros it would otherwise see.
 #include "moonmod/coop.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -2507,6 +2508,7 @@ void CAutoMapGen::RandomMapMainProc() {
     if (DngLayoutRooms > 0) {
         goal = DngLayoutRooms;
     }
+    goal = moonmod::scale::RoomGoal(goal); // MoonMod: dungeons.set_modifiers rooms
     round = 0;
 
     while (rooms < goal) {
@@ -2665,14 +2667,14 @@ void CAutoMapGen::Build() {
     }
 
     if (mode & AUTOMAP_GEN_FIXED_START) {
-        grid_w = DngLayoutArea > 20 ? DngLayoutArea : 20;
-        grid_h = DngLayoutArea > 16 ? DngLayoutArea : 16;
+        grid_w = moonmod::scale::BuildArea(DngLayoutArea > 20 ? DngLayoutArea : 20); // MoonMod: room for the rooms bonus
+        grid_h = moonmod::scale::BuildArea(DngLayoutArea > 16 ? DngLayoutArea : 16);
         RandomMapMainProc();
         return;
     }
 
-    grid_w = DNG_BUILD_AREA;
-    grid_h = DNG_BUILD_AREA;
+    grid_w = moonmod::scale::BuildArea(DNG_BUILD_AREA); // MoonMod: room for the rooms bonus
+    grid_h = moonmod::scale::BuildArea(DNG_BUILD_AREA);
     RandomMapMainProc();
     map = DngMainScene->GetMap(0);
 

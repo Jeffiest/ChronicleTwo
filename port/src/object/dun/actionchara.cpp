@@ -1,5 +1,6 @@
 #include "moonmod/coop.hpp"
 #include "moonmod/coop_down.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "common.h"
 
 #include <libvu0.h>
@@ -2978,7 +2979,7 @@ int CActionChara::CheckDamage() {
 
         max_hp = battle->GetMaxHp_i();
         now_hp = battle->GetNowHp_i();
-        damage = hit->damage * (1.0f + fRand(0.15f));
+        damage = moonmod::scale::Blow(static_cast<float>(hit->damage), *hit) * (1.0f + fRand(0.15f)); // MoonMod: dungeons.set_enemy_scale
         damage -= battle->GetDefenceVol();
 
         if (damage <= 0.0f) {

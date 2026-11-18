@@ -2,6 +2,7 @@
 #include "moonmod/coop.hpp"
 #include "moonmod/coop_down.hpp"
 #include "moonmod/coop_story.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "common.h"
 #include "mw_runtime.h"
 
@@ -1987,7 +1988,9 @@ void DngStep() {
     MainChara__2->GetPosition(player);
     AutoMapGen.UpdateNaviMap(player, 4);
 
-    if (!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) || moonmod::coop::CopiesDying()) { // co-op: a copy dies here as the game's own
+    // (co-op: a copy dies here as the game's own; and the fight waits for another player while monsters.hold holds it)
+    moonmod::scale::StepFloor();
+    if ((!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) && !moonmod::coop::FightHeld()) || moonmod::coop::CopiesDying()) {
         ActiveMonster->ThinkHost();
     }
 
@@ -2026,7 +2029,7 @@ void DngStep() {
         }
     }
 
-    if (!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI)) {
+    if (!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) && !moonmod::coop::FightHeld()) {
         ActiveMonster->StepEffectScript();
     }
 
@@ -3017,7 +3020,7 @@ int dc2::dungeon::MainKeyCore() {
     }
 
     if (!DngStatus.eye_view) {
-        if (!DebugPause && !(BattleAreaScene->pause_flag & DNG_PAUSE_PLAYER_CONTROL)) {
+        if (!DebugPause && !(BattleAreaScene->pause_flag & DNG_PAUSE_PLAYER_CONTROL) && !moonmod::coop::FightHeld()) { // (co-op: monsters.hold)
             MainChara__2->RunScript(DngMainScene, &ActionScriptEnv);
         }
 

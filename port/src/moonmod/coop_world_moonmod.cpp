@@ -3,6 +3,7 @@
 
 #include "moonmod/coop.hpp"
 #include "moonmod/coop_down.hpp"
+#include "moonmod/dungeon_scale.hpp"
 #include "moonmod/chronicle_two_adapter.hpp"
 
 #include <algorithm>
@@ -1421,7 +1422,13 @@ bool PuppetSet(int slot, const Puppet &puppet) {
         p.trail.clear();
     }
     monster->life = std::clamp(puppet.hp, 0, 1000000);
-    if (puppet.max_hp > 0) monster->max_life = puppet.max_hp;
+    if (puppet.max_hp > 0 && puppet.max_hp != monster->max_life) {
+        // (the leader's scale for its monsters: a boss's share of the bosses' gauge goes with it)
+        if (monster->tbl != nullptr && monster->tbl->boss != 0 && ActiveMonster != nullptr) {
+            ActiveMonster->boss_max_life = std::max(0, ActiveMonster->boss_max_life + puppet.max_hp - monster->max_life);
+        }
+        monster->max_life = puppet.max_hp;
+    }
     // The leader's monster died (its life gone, or dead already): the copy dies too once it is shown at that moment,
     // 8 frames behind the leader's clock as everything of the leader's is (PuppetsStep, CopyDies).
     if ((puppet.state == ACTIVE_MONSTER_DEAD || puppet.hp <= 0) && monster->state == ACTIVE_MONSTER_LIVE && p.dies_at < 0) {
@@ -1701,6 +1708,43 @@ std::optional<std::string> FloorLayoutHash() {
 
 std::optional<int> LastFloorSeed() { return g_last_seed; }
 
+namespace {
+std::string g_floor_map;                 // the map the floor is
+int         g_hold_frames = 0;           // monsters.hold: frames of play the fight still waits
+const void *g_hold_scene = nullptr;      // the floor it waits on
+} // namespace
+
+void FloorMapLoading(const char *map_name, bool generated) {
+    g_floor_map = map_name != nullptr ? std::string(map_name) : std::string();
+    g_hold_frames = 0;
+    if (!generated) {
+        // A made map is no built floor: the seed of the floor before it is not this one's, nor is its layout.
+        g_last_seed.reset();
+        g_hash_ready = false;
+    }
+}
+
+std::string FloorMapName() { return OnFloor() ? g_floor_map : std::string(); }
+
+void FightHold(int frames) {
+    g_hold_frames = OnFloor() ? std::max(0, frames) : 0;
+    g_hold_scene = DngMainScene;
+}
+
+bool FightHeld() { return g_hold_frames > 0 && OnFloor() && g_hold_scene == DngMainScene; }
+
+namespace {
+// The hold counts down while the floor plays (a scene or a menu on top of it waits, as the fight does).
+void FightHoldStep() {
+    if (g_hold_frames <= 0) return;
+    if (!OnFloor() || g_hold_scene != DngMainScene) {
+        g_hold_frames = 0;
+        return;
+    }
+    if (DngStatus.mode == DNG_STATUS_FIELD) --g_hold_frames;
+}
+} // namespace
+
 // ---- Each frame ------------------------------------------------------------------------------------------------------
 
 // A monster's blow on another player's hero. The game tests each attack's primitives against the bodies of the
@@ -1726,7 +1770,9 @@ void AvatarHitsStep() {
             // kind as the mod reads it: 2 a small hit (a flinch), 3 a blow that knocks down
             const int kind = (prim.param->hit_flags & DAMAGE_HIT_KNOCKDOWN) != 0 ? 3 : 2;
             if (g_avatar_hits.size() < 64) {
-                AvatarHit hit{i + 1, prim.attacker, std::max(1, static_cast<int>(prim.damage)), kind, static_cast<int>(prim.param->hit_flags)};
+                // (as hard as it lands on this game's own hero: dungeons.set_enemy_scale)
+                AvatarHit hit{i + 1, prim.attacker, std::max(1, static_cast<int>(moonmod::scale::Blow(static_cast<float>(prim.damage), prim))), kind,
+                              static_cast<int>(prim.param->hit_flags)};
                 hit.stun = prim.param->stun_time;
                 hit.stagger = prim.param->stagger;
                 hit.guard_rate = prim.param->critical_rate;
@@ -1934,10 +1980,14 @@ void WorldStep() {
     AvatarHitsStep();
     PuppetsStep();
     SharedEventsStep();
+    FightHoldStep();
 }
 
 void WorldReset() {
     StoryScenesReset();
+    g_floor_map.clear();
+    g_hold_frames = 0;
+    g_hold_scene = nullptr;
     for (int i = 0; i < kAvatars; ++i) {
         g_avatars[static_cast<std::size_t>(i)].wanted = false;
         g_avatars[static_cast<std::size_t>(i)].pending.clear();

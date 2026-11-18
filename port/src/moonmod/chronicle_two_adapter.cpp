@@ -1,5 +1,6 @@
 #include "moonmod/chronicle_two_adapter.hpp"
 #include "moonmod/coop.hpp"
+#include "moonmod/dungeon_scale_api.hpp"
 #include "moonmod/audio_api.hpp"
 #include "moonmod/combat_formula.hpp"
 #include "moonmod/content_characters.hpp"
@@ -6433,6 +6434,7 @@ ApiCallResult SpawnSpheda(const Json &args) {
 
 ApiCallResult Call(std::string_view mod_id, const ApiOperationSpec &operation, const Json &args) {
     if (std::optional<ApiCallResult> handled = coop::Call(mod_id, operation, args)) return std::move(*handled);
+    if (std::optional<ApiCallResult> handled = scale::Call(mod_id, operation.path, args)) return std::move(*handled);
     if (operation.path == "content.list") return ListContent(args);
     if (operation.path == "content.register") return RegisterContent(mod_id, args);
     if (operation.path == "content.unregister") return UnregisterContent(mod_id, args);
@@ -6947,11 +6949,13 @@ void ConfigureChronicleTwoApi(RuntimeConfig &config) {
         RestoreChronicleTwoModelReplacements(mod_id);
         DespawnOwnedChronicleTwoActors(mod_id);
         coop::OwnerUnloaded(mod_id);
+        scale::OwnerUnloaded(mod_id);
         UnloadChronicleTwoNpcs(mod_id);
         UnloadChronicleTwoRegisteredCharacters(mod_id);
         std::erase_if(g_debug_overlays, [mod_id](const auto &entry) { return entry.second.owner == mod_id; });
     };
     coop::AddCapabilities(config);
+    scale::AddCapabilities(config);
     ConfigureAudioApi(config);
     CompleteApiCapabilityLedger(config.game_id, config.api_capabilities);
     config.require_complete_api_capabilities = true;
