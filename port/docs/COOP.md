@@ -384,9 +384,7 @@ the same life, the host's blows take it in both, it falls in both, the host's ga
 plays no scene and its room is cleared, and its copy dies as the game's own boss dies. The host presses Cross through
 the hint; the joiner presses nothing (Cross in a town talks to whoever is near).
 
-Not yet: lifting and throwing a monster (Halloween's own way to be hurt is a RoBomb thrown at it). In the joiner's
-game a copy can be lifted (`CheckThrowTarget` takes any monster) but the leader's game never hears of it and the copy
-goes on following the leader's; a monster the leader holds is reported at its own position, not its hand's.
+Halloween's own way to be hurt, a RoBomb lifted and thrown back at it, is the next section's.
 
 ## Harder with two (2026-11-18)
 
@@ -411,6 +409,46 @@ The mod sets the floors' numbers while anyone else is in the room, and the monst
 this floor (100 + each setting for each other player there); alone, or once the room closes, it sets `{}` and the
 game is its own. Live scenario `scale`: both games build floor 2 larger and fuller and alike, the host's monsters
 have their own life while the host is alone there and 60% more once the joiner stands there too, in both games.
+
+## Lifting and throwing (2026-11-18)
+
+A hero lifts a monster the game lets it (hold R1, then the action button near one: `CActionChara::CheckEnemyCatch`,
+which `CheckThrowTarget` answers) and throws it with the action button again (`_RELEASE_OBJ`: on the arc
+`ParabolicInitialVector` gives, or put down when it lands no throw). The first boss is hurt only so, by its own
+RoBombs thrown back. Both games now see it, the leader's game doing it to its monster and the follower's to its copy:
+
+- A lift and a let-go are the hero's effects, `HeroShot::Lift` (11, in `player.effects_take`): the monster's scene
+  slot and kind and the hand's frame (`nage`); for a throw, where it left the hands and its arc's first step.
+- Where the monster is this game's own (it leads the floor), the avatar's hands take it as the game's hero's do (the
+  monster's frame hangs from the avatar's frame of that name, held, `MONSTER_PROG_CATCH`) and let it go as
+  `_RELEASE_OBJ` does, from where it hangs: thrown (`ACTION_CATCH_THROWN`, its blow the sent arc, so the game's own
+  monster code flies it, lands it, and makes its blow on another monster and a RoBomb's blast) or put down. The
+  hands let go when that player is down, watching a scene or gone. A monster another player's hero holds is not this
+  game's hero's to let go (`HeldByOther`, asked by `_RELEASE_OBJ`).
+- The leader reports each monster's `catch` (held, thrown), a held one where the hands are. A follower's hero lifts
+  no copy the leader's game has held or flying (`LiftRefused`, asked by `CheckThrowTarget`). A copy it lifts is its
+  own a moment (`LiftedHere`): it hangs in the hands whatever the reports say, is thrown (the game's own flight,
+  gravity once) or put down, lands on the ground it was lifted from (dust, a sound), and stands there until a report
+  of the leader's from after the lift has had its monster held or thrown and now free (two seconds at most), then
+  follows the reports again, by then from where the leader's game landed it.
+- A copy's death plays here with the game's own script (`ThinkHost`), and what that script makes (`_ESM_CREATE`: a
+  RoBomb's blast) is only drawn (`EffectDrawnOnly`): the leader's monster's blast strikes there, and its blow on this
+  game's hero comes from there. (Read from the code, not yet seen live: before, the copy's blast struck here too, so
+  one RoBomb would hit the follower's hero twice, and a bomb the follower threw would go off on it as the boss's
+  does, the copy not having been caught by its own script.)
+
+Protocol 12: the mod's `M` line has a 13th field, `catch`.
+
+Live scenario `lift` (10 checks, 2026-11-18): on floor 2 a foe of the test's own comes to both; the joiner holds R1
+and presses Cross, then Cross again, nine times over a minute. Seven times its hero lifted the copy, threw it, and it
+landed (some 190 from where it left the hands); each time the host's game held its monster in the joiner's avatar's
+hands and threw it from the same place, and the copy followed the host's monster again once the reports had it free.
+The drawn-only blast of a dying copy is unit-tested only (`WhatACopysScriptMakesIsOnlyDrawnHere`): a joiner throwing
+Halloween's RoBombs back at it in a live fight is not covered yet.
+
+`town_talk` (7 checks): the joiner's Cross in Palm Brinks starts a talk (event 400) and the room holds both until the
+joiner's game ends. Talking does not drop the link; the drop seen once in an early `boss_fight` run is not
+reproduced.
 
 ## What is not finished (reported, never silently passed)
 

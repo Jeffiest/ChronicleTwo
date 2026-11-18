@@ -3624,13 +3624,21 @@ int _ESM_CREATE(dc2::script::RunArguments stack, int argc) {
     char *name = GetStackString(stack++);
     int   group = nowMonster->chara_type;
     int   slot = {};
+    // (co-op: what a copy of another game's monster makes, its death's blast, is only drawn here)
+    CEffectScriptMan  *const fx = ActiveMonster->effect_man;
+    const _EFF_SCRIPT *const before = fx->now;
+    const auto         drawn_only = [&] {
+        if (fx->now != nullptr && fx->now != before && moonmod::coop::EffectDrawnOnly(nowMonster)) fx->now->shown_only = true;
+    };
 
     switch (argc) {
         case 1:
             ActiveMonster->effect_man->CreateEffSpt(name, group, 0);
+            drawn_only();
             break;
         case 2:
             slot = ActiveMonster->effect_man->CreateEffSpt(name, group, 1);
+            drawn_only();
 
             if (slot <= -1) {
                 return 0;

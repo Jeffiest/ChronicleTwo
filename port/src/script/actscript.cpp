@@ -1686,7 +1686,9 @@ int _RELEASE_OBJ(dc2::script::RunArguments stack, int argc) {
         do {
             CActionChara *held = static_cast<CActionChara *>(nowScene__2->GetCharacter(chara_no));
 
-            if (held != nullptr && held->catch_state == ACTION_CATCH_HELD) {
+            // (co-op: a monster another player's hero holds is theirs to let go)
+            if (held != nullptr && held->catch_state == ACTION_CATCH_HELD &&
+                !moonmod::coop::HeldByOther(chara_no - DNG_CHARA_SLOT_MONSTER)) {
                 held->catch_frame->GetWorldPosition0(held_pos);
                 held->CObjectFrame::frame->DeleteReference();
                 held->SetPosition(held_pos);
@@ -1696,6 +1698,7 @@ int _RELEASE_OBJ(dc2::script::RunArguments stack, int argc) {
                     held->catch_state = ACTION_CATCH_NONE;
                     held->no_hit_time = 5;
                     static_cast<CActiveMonster *>(held)->req_prog = MONSTER_PROG_LAND;
+                    moonmod::coop::HeroReleased(action_info.chara, chara_no, static_cast<CActiveMonster *>(held)->monster_id, held_pos, nullptr);
                 } else {
 
                     (action_info.chara)->GetPosition(start_pos);
@@ -1731,6 +1734,8 @@ int _RELEASE_OBJ(dc2::script::RunArguments stack, int argc) {
                     float offset[4] = {0.0f, 0.0f, 0.0f, 1.0f};
                     sceVu0CopyVector(held->velocity, offset);
                     action_info.chara->release_timing = ACTION_RELEASE_THROW_ENEMY;
+                    moonmod::coop::HeroReleased(action_info.chara, chara_no, static_cast<CActiveMonster *>(held)->monster_id, held_pos,
+                                                held->blow_vec);
                 }
             }
 
@@ -2839,13 +2844,21 @@ static int _ESM_CREATE(dc2::script::RunArguments stack, int argc) {
     }
 
     char *name = GetStackString(stack++);
+    // (co-op: what a copy of another game's monster makes, its death's blast, is only drawn here)
+    CEffectScriptMan  *const fx = action_info.chara->effect_man;
+    const _EFF_SCRIPT *const before = fx->now;
+    const auto         drawn_only = [&] {
+        if (fx->now != nullptr && fx->now != before && moonmod::coop::EffectDrawnOnly(action_info.chara)) fx->now->shown_only = true;
+    };
 
     switch (argc) {
         case 1:
             action_info.chara->effect_man->CreateEffSpt(name, 0, 0);
+            drawn_only();
             break;
         case 2: {
             int id = action_info.chara->effect_man->CreateEffSpt(name, 0, 1);
+            drawn_only();
 
             if (id <= -1) {
                 return false;

@@ -567,7 +567,8 @@ int CActionChara::CheckEnemyCatch(char *name) {
         return false;
     }
 
-    if (ActiveMonster->CheckThrowTarget(object) != nullptr) {
+    if (CActiveMonster *caught = ActiveMonster->CheckThrowTarget(object); caught != nullptr) {
+        moonmod::coop::HeroLifted(this, caught->chara_type, caught->monster_id, name); // (co-op: told to the others)
         hold_type = ACTION_HOLD_ENEMY;
         release_timing = ACTION_RELEASE_CATCH;
         other = SearchChara("sword");

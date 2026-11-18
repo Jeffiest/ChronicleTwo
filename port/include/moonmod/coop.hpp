@@ -175,6 +175,9 @@ enum class HeroShot : int {
                     // frame0, that bank by name (CH_000: snd2/chara/CH_000.sound.json); played from the avatar
     SoundLoop = 10, // a looped sound of the hero's (_SE_LOOP_PLAY: a charge, an engine): value and frame0 as Sound's,
                     // amount the frames it goes on after its last word; told again while the hero keeps it going
+    Lift = 11,      // a monster lifted (amount 0, by the hero's frame named in frame0 and frame1), thrown (1: from pos,
+                    // dir its arc's first step, as _RELEASE_OBJ throws one) or put down (2, at pos); target: its scene
+                    // slot, value: its monster_id
 };
 struct HeroEffect {
     int   kind = 0; // HeroShot
@@ -188,6 +191,11 @@ struct HeroEffect {
 // actscript.cpp: a character fired; kept when it is this game's hero.
 void                    HeroFired(const void *chara, HeroShot kind, const float *pos, const float *dir, int value = 0,
                                   float amount = 0.0f, int target = -1);
+// actionchara.cpp: a character lifted the monster in scene slot `target` with its frame `frame` (CheckEnemyCatch);
+// actscript.cpp: it let one go (_RELEASE_OBJ), from `from`, thrown on the arc whose first step is `blow`, or put down
+// (blow nullptr). Kept when it is this game's hero.
+void                    HeroLifted(const void *chara, int target, int kind, const char *frame);
+void                    HeroReleased(const void *chara, int target, int kind, const float *from, const float *blow);
 // actionchara.cpp: a character's blade began a trail (CActionChara::StepEffect); kept when it is this game's hero.
 void                    HeroSwung(const void *chara, const char *frame0, const char *frame1, int length, int fade, int hold);
 // actscript.cpp: a character's action script played one of its sounds (_SE_PLAY); kept when it is this game's hero.
@@ -211,6 +219,7 @@ struct Puppet {
     int   motion_flags = 0;    // as AvatarState's: how the leader's monster plays its motion
     float motion_step = -1.0f; // and how fast
     int   age = -1;            // frames since the leader's report, on its clock: shown behind and eased, as avatars are
+    int   catch_state = 0;     // held in a hero's hands there (ACTION_CATCH_HELD), or flying thrown (ACTION_CATCH_THROWN)
 };
 // A blow on a copy, as this game's CMonsterMan::CheckDamage took it, for the leader's game to show and take as its
 // own: the damage row's kind and flags, the strongest element (-1 none), stagger and stun, whether the monster guarded,
@@ -232,6 +241,16 @@ struct AvatarHit {
 };
 bool                   PuppetSet(int slot, const Puppet &puppet);
 bool                   IsPuppet(int slot);
+// monster.cpp (CheckThrowTarget): a monster this game's hero may not lift. One another player's hero holds here, or a
+// copy whose monster the leader's game has in a hero's hands or flying, or which this game's hero let go a moment ago
+// and the leader's reports have not freed yet. (The game's own hero lifts none while it holds one.)
+bool                   LiftRefused(int slot);
+// actscript.cpp (_RELEASE_OBJ): another player's hero holds this monster here; this game's hero does not let it go.
+bool                   HeldByOther(int slot);
+// actscript.cpp (_ESM_CREATE): what this character's script makes is only drawn here, with no blow of its own. A
+// copy's: its script runs only for its death, and what the death makes (a RoBomb's blast) strikes in the leader's
+// game, whose blows on this game's hero come from there.
+bool                   EffectDrawnOnly(const void *chara);
 // This floor's monsters are copies of another game's: their own thinking rests (DNG_PAUSE_MONSTER_AI), while the
 // floor's effects go on (dng_main.cpp asks).
 bool                   MonstersMirrored();

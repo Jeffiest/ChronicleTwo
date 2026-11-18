@@ -16,6 +16,7 @@ Exit 0 when every check passes, 1 when one fails, 2 when the run could not start
 """
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -707,7 +708,8 @@ def check_boss_fight(host, guest, result):
 def town_talk():
     """A player busy in a town is still in the room. Both in Palm Brinks; the joiner presses Cross every few seconds for
     a minute and a half (in the first boss_fight run that started the town's event 400 where it stood, and the host
-    was told the joiner's connection had dropped). The room holds both to the end."""
+    was told the joiner's connection had dropped). The room holds both until the joiner's game ends (its frames run
+    out before the host's: the room hears it go then, as a dropped connection, and not before)."""
     host = [{'when': 'town', 'after': 600, 'op': 'mark', 'text': 'in town'}]
     for _ in range(8):
         host += [{'after': 600, 'op': 'world_log'}]
@@ -725,10 +727,75 @@ def check_town_talk(host, guest, result):
     c = Checks(host, guest, result)
     c.ran()
     c.visit()
-    dropped = [t for t in toasts(host) if 'dropped' in t or ' left' in t]
-    c.check(not dropped, "the host is never told the joiner dropped or left", dropped[:3])
+    talks = [l.strip() for l in guest['lines'] if l.startswith('event = ')]
+    c.check(talks, "the joiner's Cross starts a talk in the town", talks[:2])
+    # (the relay's clock and the joiner's log's last write, the moment its game ended: a leave seconds before that
+    # is a drop)
+    out = Path(result['out'])
+    relay = (out / 'relay.log').read_text(encoding='utf-8', errors='replace').splitlines() if (out / 'relay.log').is_file() else []
+    left = [l for l in relay if re.search(r'player \d+ left', l)]
+    ended = (out / 'guest.log').stat().st_mtime if (out / 'guest.log').is_file() else 0.0
+
+    def at(line):
+        try:
+            return datetime.datetime.fromisoformat(line.split(' ', 1)[0].replace('Z', '+00:00')).timestamp()
+        except ValueError:
+            return 0.0
+    early = [l for l in left if at(l) < ended - 5.0]
+    c.check(len(left) <= 1 and not early, "the joiner leaves the room only when its game ends", left[:2] + ['game ended %.0f' % ended])
     gone = [t for t in toasts(guest) if 'dropped' in t or 'getting back' in t]
     c.check(not gone, "the joiner's link never drops", gone[:3])
+    c.no_errors()
+    return c.list
+
+
+@scenario('lift')
+def lift():
+    """A monster of the host's floor lifted by the joiner and thrown. Both on a floor, a foe of the test's own (a sewer
+    rat's kind) comes to them; the joiner guards (R1) and presses Cross, the game's lift, and Cross again throws what
+    it holds, tried every few seconds. In the joiner's game the copy is held at once, thrown and lands; the host's
+    game is told, its monster is held in the joiner's hero's hands there and thrown the same way; the copy follows
+    the host's monster again once the host's reports have it free."""
+    host = [
+        {'when': 'town', 'after': 1800, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 2},
+        {'when': 'playing', 'after': 600, 'op': 'spawn_foe', 'dx': 10, 'attack': 1},
+    ]
+    for _ in range(8):
+        host += [{'after': 600, 'op': 'monsters_log'}]
+    host += [{'after': 300, 'op': 'mark', 'text': 'end'}]
+    guest = [{'when': 'visit', 'op': 'mark', 'text': 'arrived'}, {'when': 'dungeon', 'after': 300, 'op': 'monsters_log'}]
+    for _ in range(8):
+        guest += [{'after': 600, 'op': 'monsters_log'}]
+    holds = []
+    for start in range(3000, 7000, 420):
+        # R1 held, the guard up; Cross while it holds (Max's lift takes it held, Monica's pressed); then let go of
+        # both, and Cross again a moment later: the throw, when something is held (a swing, when not)
+        holds += [(start, 'r1'), (start + 40, 'r1 cross'), (start + 48, 'r1'), (start + 60, ''), (start + 150, 'cross'), (start + 156, '')]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 8400, 'guest_frames': 7800, 'guest_holds': holds,
+            'host_extra': ['--invincible'], 'guest_extra': ['--invincible']}
+
+
+@checks('lift')
+def check_lift(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+
+    def lines(side, pattern):
+        return [l.strip() for l in side['lines'] if re.search(pattern, l)]
+    lifted = lines(guest, r"co-op: this game's hero lifted the copy in slot \d+")
+    c.check(lifted, "the joiner's hero lifts a copy of the host's monster", lifted[:2])
+    held = lines(host, r'co-op: avatar \d lifted the monster in slot \d+')
+    c.check(held, "the host's game holds its monster in the joiner's hero's hands", held[:2] or lines(host, "can't lift")[:2])
+    thrown = lines(guest, r'co-op: the copy in slot \d+ let go \(thrown\)')
+    c.check(thrown, "the joiner throws it", thrown[:2] or lines(guest, 'let go')[:2])
+    threw = lines(host, r'co-op: avatar \d threw the monster in slot \d+')
+    c.check(threw, "the host's game throws its monster the same way", threw[:2] or lines(host, 'put down|let go')[:2])
+    landed = lines(guest, r'co-op: the copy in slot \d+ landed')
+    c.check(landed, "in the joiner's game it flies and lands", landed[:2])
+    back = lines(guest, r"co-op: the copy in slot \d+ is the leader's again")
+    c.check(back and all('its reports have it free' in l for l in back), "and follows the host's monster again once the host's reports have it free",
+            back[:3])
     c.no_errors()
     return c.list
 
@@ -1552,6 +1619,8 @@ def main():
     guest_walk = WALK_AT % (sc['guest_walk'], sc['guest_walk'] + 14) if sc.get('guest_walk') else ''
     # (or a longer walk: from a frame, the left stick held at x y, for so many frames)
     guest_walk += ''.join('%d %d %d 128 128\n%d\n' % (frame, x, y, frame + frames) for frame, x, y, frames in sc.get('guest_moves', []))
+    # (or buttons held from a frame on, as many as the line names, none for a bare frame: a guard held while Cross goes)
+    guest_walk += ''.join(('%d %s\n' % (frame, buttons)) if buttons else '%d\n' % frame for frame, buttons in sc.get('guest_holds', []))
     # (the presses and the walk in frame order: a press must not fall inside a walk)
     guest_after = sorted((guest_walk + press_lines(sc.get('guest_presses', []))).splitlines(keepends=True),
                          key=lambda line: int(line.split()[0]))

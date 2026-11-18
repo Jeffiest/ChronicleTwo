@@ -638,7 +638,7 @@ ApiCallResult EffectsTakeCall(const Json &args) {
 // world.avatar_effect: another player's shot, drawn from their avatar.
 ApiCallResult AvatarEffectCall(const Json &args) {
     static constexpr const char *kUsage =
-        "expected {slot = 1-3, kind = 1-10, x, y, z, dx, dy, dz, value = a whole number or nil, amount = a number or nil, target = a scene slot or nil, frame0, frame1 = a trail's frames or nil, age = frames since it was fired (0-3600) or nil} (player.effects_take's entries)";
+        "expected {slot = 1-3, kind = 1-11, x, y, z, dx, dy, dz, value = a whole number or nil, amount = a number or nil, target = a scene slot or nil, frame0, frame1 = a trail's frames or nil, age = frames since it was fired (0-3600) or nil} (player.effects_take's entries)";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object()) return Invalid(kUsage);
     const Json &request = args[0];
     std::string unknown;
@@ -647,7 +647,7 @@ ApiCallResult AvatarEffectCall(const Json &args) {
     }
     int        slot = 0;
     HeroEffect e;
-    if (!ReadBoundedInt(request, "slot", 1, kAvatars, slot) || !ReadBoundedInt(request, "kind", 1, 10, e.kind)) return Invalid(kUsage);
+    if (!ReadBoundedInt(request, "slot", 1, kAvatars, slot) || !ReadBoundedInt(request, "kind", 1, 11, e.kind)) return Invalid(kUsage);
     for (const char *key : {"frame0", "frame1"}) {
         if (!request.contains(key) || request[key].is_null()) continue;
         if (!request[key].is_string() || request[key].get<std::string>().size() > 31) return Invalid(kUsage);
@@ -768,10 +768,19 @@ ApiCallResult MirrorGet(const Json &args) {
             float at[4] = {0.0f, 0.0f, 0.0f, 1.0f}, rotation[4] = {0.0f, 0.0f, 0.0f, 0.0f};
             m->GetPosition(at);
             m->GetRotation(rotation);
+            float heading = rotation[1];
+            // One held in a hero's hands hangs from them (its frame's parent): where it is, and which way it faces, are
+            // the world's, not the hands'.
+            if (m->catch_state == ACTION_CATCH_HELD && m->catch_frame != nullptr && m->CObjectFrame::frame != nullptr) {
+                m->CObjectFrame::frame->GetWorldPosition0(at);
+                float ahead[4] = {0.0f, 0.0f, 1.0f, 0.0f}, way[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+                m->CObjectFrame::frame->GetWorldDir(way, ahead);
+                if (way[0] != 0.0f || way[2] != 0.0f) heading = std::atan2(way[0], way[2]);
+            }
             const auto round = [](float v) { return std::round(v * 10.0f) / 10.0f; };
             monsters.push_back({{"slot", slot}, {"kind", m->monster_id}, {"state", m->state}, {"hp", m->life}, {"max_hp", m->max_life},
-                                {"x", round(at[0])}, {"y", round(at[1])}, {"z", round(at[2])},
-                                {"heading", std::round(rotation[1] * 1000.0f) / 1000.0f}, {"motion", MotionNumberOf(*m)},
+                                {"x", round(at[0])}, {"y", round(at[1])}, {"z", round(at[2])}, {"catch", m->catch_state},
+                                {"heading", std::round(heading * 1000.0f) / 1000.0f}, {"motion", MotionNumberOf(*m)},
                                 {"motion_flags", m->now_flags & 7}, {"motion_step", std::round(m->step * 100.0f) / 100.0f},
                                 // (drawn in this game: in sight of its hero, or fading in or out)
                                 {"seen", m->view_state != MONSTER_VIEW_OUT && m->view_state != MONSTER_VIEW_INIT && m->view_alpha > 0.0f}});
@@ -789,7 +798,7 @@ ApiCallResult MirrorGet(const Json &args) {
 }
 
 ApiCallResult PuppetSetCall(const Json &args) {
-    static constexpr const char *kUsage = "expected {monsters = {{slot, kind, state, hp, max_hp, x, y, z, heading, motion, motion_flags, motion_step}, ...}, age = frames or nil}";
+    static constexpr const char *kUsage = "expected {monsters = {{slot, kind, state, hp, max_hp, x, y, z, heading, motion, motion_flags, motion_step, catch}, ...}, age = frames or nil}";
     if (!args.is_array() || args.size() != 1 || !args[0].is_object() || !args[0].contains("monsters") ||
         !(args[0]["monsters"].is_array() || (args[0]["monsters"].is_object() && args[0]["monsters"].empty()))) {
         return Invalid(kUsage);
@@ -809,6 +818,7 @@ ApiCallResult PuppetSetCall(const Json &args) {
         if (entry.contains("max_hp") && !ReadBoundedInt(entry, "max_hp", 0, 1000000, puppet.max_hp)) return Invalid(kUsage);
         if (entry.contains("motion") && !ReadBoundedInt(entry, "motion", -1, 1023, puppet.motion)) return Invalid(kUsage);
         if (entry.contains("motion_flags") && !ReadBoundedInt(entry, "motion_flags", 0, 7, puppet.motion_flags)) return Invalid(kUsage);
+        if (entry.contains("catch") && !entry["catch"].is_null() && !ReadBoundedInt(entry, "catch", 0, 2, puppet.catch_state)) return Invalid(kUsage);
         if (entry.contains("motion_step") && (!ReadNumber(entry, "motion_step", puppet.motion_step, true) || puppet.motion_step > 16.0f)) {
             return Invalid(kUsage);
         }

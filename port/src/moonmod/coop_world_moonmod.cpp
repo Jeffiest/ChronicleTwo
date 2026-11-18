@@ -83,6 +83,7 @@ struct Sample {
     float x = 0.0f, y = 0.0f, z = 0.0f, heading = 0.0f;
     int   motion = -1, flags = 0;
     float step = -1.0f;
+    int   catch_state = 0; // (a monster's: held in a hero's hands, or thrown)
 };
 
 // Keeps a report, in its time's order. One older than a report kept, or the same as the last, is let go; one far
@@ -93,7 +94,7 @@ void TrailHeard(std::vector<Sample> &trail, const Sample &n) {
         const Sample &last = trail.back();
         if (n.t <= last.t) return;
         if (n.x == last.x && n.y == last.y && n.z == last.z && n.heading == last.heading && n.motion == last.motion &&
-            n.flags == last.flags && n.step == last.step) {
+            n.flags == last.flags && n.step == last.step && n.catch_state == last.catch_state) {
             return;
         }
         if (std::hypot(n.x - last.x, n.z - last.z) > kJump) {
@@ -314,6 +315,9 @@ struct Avatar {
         int count = 0;
     };
     std::array<LoopSound, 4> loops{};
+    // A monster of this game's its hands hold (AvatarEffectNow's lift), by its slot, and the frame it hangs from.
+    int                         held_monster = -1;
+    mgCFrame                   *held_frame = nullptr;
 };
 
 std::array<Avatar, kAvatars> g_avatars;
@@ -338,8 +342,33 @@ CScene *PlaceScene() {
     return nullptr;
 }
 
+// The monster an avatar's hands hold is let go where it hangs, as the game's hero puts one down (_RELEASE_OBJ): before
+// the body goes (its frames with it), when its player is down, away or gone, or when the monster no longer hangs there.
+void AvatarLetGo(Avatar &a) {
+    if (a.held_monster < 0) return;
+    CActiveMonster *m = OnFloor() && ActiveMonster != nullptr ? ActiveMonster->GetActiveMonster(a.held_monster) : nullptr;
+    if (m != nullptr && a.held_frame != nullptr && m->catch_frame == a.held_frame) {
+        if (m->CObjectFrame::frame != nullptr) {
+            float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            m->CObjectFrame::frame->GetWorldPosition0(at);
+            m->CObjectFrame::frame->DeleteReference();
+            m->SetPosition(at);
+        }
+        m->catch_frame = nullptr;
+        if (m->catch_state == ACTION_CATCH_HELD) {
+            m->catch_state = ACTION_CATCH_NONE;
+            m->no_hit_time = 5;
+            m->req_prog = MONSTER_PROG_LAND;
+        }
+        std::fprintf(stderr, "co-op: an avatar's hands let go of the monster in slot %d\n", a.held_monster);
+    }
+    a.held_monster = -1;
+    a.held_frame = nullptr;
+}
+
 void Unload(int index) {
     Avatar &a = g_avatars[static_cast<std::size_t>(index)];
+    AvatarLetGo(a);
     // (what it was drawing goes with it: an item held up, a shot in flight that follows it)
     if (a.slot >= 0 && GetNowLoopNo() == LOOP_DUNGEON && FxScriptMan != nullptr && a.scene == DngMainScene) {
         FxScriptMan->ClearEffectFromChrid(a.slot);
@@ -625,6 +654,13 @@ struct PuppetSlot {
     // the hit's status bits), for a death it dealt (CopyDies).
     int    blow_at = -1, blow_by = -1, blow_source = DAMAGE_SOURCE_NONE, blow_kind = -1;
     u32    blow_attr = 0;
+    // This game's hero lifted it (LiftedHere): 1 in the hands, 2 let go and flying (or falling), 3 landed and waiting
+    // for the leader's reports to have its monster free again; when it was lifted and since when in this state (this
+    // clock), the ground it was lifted from, and whether a report of the leader's from after the lift has had it held
+    // or thrown.
+    int    lift = 0, lifted_at = -1, lift_since = -1;
+    float  ground = 0.0f;
+    bool   reported = false;
 };
 std::vector<PuppetSlot>  g_puppets(static_cast<std::size_t>(MONSTER_ACTIVE_MAX));
 std::vector<PuppetHit>   g_puppet_hits;
@@ -639,6 +675,105 @@ CActiveMonster *Monster(int slot) {
     return ActiveMonster->GetActiveMonster(slot);
 }
 
+// Where a monster is in the world: one held in a hero's hands hangs from them (its frame's parent).
+void WorldAt(CActiveMonster &m, float out[4]) {
+    out[3] = 1.0f;
+    if (m.catch_state == ACTION_CATCH_HELD && m.catch_frame != nullptr && m.CObjectFrame::frame != nullptr) {
+        m.CObjectFrame::frame->GetWorldPosition0(out);
+        out[3] = 1.0f;
+        return;
+    }
+    m.GetPosition(out);
+    out[3] = 1.0f;
+}
+
+// A copy this game's hero holds is let go where it hangs, as _RELEASE_OBJ puts one down, before it dies or leaves its
+// slot: a monster in the hands neither dies nor goes. (The hero's hands are empty from then: its throw throws nothing.)
+void LetGoHere(CActiveMonster &m, PuppetSlot &p) {
+    if (m.catch_state == ACTION_CATCH_HELD && m.catch_frame != nullptr && m.CObjectFrame::frame != nullptr) {
+        float at[4];
+        WorldAt(m, at);
+        m.CObjectFrame::frame->DeleteReference();
+        m.SetPosition(at);
+    }
+    m.catch_frame = nullptr;
+    if (p.lift != 0 || m.catch_state != ACTION_CATCH_NONE) {
+        m.catch_state = ACTION_CATCH_NONE;
+        m.no_hit_time = 0;
+        m.req_prog = MONSTER_PROG_RUNNING;
+        if (m.damage_req == ACTION_DAMAGE_REQ_THROWN) m.damage_req = ACTION_DAMAGE_REQ_NONE;
+    }
+    p.lift = 0;
+}
+
+// This game's hero lifted the copy (CheckThrowTarget takes any monster near the hands): it is held, then thrown or
+// put down, as the game's own monster is, and lands, before the leader's reports could have it so. The leader's game
+// is told (HeroLifted, HeroReleased) and its hands of this player's hero hold the monster there, and throw it the same
+// way, a moment behind; the copy waits where it landed until the reports have that monster free again (kLiftWait at
+// most: a lift the leader's game refused, its monster taken first). False when the copy is the leader's to place.
+constexpr int   kLiftWait = 120;
+constexpr float kFall = 0.6f; // a thrown monster's fall each frame (CActionChara::Step, the arc _RELEASE_OBJ aims)
+
+bool LiftedHere(int slot, CActiveMonster &m, PuppetSlot &p, const Sample &now) {
+    if (m.catch_state == ACTION_CATCH_HELD && p.lift != 1) {
+        p.lift = 1;
+        p.lifted_at = p.lift_since = g_clock;
+        p.reported = false;
+        std::fprintf(stderr, "co-op: this game's hero lifted the copy in slot %d (kind %d)\n", slot, m.monster_id);
+    }
+    if (p.lift == 0) return false;
+    // (a report from before the lift, its monster then in another's hands, is not this lift's)
+    if (now.catch_state != ACTION_CATCH_NONE && now.t > p.lifted_at) p.reported = true;
+    if (p.lift == 1) {
+        if (m.catch_state == ACTION_CATCH_HELD) {
+            m.SetPosition(0.0f, -2.0f, 0.0f); // (in the hands, as CMonsterMan::ThinkHost holds a monster)
+            return true;
+        }
+        // Let go: thrown (its arc's first step in blow_vec), or put down, to fall from where it hung.
+        if (m.catch_state != ACTION_CATCH_THROWN) {
+            for (int k = 0; k < 3; ++k) m.blow_vec[k] = 0.0f;
+        }
+        p.lift = 2;
+        p.lift_since = g_clock;
+        std::fprintf(stderr, "co-op: the copy in slot %d let go (%s)\n", slot, m.catch_state == ACTION_CATCH_THROWN ? "thrown" : "put down");
+    }
+    if (m.no_hit_time > 0) --m.no_hit_time; // (as the game counts it down for a monster that thinks)
+    if (p.lift == 2) {
+        float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+        m.GetPosition(at);
+        const float rise = m.blow_vec[1];
+        for (int k = 0; k < 3; ++k) at[k] += m.blow_vec[k];
+        // (one thrown falls by the game's own step, CActionChara::Step taking kFall from its arc each frame; one put
+        // down, by ours)
+        if (m.catch_state != ACTION_CATCH_THROWN) m.blow_vec[1] -= kFall;
+        if ((at[1] <= p.ground && rise <= 0.0f) || g_clock - p.lift_since > kLiftWait) {
+            // Landed, as CMonsterMan's move lands a thrown monster: a puff of dust where it struck the ground.
+            at[1] = p.ground;
+            m.catch_state = ACTION_CATCH_NONE;
+            m.req_prog = MONSTER_PROG_RUNNING;
+            if (m.damage_req == ACTION_DAMAGE_REQ_THROWN) m.damage_req = ACTION_DAMAGE_REQ_NONE;
+            p.lift = 3;
+            p.lift_since = g_clock;
+            std::fprintf(stderr, "co-op: the copy in slot %d landed at %.0f,%.0f,%.0f\n", slot, at[0], at[1], at[2]);
+            if (FxScriptMan != nullptr && DngMainScene != nullptr) {
+                char dust[] = "\x8D\xBB\x89\x8C";
+                if (FxScriptMan->CreateEffSpt(dust, 0, 0) >= 0) FxScriptMan->SetScriptVect1(at, 0, -1);
+                sndSePlay(static_cast<u32>(DngMainScene->se_battle_id), 30, 0);
+            }
+        }
+        m.SetPosition(at[0], at[1], at[2]);
+        return true;
+    }
+    if ((p.reported && now.catch_state == ACTION_CATCH_NONE) || g_clock - p.lift_since > kLiftWait) {
+        std::fprintf(stderr, "co-op: the copy in slot %d is the leader's again (%s)\n", slot,
+                     p.reported ? "its reports have it free" : "no report had it held");
+        p.lift = 0;
+        m.no_hit_time = 0;
+        return false;
+    }
+    return true;
+}
+
 // The leader's monster died, and the copy has come to that moment here: it dies as the game's own monster dies,
 // CMonsterMan::ThinkHost playing it from here (CopiesDying, CopyRests): the death motion, the burst and its sound,
 // the money and things it drops, the absorption (ABS) its orbs give the weapons of the hero who gathers them, a key
@@ -648,6 +783,7 @@ CActiveMonster *Monster(int slot) {
 constexpr int kOwnBlowFrames = 180;
 
 void CopyDies(CActiveMonster &monster, PuppetSlot &p) {
+    LetGoHere(monster, p);
     const bool ours = p.blow_at >= 0 && g_clock - p.blow_at <= kOwnBlowFrames;
     monster.life = 0;
     monster.damage_req = ACTION_DAMAGE_REQ_DEAD;
@@ -689,7 +825,7 @@ void PuppetSight(CActiveMonster *monster) {
     float hero_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     float own_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     hero->GetPosition(hero_at);
-    monster->GetPosition(own_at);
+    WorldAt(*monster, own_at);
     monster->target_dist = mgDistVector(hero_at, own_at);
     if (auto *camera = static_cast<CCameraControl *>(DngMainScene->GetCamera(DngMainScene->active_camera)); camera != nullptr) {
         float camera_at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -756,10 +892,14 @@ void PuppetsStep() {
         // (on the leader's clock a little behind, eased between its reports, as the other players' heroes are; each
         // motion played as the leader's monster plays it, looping or held on its last frame)
         const Sample now = p.trail.empty() ? Sample{g_clock, p.host.x, p.host.y, p.host.z, p.host.heading, p.host.motion,
-                                                    p.host.motion_flags, p.host.motion_step}
+                                                    p.host.motion_flags, p.host.motion_step, p.host.catch_state}
                                            : TrailAt(p.trail);
-        monster->SetPosition(now.x, now.y, now.z);
-        monster->SetRotation(0.0f, now.heading, 0.0f);
+        // (in this game's hero's hands, or let go from them: this game's own a moment)
+        if (!LiftedHere(slot, *monster, p, now)) {
+            monster->SetPosition(now.x, now.y, now.z);
+            monster->SetRotation(0.0f, now.heading, 0.0f);
+            p.ground = now.y;
+        }
         if (now.motion >= 0 && (now.motion != p.motion || now.flags != p.flags)) {
             p.motion = now.motion;
             p.flags = now.flags;
@@ -958,8 +1098,17 @@ void AvatarsStep() {
     const int loop = GetNowLoopNo();
     for (int i = 0; i < kAvatars; ++i) {
         Avatar &a = g_avatars[static_cast<std::size_t>(i)];
+        // (a monster in its hands is let go when its player is down, watching a scene or gone, or the monster is no
+        // longer held there: struck from the hands, or its floor gone)
+        if (a.held_monster >= 0) {
+            const CActiveMonster *m = OnFloor() && ActiveMonster != nullptr ? ActiveMonster->GetActiveMonster(a.held_monster) : nullptr;
+            const bool holds = m != nullptr && m->catch_state == ACTION_CATCH_HELD && m->catch_frame == a.held_frame && a.body &&
+                               scene == a.scene && scene == DngMainScene;
+            if (!holds || !a.wanted || a.target.down || a.target.away || a.body->leaving) AvatarLetGo(a);
+        }
         // Another place, or the scene gave the slot to someone else: the body goes; the mod's wish stays.
         if (a.body && (scene != a.scene || loop != a.loop || scene == nullptr || scene->GetCharacter(a.slot) != a.body.get())) {
+            AvatarLetGo(a);
             a.body.reset(); // the scene's slot was reset with the scene; nothing of ours to take back
             if (scene != nullptr && scene == a.scene && scene == DngMainScene && FxScriptMan != nullptr && a.slot >= 0) {
                 FxScriptMan->ClearEffectFromChrid(a.slot); // (the same floor, its slot given to another: our effects go)
@@ -1064,6 +1213,34 @@ void HeroFired(const void *chara, HeroShot kind, const float *pos, const float *
 static bool FrameNameOk(const std::string &name) {
     return !name.empty() && name.size() < 32 &&
            std::ranges::all_of(name, [](unsigned char c) { return std::isalnum(c) != 0 || c == '_'; });
+}
+
+void HeroLifted(const void *chara, int target, int kind, const char *frame) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon() || frame == nullptr || !FrameNameOk(frame)) return;
+    HeroEffect e;
+    e.kind = static_cast<int>(HeroShot::Lift);
+    e.target = target;
+    e.value = kind;
+    e.amount = 0.0f;
+    e.frame0 = frame;
+    e.frame1 = frame;
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(std::move(e));
+}
+
+void HeroReleased(const void *chara, int target, int kind, const float *from, const float *blow) {
+    if (chara == nullptr || chara != MainChara__2 || !InDungeon() || from == nullptr) return;
+    HeroEffect e;
+    e.kind = static_cast<int>(HeroShot::Lift);
+    e.target = target;
+    e.value = kind;
+    e.amount = blow != nullptr ? 1.0f : 2.0f;
+    for (int axis = 0; axis < 3; ++axis) {
+        e.pos[axis] = from[axis];
+        e.dir[axis] = blow != nullptr ? blow[axis] : 0.0f;
+    }
+    if (g_hero_effects.size() >= kHeroEffectsKept) g_hero_effects.erase(g_hero_effects.begin());
+    g_hero_effects.push_back(std::move(e));
 }
 
 void HeroSounded(const void *chara, int sound) {
@@ -1336,6 +1513,67 @@ static bool AvatarEffectNow(int slot, const HeroEffect &e) {
                                               std::clamp(e.target, 0, 120));
             return true;
         }
+        case HeroShot::Lift: {
+            // Another player's hero lifted a monster, threw it or put it down. Where the monster is this game's own
+            // (this game leads the floor), the avatar's hands hold it as the game's hero's do (CheckThrowTarget), and
+            // let it go as _RELEASE_OBJ does: from where it hangs, on the same arc, or put down; the throw, the landing,
+            // a blow on another monster and a bomb going off are this game's. A copy here is the leader's monster,
+            // whose reports bring all of it.
+            Avatar   &a = g_avatars[static_cast<std::size_t>(slot)];
+            const int at_slot = e.target - DNG_CHARA_SLOT_MONSTER;
+            if (at_slot < 0 || at_slot >= MONSTER_ACTIVE_MAX) return false;
+            if (IsPuppet(at_slot)) return true;
+            CActiveMonster *m = ActiveMonster != nullptr ? ActiveMonster->GetActiveMonster(at_slot) : nullptr;
+            if (m == nullptr || (e.value > 0 && m->monster_id != e.value)) return false;
+            const int phase = static_cast<int>(e.amount);
+            if (phase == 0) {
+                if (a.body->shaped || !FrameNameOk(e.frame0)) return false;
+                mgCFrame *hands = FindFrame(*a.body, e.frame0.c_str());
+                if (hands == nullptr || m->CObjectFrame::frame == nullptr || m->state != ACTIVE_MONSTER_LIVE || m->catch_state != ACTION_CATCH_NONE || m->monster_id == 0x25A ||
+                    (m->tbl != nullptr && (m->tbl->lift_flags & MONSTER_LIFT_FORBIDDEN))) {
+                    std::fprintf(stderr, "co-op: avatar %d can't lift the monster in slot %d (%s)\n", slot + 1, at_slot,
+                                 hands == nullptr ? "no such frame" : m->catch_state != ACTION_CATCH_NONE ? "held or flying" : "not liftable now");
+                    return false;
+                }
+                AvatarLetGo(a);
+                m->CObjectFrame::frame->SetReference(hands);
+                m->catch_frame = hands;
+                m->catch_state = ACTION_CATCH_HELD;
+                m->no_hit_time = 0;
+                m->req_prog = MONSTER_PROG_CATCH;
+                a.held_monster = at_slot;
+                a.held_frame = hands;
+                std::fprintf(stderr, "co-op: avatar %d lifted the monster in slot %d (kind %d)\n", slot + 1, at_slot, m->monster_id);
+                return true;
+            }
+            if (a.held_monster != at_slot || a.held_frame == nullptr || m->catch_state != ACTION_CATCH_HELD || m->catch_frame != a.held_frame) {
+                return false;
+            }
+            float from[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+            a.held_frame->GetWorldPosition0(from);
+            from[3] = 1.0f;
+            if (m->CObjectFrame::frame != nullptr) m->CObjectFrame::frame->DeleteReference();
+            m->SetPosition(from);
+            m->catch_frame = nullptr;
+            m->no_hit_time = 5;
+            a.held_monster = -1;
+            a.held_frame = nullptr;
+            const bool arc = phase == 1 && std::fabs(dir[0]) < 64.0f && std::fabs(dir[1]) < 64.0f && std::fabs(dir[2]) < 64.0f;
+            if (arc) {
+                for (int k = 0; k < 3; ++k) m->blow_vec[k] = dir[k];
+                m->blow_vec[3] = 1.0f;
+                m->catch_state = ACTION_CATCH_THROWN;
+                m->damage_req = ACTION_DAMAGE_REQ_THROWN;
+                float still[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+                sceVu0CopyVector(m->velocity, still);
+            } else {
+                m->catch_state = ACTION_CATCH_NONE;
+                m->req_prog = MONSTER_PROG_LAND;
+            }
+            std::fprintf(stderr, "co-op: avatar %d %s the monster in slot %d from %.0f,%.0f,%.0f\n", slot + 1, arc ? "threw" : "put down", at_slot,
+                         from[0], from[1], from[2]);
+            return true;
+        }
     }
     return false;
 }
@@ -1350,6 +1588,7 @@ namespace {
 void FreeMonsterSlot(int slot) {
     CActiveMonster *monster = Monster(slot);
     if (monster == nullptr || (monster->state == ACTIVE_MONSTER_NONE && monster->chara_kind != ACTION_KIND_SCRIPT)) return;
+    LetGoHere(*monster, g_puppets[static_cast<std::size_t>(slot)]);
     monster->state = ACTIVE_MONSTER_NONE;
     monster->chara_kind = ACTION_KIND_NONE;
     monster->damage_req = ACTION_DAMAGE_REQ_NONE;
@@ -1443,7 +1682,7 @@ bool PuppetSet(int slot, const Puppet &puppet) {
     p.host = puppet;
     if (puppet.age >= 0) {
         TrailHeard(p.trail, {g_clock - std::min(puppet.age, kMaxAge), puppet.x, puppet.y, puppet.z, puppet.heading, puppet.motion,
-                        puppet.motion_flags, puppet.motion_step});
+                        puppet.motion_flags, puppet.motion_step, puppet.catch_state});
     } else {
         p.trail.clear();
     }
@@ -1465,7 +1704,30 @@ bool PuppetSet(int slot, const Puppet &puppet) {
 
 bool IsPuppet(int slot) { return slot >= 0 && slot < MONSTER_ACTIVE_MAX && g_puppets[static_cast<std::size_t>(slot)].used; }
 
+bool HeldByOther(int slot) {
+    const CActiveMonster *m = Monster(slot);
+    if (m == nullptr || m->catch_state != ACTION_CATCH_HELD || m->catch_frame == nullptr) return false;
+    return std::ranges::any_of(g_avatars, [&](const Avatar &a) { return a.held_monster == slot && a.held_frame == m->catch_frame; });
+}
+
+bool LiftRefused(int slot) {
+    const CActiveMonster *m = Monster(slot);
+    if (m == nullptr) return false;
+    if (m->catch_state == ACTION_CATCH_HELD) return true;
+    if (!IsPuppet(slot)) return false;
+    const PuppetSlot &p = g_puppets[static_cast<std::size_t>(slot)];
+    return p.dying || p.host.catch_state != ACTION_CATCH_NONE || p.lift != 0;
+}
+
 bool MonstersMirrored() { return g_puppets_pause; }
+
+bool EffectDrawnOnly(const void *chara) {
+    if (chara == nullptr || !g_puppets_pause) return false;
+    for (int slot = 0; slot < MONSTER_ACTIVE_MAX; ++slot) {
+        if (g_puppets[static_cast<std::size_t>(slot)].used && Monster(slot) == chara) return true;
+    }
+    return false;
+}
 
 // (only while the floor plays: the game's own events and menus hold every monster, a dying one too)
 bool CopiesDying() {
@@ -2015,6 +2277,7 @@ void WorldReset() {
     g_hold_frames = 0;
     g_hold_scene = nullptr;
     for (int i = 0; i < kAvatars; ++i) {
+        AvatarLetGo(g_avatars[static_cast<std::size_t>(i)]);
         g_avatars[static_cast<std::size_t>(i)].wanted = false;
         g_avatars[static_cast<std::size_t>(i)].pending.clear();
         AvatarLoopsStop(g_avatars[static_cast<std::size_t>(i)]);

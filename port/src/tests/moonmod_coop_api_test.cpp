@@ -198,7 +198,7 @@ TEST(MoonModCoopApi, TheHerosShotsAreTakenOnceAndAnotherPlayersAreDrawnOnlyFromT
     const ApiCallResult drawn = api.Call("world.avatar_effect", shot);
     ASSERT_EQ(drawn.status, ApiCallStatus::Ok) << drawn.message;
     EXPECT_FALSE(drawn.value.at("shown").get<bool>());
-    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 11}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
+    EXPECT_EQ(api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 12}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0}, {"dx", 0.0},
                                                             {"dy", 0.0}, {"dz", 1.0}}})).status, ApiCallStatus::InvalidArgument);
     // a looped sound (kind 10) too: off a floor it is not heard, and nothing is left going
     const ApiCallResult looped = api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 10}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0},
@@ -372,6 +372,164 @@ TEST(MoonModCoopApi, TheHostMirrorsItsMonstersAndAGuestFollowsThemAsPuppets) {
     EXPECT_EQ(api.Call("monsters.mirror_hit", Json::array({{{"slot", 0}, {"damage", 5}, {"why", 1}}})).status, ApiCallStatus::InvalidArgument);
 }
 
+TEST(MoonModCoopApi, AMonsterTheHeroLiftsIsToldAndOneHeldIsReportedWhereItHangs) {
+    FloorFixture floor;
+    Api          api;
+    CActionChara *previous_hero = MainChara__2;
+    alignas(16) static unsigned char hero_storage[16];
+    alignas(16) static unsigned char other_storage[16];
+    MainChara__2 = reinterpret_cast<CActionChara *>(hero_storage);
+    // The hero lifts the monster in slot 2 with its "nage" frame, then throws it, then lifts and puts it down: each is
+    // told (kind 11) with its scene slot and kind; a frame name a message can't carry, or another's lift, is not.
+    const float from[3] = {1.0f, 12.0f, 3.0f}, blow[3] = {0.5f, 3.0f, -1.0f};
+    moonmod::coop::HeroLifted(hero_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, "nage");
+    moonmod::coop::HeroLifted(hero_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, "na ge");
+    moonmod::coop::HeroLifted(other_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, "nage");
+    moonmod::coop::HeroReleased(hero_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, from, blow);
+    moonmod::coop::HeroReleased(other_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, from, blow);
+    moonmod::coop::HeroReleased(hero_storage, DNG_CHARA_SLOT_MONSTER + 2, 1000, from, nullptr);
+    const ApiCallResult taken = api.Call("player.effects_take");
+    ASSERT_EQ(taken.status, ApiCallStatus::Ok) << taken.message;
+    const Json &effects = taken.value.at("effects");
+    ASSERT_EQ(effects.size(), 3u);
+    EXPECT_EQ(effects[0].at("kind"), 11);
+    EXPECT_EQ(effects[0].at("amount"), 0.0f);
+    EXPECT_EQ(effects[0].at("target"), DNG_CHARA_SLOT_MONSTER + 2);
+    EXPECT_EQ(effects[0].at("value"), 1000);
+    EXPECT_EQ(effects[0].at("frame0"), "nage");
+    EXPECT_EQ(effects[1].at("amount"), 1.0f);
+    EXPECT_EQ(effects[1].at("y"), 12.0f);
+    EXPECT_EQ(effects[1].at("dx"), 0.5f);
+    EXPECT_EQ(effects[1].at("dy"), 3.0f);
+    EXPECT_EQ(effects[2].at("amount"), 2.0f);
+    EXPECT_EQ(effects[2].at("dy"), 0.0f);
+    MainChara__2 = previous_hero;
+    // Another player's lift needs their avatar on this floor (none without a disc).
+    const ApiCallResult lift = api.Call("world.avatar_effect", Json::array({{{"slot", 1}, {"kind", 11}, {"x", 0.0}, {"y", 0.0}, {"z", 0.0},
+                                                                             {"dx", 0.0}, {"dy", 0.0}, {"dz", 0.0}, {"value", 1000},
+                                                                             {"target", DNG_CHARA_SLOT_MONSTER + 2}, {"frame0", "nage"},
+                                                                             {"frame1", "nage"}}}));
+    ASSERT_EQ(lift.status, ApiCallStatus::Ok) << lift.message;
+    EXPECT_FALSE(lift.value.at("shown").get<bool>());
+
+    // A monster in a hero's hands is reported held, and nobody else lifts it. (Held by this game's own hero: not
+    // another player's to let go. Where it hangs, the hands' place in the world, needs the game's frames: live.)
+    floor.Live(0, 12, 80);
+    CActiveMonster &held = floor.Live(1, 1000, 40);
+    mgCFrame        hands;
+    held.catch_frame = &hands;
+    held.catch_state = ACTION_CATCH_HELD;
+    const ApiCallResult mirror = api.Call("monsters.mirror_get");
+    ASSERT_EQ(mirror.status, ApiCallStatus::Ok) << mirror.message;
+    ASSERT_EQ(mirror.value.at("monsters").size(), 2u) << mirror.value.dump();
+    EXPECT_EQ(mirror.value.at("monsters")[0].at("catch"), ACTION_CATCH_NONE);
+    EXPECT_EQ(mirror.value.at("monsters")[1].at("catch"), ACTION_CATCH_HELD);
+    EXPECT_NEAR(mirror.value.at("monsters")[1].at("x").get<double>(), 10.0, 0.01);
+    EXPECT_TRUE(moonmod::coop::LiftRefused(1));
+    EXPECT_FALSE(moonmod::coop::HeldByOther(1));
+    EXPECT_FALSE(moonmod::coop::LiftRefused(0));
+    held.catch_frame = nullptr;
+    held.catch_state = ACTION_CATCH_NONE;
+    EXPECT_FALSE(moonmod::coop::LiftRefused(1));
+}
+
+TEST(MoonModCoopApi, ACopyTheLeaderHoldsIsNotLiftedHereAndOneLiftedHereFliesLandsAndWaitsForTheLeader) {
+    FloorFixture floor;
+    Api          api;
+    struct Hero {
+        CActionChara  body;
+        CActionChara *previous = MainChara__2;
+        Hero() { MainChara__2 = &body; }
+        ~Hero() { MainChara__2 = previous; }
+    } hero;
+    CActiveMonster &copy = floor.Live(0, 12, 80);
+    const auto report = [&](float x, int caught) {
+        const Json one = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 80}, {"x", x}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}, {"catch", caught}};
+        return api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({one})}, {"age", 0}}}));
+    };
+    ASSERT_EQ(report(0.0f, ACTION_CATCH_NONE).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    ASSERT_TRUE(moonmod::coop::IsPuppet(0));
+    EXPECT_FALSE(moonmod::coop::LiftRefused(0));
+    // The leader's game has it in a hero's hands, or flying: not this game's hero's to lift.
+    ASSERT_EQ(report(0.0f, ACTION_CATCH_HELD).status, ApiCallStatus::Ok);
+    EXPECT_TRUE(moonmod::coop::LiftRefused(0));
+    moonmod::coop::WorldStep();
+    ASSERT_EQ(report(0.0f, ACTION_CATCH_THROWN).status, ApiCallStatus::Ok);
+    EXPECT_TRUE(moonmod::coop::LiftRefused(0));
+    moonmod::coop::WorldStep();
+    ASSERT_EQ(report(0.0f, ACTION_CATCH_NONE).status, ApiCallStatus::Ok);
+    EXPECT_FALSE(moonmod::coop::LiftRefused(0));
+    const Json bad = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 80}, {"x", 0.0}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}, {"catch", 3}};
+    EXPECT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({bad})}}})).status, ApiCallStatus::InvalidArgument);
+    for (int frame = 0; frame < 2; ++frame) moonmod::coop::WorldStep();
+
+    // This game's hero lifts it (as CheckThrowTarget takes it, less the frame a fixture's monster has not), the
+    // leader's last reports, from before, still saying its monster was in another's hands a moment ago: it hangs in
+    // the hands, whatever the leader reports.
+    mgCFrame hands;
+    copy.catch_frame = &hands;
+    copy.catch_state = ACTION_CATCH_HELD;
+    copy.no_hit_time = 0;
+    ASSERT_EQ(report(30.0f, ACTION_CATCH_NONE).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    float at[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    copy.GetPosition(at);
+    EXPECT_NEAR(at[1], -2.0f, 0.01f); // (below the hands)
+    EXPECT_TRUE(moonmod::coop::LiftRefused(0));
+    // Thrown, as _RELEASE_OBJ throws it: from where it hung, on its arc. It flies, falls and lands on the ground it was
+    // lifted from, this game's own, before any report could bring it.
+    float hung[4] = {0.0f, 8.0f, 5.0f, 1.0f};
+    copy.SetPosition(hung);
+    copy.catch_frame = nullptr;
+    copy.catch_state = ACTION_CATCH_THROWN;
+    copy.no_hit_time = 5;
+    copy.damage_req = ACTION_DAMAGE_REQ_THROWN;
+    copy.blow_vec[0] = 3.0f;
+    copy.blow_vec[1] = 3.0f;
+    copy.blow_vec[2] = 0.0f;
+    moonmod::coop::WorldStep();
+    copy.GetPosition(at);
+    EXPECT_NEAR(at[0], 3.0f, 0.01f);
+    EXPECT_NEAR(at[1], 11.0f, 0.01f);
+    for (int frame = 0; frame < 13; ++frame) moonmod::coop::WorldStep();
+    copy.GetPosition(at);
+    EXPECT_EQ(copy.catch_state, ACTION_CATCH_NONE);
+    EXPECT_NEAR(at[0], 42.0f, 0.01f);
+    EXPECT_NEAR(at[1], 0.0f, 0.01f);
+    EXPECT_NE(copy.damage_req, ACTION_DAMAGE_REQ_THROWN);
+    // Landed, it waits for the leader's reports: the leader's monster is still where it was, then held by this
+    // player's hero there, then thrown, then free where it landed.
+    for (int frame = 0; frame < 20; ++frame) moonmod::coop::WorldStep();
+    copy.GetPosition(at);
+    EXPECT_NEAR(at[0], 42.0f, 0.01f);
+    EXPECT_TRUE(moonmod::coop::LiftRefused(0));
+    ASSERT_EQ(report(30.0f, ACTION_CATCH_HELD).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    ASSERT_EQ(report(36.0f, ACTION_CATCH_THROWN).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    copy.GetPosition(at);
+    EXPECT_NEAR(at[0], 42.0f, 0.01f);
+    ASSERT_EQ(report(41.0f, ACTION_CATCH_NONE).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    copy.GetPosition(at);
+    EXPECT_NEAR(at[0], 41.0f, 0.01f);
+    EXPECT_FALSE(moonmod::coop::LiftRefused(0));
+    EXPECT_EQ(copy.no_hit_time, 0);
+
+    // Lifted again and the leader's monster dies meanwhile: it is let go, and dies as the game's own.
+    copy.catch_frame = &hands;
+    copy.catch_state = ACTION_CATCH_HELD;
+    moonmod::coop::WorldStep();
+    const Json dead = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 0}, {"x", 41.0}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}};
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({dead})}, {"age", 0}}})).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    EXPECT_EQ(copy.catch_state, ACTION_CATCH_NONE);
+    EXPECT_EQ(copy.catch_frame, nullptr);
+    EXPECT_EQ(copy.damage_req, ACTION_DAMAGE_REQ_DEAD);
+    EXPECT_EQ(api.Call("monsters.puppet_clear").status, ApiCallStatus::Ok);
+}
+
 TEST(MoonModCoopApi, AFollowersMonstersTheLeaderNoLongerHasLeaveTheFloorsCountForItsClear) {
     FloorFixture floor;
     Api          api;
@@ -482,6 +640,32 @@ TEST(MoonModCoopApi, ACopyWhoseMonsterDiedThereDiesHereAsTheGamesOwnAndPaysTheHe
     EXPECT_EQ(api.Call("monsters.puppet_clear").status, ApiCallStatus::Ok);
     EXPECT_FALSE(moonmod::coop::CopiesDying());
     EXPECT_FALSE(moonmod::coop::CopyRests(1));
+}
+
+TEST(MoonModCoopApi, WhatACopysScriptMakesIsOnlyDrawnHere) {
+    FloorFixture floor;
+    Api          api;
+    // (a hero on the floor: the copies follow the leader only where this game has one)
+    struct Hero {
+        CActionChara  body;
+        CActionChara *previous = MainChara__2;
+        Hero() { MainChara__2 = &body; }
+        ~Hero() { MainChara__2 = previous; }
+    } hero;
+    CActiveMonster &copy = floor.Live(0, 12, 80);
+    // This game leads its floor: what its monsters make (a RoBomb's blast) strikes here.
+    EXPECT_FALSE(moonmod::coop::EffectDrawnOnly(&copy));
+    const Json one = {{"slot", 0}, {"kind", 12}, {"state", 1}, {"hp", 80}, {"x", 0.0}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}};
+    ASSERT_EQ(api.Call("monsters.puppet_set", Json::array({{{"monsters", Json::array({one})}, {"age", 0}}})).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 10; ++frame) moonmod::coop::WorldStep();
+    ASSERT_TRUE(moonmod::coop::MonstersMirrored());
+    // A copy's script runs here only for its death, and what the death makes strikes in the leader's game, whose
+    // blows on this game's hero come from there: here it is only drawn. A hero's own are not a copy's.
+    EXPECT_TRUE(moonmod::coop::EffectDrawnOnly(&copy));
+    EXPECT_FALSE(moonmod::coop::EffectDrawnOnly(&hero.body));
+    EXPECT_FALSE(moonmod::coop::EffectDrawnOnly(nullptr));
+    EXPECT_EQ(api.Call("monsters.puppet_clear").status, ApiCallStatus::Ok);
+    EXPECT_FALSE(moonmod::coop::EffectDrawnOnly(&copy));
 }
 
 TEST(MoonModCoopApi, AMonsterTheOtherPlayerKillsSharesItsAbsorptionAsAKillAnotherDealt) {

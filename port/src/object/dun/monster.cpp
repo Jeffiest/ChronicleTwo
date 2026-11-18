@@ -964,8 +964,9 @@ CActiveMonster *CMonsterMan::CheckThrowTarget(mgCFrame *frame) {
 
     for (i = 0; i < MONSTER_ACTIVE_MAX; i++) {
         auto *active_monster = GetActiveMonster(i);
+        // (co-op: not one another player's hero holds, nor a copy the leader's game has held or flying)
         if (active_monster != nullptr && active_monster->IsDraw(true) &&
-            active_monster->monster_id != 0x25A) {
+            active_monster->monster_id != 0x25A && !moonmod::coop::LiftRefused(i)) {
             active_monster->GetPosition(monster_pos);
             monster_pos[3] = 1.0f;
 
