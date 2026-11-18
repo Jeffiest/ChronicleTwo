@@ -616,6 +616,12 @@ struct PuppetSlot {
     Puppet host;
     int    motion = -1, flags = -1;
     std::vector<Sample> trail; // the leader's reports kept (TrailHeard, TrailAt)
+    int    dies_at = -1;       // the frame (this clock) the copy comes to the moment the leader's monster died
+    bool   dying = false;      // its death is this game's own now (CopyDies)
+    // This game's hero's last blow on it: when, by whom, from what (CColPrim's attacker, its row's source and kind,
+    // the hit's status bits), for a death it dealt (CopyDies).
+    int    blow_at = -1, blow_by = -1, blow_source = DAMAGE_SOURCE_NONE, blow_kind = -1;
+    u32    blow_attr = 0;
 };
 std::vector<PuppetSlot>  g_puppets(static_cast<std::size_t>(MONSTER_ACTIVE_MAX));
 std::vector<PuppetHit>   g_puppet_hits;
@@ -623,10 +629,31 @@ std::vector<AvatarHit>   g_avatar_hits;
 bool                     g_puppets_pause = false;
 float                    g_saved_player[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 bool                     g_player_swapped = false;
+int                      g_thinking = -1; // the monster whose turn it is (MonsterThinkBegin)
 
 CActiveMonster *Monster(int slot) {
     if (!OnFloor() || ActiveMonster == nullptr || slot < 0 || slot >= MONSTER_ACTIVE_MAX) return nullptr;
     return ActiveMonster->GetActiveMonster(slot);
+}
+
+// The leader's monster died, and the copy has come to that moment here: it dies as the game's own monster dies,
+// CMonsterMan::ThinkHost playing it from here (CopiesDying, CopyRests): the death motion, the burst and its sound,
+// the money and things it drops, the absorption (ABS) its orbs give the weapons of the hero who gathers them, a key
+// it carries, the floor's count. The killing blow is this game's hero's when it struck the copy a moment ago (its
+// weapon gains as from its own kill); else it was another player's, and the game shares a kill another dealt
+// between the hero's weapons (AddExpWeaponParam, an attacker of -1).
+constexpr int kOwnBlowFrames = 180;
+
+void CopyDies(CActiveMonster &monster, PuppetSlot &p) {
+    const bool ours = p.blow_at >= 0 && g_clock - p.blow_at <= kOwnBlowFrames;
+    monster.life = 0;
+    monster.damage_req = ACTION_DAMAGE_REQ_DEAD;
+    monster.last_hit_chara = ours ? p.blow_by : -1;
+    monster.last_hit_source = ours ? p.blow_source : DAMAGE_SOURCE_NONE;
+    monster.last_hit_attr = ours ? p.blow_attr : 0;
+    if (ours && p.blow_kind >= 0) monster.last_hit_kind = p.blow_kind;
+    p.dying = true;
+    p.dies_at = -1;
 }
 
 // The avatars on this floor: where each stands.
@@ -704,8 +731,21 @@ void PuppetsStep() {
             p.used = false;
             continue;
         }
+        // Dying here: the game's own until its death has played out and the game has emptied the slot.
+        if (p.dying) {
+            if (monster->state == ACTIVE_MONSTER_NONE) {
+                p = PuppetSlot{};
+            } else {
+                any = true;
+            }
+            continue;
+        }
         any = true;
-        if (p.host.state <= 0 || p.host.hp == 0) continue;
+        if (p.dies_at >= 0 && g_clock >= p.dies_at) {
+            CopyDies(*monster, p);
+            continue;
+        }
+        if (p.dies_at < 0 && (p.host.state <= 0 || p.host.hp == 0)) continue;
         // (on the leader's clock a little behind, eased between its reports, as the other players' heroes are; each
         // motion played as the leader's monster plays it, looping or held on its last frame)
         const Sample now = p.trail.empty() ? Sample{g_clock, p.host.x, p.host.y, p.host.z, p.host.heading, p.host.motion,
@@ -1317,6 +1357,15 @@ bool PuppetSet(int slot, const Puppet &puppet) {
     if (!OnFloor() || ActiveMonster == nullptr || slot < 0 || slot >= MONSTER_ACTIVE_MAX) return false;
     CActiveMonster *monster = Monster(slot);
     PuppetSlot &p = g_puppets[static_cast<std::size_t>(slot)];
+    // A copy dying here is the game's until its death has played out: the leader's monster dying, fading or gone
+    // there changes nothing. A living one in that slot there is another monster (the leader's game used the slot
+    // again first): this one goes, and that one is made.
+    if (p.dying) {
+        const bool another = puppet.state == ACTIVE_MONSTER_LIVE && puppet.hp > 0 && puppet.kind >= 0;
+        if (monster != nullptr && monster->state != ACTIVE_MONSTER_NONE && !another) return true;
+        if (monster != nullptr && monster->state != ACTIVE_MONSTER_NONE) FreeMonsterSlot(slot);
+        p = PuppetSlot{};
+    }
     if (puppet.state <= 0 || puppet.kind < 0) {
         FreeMonsterSlot(slot);
         p = PuppetSlot{};
@@ -1343,9 +1392,10 @@ bool PuppetSet(int slot, const Puppet &puppet) {
     }
     monster->life = std::clamp(puppet.hp, 0, 1000000);
     if (puppet.max_hp > 0) monster->max_life = puppet.max_hp;
-    if (puppet.state == ACTIVE_MONSTER_DEAD && monster->state == ACTIVE_MONSTER_LIVE) {
-        monster->life = 0;
-        monster->damage_req = ACTION_DAMAGE_REQ_DEAD;
+    // The leader's monster died (its life gone, or dead already): the copy dies too once it is shown at that moment,
+    // 8 frames behind the leader's clock as everything of the leader's is (PuppetsStep, CopyDies).
+    if ((puppet.state == ACTIVE_MONSTER_DEAD || puppet.hp <= 0) && monster->state == ACTIVE_MONSTER_LIVE && p.dies_at < 0) {
+        p.dies_at = puppet.age >= 0 ? g_clock - std::min(puppet.age, kMaxAge) + kDelay : g_clock;
     }
     return true;
 }
@@ -1353,6 +1403,15 @@ bool PuppetSet(int slot, const Puppet &puppet) {
 bool IsPuppet(int slot) { return slot >= 0 && slot < MONSTER_ACTIVE_MAX && g_puppets[static_cast<std::size_t>(slot)].used; }
 
 bool MonstersMirrored() { return g_puppets_pause; }
+
+// (only while the floor plays: the game's own events and menus hold every monster, a dying one too)
+bool CopiesDying() {
+    return g_puppets_pause && DngStatus.mode == DNG_STATUS_FIELD && std::ranges::any_of(g_puppets, &PuppetSlot::dying);
+}
+
+bool CopyRests(int slot) {
+    return g_puppets_pause && !(slot >= 0 && slot < MONSTER_ACTIVE_MAX && g_puppets[static_cast<std::size_t>(slot)].dying);
+}
 
 void PuppetsClear() {
     for (PuppetSlot &p : g_puppets) p = PuppetSlot{};
@@ -1377,6 +1436,14 @@ void MonsterDamaged(int slot, int damage, const CColPrim *prim, int element, boo
     // The copy keeps the host's life: the blow goes to the host's monster. One that took nothing (a guard, a monster
     // it can't hurt) goes too, for the host's game to show it so.
     CActiveMonster *monster = Monster(slot);
+    if (prim != nullptr && prim->param != nullptr) {
+        PuppetSlot &p = g_puppets[static_cast<std::size_t>(slot)];
+        p.blow_at = g_clock;
+        p.blow_by = prim->attacker;
+        p.blow_source = prim->param->source_type;
+        p.blow_kind = prim->param->kind;
+        p.blow_attr = prim->status;
+    }
     if (monster != nullptr) monster->life = std::max(0, g_puppets[static_cast<std::size_t>(slot)].host.hp);
     if (damage < 0 || (damage == 0 && prim == nullptr) || g_puppet_hits.size() >= 64) return;
     PuppetHit hit{slot, damage};
@@ -1396,6 +1463,7 @@ void MonsterDamaged(int slot, int damage, const CColPrim *prim, int element, boo
 
 void MonsterThinkBegin(int slot) {
     MonsterThinkEnd();
+    g_thinking = slot;
     if (!InDungeon()) return;
     std::array<std::array<float, 3>, kAvatars> at{};
     std::array<bool, kAvatars>                 here{};
@@ -1425,6 +1493,17 @@ void MonsterThinkBegin(int slot) {
 void MonsterThinkEnd() {
     if (g_player_swapped && MainChara__2 != nullptr) MainChara__2->SetPosition(g_saved_player[0], g_saved_player[1], g_saved_player[2]);
     g_player_swapped = false;
+    // A copy dying here deals no blow: the leader's monster deals its own (a death that strikes about it).
+    if (g_thinking >= 0 && g_puppets_pause) {
+        if (CActiveMonster *monster = Monster(g_thinking); monster != nullptr) {
+            for (ACTION_DAMAGE &damage : monster->damage) {
+                if (damage.prim == nullptr) continue;
+                damage.prim->Delete(-1);
+                damage.prim = nullptr;
+            }
+        }
+    }
+    g_thinking = -1;
 }
 
 // ---- Shared events: the API ----------------------------------------------------------------------------------------

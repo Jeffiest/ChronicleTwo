@@ -2697,6 +2697,7 @@ void CMonsterMan::ThinkHost() {
         if (monster == nullptr || monster->state == ACTIVE_MONSTER_NONE) {
             continue;
         }
+        if (moonmod::coop::CopyRests(i)) continue; // co-op: a copy thinks in the leader's game, all but its death here
         const auto bound_monster = active_views[i];
         moonmod::coop::MonsterThinkBegin(i); // co-op host: this turn, the player stands at the nearest player
 

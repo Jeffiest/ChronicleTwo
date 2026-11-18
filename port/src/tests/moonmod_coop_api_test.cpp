@@ -400,6 +400,104 @@ TEST(MoonModCoopApi, AFollowersMonstersTheLeaderNoLongerHasLeaveTheFloorsCountFo
     EXPECT_EQ(api.Call("world.get").value.at("monsters_counted"), 0);
 }
 
+TEST(MoonModCoopApi, ACopyWhoseMonsterDiedThereDiesHereAsTheGamesOwnAndPaysTheHeroWhoKilledIt) {
+    FloorFixture floor;
+    Api          api;
+    // (a hero on the floor: the copies follow the leader only where this game has one)
+    struct Hero {
+        CActionChara  body;
+        CActionChara *previous = MainChara__2;
+        Hero() { MainChara__2 = &body; }
+        ~Hero() { MainChara__2 = previous; }
+    } hero;
+    floor.Live(0, 12, 80);
+    floor.Live(1, 3, 10);
+    const auto report = [&](int hp0, int state0, int hp1, int state1) {
+        Json list = Json::array();
+        if (state0 >= 0) list.push_back({{"slot", 0}, {"kind", 12}, {"state", state0}, {"hp", hp0}, {"x", 0.0}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}});
+        if (state1 >= 0) list.push_back({{"slot", 1}, {"kind", 3}, {"state", state1}, {"hp", hp1}, {"x", 10.0}, {"y", 0.0}, {"z", 5.0}, {"heading", 0.0}});
+        return api.Call("monsters.puppet_set", Json::array({{{"monsters", list}, {"age", 0}}}));
+    };
+    ASSERT_EQ(report(80, ACTIVE_MONSTER_LIVE, 10, ACTIVE_MONSTER_LIVE).status, ApiCallStatus::Ok);
+    moonmod::coop::WorldStep();
+    ASSERT_TRUE(moonmod::coop::MonstersMirrored());
+    EXPECT_TRUE(moonmod::coop::CopyRests(0));
+    EXPECT_TRUE(moonmod::coop::CopyRests(1));
+    EXPECT_FALSE(moonmod::coop::CopiesDying());
+
+    // This game's hero strikes the copy in slot 0 (Monica's sword), and the leader's monster dies of it there.
+    DAMAGE_PARAM row{};
+    row.kind = DAMAGE_KIND_MONICA_MELEE;
+    row.source_type = DAMAGE_SOURCE_MAIN_WEAPON;
+    CColPrim prim;
+    prim.param = &row;
+    prim.attacker = 1;
+    prim.status = 0x40;
+    moonmod::coop::MonsterDamaged(0, 80, &prim);
+    ASSERT_EQ(report(0, ACTIVE_MONSTER_LIVE, 10, ACTIVE_MONSTER_LIVE).status, ApiCallStatus::Ok);
+    // It is shown 8 frames behind the leader's clock: it dies when it comes to that moment, not before.
+    for (int frame = 0; frame < 7; ++frame) moonmod::coop::WorldStep();
+    EXPECT_NE((*floor.slots)[0].damage_req, ACTION_DAMAGE_REQ_DEAD);
+    EXPECT_FALSE(moonmod::coop::CopiesDying());
+    moonmod::coop::WorldStep();
+    moonmod::coop::WorldStep();
+    // Now the game's own death plays it (the monsters think this frame, every living copy resting), and its orbs go to
+    // the weapon that dealt the blow.
+    EXPECT_EQ((*floor.slots)[0].damage_req, ACTION_DAMAGE_REQ_DEAD);
+    EXPECT_EQ((*floor.slots)[0].life, 0);
+    EXPECT_EQ((*floor.slots)[0].last_hit_chara, 1);
+    EXPECT_EQ((*floor.slots)[0].last_hit_source, DAMAGE_SOURCE_MAIN_WEAPON);
+    EXPECT_EQ((*floor.slots)[0].last_hit_kind, DAMAGE_KIND_MONICA_MELEE);
+    EXPECT_EQ((*floor.slots)[0].last_hit_attr, 0x40u);
+    EXPECT_TRUE(moonmod::coop::CopiesDying());
+    EXPECT_FALSE(moonmod::coop::CopyRests(0));
+    EXPECT_TRUE(moonmod::coop::CopyRests(1));
+    // Not while the game holds its monsters itself (an event, a menu).
+    DngStatus.mode = DNG_STATUS_EVENT;
+    EXPECT_FALSE(moonmod::coop::CopiesDying());
+    DngStatus.mode = DNG_STATUS_FIELD;
+
+    // The leader's monster fading out there, then gone, changes nothing here: the death plays out here.
+    ASSERT_EQ(report(0, ACTIVE_MONSTER_DEAD, 10, ACTIVE_MONSTER_LIVE).status, ApiCallStatus::Ok);
+    ASSERT_EQ(report(0, -1, 10, ACTIVE_MONSTER_LIVE).status, ApiCallStatus::Ok);
+    moonmod::coop::WorldStep();
+    EXPECT_EQ((*floor.slots)[0].state, ACTIVE_MONSTER_LIVE);
+    EXPECT_TRUE(moonmod::coop::IsPuppet(0));
+    EXPECT_TRUE(moonmod::coop::CopiesDying());
+    // Once the game has emptied its slot (the death played, the fade done) the copy is gone.
+    (*floor.slots)[0].state = ACTIVE_MONSTER_NONE;
+    moonmod::coop::WorldStep();
+    EXPECT_FALSE(moonmod::coop::IsPuppet(0));
+    EXPECT_FALSE(moonmod::coop::CopiesDying());
+
+    // A monster the other player struck down (no blow from this game's hero): the game shares that kill between the
+    // hero's weapons, as for an attacker of -1.
+    ASSERT_EQ(report(0, -1, 0, ACTIVE_MONSTER_LIVE).status, ApiCallStatus::Ok);
+    for (int frame = 0; frame < 9; ++frame) moonmod::coop::WorldStep();
+    EXPECT_EQ((*floor.slots)[1].damage_req, ACTION_DAMAGE_REQ_DEAD);
+    EXPECT_EQ((*floor.slots)[1].last_hit_chara, -1);
+    EXPECT_EQ((*floor.slots)[1].last_hit_source, DAMAGE_SOURCE_NONE);
+    EXPECT_TRUE(moonmod::coop::CopiesDying());
+    EXPECT_EQ(api.Call("monsters.puppet_clear").status, ApiCallStatus::Ok);
+    EXPECT_FALSE(moonmod::coop::CopiesDying());
+    EXPECT_FALSE(moonmod::coop::CopyRests(1));
+}
+
+TEST(MoonModCoopApi, AMonsterTheOtherPlayerKillsSharesItsAbsorptionAsAKillAnotherDealt) {
+    FloorFixture floor;
+    Api          api;
+    CActiveMonster &monster = floor.Live(2, 7, 30);
+    monster.last_hit_chara = 0;
+    monster.last_hit_source = DAMAGE_SOURCE_MAIN_WEAPON;
+    const ApiCallResult hit = api.Call("monsters.mirror_hit", Json::array({{{"slot", 2}, {"damage", 30}, {"kind", DAMAGE_KIND_MAX_MELEE}}}));
+    ASSERT_EQ(hit.status, ApiCallStatus::Ok) << hit.message;
+    EXPECT_TRUE(hit.value.at("killed").get<bool>());
+    EXPECT_EQ(monster.damage_req, ACTION_DAMAGE_REQ_DEAD);
+    EXPECT_EQ(monster.last_hit_chara, -1);
+    EXPECT_EQ(monster.last_hit_source, DAMAGE_SOURCE_NONE);
+    EXPECT_EQ(monster.last_hit_kind, DAMAGE_KIND_MAX_MELEE);
+}
+
 TEST(MoonModCoopApi, AMonstersTurnLooksAtTheNearestPlayerAndTheSwapIsUndone) {
     FloorFixture floor;
     floor.Live(0, 1, 10);

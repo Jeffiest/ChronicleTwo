@@ -234,6 +234,10 @@ bool                   IsPuppet(int slot);
 // This floor's monsters are copies of another game's: their own thinking rests (DNG_PAUSE_MONSTER_AI), while the
 // floor's effects go on (dng_main.cpp asks).
 bool                   MonstersMirrored();
+// A copy whose monster died in the leader's game dies here as the game's own (CMonsterMan::ThinkHost plays its
+// death). dng_main.cpp: some copy is dying, so the monsters think this frame; monster.cpp: every other one rests.
+bool                   CopiesDying();
+bool                   CopyRests(int slot);
 void                   PuppetsClear();
 std::vector<PuppetHit> TakePuppetHits();
 std::vector<AvatarHit> TakeAvatarHits();

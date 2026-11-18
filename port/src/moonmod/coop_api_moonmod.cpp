@@ -982,6 +982,11 @@ ApiCallResult MirrorHit(const Json &args) {
     }
     if (monster->life == 0) {
         if (kind >= 0) monster->last_hit_kind = kind;
+        // (dealt by another player: the game shares a kill another dealt between this hero's weapons, as for an
+        // attacker of -1 in AddExpWeaponParam; left as it was, Max took nothing from it)
+        monster->last_hit_chara = -1;
+        monster->last_hit_source = DAMAGE_SOURCE_NONE;
+        monster->last_hit_attr = 0;
         monster->damage_req = ACTION_DAMAGE_REQ_DEAD;
         ChronicleTwoEnemyDefeated(monster, "coop");
     }

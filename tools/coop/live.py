@@ -196,6 +196,32 @@ def hurt():
             'host_extra': ['--invincible'], 'host_autotest': seed, 'guest_autotest': seed}
 
 
+@scenario('reward')
+def reward():
+    """A kill pays both players as the game pays its own. The two stand on a floor, two foes of the test's own (a
+    sewer rat's kind) come beside them, and the host strikes both down where the two stand. In the joiner's game each
+    copy dies as the game's own monster dies there (its death program runs and tells mods: the burst, the orbs, what
+    it drops), and each hero standing by gathers the orbs: the absorption (ABS) of their weapons goes up in both
+    games."""
+    host = [
+        {'when': 'town', 'after': 1800, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 2},
+        {'when': 'playing', 'after': 600, 'op': 'abs_log'},
+        {'after': 30, 'op': 'spawn_foe', 'dx': 40},
+        {'after': 30, 'op': 'spawn_foe', 'dx': -40},
+        {'after': 240, 'op': 'strike_near', 'radius': 120},
+        {'after': 90, 'op': 'strike_near', 'radius': 120},
+        {'after': 600, 'op': 'abs_log'},
+        {'after': 600, 'op': 'mark', 'text': 'end'},
+    ]
+    guest = [
+        {'when': 'visit', 'op': 'mark', 'text': 'arrived'},
+        {'when': 'dungeon', 'after': 300, 'op': 'abs_log'},
+        {'after': 4200, 'op': 'abs_log'},
+    ]
+    return {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 8400, 'guest_frames': 7800,
+            'host_extra': ['--invincible']}
+
+
 @scenario('down')
 def down():
     """Down, not out: a foe that hits far harder than the joiner's hero can take strikes them down on the floor. The
@@ -970,10 +996,16 @@ def check_floor_first(host, guest, result):
     c.check(not any(s.get('puppets') == 'true' for s in guest['coop']), "the joiner's monsters stay its own")
     struck = [e for e in guest['events'] if re.match(r'DRIVE step \d+ strike ok', e)]
     c.check(len(struck) >= 1, 'the joiner struck a monster down before the host came', [e for e in guest['events'] if 'strike' in e])
+    # Never more than the joiner had (its co-op line counts only once someone follows, so its own count is read too:
+    # a host that comes a moment before the joiner's strike hears the floor as it stood before it), and the same at
+    # the end.
     sent = [int(s['mons']) for s in guest['coop'] if s.get('scene', '').startswith('D') and s.get('mons', '-') not in ('-', 'nil')]
+    own = [int(s['monsters']) for s in guest['drive'] if s.get('context') == 'dungeon' and s.get('monsters', '').isdigit()]
     heard = [int(s['mons']) for s in host['coop'] if s.get('scene', '').startswith('D') and s.get('mons', '-') not in ('-', 'nil')]
-    c.check(sent and heard and max(heard) == max(sent), "the host's copies hold the joiner's living monsters, no more",
-            'joiner %s, host %s' % (sorted(set(sent)), sorted(set(heard))))
+    c.check(sent and heard and max(heard) <= max(sent + own) and heard[-1] == sent[-1],
+            "the host's copies hold the joiner's living monsters, no more",
+            'joiner %s (its own count %s), host %s; at the end %s / %s' % (sorted(set(sent)), sorted(set(own)), sorted(set(heard)),
+                                                                     sent[-1:], heard[-1:]))
     c.no_errors()
     return c.list
 
@@ -1044,6 +1076,27 @@ def check_hurt(host, guest, result):
     struck = [e for e in guest['events'] if e.startswith('COOPTEST struck hit=true')]
     c.check(struck, "and costs the joiner life in their own game", [e for e in guest['events'] if 'struck' in e][:3])
     c.same_monsters()
+    c.no_errors()
+    return c.list
+
+
+@checks('reward')
+def check_reward(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+    c.together('D', 'on the floor')
+    struck = [e for e in host['events'] if re.match(r'DRIVE step \d+ strike_near ok', e)]
+    c.check(len(struck) >= 2, 'the host strikes down the two foes beside the heroes', [e for e in host['events'] if 'strik' in e][:3])
+    died = [e for e in guest['events'] if e.startswith('DRIVE defeated')]
+    c.check(died, "in the joiner's game its copy dies as the game's own monster dies (the death program runs)", died[:3])
+
+    def abs_seen(side):
+        return [float(s['abs']) for s in side['drive'] if s.get('context') == 'dungeon' and 'abs' in s]
+    for name, side in (('host', host), ('joiner', guest)):
+        seen = abs_seen(side)
+        c.check(len(seen) >= 2 and seen[-1] > seen[0], "the %s's weapons gather the kill's absorption (ABS)" % name,
+                'from %s to %s' % (seen[:1], seen[-1:]))
     c.no_errors()
     return c.list
 

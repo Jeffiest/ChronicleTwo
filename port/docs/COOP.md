@@ -54,7 +54,15 @@ environment and the mod's `server` setting override it. A build without a socket
   `coop_avatar_names_moonmod.cpp`: from the scene's start, `DramaSceneStarted`, while the game offers its skip,
   `EdEventInfo.skip_state`, and the place's event has the game, until the player is free again;
   `world.get().story_scene`) or while its player watches one in theirs (`world.avatar_set`'s `away`: then no monster
-  here goes for it either), and fades back in after; its name fades with it.
+  here goes for it either), and fades back in after; its name fades with it. A copy whose monster died in the
+  leader's game dies here as the game's own once it is shown at that moment (8 frames behind the leader's clock):
+  `CMonsterMan::ThinkHost` plays its death, the monsters thinking that frame with every other copy resting
+  (`CopiesDying`, `CopyRests`), so its death motion, burst, orbs, drops, a key it carries and the floor's count are
+  this game's own. The killing blow is this hero's when it struck the copy in the last 3 seconds (its weapon takes
+  the orbs' absorption), else another player's (`last_hit_chara` -1: the game shares it between the hero's
+  weapons, as the leader's game does for a kill by a guest's blow, `monsters.mirror_hit`). A dying copy deals no
+  blow (`MonsterThinkEnd` drops its damage primitives); the game's events and menus hold it as they hold every
+  monster.
 - `coop_ui_moonmod.cpp`: the choice panel (`ui.choice_open` / `ui.choice_close` / `ui.choice_made`), title modes (`title.mode_*`,
   `game.title.opened/selected`), visits (`session.*`, `game.session.started/ended/failed`). A question and a notice
   wait while the player is not free (`PlayerFree`, in `coop_avatar_names_moonmod.cpp`: a floor's field with no
@@ -64,8 +72,8 @@ environment and the mod's `server` setting override it. A build without a socket
 - `coop_save_moonmod.cpp`: `DCW2`/`DCP2`/`DCT2` records and the accounts.
 - Hooks in game units, one line each: `main.cpp` (`FrameStep`), `automap.cpp` (`FloorSeed`), `dng_event.cpp`
   (`FloorBuildBegin`), `event_func.cpp` (`FloorPlacing`, `FloorPlaced` around the floor's chests and monsters; `DramaSceneStarted`),
-  `dng_main.cpp` (`MapEventStarted`, `Draw2D`), `editloop.cpp` (`Draw2D`), `monster.cpp` (`MonsterThinkBegin/End`,
-  `MonsterDamaged`), `save_slots.cpp` (no writes during a visit), `title.cpp` (the mod rows, the page, the visit),
+  `dng_main.cpp` (`MapEventStarted`, `Draw2D`, `CopiesDying`), `editloop.cpp` (`Draw2D`), `monster.cpp`
+  (`MonsterThinkBegin/End`, `MonsterDamaged`, `CopyRests`), `save_slots.cpp` (no writes during a visit), `title.cpp` (the mod rows, the page, the visit),
   `effscript.cpp` (another player's shot or spell is drawn only, `shown_only`: it makes no collision primitive, and
   its script's questions after one are answered as a primitive that hits nothing, never logged as illegal calls).
 
@@ -330,7 +338,8 @@ panel another mod opened stays open.
   strength, `kind` 2 a flinch or 3 a knock-down). The other game takes it with `combat.strike_player`, where its
   own hero's defence comes off the strength as off a monster's blow. Guarding and dodging are not weighed yet: a
   blow that reaches the avatar's body lands.
-- **Puppets** pause every monster script on a guest's floor (`DNG_PAUSE_MONSTER_AI`) and step the copies themselves.
+- **Puppets** pause every monster script on a guest's floor (`DNG_PAUSE_MONSTER_AI`) and step the copies themselves;
+  a copy whose monster died there dies here through the game's own `ThinkHost` (above).
 - **Avatars** wear and carry what the other player's own hero does (`world.avatar_set {outfit}`, from
   `player.get().outfit`): the hat or hair piece and the weapons hang on the body's frames as the hero's own do. A
   slot the game is using (an event character in one of the last three event slots) refuses the avatar for that scene.

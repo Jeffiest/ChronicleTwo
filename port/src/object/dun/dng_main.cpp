@@ -1986,7 +1986,7 @@ void DngStep() {
     MainChara__2->GetPosition(player);
     AutoMapGen.UpdateNaviMap(player, 4);
 
-    if (!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI)) {
+    if (!(BattleAreaScene->pause_flag & DNG_PAUSE_MONSTER_AI) || moonmod::coop::CopiesDying()) { // co-op: a copy dies here as the game's own
         ActiveMonster->ThinkHost();
     }
 
