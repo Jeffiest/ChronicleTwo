@@ -794,6 +794,8 @@ void CopyDies(CActiveMonster &monster, PuppetSlot &p) {
     p.dying = true;
     p.dies_at = -1;
     p.died_at = g_clock;
+    std::fprintf(stderr, "co-op: the copy in slot %d (kind %d) dies here\n",
+                 static_cast<int>(&p - g_puppets.data()), monster.monster_id);
 }
 
 // A death has had its time (a boss's slot rests from here until its room's scene empties it).

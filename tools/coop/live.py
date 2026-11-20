@@ -652,6 +652,84 @@ def boss_fight():
     return sc
 
 
+@scenario('robomb')
+def robomb():
+    """Halloween's RoBombs thrown back at it, by the joiner. As boss_fight, but nobody strikes the boss: the host
+    presses Cross through the intro's hint and no more, the joiner walks up to the host (Halloween lobs its RoBombs
+    at whoever is nearest) and tries the lift every few seconds (R1 held, Cross; Cross again throws). A RoBomb the
+    joiner lifts is held and thrown by its avatar in the host's game, where it lands, blows up and hurts Halloween;
+    in the joiner's game a RoBomb's blast is only drawn, the host's game's blow on it coming from there."""
+    host = [
+        {'when': 'town', 'after': 600, 'op': 'mark', 'text': 'in town'},
+        {'after': 1200, 'op': 'enter_floor', 'dungeon_id': 0, 'floor_id': 7},
+        {'when': 'dungeon', 'after': 300, 'op': 'monsters_log'},
+    ]
+    for _ in range(36):
+        host += [{'after': 200, 'op': 'monsters_log'}, {'after': 1, 'op': 'monsters_where'}]
+    host += [{'after': 60, 'op': 'mark', 'text': 'end'}]
+    guest = [{'when': 'visit', 'op': 'mark', 'text': 'arrived'}, {'when': 'dungeon', 'after': 300, 'op': 'monsters_log'}]
+    for _ in range(30):
+        guest += [{'after': 200, 'op': 'monsters_log'}, {'after': 1, 'op': 'monsters_where'}]
+    # (each try, from where the walk left the joiner: R1 held, Cross lifts; Circle is the game's lock-on, and a hero
+    # standing with a monster in its hands turns to what it is locked on to (CActionChara::HumanShrowMoveIF), but in
+    # the runs so far the throws went straight ahead; Cross throws, or swings when nothing was lifted, a step on each
+    # time. COOP.md has what the runs saw.)
+    holds = []
+    for start in range(4040, 10800, 160):
+        holds += [(start, 'r1'), (start + 30, 'r1 cross'), (start + 38, 'r1'), (start + 46, ''),
+                  (start + 56, 'circle'), (start + 62, ''), (start + 110, 'cross'), (start + 116, '')]
+    sc = {'host': host, 'guest': guest, 'host_jump': 'town:10', 'host_frames': 12000, 'guest_frames': 11400,
+          'guest_autotest': {'offer_hold': 240}, 'host_extra': ['--invincible'], 'guest_extra': ['--invincible'],
+          'guest_holds': holds}
+    # (the host through the hint only, then still: a swing of its own would hurt the boss too)
+    sc['host_presses'] = [(f, 'cross') for f in range(2100, 3900, 150)]
+    # (the joiner, in at the room's door at 841,-161 by 3400 of the input script's frames (they run some 600 behind the
+    # mod's), stands there until 3900 and then walks ahead, the stick held up, along the line toward the place
+    # Halloween fights from (about 145,60), some 5.5 a frame: 110 frames stop it beside the host, some 130 short of
+    # the boss, where the RoBombs fall)
+    sc['guest_moves'] = [(3900, 128, 0, 110)]
+    return sc
+
+
+@checks('robomb')
+def check_robomb(host, guest, result):
+    c = Checks(host, guest, result)
+    c.ran()
+    c.visit()
+
+    def lines(side, pattern):
+        return [l.strip() for l in side['lines'] if re.search(pattern, l)]
+    lifted = lines(guest, r"co-op: this game's hero lifted the copy in slot \d+ \(kind 1000\)")
+    c.check(lifted, "the joiner's hero lifts a RoBomb's copy", lifted[:2] or lines(guest, 'lifted the copy')[:2])
+    held = lines(host, r'co-op: avatar \d lifted the monster in slot \d+ \(kind 1000\)')
+    c.check(held, "the host's game holds its RoBomb in the joiner's hero's hands", held[:2] or lines(host, "can't lift")[:2])
+    threw = lines(host, r'co-op: avatar \d threw the monster in slot \d+')
+    c.check(threw, "and throws it", threw[:2] or lines(host, 'put down|let go')[:2])
+
+    # Halloween's life (kind 500), as the monsters_log steps saw it: (hp, max, whether a throw came before it)
+    def boss_life(side, mark=None):
+        out, thrown = [], False
+        for l in side['lines']:
+            if mark is not None and mark in l:
+                thrown = True
+            if 'DRIVE monsters n=' in l:
+                for _, hp, top in re.findall(r'\d+:(500):(\d+)/(\d+)', l):
+                    out.append((int(hp), int(top), thrown))
+        return out
+    life = boss_life(host, 'threw the monster in slot')
+    before = [hp for hp, _, thrown in life if not thrown]
+    after = [hp for hp, _, thrown in life if thrown]
+    c.check(before and after and after[-1] < before[-1], "a RoBomb thrown back hurts Halloween in the host's game",
+            {'before the first throw': before[-1:], 'after': after[:1] + after[-1:]})
+    there = boss_life(guest)
+    c.check(there and after and there[-1][0] < there[-1][1], "and its copy in the joiner's game has the life it lost",
+            there[-1:])
+    drawn = lines(guest, r'co-op: what the copy in slot \d+ \(kind 1000\) made is only drawn here')
+    c.check(drawn, "in the joiner's game a RoBomb copy's blast is only drawn", drawn[:2])
+    c.no_errors()
+    return c.list
+
+
 def monster_lines(side):
     """The monsters_log steps' lines: per line, {slot: (kind, hp, max)} of the living monsters."""
     out = []

@@ -433,9 +433,9 @@ RoBombs thrown back. Both games now see it, the leader's game doing it to its mo
   follows the reports again, by then from where the leader's game landed it.
 - A copy's death plays here with the game's own script (`ThinkHost`), and what that script makes (`_ESM_CREATE`: a
   RoBomb's blast) is only drawn (`EffectDrawnOnly`): the leader's monster's blast strikes there, and its blow on this
-  game's hero comes from there. (Read from the code, not yet seen live: before, the copy's blast struck here too, so
-  one RoBomb would hit the follower's hero twice, and a bomb the follower threw would go off on it as the boss's
-  does, the copy not having been caught by its own script.)
+  game's hero comes from there. (Before, the copy's blast struck here too, so one RoBomb would hit the follower's
+  hero twice, and a bomb the follower threw would go off on it as the boss's does, the copy not having been caught by
+  its own script. Seen live in `robomb`: each RoBomb copy's death, `dies here`, is followed by `only drawn here`.)
 
 Protocol 12: the mod's `M` line has a 13th field, `catch`.
 
@@ -443,8 +443,20 @@ Live scenario `lift` (10 checks, 2026-11-18): on floor 2 a foe of the test's own
 and presses Cross, then Cross again, nine times over a minute. Seven times its hero lifted the copy, threw it, and it
 landed (some 190 from where it left the hands); each time the host's game held its monster in the joiner's avatar's
 hands and threw it from the same place, and the copy followed the host's monster again once the reports had it free.
-The drawn-only blast of a dying copy is unit-tested only (`WhatACopysScriptMakesIsOnlyDrawnHere`): a joiner throwing
-Halloween's RoBombs back at it in a live fight is not covered yet.
+The drawn-only blast of a dying copy is unit-tested (`WhatACopysScriptMakesIsOnlyDrawnHere`) and seen live in
+`robomb`.
+
+Live scenario `robomb` (10 checks, 2026-11-19, five runs): in Halloween's room (the `boss_fight` way in) the joiner
+walks up the line from the room's door toward the boss and then, every few seconds, holds R1 and presses Cross (a
+lift), Circle (a lock-on) and Cross (a throw). Seen: the joiner's hero lifts RoBombs' copies and throws them (18 lifts
+and 15 throws in the last run), and the host's game holds each RoBomb in the joiner's avatar's hands and throws it from
+the same place; every RoBomb copy that dies in the joiner's game (8 or 9 a run) has its blast only drawn there; later in
+the fight the host's game moves Halloween and calls six monsters of kind 25, and the joiner's game makes their copies.
+Not seen: a thrown RoBomb hurting Halloween (its life stays 448 in both games). The scripted joiner cannot aim: its
+throws fly some 100 to 190 straight ahead along the line it walked, its Circle did not turn a held RoBomb toward the
+boss in these runs, and Halloween's position (now in `entities.query`) reads 0,0 for most of the fight, the boss's body
+being elsewhere. Whether a RoBomb a joiner throws hurts Halloween needs a hand in a real game; the two checks on it
+fail until then.
 
 `town_talk` (7 checks): the joiner's Cross in Palm Brinks starts a talk (event 400) and the room holds both until the
 joiner's game ends. Talking does not drop the link; the drop seen once in an early `boss_fight` run is not

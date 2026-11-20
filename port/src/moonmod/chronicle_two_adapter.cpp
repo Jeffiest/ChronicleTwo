@@ -4791,16 +4791,19 @@ ApiCallResult QueryEntities(const Json &args) {
 
     Json entities = Json::array();
     for (int slot = 0; slot < MONSTER_ACTIVE_MAX; ++slot) {
-        const CActiveMonster *monster = ActiveMonster->GetActiveMonster(slot);
+        CActiveMonster *monster = ActiveMonster->GetActiveMonster(slot);
         if (monster == nullptr || monster->state != ACTIVE_MONSTER_LIVE || monster->life <= 0) continue;
         const unsigned int generation = EnsureMoonModMonsterSlotGeneration(slot);
         if (generation == 0) continue;
         const std::string handle = "chronicle-two:monster:" + std::to_string(slot) + ":" + std::to_string(generation);
+        float position[4] = {};
+        monster->GetPosition(position);
         Json entity = {{"id", handle},
                        {"type", "monster"},
                        {"slot", slot},
                        {"generation", generation},
                        {"definition", {{"monster_id", monster->monster_id}}},
+                       {"position", {{"x", position[0]}, {"y", position[1]}, {"z", position[2]}}},
                        {"health", {{"current", monster->life}, {"maximum", monster->max_life}}},
                        {"status", {{"flags", monster->status.attr}, {"target_slot", monster->target_no}}}};
         const auto mod_spawn = g_character_spawns.find(handle);

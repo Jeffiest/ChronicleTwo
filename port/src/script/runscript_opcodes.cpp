@@ -3628,7 +3628,10 @@ int _ESM_CREATE(dc2::script::RunArguments stack, int argc) {
     CEffectScriptMan  *const fx = ActiveMonster->effect_man;
     const _EFF_SCRIPT *const before = fx->now;
     const auto         drawn_only = [&] {
-        if (fx->now != nullptr && fx->now != before && moonmod::coop::EffectDrawnOnly(nowMonster)) fx->now->shown_only = true;
+        if (fx->now == nullptr || fx->now == before || !moonmod::coop::EffectDrawnOnly(nowMonster)) return;
+        fx->now->shown_only = true;
+        std::fprintf(stderr, "co-op: what the copy in slot %d (kind %d) made is only drawn here\n",
+                     nowMonster->chara_type - DNG_CHARA_SLOT_MONSTER, nowMonster->monster_id);
     };
 
     switch (argc) {

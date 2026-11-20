@@ -132,6 +132,9 @@ TEST(MoonModEntitiesApi, QueriesLiveDungeonMonstersAndRejectsUnsupportedFilters)
     EXPECT_EQ(entity.at("definition").at("monster_id"), 28);
     EXPECT_EQ(entity.at("health").at("current"), 64);
     EXPECT_EQ(entity.at("health").at("maximum"), 100);
+    EXPECT_FLOAT_EQ(entity.at("position").at("x").get<float>(), 3.0f);
+    EXPECT_FLOAT_EQ(entity.at("position").at("y").get<float>(), 4.0f);
+    EXPECT_FLOAT_EQ(entity.at("position").at("z").get<float>(), 0.0f);
     EXPECT_EQ(entity.at("status").at("flags"), MONSTER_STATUS_POISON | MONSTER_STATUS_SLOW);
     EXPECT_EQ(entity.at("status").at("target_slot"), 1);
 
